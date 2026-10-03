@@ -131,15 +131,15 @@ function outpostText(fen: string, san: string): string | null {
   return target ? `${base}, and attacks the ${PIECE_NAMES[target.type]} on ${target.square}` : base;
 }
 
-/** What a castling move did, from the board: kingside tucks the king behind
- * its pawns and brings the rook out; queenside names what the board shows —
+/** What a queenside castle did, from the board. Kingside has nothing
+ * game-specific to say (it is the same sentence every time), and neither does
+ * a queenside castle none of these facts hold for: both stay silent. It names what the board shows —
  * the other king already castled kingside (opposite sides: pawns can storm
  * it), the rook landing on a d-file with no pawn of its own (open or half
  * open), a kingside pawn shield already advanced (so O-O would not be safe). */
 function castleText(fen: string, san: string): string | null {
   const [move] = line(fen, [san], 1);
   if (!move) return null;
-  if (move.flags.includes('k')) return 'Castles kingside: the king gets behind its pawns and the rook comes out';
   if (!move.flags.includes('q')) return null;
   const board = new Chess(fen);
   const enemy: Color = move.color === 'w' ? 'b' : 'w';
@@ -151,7 +151,7 @@ function castleText(fen: string, san: string): string | null {
   if (pawnsOn('d', move.color) === 0) facts.push(pawnsOn('d') === 0 ? 'the rook lands on the open d-file' : 'the rook lands on the half-open d-file');
   const shield = ['f', 'g', 'h'].filter((file) => board.get(`${file}${move.color === 'w' ? 2 : 7}` as Square)?.type === 'p').length;
   if (shield < 3) facts.push('the kingside pawns have already moved, so castling short was not safe');
-  return facts.length ? `Castles queenside: ${facts.join('; ')}` : 'Castles queenside: the king is safe and the rook reaches the d-file';
+  return facts.length ? `Castles queenside: ${facts.join('; ')}` : null;
 }
 
 /** The king moves (not castling) and with it the right to castle, which the
@@ -194,12 +194,19 @@ function candidateDoes(fen: string, san: string): string | null {
   const [move] = line(fen, [san], 1);
   if (!move) return null;
   const parts: string[] = [];
+  if (move.flags.includes('k') || move.flags.includes('q')) parts.push('castles');
   if (move.captured) parts.push(`takes the ${PIECE_NAMES[move.captured]} on ${move.to}`);
   if (isDevelopment(move)) parts.push(`develops the ${PIECE_NAMES[move.piece]}`);
   const target = move.san.endsWith('+') ? null : newlyAttacked(fen, move);
   if (move.san.endsWith('+')) parts.push('gives check');
   else if (target) parts.push(`attacks the ${PIECE_NAMES[target.type]} on ${target.square}`);
+  if (move.piece === 'r' && !move.captured && !fileHasPawn(move)) parts.push(`puts the rook on the ${move.to[0]}-file, which has no pawns`);
   return parts.length ? parts.join(' and ') : null;
+}
+
+/** Whether the rook's new file has a pawn on it. */
+function fileHasPawn(move: Move): boolean {
+  return new Chess(move.after).board().flat().some((piece) => piece?.type === 'p' && piece.square[0] === move.to[0]);
 }
 
 /** Squares of enemy pieces `square` can capture, with the side to move as in `fen`. */

@@ -109,8 +109,23 @@ describe('castle comments', () => {
     expect(text).toContain('half-open d-file');
     expect(text).toContain('storm');
   });
-  it('says what kingside castling does', () => {
+  it('stays silent on kingside castling, which has nothing game-specific to say', () => {
     const fen = 'r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 6 5';
-    expect(principleReason({ fenBefore: fen, moveSan: 'O-O', quality: 'best', evalBefore: evaluation(fen, 'O-O', ['O-O']) })).toBe('Castles kingside: the king gets behind its pawns and the rook comes out');
+    expect(principleReason({ fenBefore: fen, moveSan: 'O-O', quality: 'best', evalBefore: evaluation(fen, 'O-O', ['O-O']) })).toBeNull();
+  });
+});
+
+describe('stronger candidates without a capture or attack', () => {
+  it('says when a candidate castles or takes an open file', () => {
+    const fen = 'r4rk1/pp3ppp/2np1n2/q7/8/2N1B3/PPP1QPPP/R3KB1R w KQ - 0 9';
+    const lines = ['O-O-O', 'Rd1'].map((moveSan) => ({ moveSan, cp: 80, mateIn: null, pvSan: [moveSan] }));
+    const text = strongerCandidatesText({
+      fenBefore: fen,
+      moveSan: 'a3',
+      quality: 'good',
+      evalBefore: { ...evaluation(fen, 'O-O-O', ['O-O-O']), lines } as never,
+      evalAfter: { lines: [{ moveSan: 'x', cp: 0, mateIn: null, pvSan: [] }] } as never
+    });
+    expect(text).toContain('O-O-O (castles)');
   });
 });
