@@ -30,7 +30,7 @@ export function principleReason(input: PrincipleInput): string | null {
   const best = input.evalBefore.lines[0];
   if (!best) return null;
   if (input.quality === 'book' || input.quality === 'forced') return null;
-  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan) ?? outpostText(input.fenBefore, input.moveSan);
+  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan) ?? outpostText(input.fenBefore, input.moveSan) ?? castleText(input.fenBefore, input.moveSan);
   if (best.moveSan === input.moveSan) return null;
 
   const playedLine = [input.moveSan, ...(input.evalAfter?.lines[0]?.pvSan ?? [])];
@@ -129,6 +129,29 @@ function outpostText(fen: string, san: string): string | null {
   const target = newlyAttacked(fen, move);
   const base = `Puts the knight on an outpost on ${move.to}, where no pawn can attack it`;
   return target ? `${base}, and attacks the ${PIECE_NAMES[target.type]} on ${target.square}` : base;
+}
+
+/** What a castling move did, from the board: kingside tucks the king behind
+ * its pawns and brings the rook out; queenside names what the board shows —
+ * the other king already castled kingside (opposite sides: pawns can storm
+ * it), the rook landing on a d-file with no pawn of its own (open or half
+ * open), a kingside pawn shield already advanced (so O-O would not be safe). */
+function castleText(fen: string, san: string): string | null {
+  const [move] = line(fen, [san], 1);
+  if (!move) return null;
+  if (move.flags.includes('k')) return 'Castles kingside: the king gets behind its pawns and the rook comes out';
+  if (!move.flags.includes('q')) return null;
+  const board = new Chess(fen);
+  const enemy: Color = move.color === 'w' ? 'b' : 'w';
+  const pawnsOn = (file: string, color?: Color): number =>
+    board.board().flat().filter((piece) => piece && piece.type === 'p' && piece.square[0] === file && (color === undefined || piece.color === color)).length;
+  const facts: string[] = [];
+  const enemyKing = board.board().flat().find((piece) => piece && piece.type === 'k' && piece.color === enemy);
+  if (enemyKing && ['g', 'h'].includes(enemyKing.square[0]!) && enemyKing.square[1] === HOME_RANK[enemy]) facts.push('the other king is on the kingside, so your kingside pawns can storm it');
+  if (pawnsOn('d', move.color) === 0) facts.push(pawnsOn('d') === 0 ? 'the rook lands on the open d-file' : 'the rook lands on the half-open d-file');
+  const shield = ['f', 'g', 'h'].filter((file) => board.get(`${file}${move.color === 'w' ? 2 : 7}` as Square)?.type === 'p').length;
+  if (shield < 3) facts.push('the kingside pawns have already moved, so castling short was not safe');
+  return facts.length ? `Castles queenside: ${facts.join('; ')}` : 'Castles queenside: the king is safe and the rook reaches the d-file';
 }
 
 /** The king moves (not castling) and with it the right to castle, which the

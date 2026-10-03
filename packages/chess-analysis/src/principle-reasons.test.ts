@@ -100,3 +100,17 @@ describe('givesUpCastlingText', () => {
     expect(givesUpCastlingText({ fenBefore: gone, moveSan: 'Kxe7', quality: 'good', evalBefore: evaluation(gone, 'Bxe4', ['Bxe4']) })).toBeNull();
   });
 });
+
+describe('castle comments', () => {
+  it('names opposite-side castling and the open d-file', () => {
+    const fen = 'r4rk1/pp3ppp/2np1n2/q7/8/2N1B3/PPP1QPPP/R3KB1R w KQ - 0 9';
+    const text = principleReason({ fenBefore: fen, moveSan: 'O-O-O', quality: 'good', evalBefore: evaluation(fen, 'O-O-O', ['O-O-O']) });
+    expect(text).toContain('Castles queenside');
+    expect(text).toContain('half-open d-file');
+    expect(text).toContain('storm');
+  });
+  it('says what kingside castling does', () => {
+    const fen = 'r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 6 5';
+    expect(principleReason({ fenBefore: fen, moveSan: 'O-O', quality: 'best', evalBefore: evaluation(fen, 'O-O', ['O-O']) })).toBe('Castles kingside: the king gets behind its pawns and the rook comes out');
+  });
+});
