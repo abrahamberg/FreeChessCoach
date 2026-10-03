@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { EngineEval } from '@freechesscoach/shared';
-import { principleReason, strongerCandidatesText } from './principle-reasons.js';
+import { givesUpCastlingText, principleReason, strongerCandidatesText } from './principle-reasons.js';
 
 const evaluation = (fen: string, moveSan: string, pvSan: string[]): EngineEval => ({ fen, ply: 0, depth: 12, lines: [{ moveSan, moveUci: '', cp: 0, mateIn: null, pvSan }] });
 
@@ -87,5 +87,16 @@ describe('outposts and stronger candidates', () => {
     const evalBefore: EngineEval = { fen, ply: 0, depth: 12, lines: [line('Bxe4', -606), line('Nxe7', -550)] };
     const evalAfter: EngineEval = { fen, ply: 1, depth: 12, lines: [line('exd5', -556)] };
     expect(strongerCandidatesText({ fenBefore: fen, moveSan: 'Kxe7', quality: 'good', evalBefore, evalAfter })).toBeNull();
+  });
+});
+
+describe('givesUpCastlingText', () => {
+  const fen = 'r3k1nr/2ppBpp1/p6p/1p1b4/4Pn2/8/PP3PPP/RN3R1K b kq - 0 15';
+  it('says a king capture costs castling, with the queens off the board too', () => {
+    expect(givesUpCastlingText({ fenBefore: fen, moveSan: 'Kxe7', quality: 'good', evalBefore: evaluation(fen, 'Bxe4', ['Bxe4']) })).toBe('Kxe7 gives up castling for good');
+  });
+  it('is silent when castling was already gone or the move is a castle', () => {
+    const gone = 'r3k1nr/2ppBpp1/p6p/1p1b4/4Pn2/8/PP3PPP/RN3R1K b - - 0 15';
+    expect(givesUpCastlingText({ fenBefore: gone, moveSan: 'Kxe7', quality: 'good', evalBefore: evaluation(gone, 'Bxe4', ['Bxe4']) })).toBeNull();
   });
 });

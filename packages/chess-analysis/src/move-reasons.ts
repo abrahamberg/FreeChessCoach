@@ -17,7 +17,7 @@ import { CONFIG } from './config.js';
 import { flipActiveColorFen } from './null-move-fen.js';
 import { allowedForkReasons, gainReasons, missedForkReasons } from './fork-reasons.js';
 import { stalemateReason } from './stalemate-reason.js';
-import { principleReason, strongerCandidatesText } from './principle-reasons.js';
+import { givesUpCastlingText, principleReason, strongerCandidatesText } from './principle-reasons.js';
 
 export interface MoveReasonsInput {
   mover: 'white' | 'black';
@@ -98,7 +98,10 @@ export function buildReasons(input: MoveReasonsInput): string[] {
  * "Trades …" sentence.
  */
 function addPrinciple(input: MoveReasonsInput, reasons: Reason[]): void {
+  const castling = givesUpCastlingText(input);
+  if (castling) reasons.push({ category: 'principle', text: castling });
   if (replaceMissedCaptureWithCandidates(input, reasons)) return;
+  if (castling) return;
   if (reasons.some((reason) => reason.category !== 'trade' && reason.category !== 'mobility')) return;
   if (!isFault(input) && reasons.length > 0) return;
   const text = principleReason(input);

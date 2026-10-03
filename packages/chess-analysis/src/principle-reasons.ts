@@ -131,6 +131,20 @@ function outpostText(fen: string, san: string): string | null {
   return target ? `${base}, and attacks the ${PIECE_NAMES[target.type]} on ${target.square}` : base;
 }
 
+/** The king moves (not castling) and with it the right to castle, which the
+ * engine's move keeps: "Kxe7 gives up castling for good". True whatever else
+ * is on the board: the king stays in the middle and the rook in its corner. */
+export function givesUpCastlingText(input: PrincipleInput): string | null {
+  if (input.quality === 'book' || input.quality === 'forced') return null;
+  const [move] = line(input.fenBefore, [input.moveSan], 1);
+  if (move?.piece !== 'k' || move.flags.includes('k') || move.flags.includes('q')) return null;
+  const rights = input.fenBefore.split(' ')[2] ?? '-';
+  if (!(move.color === 'w' ? /[KQ]/ : /[kq]/).test(rights)) return null;
+  const [best] = line(input.fenBefore, [input.evalBefore.lines[0]?.moveSan ?? ''], 1);
+  if (best?.piece === 'k') return null;
+  return `${move.san} gives up castling for good`;
+}
+
 /** The stronger moves a fine move passed over, each with what it does:
  * "Bxe4 (takes the pawn on e4 and attacks the knight on b1), Nxe7 (takes the
  * bishop and develops the knight) were stronger". Two or more, each clearly
