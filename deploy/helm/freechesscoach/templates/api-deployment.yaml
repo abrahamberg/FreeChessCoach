@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "freechesscoach.labels" (dict "ctx" . "component" "api") | nindent 4 }}
 spec:
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   {{- if not .Values.api.autoscaling.enabled }}
   replicas: {{ .Values.api.replicaCount }}
   {{- end }}

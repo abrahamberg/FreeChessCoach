@@ -1,3 +1,6 @@
+# Old ReplicaSets kept per Deployment for rollback (k8s default is 10).
+revisionHistoryLimit: 3
+
 # Default values for the freechesscoach umbrella chart.
 #
 # Nothing sensitive lives here. Every credential is read at runtime from a
