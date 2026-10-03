@@ -44,6 +44,16 @@ function newDefenders(playedFen: string, betterFen: string, square: Square): Pie
   return better.attackers(square, owner).filter((from) => !before.has(from)).map((from) => ({ piece: better.get(from)!.type, square: from }));
 }
 
+/** The opponent's best reply forks with the piece it moved: 12.Qf4 read
+ * only "the queen stops guarding e2, where Ne2+ follows", and the reason it
+ * lost the queen (Ne2+ forks the king and the queen on f4) went unsaid. */
+export function replyFork(fenAfter: string, replySan: string | undefined): BoardFact[] {
+  const reply = replySan ? replayMove(fenAfter, replySan) : null;
+  // A reply that mates is the mate, not a fork.
+  const fork = reply?.gives === 'checkmate' ? undefined : reply?.forks.find((each) => each.piece.square === reply.to);
+  return reply && fork ? [{ kind: 'replyForks', replySan: reply.san, piece: fork.piece, targets: fork.targets }] : [];
+}
+
 /** The moved piece used to guard the square the opponent's best reply lands
  * on ("the queen stops guarding c1, where Qc1# follows"): why a move loses,
  * stated rather than guessed. */

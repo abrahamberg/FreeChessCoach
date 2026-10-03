@@ -94,7 +94,7 @@ n21 6.Nxf7 (White, Fried Liver) | book
     alternatives: d4: White is slightly better; O-O: The position is roughly equal
 n22 6…Kxf7 (Black, Fried Liver) | book
     book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
-    board: moves the king from e8 to f7 | captures the knight on f7
+    board: moves the king from e8 to f7 | captures the knight on f7 | allows Qf3+, where the queen on f3 forks the king on f7 and the knight on d5
     alternatives: Qh4: White is better; Qd7: White is much better
 n23 7.Qf3+ (White, Fried Liver) | book
     book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)

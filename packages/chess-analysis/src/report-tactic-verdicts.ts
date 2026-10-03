@@ -1,4 +1,5 @@
 import type { ClassifiedMoveDto, EngineEval } from '@freechesscoach/shared';
+import { withoutCardedGain } from './fork-reasons.js';
 import { decideMoveVerdict, DEFAULT_VERDICT_DEPS, type MoveVerdict, type MoveVerdictDeps, type PreventionScans } from './move-verdict/index.js';
 import { withoutCardedKick } from './kick-reason.js';
 import { withoutCardedOnlyMove } from './only-move-reason.js';
@@ -75,7 +76,7 @@ function withVerdictCard(move: ClassifiedMoveDto, verdict: MoveVerdict | null): 
     .map((kind) => sentences.get(kind))
     .filter((sentence): sentence is string => sentence !== undefined);
   const detailLine = detail ? [`${detail.charAt(0).toUpperCase()}${detail.slice(1)}.`] : [];
-  const plain = withoutCardedOnlyMove(withoutCardedKick(withoutCardedPin(base ?? [], carded.tacticOpportunity), carded), carded);
+  const plain = withoutCardedGain(withoutCardedOnlyMove(withoutCardedKick(withoutCardedPin(base ?? [], carded.tacticOpportunity), carded), carded), carded);
   return { ...carded, reasons: [...plain, ...ordered, ...detailLine] };
 }
 

@@ -33,4 +33,5 @@ PLAN
 REVIEW NOTES
   l1
     n1 16.Qb8+: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
+    n2 16…Nxb8: Wins the queen on b8
     n3 17.Rd8#: You delivered checkmate.

@@ -60,7 +60,7 @@ n11 6.Nxf7 (White, Line A) | book
     tempting capture: Nxh7? White's Nxh7 moves the knight from g5 to h7 | captures the pawn on h7 | attacks the bishop on f8 | leaves the white knight on h7 hanging. Black answers Rxh7: moves the rook from h8 to h7 | captures the knight on h7. Then d4 Rh4 c3. Over the line White takes a pawn; Black takes a knight; at the end White has a pawn for a knight (Black is much better).
 n12 6…Kxf7 (Black, Line A) | book
     book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
-    board: moves the king from e8 to f7 | captures the knight on f7
+    board: moves the king from e8 to f7 | captures the knight on f7 | allows Qf3+, where the queen on f3 forks the king on f7 and the knight on d5
     alternatives: Qh4: White is better; Qd7: White is much better
 n13 7.Qf3+ (White, Line A) | book
     book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)

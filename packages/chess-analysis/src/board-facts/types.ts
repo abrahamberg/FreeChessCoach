@@ -51,6 +51,8 @@ export type BoardFact =
   | { kind: 'leavesHanging'; piece: PieceAt; owner: Side; stalemateIfTaken: boolean }
   | { kind: 'forks'; piece: PieceAt; targets: PieceAt[] }
   | { kind: 'stopsGuarding'; piece: PieceSymbol; square: Square; replySan: string }
+  /** The opponent's best reply forks with the piece it moved. */
+  | { kind: 'replyForks'; replySan: string; piece: PieceAt; targets: PieceAt[] }
   | { kind: 'keepsSafe'; piece: PieceAt; newDefenders: PieceAt[] }
   | { kind: 'takesOutOfDanger'; piece: PieceAt }
   | { kind: 'repetition'; times: 2 | 3 };

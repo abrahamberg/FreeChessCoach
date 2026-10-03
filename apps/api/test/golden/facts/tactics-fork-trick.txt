@@ -42,7 +42,7 @@ n8 4…Nxe4 (Black, Line A) | best | before: The position is roughly equal → a
     tempting threat: d5? Black's d5 moves the pawn from d7 to d5 | attacks the bishop on c4. White answers exd5: moves the pawn from e4 to d5 | captures the pawn on d5 | attacks the knight on c6. Then Nd4 h3 Bd6. Over the line White takes a pawn; at the end White is a pawn up (White is slightly better).
 n9 5.Nxe4 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Four Knights Game: Italian Variation)
-    board: moves the knight from c3 to e4 | captures the knight on e4
+    board: moves the knight from c3 to e4 | captures the knight on e4 | allows d5, where the pawn on d5 forks the bishop on c4 and the knight on e4
     alternatives: Qe2: Black is slightly better; Bd5: Black is slightly better
 n10 5…d5 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Italian Game: Two Knights Defense)

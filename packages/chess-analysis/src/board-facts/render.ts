@@ -43,6 +43,8 @@ export function renderBoardFact(fact: BoardFact): string {
       return `${named(fact.piece)} forks ${namedAll(fact.targets)}`;
     case 'stopsGuarding':
       return `the ${PIECE_NAMES[fact.piece]} stops guarding ${fact.square}, where ${fact.replySan} follows`;
+    case 'replyForks':
+      return `allows ${fact.replySan}, where ${named(fact.piece)} forks ${namedAll(fact.targets)}`;
     case 'keepsSafe': {
       const names = fact.newDefenders.map(named);
       const how = names.length ? `: ${names.join(' and ')} now ${names.length > 1 ? 'defend' : 'defends'} it` : '';

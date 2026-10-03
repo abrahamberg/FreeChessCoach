@@ -76,6 +76,11 @@ function boardFactChecks(fact: BoardFact, position: AuditPosition): CheckResult[
       const after = attackersOf(fenAfter, fact.square, mover).includes(move.to);
       return [result('guard-lost', before && !after, `the piece guarded ${fact.square}: before ${before}, after ${after}`), result('named-move', play(fenAfter, fact.replySan) !== null, `${fact.replySan} is not legal`)];
     }
+    case 'replyForks': {
+      const replied = play(fenAfter, fact.replySan);
+      const misses = replied ? fact.targets.filter((target) => !attackersOf(replied, target.square, other(mover)).includes(fact.piece.square)) : fact.targets;
+      return [result('fork-geometry', replied !== null && misses.length === 0, replied ? `${fact.piece.square} does not hit ${misses.map((target) => target.square).join(', ')}` : `${fact.replySan} is not legal`)];
+    }
     case 'backRankMate': {
       const king = kingSquare(fenAfter, turnOf(fenAfter)) ?? '';
       return [result('back-rank-mate', isCheckmate(fenAfter) && ['1', '8'].includes(king[1] ?? ''), 'not a mate on the back rank')];

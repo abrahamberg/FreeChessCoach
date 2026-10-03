@@ -6,7 +6,6 @@ import { onlyMoveReason } from './only-move-reason.js';
 import { pinReason } from './pin-reason.js';
 import { saidMateIn } from './mate-count.js';
 import { moverMateIn } from './mover-mate.js';
-import { forks } from './board-facts/forks.js';
 import { loosePieces } from './board-facts/loose-pieces.js';
 import { quietLineGain } from './board-facts/material.js';
 import { PIECE_VALUES } from './tactics.js';
@@ -16,6 +15,8 @@ import { see } from './see.js';
 import { createdPassedPawns } from './pawn-structure.js';
 import { CONFIG } from './config.js';
 import { flipActiveColorFen } from './null-move-fen.js';
+import { allowedForkReasons, gainReasons, missedForkReasons } from './fork-reasons.js';
+import { stalemateReason } from './stalemate-reason.js';
 
 export interface MoveReasonsInput {
   mover: 'white' | 'black';
@@ -57,13 +58,17 @@ const CATEGORY_ORDER: ReasonCategory[] = ['mate', 'material', 'tactical', 'struc
 /** §11's deterministic per-move coaching reasons — no LLM at render time. */
 export function buildReasons(input: MoveReasonsInput): string[] {
   if (input.isBookMove) return [bookReason(input)];
+  const stalemate = stalemateReason(input.fenAfter, input.mover, input.evalBefore);
+  if (stalemate) return [stalemate];
 
+  const missed = [...missedMateReason(input), ...missedCaptureReason(input)];
   const reasons = [
-    ...missedMateReason(input),
-    ...missedCaptureReason(input),
+    ...missed,
+    ...(missed.length ? [] : missedForkReasons(input, isFault(input))),
     ...looseReasons(input),
-    ...allowedForkReasons(input),
+    ...allowedForkReasons(input, isFault(input)),
     ...costlyMoveReasons(input),
+    ...gainReasons(input, isFault(input)),
     ...centerSwingReason(input),
     ...passedPawnReasons(input),
     // Last in CATEGORY_ORDER before mobility, so naming the exchange never
@@ -166,21 +171,6 @@ function tradedSquare(input: MoveReasonsInput): string | null {
   return move?.captured && PIECE_VALUES[move.captured] >= PIECE_VALUES[move.piece] ? move.to : null;
 }
 
-/** Forks the opponent now has that they did not have before the move, named
- * by the pieces they hit (`board-facts/forks.ts`). */
-function allowedForkReasons(input: MoveReasonsInput): Reason[] {
-  if (!isFault(input)) return [];
-  const opponent = input.mover === 'white' ? 'b' : 'w';
-  const key = (fork: { piece: { piece: string; square: string } }): string => `${fork.piece.piece}${fork.piece.square}`;
-  const before = new Set(forks(input.fenBefore, opponent).map(key));
-  return forks(input.fenAfter, opponent)
-    .filter((fork) => !before.has(key(fork)))
-    .map((fork) => ({
-      category: 'tactical',
-      text: `Allows a fork: the ${PIECE_NAMES[fork.piece.piece]} on ${fork.piece.square} hits ${formatList(fork.targets.map((target) => `the ${PIECE_NAMES[target.piece]} on ${target.square}`))}`
-    }));
-}
-
 /** The one move that works, played or missed. Not on a recapture (taking
  * back is the only move by definition), and not when a sharper note already
  * names the move that was missed. */
@@ -277,9 +267,4 @@ function tradeReason(input: MoveReasonsInput): Reason[] {
     replySan: input.evalAfter?.lines[0]?.moveSan
   });
   return text ? [{ category: 'trade', text }] : [];
-}
-
-function formatList(squares: string[]): string {
-  if (squares.length <= 1) return squares[0] ?? '';
-  return `${squares.slice(0, -1).join(', ')} and ${squares[squares.length - 1]}`;
 }

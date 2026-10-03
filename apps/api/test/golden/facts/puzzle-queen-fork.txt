@@ -31,3 +31,5 @@ PLAN
 
 REVIEW NOTES
   l1
+    n1 1.Qe4+: Forks the king on e8 and the rook on a8
+    n3 2.Qxa8: Wins the rook on a8

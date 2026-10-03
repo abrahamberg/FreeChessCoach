@@ -2,7 +2,7 @@ import { Chess } from 'chess.js';
 import type { EngineEval, MovePhase, MoveQuality, TacticMotifType } from '@freechesscoach/shared';
 import type { ClassifiedMove } from '../classify.js';
 import { CONFIG } from '../config.js';
-import { abandonedGuard, betterMoveFacts } from '../board-facts/better-move.js';
+import { abandonedGuard, betterMoveFacts, replyFork } from '../board-facts/better-move.js';
 import { boardFacts } from '../board-facts/move-facts.js';
 import { isOnlyMove } from '../board-facts/only-move.js';
 import type { BoardFact } from '../board-facts/types.js';
@@ -75,6 +75,7 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
   const side = move.mover;
   const opening = resolveOpening(input.linePositionFens.map(positionKey));
   const after = positionWords(node.fenAfter, evalsByFen.get(node.fenAfter));
+  const reply = evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan;
   return {
     nodeId: node.id,
     san: node.san,
@@ -89,7 +90,7 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     openingName: opening?.name ?? null,
     mateAhead: (evalsByFen.get(node.fenAfter)?.lines[0]?.mateIn ?? null) !== null,
     bestInstead: bestInstead(move, node.san, fenBefore),
-    board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan), ...repetition(node.fenAfter, input.linePositionFens)],
+    board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, reply), ...replyFork(node.fenAfter, reply), ...repetition(node.fenAfter, input.linePositionFens)],
     tactics: tacticSentences(move, side === input.learnerSide),
     motif: move.tacticOpportunity?.found ? move.tacticOpportunity.type : null,
     alternatives: alternatives(evalBefore, node),

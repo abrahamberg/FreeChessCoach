@@ -93,3 +93,24 @@ describe('classifyMove', () => {
     });
   });
 });
+
+describe('a stalemate is not a miss', () => {
+  test('stalemating a won game is the blunder its drop says (36…axb5, Dany_Abr–TonyCorry)', () => {
+    const fenBefore = '8/8/8/8/1q6/8/2k5/K7 b - - 0 1';
+    const evalBefore: EngineEval = { ply: 0, fen: fenBefore, depth: 16, lines: [{ moveUci: 'b4b2', moveSan: 'Qb2#', cp: null, mateIn: -1 }] };
+    expect(classifyMove(input({
+      moveSan: 'Qb3',
+      moveUci: 'b4b3',
+      mover: 'black',
+      fenBefore,
+      fenAfter: '8/8/8/8/8/1q6/2k5/K7 w - - 1 2',
+      evalBefore,
+      evalAfter: { ...evalBefore, ply: 1, lines: [] },
+      beforeWin: 100,
+      afterWin: 50,
+      drop: 50,
+      cpBefore: -10000,
+      cpAfter: 0
+    }))).toEqual({ classification: 'blunder' });
+  });
+});

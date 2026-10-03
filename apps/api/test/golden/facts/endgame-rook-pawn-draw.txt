@@ -32,3 +32,4 @@ PLAN
 REVIEW NOTES
   l1
     n4 2…Ka8: The only move that holds
+    n5 3.a7: Stalemate: Black has no legal move, so the game is a draw

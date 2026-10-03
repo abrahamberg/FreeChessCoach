@@ -30,7 +30,7 @@ n14 7…Nh5 (Black, Line A) | inaccuracy | before: The position is roughly equal
 n15 8.Nh4 (White, Line A) | mistake | before: White is slightly better → after: Black is slightly better
     best instead: Rg1; after Rg1, material is level
     why Rg1 is better: moves the rook from h1 to g1
-    board: moves the knight from f3 to h4
+    board: moves the knight from f3 to h4 | allows Qg5, where the queen on g5 forks the bishop on b5 and the knight on h4
     alternatives: Rg1: White is slightly better; Nc3: White is slightly better; Ke1: The position is roughly equal
     tempting threat: g4? White's g4 moves the pawn from g2 to g4 | attacks the knight on h5. Black answers Ng3+: moves the knight from h5 to g3 | gives check | the check can be answered: no block; take the checking piece with hxg3; move the king with Kf2, Kg2, Kg1, Ke1 | attacks the rook on h1. Over the line nothing is taken; at the end material is level (Black is better).
     flags: critical
@@ -71,7 +71,7 @@ n27 14.Qf3 (White, Line A) | best | before: White is better → after: White is 
 n28 14…Ng8 (Black, Line A) | inaccuracy | before: White is better → after: White is better
     best instead: Bb7; after Bb7, Black is a bishop up
     why Bb7 is better: moves the bishop from c8 to b7
-    board: moves the knight from f6 to g8
+    board: moves the knight from f6 to g8 | allows Bxf4, where the bishop on f4 forks the knight on b8 and the queen on g5
     alternatives: Bb7: White is better; Nc6: White is better; Nxg4: White is better
     tempting threat: Bc5? Black's Bc5 moves the bishop from f8 to c5 | attacks the rook on g1. White answers Bxf4: moves the bishop from c1 to f4 | captures the pawn on f4 | attacks the knight on b8 | attacks the queen on g5, which is trapped: every square it can reach loses it | the bishop on f4 forks the knight on b8 and the queen on g5. Over the line White takes a pawn; at the end White has a pawn for a bishop (White is better).
     flags: critical
@@ -186,16 +186,21 @@ REVIEW NOTES
     n6 3…Qh4+: Theory — King's Gambit Accepted: Bishop's Gambit, Bryan Countergambit (C33)
     n7 4.Kf1: Theory — King's Gambit Accepted: Bishop's Gambit, Bryan Countergambit (C33)
     n8 4…b5: Theory — King's Gambit Accepted: Bishop's Gambit, Bryan Countergambit (C33)
+    n15 8.Nh4: Allows Qg5, forking the bishop on b5 and the knight on h4
+    n16 8…Qg5: Forks the bishop on b5 and the knight on h4
     n18 9…c6: Attacks the bishop on b5
     n23 12.h4: Attacks the queen on g5
     n24 12…Qg6: The only move that holds
     n25 13.h5: Attacks the queen on g6
     n27 14.Qf3: You set up an X-ray — lines up behind the pawn on e4 at the rook on a8.
+    n28 14…Ng8: Allows Bxf4, forking the knight on b8 and the queen on g5
+    n29 15.Bxf4: Forks the knight on b8 and the queen on g5
     n33 17.Nd5: Leaves the pawn on b2 undefended
     n34 17…Qxb2: They won a rook through a fork.
     n36 18…Bxg1: Missed Qxa1+, winning material on a1
     n37 19.e5: Qd1 keeps the pawn on c2 safe; after it Black is a rook and a bishop up
-    n38 19…Qxa1+: The only winning move
+    n38 19…Qxa1+: Wins the rook on a1; The only winning move
     n40 20…Na6: They let you force mate with Nxg7+.
     n41 21.Nxg7+: You forced mate in 2.
+    n44 22…Nxf6: Wins the queen for the knight on f6
     n45 23.Be7#: You delivered checkmate.
