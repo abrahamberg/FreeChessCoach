@@ -1,0 +1,185 @@
+import { Chess, type Color, type Move, type PieceSymbol, type Square } from 'chess.js';
+import { isImprovableQuality, type EngineEval, type MoveQuality } from '@freechesscoach/shared';
+import { flipActiveColorFen } from './null-move-fen.js';
+import { PIECE_NAMES } from './piece-names.js';
+import { PIECE_VALUES } from './tactics.js';
+
+export interface PrincipleInput {
+  fenBefore: string;
+  moveSan: string;
+  quality?: MoveQuality;
+  evalBefore: EngineEval;
+  evalAfter?: EngineEval;
+}
+
+/**
+ * The last layer of "why": plain opening principles, tested on the board.
+ *
+ * They run only after mate, material and tactics have had their say
+ * (`move-reasons.ts` asks for them when nothing sharper was found), and only
+ * ever from a comparison — the engine's best line follows the principle where
+ * the played line breaks it. A principle alone is never a reason: the engine
+ * has to agree it mattered.
+ *
+ * - A costly move: why the best move was better (a trade that helps the
+ *   opponent develop, a piece chased twice, the queen out too early, a
+ *   development that also attacks, castling put off).
+ * - A move that was fine: what it did — develops with check, or attacking.
+ */
+export function principleReason(input: PrincipleInput): string | null {
+  const best = input.evalBefore.lines[0];
+  if (!best) return null;
+  if (input.quality === 'book' || input.quality === 'forced') return null;
+  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan);
+  if (best.moveSan === input.moveSan) return null;
+
+  const playedLine = [input.moveSan, ...(input.evalAfter?.lines[0]?.pvSan ?? [])];
+  const bestFragment = developsWithPurpose(input.fenBefore, best.moveSan);
+
+  return (
+    tradeHelpsDevelopment(input.fenBefore, playedLine, best.moveSan, bestFragment) ??
+    chasedTwice(input.fenBefore, playedLine, best.moveSan) ??
+    queenOutEarly(input.fenBefore, playedLine, best.moveSan, bestFragment) ??
+    (bestFragment && !developsAt(input.fenBefore, input.moveSan) ? `${best.moveSan} was better: it ${bestFragment}` : null) ??
+    castlesSooner(input.fenBefore, input.moveSan, best.moveSan)
+  );
+}
+
+const HOME_RANK: Record<Color, string> = { w: '1', b: '8' };
+
+/** "Early" and "castle now" are opening advice: past this move number they
+ * would read as wrong. */
+const OPENING_LAST_MOVE = 12;
+
+const fullmoveOf = (fen: string): number => Number(fen.split(' ')[5] ?? '1');
+
+function line(fen: string, sans: readonly string[], plies: number): Move[] {
+  const chess = new Chess(fen);
+  const moves: Move[] = [];
+  for (const san of sans.slice(0, plies)) {
+    try {
+      moves.push(chess.move(san));
+    } catch {
+      break;
+    }
+  }
+  return moves;
+}
+
+function isMinor(piece: PieceSymbol): boolean {
+  return piece === 'n' || piece === 'b';
+}
+
+/** A knight or bishop leaving its first rank for the first time. */
+function isDevelopment(move: Move): boolean {
+  return isMinor(move.piece) && move.from[1] === HOME_RANK[move.color] && move.to[1] !== HOME_RANK[move.color];
+}
+
+function minorsAtHome(fen: string, color: Color): number {
+  return new Chess(fen)
+    .board()
+    .flat()
+    .filter((piece) => piece && piece.color === color && isMinor(piece.type) && piece.square[1] === HOME_RANK[color]).length;
+}
+
+function developsAt(fen: string, san: string): boolean {
+  const [move] = line(fen, [san], 1);
+  return move !== undefined && isDevelopment(move);
+}
+
+/** What a development did besides bring the piece out: "develops the bishop
+ * with check", "develops the knight and attacks the bishop on d5". Null for a
+ * development that did neither — the engine's pick of it over another needs a
+ * different reason. */
+function developsWithPurpose(fen: string, san: string): string | null {
+  const [move] = line(fen, [san], 1);
+  if (!move || !isDevelopment(move)) return null;
+  const check = move.san.endsWith('+');
+  const target = check ? null : newlyAttacked(fen, move);
+  if (!check && !target) return null;
+  const base = `develops the ${PIECE_NAMES[move.piece]}`;
+  return check ? `${base} with check` : `${base} and attacks the ${PIECE_NAMES[target!.type]} on ${target!.square}`;
+}
+
+function developsWithPurposeText(fen: string, san: string): string | null {
+  const text = developsWithPurpose(fen, san);
+  return text ? `${text.charAt(0).toUpperCase()}${text.slice(1)}` : null;
+}
+
+/** Squares of enemy pieces `square` can capture, with the side to move as in `fen`. */
+function capturesFrom(fen: string, square: Square): Set<Square> {
+  return new Set(
+    new Chess(fen)
+      .moves({ square, verbose: true })
+      .filter((each) => each.captured)
+      .map((each) => each.to as Square)
+  );
+}
+
+/** The most valuable enemy piece the moved piece now attacks and didn't
+ * before, when it is worth at least the attacker: hitting a pawn gains
+ * nothing, and a knight "attacking" a pawn is not a threat to name. */
+function newlyAttacked(fen: string, move: Move): { type: PieceSymbol; square: Square } | null {
+  const again = flipActiveColorFen(move.after);
+  if (!again) return null;
+  const before = capturesFrom(fen, move.from as Square);
+  const board = new Chess(move.after);
+  const attackerValue = PIECE_VALUES[move.piece];
+  return (
+    [...capturesFrom(again, move.to as Square)]
+      .filter((square) => !before.has(square))
+      .flatMap((square) => {
+        const piece = board.get(square);
+        return piece && piece.type !== 'p' && piece.type !== 'k' && PIECE_VALUES[piece.type] >= attackerValue ? [{ type: piece.type, square }] : [];
+      })
+      .sort((a, b) => PIECE_VALUES[b.type] - PIECE_VALUES[a.type])[0] ?? null
+  );
+}
+
+/** A trade whose retake develops the other side: the played move captures
+ * with a developed piece, the reply takes back with one still at home. */
+function tradeHelpsDevelopment(fen: string, playedLine: readonly string[], best: string, bestFragment: string | null): string | null {
+  const [played, reply] = line(fen, playedLine, 2);
+  if (!played?.captured || !reply?.captured || reply.to !== played.to || !isDevelopment(reply)) return null;
+  if (!isMinor(played.piece) || played.from[1] === HOME_RANK[played.color]) return null;
+  const traded = `${played.san} trades off a developed ${PIECE_NAMES[played.piece]} and lets ${reply.color === 'w' ? 'White' : 'Black'} bring out a ${PIECE_NAMES[reply.piece]} with ${reply.san}`;
+  return bestFragment ? `${traded}; ${best} ${bestFragment}` : traded;
+}
+
+/** The moved piece is attacked by a developing reply and has to move again:
+ * the tempo goes to the opponent. */
+function chasedTwice(fen: string, playedLine: readonly string[], best: string): string | null {
+  const moves = line(fen, playedLine, 7);
+  const [first] = moves;
+  if (!first || first.captured || !(isMinor(first.piece) || first.piece === 'q')) return null;
+  for (let index = 2; index < moves.length; index += 2) {
+    const again = moves[index];
+    const chaser = moves[index - 1];
+    if (!again || !chaser || again.from !== first.to || again.piece !== first.piece) continue;
+    if (!isDevelopment(chaser) || !new Chess(chaser.after).isAttacked(first.to as Square, chaser.color)) return null;
+    return `The ${PIECE_NAMES[first.piece]} on ${first.to} gets chased by ${chaser.san}, a developing move, and has to move again; ${best} avoids losing the time`;
+  }
+  return null;
+}
+
+/** The queen out while a minor piece is still at home, where the engine's
+ * move brings that piece out. */
+function queenOutEarly(fen: string, playedLine: readonly string[], best: string, bestFragment: string | null): string | null {
+  const [played] = line(fen, playedLine, 1);
+  if (!played || played.piece !== 'q' || played.captured || played.san.endsWith('+') || fullmoveOf(fen) > OPENING_LAST_MOVE) return null;
+  // One step off the back rank (…Qe7) is not "out" yet.
+  if (Math.abs(Number(played.to[1]) - Number(HOME_RANK[played.color])) < 2) return null;
+  if (minorsAtHome(fen, played.color) === 0 || !developsAt(fen, best)) return null;
+  const [bestMove] = line(fen, [best], 1);
+  const what = bestFragment ?? `develops the ${bestMove ? PIECE_NAMES[bestMove.piece] : 'piece'}`;
+  return `${best} was better: it ${what}, which the early ${played.san} puts off`;
+}
+
+/** The engine's own move is castling and the played one put it off. */
+function castlesSooner(fen: string, played: string, best: string): string | null {
+  const [move] = line(fen, [best], 1);
+  const [own] = line(fen, [played], 1);
+  if (fullmoveOf(fen) > OPENING_LAST_MOVE) return null;
+  if (own?.flags.includes('k') || own?.flags.includes('q')) return null;
+  return move && (move.flags.includes('k') || move.flags.includes('q')) ? `${best} was better: castling now gets the king safe` : null;
+}

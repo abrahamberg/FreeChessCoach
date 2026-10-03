@@ -17,6 +17,7 @@ import { CONFIG } from './config.js';
 import { flipActiveColorFen } from './null-move-fen.js';
 import { allowedForkReasons, gainReasons, missedForkReasons } from './fork-reasons.js';
 import { stalemateReason } from './stalemate-reason.js';
+import { principleReason } from './principle-reasons.js';
 
 export interface MoveReasonsInput {
   mover: 'white' | 'black';
@@ -41,7 +42,7 @@ export interface MoveReasonsInput {
   featuresAfter?: PositionFeatures;
 }
 
-type ReasonCategory = 'mate' | 'material' | 'tactical' | 'structural' | 'trade' | 'mobility';
+type ReasonCategory = 'mate' | 'material' | 'tactical' | 'structural' | 'principle' | 'trade' | 'mobility';
 interface Reason {
   category: ReasonCategory;
   text: string;
@@ -53,7 +54,7 @@ const {
   mobilityDropThreshold: MOBILITY_DROP_THRESHOLD
 } = CONFIG.moveReasons;
 const { minThreatSeeCp: MIN_THREAT_SEE_CP } = CONFIG.evalWitness;
-const CATEGORY_ORDER: ReasonCategory[] = ['mate', 'material', 'tactical', 'structural', 'trade', 'mobility'];
+const CATEGORY_ORDER: ReasonCategory[] = ['mate', 'material', 'tactical', 'structural', 'principle', 'trade', 'mobility'];
 
 /** §11's deterministic per-move coaching reasons — no LLM at render time. */
 export function buildReasons(input: MoveReasonsInput): string[] {
@@ -76,6 +77,7 @@ export function buildReasons(input: MoveReasonsInput): string[] {
     // no fault to report, which is most of them.
     ...tradeReason(input)
   ];
+  addPrinciple(input, reasons);
   const note = cardReplaceableNote(input, reasons);
   // Mobility is the weakest signal here (a bad move usually has a sharper
   // reason than "fewer squares") — it only earns a mention when nothing
@@ -87,6 +89,22 @@ export function buildReasons(input: MoveReasonsInput): string[] {
     .slice(0, MAX_REASONS)
     .map((reason) => reason.text);
   return note && kept.length < MAX_REASONS ? [...kept, note] : kept;
+}
+
+/**
+ * The opening principles (`principle-reasons.ts`) are the last word on a
+ * move: only when nothing about mate, material or tactics was found. On a
+ * fault they explain the trade the move made, so they replace its plain
+ * "Trades …" sentence.
+ */
+function addPrinciple(input: MoveReasonsInput, reasons: Reason[]): void {
+  if (reasons.some((reason) => reason.category !== 'trade' && reason.category !== 'mobility')) return;
+  if (!isFault(input) && reasons.length > 0) return;
+  const text = principleReason(input);
+  if (!text) return;
+  const kept = reasons.filter((reason) => reason.category !== 'trade');
+  reasons.length = 0;
+  reasons.push(...kept, { category: 'principle', text });
 }
 
 /**
