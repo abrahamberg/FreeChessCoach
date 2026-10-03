@@ -195,14 +195,20 @@ REVIEW NOTES
     n23 12.Qa3: Concedes the centre
     n24 12…Nxc3: Trades knights on c3; You won a pawn through a brilliant sacrifice — removes the defender on c3, leaving the pawn on e4 undefended.
     n25 13.bxc3: Recaptures the knight on c3; They saved a hanging piece — saves the rook on d1.
+    n27 14.Bxe7: Forks the queen on d8 and the rook on f8
+    n31 16.Bc5: Forks the rook on f8 and the queen on b6
     n34 17…Be6: The only good move
     n35 18.Bxb6: Missed Qxc3, winning material on c3
-    n36 18…Bxc4+: The only winning move; You stopped them winning a knight through a free piece with Qxc3 — captures the knight on c3.
+    n36 18…Bxc4+: Wins the bishop on c4; The only winning move; You stopped them winning a knight through a free piece with Qxc3 — captures the knight on c3.
     n38 19…Ne2+: The only winning move
     n40 20…Nxd4+: Creates a passed pawn on c
     n44 22…Nc3+: Missed axb6, winning material on b6
+    n46 23…axb6: Wins the bishop on b6
+    n47 24.Qb4: Forks the bishop on c4 and the knight on c3
+    n50 25…Nxd1: Wins the rook on d1
     n52 26…Rxa2: Creates a passed pawn on b
     n56 28…Rxe1: Trades rooks on e1
     n57 29.Qd8+: Missed Nxe1, winning material on e1
+    n59 30.Nxe1: Wins the rook on e1
     n71 36.Kf1: They let you force mate with Ng3+.
     n82 41…Rc2#: Missed mate in 1 starting with Ba3#

@@ -37,4 +37,5 @@ PLAN
 
 REVIEW NOTES
   l1
+    n2 22…Nxf6: Wins the queen for the knight on f6
     n3 23.Be7#: You delivered checkmate.

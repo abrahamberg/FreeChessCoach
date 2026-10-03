@@ -5,6 +5,7 @@ import type { BoardFact } from './types.js';
 export function factWords(fact: BoardFact): string[] {
   switch (fact.kind) {
     case 'forks':
+    case 'replyForks':
       return ['fork'];
     case 'attacks':
       return [...(fact.pinnedTo ? ['pinned'] : []), ...(fact.trapped ? ['trapped'] : [])];

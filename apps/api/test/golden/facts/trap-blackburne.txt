@@ -34,7 +34,7 @@ n7 4.Nxe5 (White, Line A) | mistake | before: White is slightly better → after
     board: moves the knight from f3 to e5 | captures the pawn on e5
     alternatives: Nxd4: White is slightly better; O-O: White is slightly better; a4: White is slightly better
 n8 4…Qg5 (Black, Line A) | best | before: Black is slightly better → after: The position is roughly equal
-    board: moves the queen from d8 to g5 | attacks the knight on e5
+    board: moves the queen from d8 to g5 | attacks the knight on e5 | allows Bxf7+, where the bishop on f7 forks the king on e8 and the knight on g8
     alternatives: Qe7: The position is roughly equal; d5: White is slightly better
 n9 5.Nxf7 (White, Line A) | blunder | before: The position is roughly equal → after: Black is much better
     best instead: Bxf7+; after Bxf7+ Ke7 O-O Qxe5 Bc4 d5, White has two pawns for a knight

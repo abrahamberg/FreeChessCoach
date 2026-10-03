@@ -104,7 +104,9 @@ REVIEW NOTES
     n4 2…Nc6: Theory — Englund Gambit: Main Line (A40)
     n5 3.Nf3: Theory — Englund Gambit: Main Line (A40)
     n6 3…Qe7: Theory — Englund Gambit: Main Line (A40)
+    n8 4…Qb4+: Forks the king on e1 and the bishop on f4
     n9 5.Bd2: Concedes the centre
+    n10 5…Qxb2: Forks the rook on a1 and the knight on b1
     n11 6.Bc3: Missed the only good move, Nc3
     n12 6…Bb4: You saved a hanging piece — saves the queen on b2.; Won the rook, giving back a bishop.
     n13 7.Qd2: They let you win a bishop through a free piece with Bxc3 — captures the bishop on c3.

@@ -118,4 +118,4 @@ REVIEW NOTES
     n7 4.Kb3: You missed a chance to win a tempo with Kc3 — hits the rook on d4 with a king.
     n9 5.Kc2: You won a tempo — hits the rook on d3 with a king.
     n15 6…Rc4+: They found a brilliant sacrifice.
-    n16 7.Qxc4: You won a rook through a free piece — captures the rook on c4.
+    n16 7.Qxc4: Stalemate: Black has no legal move, so the game is a draw; You won a rook through a free piece — captures the rook on c4.

@@ -61,4 +61,5 @@ PLAN
 REVIEW NOTES
   l1
     n1 1.Nf7+: You forced mate.
+    n6 3…Rxg8: Wins the queen for the rook on g8
     n7 4.Nf7#: You delivered checkmate — mates the king on h8, smothered by its own pieces.

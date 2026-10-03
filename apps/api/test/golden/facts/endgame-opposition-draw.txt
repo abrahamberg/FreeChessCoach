@@ -73,3 +73,4 @@ REVIEW NOTES
     n7 4…Ke8: The only move that holds
     n9 5…Kf8: The only move that holds
     n11 6…Ke8: The only move that holds: the next best, Kg8, gets mated
+    n12 7.Ke6: Stalemate: Black has no legal move, so the game is a draw

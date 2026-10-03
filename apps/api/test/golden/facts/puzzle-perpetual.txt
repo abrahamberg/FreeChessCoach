@@ -13,7 +13,7 @@ n1 1.Qd8+ (White, Line A) | great | before: The position is roughly equal → af
     tempting threat: Qd3? White's Qd3 moves the queen from d4 to d3 | attacks the rook on c2. Black answers b1=Q: moves the pawn from b2 to b1 | promotes to a queen | attacks the bishop on f1, which is pinned to the king by the queen on b1. Then h3 Qf6 Kh2. Over the line nothing is taken; at the end White has a bishop and a pawn for a queen and a rook (Black is much better).
     flags: quiz-eligible, critical
 n2 1…Kh7 (Black, Line A) | forced | before: The position is roughly equal → after: The position is roughly equal
-    board: moves the king from h8 to h7
+    board: moves the king from h8 to h7 | allows Qd3+, where the queen on d3 forks the king on h7 and the rook on c2
 n3 2.Qd3+ (White, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from d8 to d3 | gives check | the check can be answered: block with g6; the checking piece cannot be taken; move the king with Kg8, Kh8 | attacks the rook on c2 | the queen on d3 forks the king on h7 and the rook on c2
     alternatives: Qb6: Black is much better; Qb8: Black is much better
@@ -69,5 +69,5 @@ PLAN
 REVIEW NOTES
   l1
     n1 1.Qd8+: The only move that holds
-    n3 2.Qd3+: The only move that holds
+    n3 2.Qd3+: Forks the king on h7 and the rook on c2; The only move that holds
     n5 3.Qd7+: The only move that holds

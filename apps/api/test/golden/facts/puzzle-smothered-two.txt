@@ -32,4 +32,5 @@ PLAN
 
 REVIEW NOTES
   l1
+    n2 1…Rxg8: Wins the queen for the rook on g8
     n3 2.Nf7#: You delivered checkmate — mates the king on h8, smothered by its own pieces.

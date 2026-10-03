@@ -68,7 +68,7 @@ n13 7.Qb3 (White, Line A) | best | before: White is better → after: White is b
     board: moves the queen from f3 to b3 | leaves the white pawn on e4 hanging
     alternatives: Bg5: White is slightly better; O-O: White is slightly better
 n14 7…Qe7 (Black, Line A) | good | before: White is better → after: White is better
-    board: moves the queen from d8 to e7 | leaves the black pawn on b7 hanging
+    board: moves the queen from d8 to e7 | leaves the black pawn on b7 hanging | allows Qxb7, where the queen on b7 forks the rook on a8 and the knight on b8
     alternatives: Bc5: White is better; Bd6: White is better
 n15 8.Nc3 (White, Line A) | inaccuracy | before: White is better → after: White is better
     best instead: Qxb7; after Qxb7 Qb4+ Qxb4 Bxb4+ c3 Bc5, White has a bishop and a pawn for a knight
@@ -204,4 +204,5 @@ REVIEW NOTES
     n27 14.Rd1: You hit back instead of retreating — answers the threat by hitting the rook on d7.
     n30 15…Nxd7: Recaptures the bishop on d7; They let you force mate in 2 with Qb8+.; Won a bishop and a queen, but it allowed mate.
     n31 16.Qb8+: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
+    n32 16…Nxb8: Wins the queen on b8
     n33 17.Rd8#: You delivered checkmate.

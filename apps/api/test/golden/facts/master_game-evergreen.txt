@@ -90,13 +90,13 @@ n36 18…Rg8 (Black, Line A) | best
 n37 19.Rad1 (White, Line A) | blunder | before: White is slightly better → after: Black is much better
     best instead: Kf1; after Kf1, White has a pawn for a knight
     why Kf1 is better: moves the king from g1 to f1
-    board: moves the rook from a1 to d1
+    board: moves the rook from a1 to d1 | allows Qxf3, where the queen on f3 forks the bishop on d3 and the rook on d1
     alternatives: Kf1: White is slightly better; Kh1: White is slightly better; Be4: White is slightly better
     tempting capture: fxe7? White's fxe7 moves the pawn from f6 to e7 | captures the knight on e7. Black answers Ne5: moves the knight from c6 to e5 | attacks the bishop on d3 | attacks the knight on f3. Over the line White takes a knight; at the end White is a pawn up (Black is much better).
     tempting capture: Bxe7? White's Bxe7 moves the bishop from a3 to e7 | captures the knight on e7. Black answers Qxf3: moves the queen from h5 to f3 | captures the knight on f3 | attacks the bishop on d3 | leaves the black pawn on h7 hanging. Over the line White takes a knight; Black takes a knight; at the end White has a pawn for a knight (Black is much better).
     flags: critical
 n38 19…Qxf3 (Black, Line A) | best | before: Black is much better → after: Black is much better
-    board: moves the queen from h5 to f3 | captures the knight on f3 | attacks the bishop on d3 | attacks the rook on d1 | leaves the black pawn on h7 hanging | the queen on f3 forks the bishop on d3 and the rook on d1
+    board: moves the queen from h5 to f3 | captures the knight on f3 | attacks the bishop on d3 | attacks the rook on d1 | leaves the black pawn on h7 hanging | the queen on f3 forks the bishop on d3 and the rook on d1 | allows Be4, where the bishop on e4 forks the knight on c6 and the queen on f3
     tactics: They won a knight through a free piece — captures the knight on f3.
     alternatives: Rxg2+: Black is slightly better; Qh3: The position is roughly equal
     tempting threat: Rg4? Black's Rg4 moves the rook from g8 to g4 | attacks the queen on a4. White answers Re4: moves the rook from e1 to e4 | attacks the knight on e7, which is pinned to the king by the rook on e4 | attacks the rook on g4. Over the line nothing is taken; at the end White has a pawn for a knight (White is slightly better).
@@ -188,7 +188,8 @@ REVIEW NOTES
     n33 17.Nf6+: Leaves the knight on f6 where it can be won
     n34 17…gxf6: They saved a hanging piece — saves the queen on h5.
     n35 18.exf6: Recaptures the pawn on f6
-    n38 19…Qxf3: They won a knight through a free piece — captures the knight on f3.
+    n37 19.Rad1: Allows Qxf3, forking the bishop on d3 and the rook on d1
+    n38 19…Qxf3: Forks the bishop on d3 and the rook on d1; They won a knight through a free piece — captures the knight on f3.
     n40 20…Nxe7: Leaves the pawn on h7 undefended; Recaptures the rook on e7; They let you force mate with Qxd7+.; Won a rook, but it allowed mate.
     n41 21.Qxd7+: You forced mate.
     n42 21…Kxd7: Recaptures the queen on d7

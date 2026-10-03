@@ -1,5 +1,5 @@
 import { Chess } from 'chess.js';
-import { abandonedGuard, betterMoveFacts } from './better-move.js';
+import { abandonedGuard, betterMoveFacts, replyFork } from './better-move.js';
 import { replayMove } from '../inspect-move.js';
 import { loosePieces, type LoosePiece } from './loose-pieces.js';
 import { captureWords, lineBalance, settledLine } from './material.js';
@@ -12,7 +12,7 @@ import type { BoardFact } from './types.js';
 export interface CurrentMoveFacts {
   /** The played move's own facts, without the loose pieces (`looseAfter` lists them with tiers). */
   played: BoardFact[];
-  /** What the move stopped guarding, against the opponent's best reply. */
+  /** What the move stopped guarding, and the fork it allowed, against the opponent's best reply. */
   gaveUp: BoardFact[];
   /** Only for a move that is not the best: the best move's facts, and the material at the end of its settled line. */
   better?: { san: string; facts: BoardFact[]; material: string };
@@ -42,7 +42,7 @@ export function currentMoveFacts({ fenBefore, playedSan, best, continuation }: C
   const better = best && best.san !== playedSan ? best : undefined;
   return {
     played: boardFacts(fenBefore, playedSan).filter((fact) => fact.kind !== 'leavesHanging'),
-    gaveUp: abandonedGuard(fenBefore, playedSan, continuation[0]),
+    gaveUp: [...abandonedGuard(fenBefore, playedSan, continuation[0]), ...replyFork(fenAfter, continuation[0])],
     ...(better
       ? { better: { san: better.san, facts: betterMoveFacts(fenBefore, playedSan, better.san), material: lineBalance(fenBefore, settledLine(fenBefore, better.line)) } }
       : {}),
