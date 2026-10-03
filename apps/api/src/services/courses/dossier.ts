@@ -12,6 +12,7 @@ import type { CourseKind, EngineEval } from '@freechesscoach/shared';
 import { runAnalysisSteps } from '../analysis-steps.js';
 import type { EngineBackend } from '../engine/engine-backend.js';
 import { resolveReviewEngineBackend, type ResolveEngineBackendOptions } from '../engine/resolve-engine-backend.js';
+import { scanPasses } from '../pass-scans.js';
 import { createStepTimer } from '../step-timer.js';
 
 /** docs/courses.md §5.4: three engine lines per position, so a quiz can
@@ -58,8 +59,10 @@ export async function buildCourseDossierFromEngine(
     if (evaluation) evalsByFen.set(fen, { ...evaluation, fen });
   });
 
+  const lineGames = courseLineGames(tree);
+  const passEvals = await scanPasses((positions) => backend.analyzeGame(positions, { multiPv: 1, minLines: 1 }), lineGames.map((line) => line.game.positions));
   const lines: CourseLineAnalysis[] = [];
-  for (const line of courseLineGames(tree)) {
+  for (const line of lineGames) {
     const lineEvals = line.game.positions.map((position, ply) => {
       const evaluation = evalsByFen.get(position.fen);
       if (!evaluation) throw new Error(`No engine eval for course position ${position.fen}`);
@@ -74,7 +77,8 @@ export async function buildCourseDossierFromEngine(
         pgn: line.pgn,
         pgnResult: null,
         parsedGame: line.game,
-        evals: lineEvals
+        evals: lineEvals,
+        passEvals
       },
       createStepTimer()
     );

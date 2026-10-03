@@ -268,6 +268,14 @@ export const CONFIG = {
    * same scale `CONFIG.severity` uses. `maxLinePlies` bounds the PV walk at
    * §5's own 4-8. The confidence cut-offs are §3 rule 2's three specificity
    * levels: squares at high, the bare motif at medium, silence below. */
+  /** Zugzwang (`zugzwang-scan.ts`): measured on Lichess puzzles at depth 12,
+   * 97% of the tagged ones and 1 of 149 eligible untagged ones fire. The
+   * gap is in win-percentage points (0.3 on Lichess's -1..1 scale). */
+  zugzwang: {
+    maxLegalMoves: 15,
+    minWinPctGap: 15
+  },
+
   tacticVerification: {
     minStaticGainPawns: 1,
     minLineGainPawns: 1.5,

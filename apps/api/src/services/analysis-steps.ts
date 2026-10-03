@@ -6,7 +6,8 @@ import {
   type CandidateMoment,
   type MoveVerdict,
   type MoveVerdictDeps,
-  type ParsedGame
+  type ParsedGame,
+  type PassEvals
 } from '@freechesscoach/chess-analysis';
 import type { BookReport, ClassifiedMoveDto, EngineEval, GameReport } from '@freechesscoach/shared';
 import type { NewDiagnosticObservation } from '../db/repositories/diagnostic-observations.js';
@@ -27,6 +28,9 @@ export interface AnalysisStepsInput {
   pgnResult: string | null;
   parsedGame: ParsedGame;
   evals: EngineEval[];
+  /** The pass scans (`pass-scan.ts`), by flipped position: for the steps that
+   * ask whether the side to move is hurt by having to move. */
+  passEvals: PassEvals;
 }
 
 /** The benchmark's counters (Task 77.5); the job passes none. */

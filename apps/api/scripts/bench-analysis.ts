@@ -93,7 +93,10 @@ async function loadInputs(db: Kysely<Database>, games: gamesRepo.GameRow[]): Pro
       pgn: game.pgn,
       pgnResult: game.result,
       parsedGame,
-      evals
+      evals,
+      // The benchmark reads stored evals and makes no engine calls (the
+      // pass scans are in-memory only), so it runs without them.
+      passEvals: new Map()
     });
   }
   return { inputs, skipped };

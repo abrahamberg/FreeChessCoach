@@ -10,6 +10,7 @@ import { EngineUnavailableError, HttpError } from '../lib/errors.js';
 import { analyzeInChunks } from './analysis-chunks.js';
 import type { AnalysisJobDependencies } from './analysis-deps.js';
 import { runAnalysisSteps, type AnalysisStepsResult } from './analysis-steps.js';
+import { scanPasses } from './pass-scans.js';
 import { createStepTimer, formatTimings, type StepTimer } from './step-timer.js';
 
 export { analyzeInChunks } from './analysis-chunks.js';
@@ -58,6 +59,9 @@ export async function runAnalyzeGameJob(
     plies = Math.max(0, parsedGame.positions.length - 1);
     const fens = parsedGame.positions.map((position) => position.fen);
     const evals = await timer.timed('engine', () => analyzeInChunks(db, counted.deps, analysis.id, fens));
+    // The pass scans (`pass-scan.ts`) are an in-memory second request: never
+    // stored, so the stored evals stay the game's own positions.
+    const passEvals = await timer.timed('passScan', () => scanPasses(counted.deps.analyzeGamePositions, [parsedGame.positions]));
     // Flipped here, not after the report/diagnostics build below: those
     // steps are the slow part but report no countable progress, so the
     // progress screen's indeterminate "planning" wave needs to start now.
@@ -72,7 +76,8 @@ export async function runAnalyzeGameJob(
         pgn: game.pgn,
         pgnResult: game.result,
         parsedGame,
-        evals
+        evals,
+        passEvals
       },
       timer
     );

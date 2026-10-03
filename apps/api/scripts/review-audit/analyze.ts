@@ -3,6 +3,7 @@ import type { ClassifiedMoveDto, EngineEval } from '@freechesscoach/shared';
 import { runAnalysisSteps } from '../../src/services/analysis-steps.js';
 import { buildCourseDossierFromEngine } from '../../src/services/courses/dossier.js';
 import type { EngineBackend } from '../../src/services/engine/engine-backend.js';
+import { scanPasses } from '../../src/services/pass-scans.js';
 import { createStepTimer } from '../../src/services/step-timer.js';
 import type { CorpusGame } from './corpus.js';
 
@@ -26,6 +27,7 @@ export async function analyseGame(game: CorpusGame, engine: EngineBackend): Prom
   const fens = parsedGame.positions.map((position) => position.fen);
   // No options: the worker's own call (jobs/analyze-game.ts).
   const evals = await engine.analyzeGame(fens);
+  const passEvals = await scanPasses((positions) => engine.analyzeGame(positions), [parsedGame.positions]);
   const steps = await runAnalysisSteps(
     {
       gameId: game.id,
@@ -35,7 +37,8 @@ export async function analyseGame(game: CorpusGame, engine: EngineBackend): Prom
       pgn: game.pgn,
       pgnResult: parsedGame.headers.Result ?? null,
       parsedGame,
-      evals
+      evals,
+      passEvals
     },
     createStepTimer()
   );
