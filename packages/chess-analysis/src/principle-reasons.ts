@@ -30,7 +30,7 @@ export function principleReason(input: PrincipleInput): string | null {
   const best = input.evalBefore.lines[0];
   if (!best) return null;
   if (input.quality === 'book' || input.quality === 'forced') return null;
-  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan);
+  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan) ?? outpostText(input.fenBefore, input.moveSan);
   if (best.moveSan === input.moveSan) return null;
 
   const playedLine = [input.moveSan, ...(input.evalAfter?.lines[0]?.pvSan ?? [])];
@@ -104,6 +104,65 @@ function developsWithPurpose(fen: string, san: string): string | null {
 function developsWithPurposeText(fen: string, san: string): string | null {
   const text = developsWithPurpose(fen, san);
   return text ? `${text.charAt(0).toUpperCase()}${text.slice(1)}` : null;
+}
+
+/** A knight on its own 4th–6th rank, on the c–f files, that no enemy pawn
+ * attacks or can still advance to attack: "puts the knight on an outpost on
+ * d4 that no pawn can attack". */
+function outpostText(fen: string, san: string): string | null {
+  const [move] = line(fen, [san], 1);
+  if (!move || move.piece !== 'n') return null;
+  const file = move.to.charCodeAt(0) - 'a'.charCodeAt(0);
+  const rank = Number(move.to[1]);
+  const own = move.color === 'w' ? rank : 9 - rank;
+  if (file < 2 || file > 5 || own < 4 || own > 6) return null;
+  const enemy: Color = move.color === 'w' ? 'b' : 'w';
+  const board = new Chess(move.after);
+  const pawnCanReach = [file - 1, file + 1].some((neighbour) =>
+    Array.from({ length: 8 }, (_, index) => index + 1).some((pawnRank) => {
+      const piece = board.get(`${String.fromCharCode('a'.charCodeAt(0) + neighbour)}${pawnRank}` as Square);
+      // A white pawn attacks upward, so it can still get there from below the knight; black from above.
+      return piece?.type === 'p' && piece.color === enemy && (enemy === 'w' ? pawnRank < rank : pawnRank > rank);
+    })
+  );
+  if (pawnCanReach) return null;
+  const target = newlyAttacked(fen, move);
+  const base = `Puts the knight on an outpost on ${move.to}, where no pawn can attack it`;
+  return target ? `${base}, and attacks the ${PIECE_NAMES[target.type]} on ${target.square}` : base;
+}
+
+/** The stronger moves a fine move passed over, each with what it does:
+ * "Bxe4 (takes the pawn on e4 and attacks the knight on b1), Nxe7 (takes the
+ * bishop and develops the knight) were stronger". Two or more, each clearly
+ * better than the played line (20 centipawns): one is the "Missed Bxe4" note. */
+const STRONGER_MARGIN_CP = 20;
+
+export function strongerCandidatesText(input: PrincipleInput): string | null {
+  const playedCp = input.evalAfter?.lines[0]?.cp;
+  if (playedCp === undefined || playedCp === null || input.evalAfter?.lines[0]?.mateIn) return null;
+  const sign = input.fenBefore.split(' ')[1] === 'w' ? 1 : -1;
+  const stronger = input.evalBefore.lines
+    .filter((each) => each.moveSan !== input.moveSan && each.mateIn === null && each.cp !== null && sign * (each.cp - playedCp) >= STRONGER_MARGIN_CP)
+    .slice(0, 3);
+  if (stronger.length < 2) return null;
+  const parts = stronger.map((each) => {
+    const what = candidateDoes(input.fenBefore, each.moveSan);
+    return what ? `${each.moveSan} (${what})` : each.moveSan;
+  });
+  const names = parts.length === 2 ? `${parts[0]} and ${parts[1]}` : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+  return `${names} were stronger than ${input.moveSan}`;
+}
+
+function candidateDoes(fen: string, san: string): string | null {
+  const [move] = line(fen, [san], 1);
+  if (!move) return null;
+  const parts: string[] = [];
+  if (move.captured) parts.push(`takes the ${PIECE_NAMES[move.captured]} on ${move.to}`);
+  if (isDevelopment(move)) parts.push(`develops the ${PIECE_NAMES[move.piece]}`);
+  const target = move.san.endsWith('+') ? null : newlyAttacked(fen, move);
+  if (move.san.endsWith('+')) parts.push('gives check');
+  else if (target) parts.push(`attacks the ${PIECE_NAMES[target.type]} on ${target.square}`);
+  return parts.length ? parts.join(' and ') : null;
 }
 
 /** Squares of enemy pieces `square` can capture, with the side to move as in `fen`. */

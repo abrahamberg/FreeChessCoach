@@ -17,7 +17,7 @@ import { CONFIG } from './config.js';
 import { flipActiveColorFen } from './null-move-fen.js';
 import { allowedForkReasons, gainReasons, missedForkReasons } from './fork-reasons.js';
 import { stalemateReason } from './stalemate-reason.js';
-import { principleReason } from './principle-reasons.js';
+import { principleReason, strongerCandidatesText } from './principle-reasons.js';
 
 export interface MoveReasonsInput {
   mover: 'white' | 'black';
@@ -98,6 +98,7 @@ export function buildReasons(input: MoveReasonsInput): string[] {
  * "Trades …" sentence.
  */
 function addPrinciple(input: MoveReasonsInput, reasons: Reason[]): void {
+  if (replaceMissedCaptureWithCandidates(input, reasons)) return;
   if (reasons.some((reason) => reason.category !== 'trade' && reason.category !== 'mobility')) return;
   if (!isFault(input) && reasons.length > 0) return;
   const text = principleReason(input);
@@ -105,6 +106,20 @@ function addPrinciple(input: MoveReasonsInput, reasons: Reason[]): void {
   const kept = reasons.filter((reason) => reason.category !== 'trade');
   reasons.length = 0;
   reasons.push(...kept, { category: 'principle', text });
+}
+
+/** A fine move that passed over two or more stronger ones: "Missed Bxe4,
+ * winning material" names one of them, so the note gives way to all of them,
+ * each with what it does (15…Kxe7 left Bxe4, Bc4 and Nxe7). Material
+ * the move missed outright is a fault, and stays "Missed …". */
+function replaceMissedCaptureWithCandidates(input: MoveReasonsInput, reasons: Reason[]): boolean {
+  if (isFault(input) || input.quality === 'best' || input.quality === 'book' || input.quality === 'forced') return false;
+  const missed = reasons.findIndex((reason) => reason.category === 'material' && reason.text.startsWith('Missed ') && reason.text.includes(', winning material on '));
+  if (missed < 0) return false;
+  const text = strongerCandidatesText(input);
+  if (!text) return false;
+  reasons.splice(missed, 1, { category: 'principle', text });
+  return true;
 }
 
 /**

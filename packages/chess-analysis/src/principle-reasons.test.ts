@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { EngineEval } from '@freechesscoach/shared';
-import { principleReason } from './principle-reasons.js';
+import { principleReason, strongerCandidatesText } from './principle-reasons.js';
 
 const evaluation = (fen: string, moveSan: string, pvSan: string[]): EngineEval => ({ fen, ply: 0, depth: 12, lines: [{ moveSan, moveUci: '', cp: 0, mateIn: null, pvSan }] });
 
@@ -55,5 +55,37 @@ describe('principleReason guards', () => {
   it('keeps the opening advice out of the middlegame', () => {
     const fen = 'r4r2/5kpp/p1n1pp2/1p1p3P/3P1N2/P1P5/1P3PP1/R3K2R w KQ - 1 22';
     expect(principleReason({ fenBefore: fen, moveSan: 'Kd2', quality: 'inaccuracy', evalBefore: evaluation(fen, 'O-O-O', ['O-O-O']) })).toBeNull();
+  });
+});
+
+describe('outposts and stronger candidates', () => {
+  it('calls a knight no pawn can attack an outpost, and names what it hits', () => {
+    const fen = 'r3k1nr/1bppqpp1/p1n4p/1p1B4/3PP3/5Q2/PP1B1PPP/RN3RK1 b kq - 4 11';
+    expect(principleReason({ fenBefore: fen, moveSan: 'Nxd4', quality: 'best', evalBefore: evaluation(fen, 'Nxd4', ['Nxd4']) })).toBe(
+      'Puts the knight on an outpost on d4, where no pawn can attack it, and attacks the queen on f3'
+    );
+  });
+
+  it('is no outpost while an enemy pawn can still come and attack it', () => {
+    const fen = 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3';
+    expect(principleReason({ fenBefore: fen, moveSan: 'Nxe5', quality: 'best', evalBefore: evaluation(fen, 'Nxe5', ['Nxe5']) })).toBeNull();
+  });
+
+  it('lists the stronger moves a fine one passed over, each with what it does', () => {
+    const fen = 'r3k1nr/2ppBpp1/p6p/1p1b4/4Pn2/8/PP3PPP/RN3R1K b kq - 0 15';
+    const line = (moveSan: string, cp: number) => ({ moveSan, moveUci: '', cp, mateIn: null, pvSan: [moveSan] });
+    const evalBefore: EngineEval = { fen, ply: 0, depth: 12, lines: [line('Bxe4', -606), line('Bc4', -589), line('Nxe7', -587)] };
+    const evalAfter: EngineEval = { fen, ply: 1, depth: 12, lines: [line('exd5', -556)] };
+    expect(strongerCandidatesText({ fenBefore: fen, moveSan: 'Kxe7', quality: 'good', evalBefore, evalAfter })).toBe(
+      'Bxe4 (takes the pawn on e4 and attacks the knight on b1), Bc4 (attacks the rook on f1) and Nxe7 (takes the bishop on e7 and develops the knight) were stronger than Kxe7'
+    );
+  });
+
+  it('keeps the single "Missed" note when only one move was stronger', () => {
+    const fen = 'r3k1nr/2ppBpp1/p6p/1p1b4/4Pn2/8/PP3PPP/RN3R1K b kq - 0 15';
+    const line = (moveSan: string, cp: number) => ({ moveSan, moveUci: '', cp, mateIn: null, pvSan: [moveSan] });
+    const evalBefore: EngineEval = { fen, ply: 0, depth: 12, lines: [line('Bxe4', -606), line('Nxe7', -550)] };
+    const evalAfter: EngineEval = { fen, ply: 1, depth: 12, lines: [line('exd5', -556)] };
+    expect(strongerCandidatesText({ fenBefore: fen, moveSan: 'Kxe7', quality: 'good', evalBefore, evalAfter })).toBeNull();
   });
 });
