@@ -32,7 +32,7 @@ export function principleReason(input: PrincipleInput): string | null {
   const best = input.evalBefore.lines[0];
   if (!best) return null;
   if (input.quality === 'book' || input.quality === 'forced') return null;
-  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan) ?? plainDevelopmentText(input) ?? openFileRookText(input) ?? outpostText(input.fenBefore, input.moveSan) ?? castleText(input.fenBefore, input.moveSan) ?? (best.moveSan === input.moveSan ? goodCoordinationText(input) : null);
+  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan) ?? plainDevelopmentText(input) ?? openFileRookText(input) ?? outpostText(input.fenBefore, input.moveSan) ?? castleText(input.fenBefore, input.moveSan) ?? (best.moveSan === input.moveSan ? goodCoordinationText(input) : goodMoveComparison(input, best.moveSan));
   if (best.moveSan === input.moveSan) return null;
 
   const playedLine = [input.moveSan, ...(input.evalAfter?.lines[0]?.pvSan ?? [])];
@@ -44,8 +44,9 @@ export function principleReason(input: PrincipleInput): string | null {
     queenOutEarly(input.fenBefore, playedLine, best.moveSan, bestFragment) ??
     (bestFragment && !developsAt(input.fenBefore, input.moveSan) ? `${best.moveSan} was better: it ${bestFragment}` : null) ??
     castlesSooner(input.fenBefore, input.moveSan, best.moveSan) ??
+    checksText(input, best.moveSan) ??
     blocksText(input, best.moveSan) ??
-    exposesText(input, best.moveSan) ??
+    centreText(input, best.moveSan) ??
     pilesText(input, best.moveSan) ??
     freesText(input) ??
     bestDoesText(input, best.moveSan)
@@ -55,13 +56,30 @@ export function principleReason(input: PrincipleInput): string | null {
 /** A move that cost more than this lost it some other way than by cutting a piece off. */
 const BLOCK_MAX_LOSS_CP = 150;
 
-/** What the played move gave up that the engine's move kept: the king's cover
- * from checks, a pawn's hold on the centre. */
-function exposesText(input: PrincipleInput, best: string): string | null {
+/** The king left open to more checks than the engine's move allows. */
+/** A fine move whose engine alternative was clearly better: only the rules
+ * that compare two boards, never the generic "what the best move does". */
+const GOOD_MOVE_MIN_GAP_CP = 30;
+
+function goodMoveComparison(input: PrincipleInput, best: string): string | null {
+  if (input.quality !== 'good') return null;
+  const bestCp = input.evalBefore.lines[0]?.cp;
+  const playedCp = input.evalAfter?.lines[0]?.cp;
+  if (bestCp == null || playedCp == null || Math.abs(bestCp - playedCp) < GOOD_MOVE_MIN_GAP_CP) return null;
+  return checksText(input, best) ?? blocksText(input, best) ?? centreText(input, best) ?? pilesText(input, best);
+}
+
+function checksText(input: PrincipleInput, best: string): string | null {
   const [played] = line(input.fenBefore, [input.moveSan], 1);
   const [better] = line(input.fenBefore, [best], 1);
-  if (!played || !better || !smallLoss(input)) return null;
-  return allowsChecksText(played, better) ?? givesUpCentreText(input.fenBefore, played, better);
+  return played && better && smallLoss(input) ? allowsChecksText(played, better) : null;
+}
+
+/** A pawn's hold on the centre that the engine's move keeps. */
+function centreText(input: PrincipleInput, best: string): string | null {
+  const [played] = line(input.fenBefore, [input.moveSan], 1);
+  const [better] = line(input.fenBefore, [best], 1);
+  return played && better && smallLoss(input) ? givesUpCentreText(input.fenBefore, played, better) : null;
 }
 
 function pilesText(input: PrincipleInput, best: string): string | null {
@@ -307,7 +325,7 @@ function candidateDoes(fen: string, san: string): string | null {
   else if (target) parts.push(`attacks the ${PIECE_NAMES[target.type]} on ${target.square}`);
   const piling = pilesOnText(fen, move);
   if (piling && !move.captured) parts.push(piling);
-  if (move.piece === 'p' && !move.captured && !target) {
+  if (move.piece === 'p' && !move.captured && !target && !piling) {
     const lever = pawnLever(fen, move);
     if (lever) parts.push(lever);
   }

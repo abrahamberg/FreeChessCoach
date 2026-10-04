@@ -48,7 +48,7 @@ The rules in "Built" were measured on other positions, not on these. On game
 
 | Rule | Motivating plies | What the app says instead | Why |
 |---|---|---|---|
-| Leaves the king open to checks | 46 (…Kxd8), 48 (…Qf6), 60 (…c4) | "Recaptures the knight on d8" / the cut-off note / nothing | 46 is labelled "good", and the rule only runs on inaccuracy or worse; 48's cut-off note wins first; 60's loss is too big and its mate too long to count |
+| Leaves the king open to checks | 46 (…Kxd8), 48 (…Qf6), 60 (…c4) | "Recaptures the knight on d8" / the cut-off note / nothing | The rule counts the checks available right after the move: Kxd8 leaves White 1 (Re8+), Qxd8 1 (Qf5+), so it cannot see the agent's "4 vs 2", which counted deeper. 46's gap is also under the "good" cut; 60's loss is too big and its mate too long to count. Checks now come before the cut-off note, and a "good" move with a gap of 30 cp or more gets the comparison, but neither reaches these plies. |
 | Gives up a pawn's hold on the centre | 12 (…Be6 vs g6), 24 (…f4) | "Develops the bishop" / the cut-off note | 12 is "good"; 24 is taken by the cut-off note first |
 | Pin and a second attacker on a pinned piece | 56–57 (Re1 vs the pinned e8 bishop) | "Leaves the pawn on c5 undefended" / "Puts the rook on the e-file" | the pile-on rule skips a pinned target nothing else defends; 57 is a best move with only the open-file note |
 | Open file taken first | 27 (a4 vs Rfe1) | nothing | 27 is a "good" move: no comparison is made |
@@ -77,6 +77,14 @@ as covered.
 | Fork / damage control ("Rf7 saves one rook; g6 first blocks the queen's diagonal") | d690 ply 44 | 1 | One example. |
 
 ## Engine-depth caveat
+
+**Measured 2026-10-04 (probe, depth 20, against the stored depth 12):** 46…Kxd8
+vs Qxd8: 38 cp stored (labelled "good"), 51 cp at depth 20, about 67 cp at depth
+22. 48…Qf6 vs Qf8: 99 cp stored, 129 cp at depth 20. Deeper search makes the
+gaps larger, so some "good" moves would be inaccuracies and the comparison rules
+would get more to explain. The app's depth is the owner's call
+(`review-engine-depth-and-mate-counts`); nothing was changed.
+
 
 The stored evals are depth 12. Agents re-checked at depth 22: of 30 "best"
 moves 4 were not best, and several gaps were under 20 cp. A positional note on

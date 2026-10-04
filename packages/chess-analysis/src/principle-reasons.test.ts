@@ -153,6 +153,13 @@ describe('stronger candidates without a capture or attack', () => {
     expect(principleReason({ fenBefore: file, moveSan: 'Rfe1', quality: 'good', evalBefore: withCp(file, 'Rfe1') })).toBe('Puts the rook on the e-file, which has no pawns');
   });
 
+  it('compares a good move with a clearly better one by the checks it leaves', () => {
+    const withCp = (fen: string, cp: number, moveSan: string): EngineEval => ({ fen, ply: 0, depth: 12, lines: [{ moveSan, moveUci: '', cp, mateIn: null, pvSan: [moveSan] }] });
+    const fen = 'rnb1k2r/ppp2pp1/5q1p/2bP4/4p3/P2P1P2/1PP3PP/RN1QKBNR w KQkq - 0 8';
+    expect(principleReason({ fenBefore: fen, moveSan: 'dxe4', quality: 'good', evalBefore: withCp(fen, 100, 'Nd2'), evalAfter: withCp(fen, 60, 'Qxf3') })).toBe('dxe4 leaves the king facing 4 possible checks; Nd2 allows only 2');
+    expect(principleReason({ fenBefore: fen, moveSan: 'dxe4', quality: 'good', evalBefore: withCp(fen, 100, 'Nd2'), evalAfter: withCp(fen, 85, 'Qxf3') })).toBeNull();
+  });
+
   it('says a pawn move that cuts off its own bishop, against the move that keeps it open', () => {
     const fen = '2kr3r/ppp2ppp/2bb1q2/3p1p2/3P4/2P1PN2/PPQN1PPP/R4RK1 b - - 1 12';
     const withCp = (cp: number, moveSan: string): EngineEval => ({ fen, ply: 0, depth: 12, lines: [{ moveSan, moveUci: '', cp, mateIn: null, pvSan: [moveSan] }] });
