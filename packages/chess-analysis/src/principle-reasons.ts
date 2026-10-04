@@ -1,7 +1,7 @@
 import { Chess, type Color, type Move, type PieceSymbol, type Square } from 'chess.js';
 import { isImprovableQuality, type EngineEval, type MoveQuality } from '@freechesscoach/shared';
 import { flipActiveColorFen } from './null-move-fen.js';
-import { blocksOwnPieceText, connectsRooksText, coordinationFragment, opensOwnPieceText, pilesOnText, supportsAdvancedPieceText } from './piece-coordination.js';
+import { blocksOwnPieceText, connectsRooksText, coordinationFragment, freesEnemyPieceText, opensOwnPieceText, pilesOnText, supportsAdvancedPieceText } from './piece-coordination.js';
 import { PIECE_NAMES } from './piece-names.js';
 import { PIECE_VALUES } from './tactics.js';
 
@@ -44,7 +44,8 @@ export function principleReason(input: PrincipleInput): string | null {
     (bestFragment && !developsAt(input.fenBefore, input.moveSan) ? `${best.moveSan} was better: it ${bestFragment}` : null) ??
     castlesSooner(input.fenBefore, input.moveSan, best.moveSan) ??
     blocksText(input, best.moveSan) ??
-    pilesText(input, best.moveSan)
+    pilesText(input, best.moveSan) ??
+    freesText(input)
   );
 }
 
@@ -55,6 +56,12 @@ function pilesText(input: PrincipleInput, best: string): string | null {
   const [better] = line(input.fenBefore, [best], 1);
   const text = better && !better.captured && smallLoss(input) ? coordinationFragment(input.fenBefore, better) : null;
   return text ? `${best} was better: it ${text}` : null;
+}
+
+function freesText(input: PrincipleInput): string | null {
+  const [played] = line(input.fenBefore, [input.moveSan], 1);
+  if (!played || !smallLoss(input)) return null;
+  return freesEnemyPieceText(input.fenBefore, played, (input.evalAfter?.lines ?? []).flatMap((each) => each.pvSan?.[0] ?? []), threatNote);
 }
 
 function goodCoordinationText(input: PrincipleInput): string | null {

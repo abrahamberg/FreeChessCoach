@@ -1,6 +1,6 @@
 import { Chess } from 'chess.js';
 import { describe, expect, it } from 'vitest';
-import { blocksOwnPieceText, connectsRooksText, opensOwnPieceText, pilesOnText, supportsAdvancedPieceText } from './piece-coordination.js';
+import { blocksOwnPieceText, connectsRooksText, freesEnemyPieceText, opensOwnPieceText, pilesOnText, supportsAdvancedPieceText } from './piece-coordination.js';
 
 const FEN = '2kr3r/ppp2ppp/2bb1q2/3p1p2/3P4/2P1PN2/PPQN1PPP/R4RK1 b - - 1 12';
 const play = (fen: string, san: string) => new Chess(fen).move(san);
@@ -40,5 +40,11 @@ describe('piece coordination', () => {
     const fen = '4k3/8/8/4N3/8/5P2/3P4/4K3 w - - 0 1';
     expect(supportsAdvancedPieceText(fen, play(fen, 'd4'))).toBe('supports the knight on e5 with the pawn');
     expect(supportsAdvancedPieceText(fen, play(fen, 'f4'))).toBe('supports the knight on e5 with the pawn');
+  });
+
+  it("says a move that takes the pawn shutting in the opponent's bishop", () => {
+    const fen = '2kr3r/ppp2ppp/2bb1q2/3p4/3P1p2/2P1PN2/PPQN1PPP/R4RK1 w - - 0 13';
+    const text = freesEnemyPieceText(fen, play(fen, 'exf4'), ['Qxf4', 'Bxf4'], (after, san) => (san === 'Bxf4' ? 'attacks the knight on d2' : null));
+    expect(text).toMatch(/^exf4 takes the pawn that shut in Black's bishop on d6: Bxf4 frees it, from 6 squares to \d+, and attacks the knight on d2$/);
   });
 });

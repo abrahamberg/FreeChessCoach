@@ -44,9 +44,10 @@ export interface LineChange {
 /** The own slider whose reach `move` changes the most, in the direction
  * asked (`'closes'`: loses squares, `'opens'`: gains them). The moved piece
  * itself is not counted, and a slider that was captured is gone. */
-export function lineChange(fenBefore: string, move: Move, direction: 'closes' | 'opens'): LineChange | null {
-  const before = sliderReach(fenBefore, move.color);
-  const after = sliderReach(move.after, move.color);
+export function lineChange(fenBefore: string, move: Move, direction: 'closes' | 'opens', side: 'own' | 'enemy' = 'own'): LineChange | null {
+  const color = side === 'own' ? move.color : move.color === 'w' ? 'b' : 'w';
+  const before = sliderReach(fenBefore, color);
+  const after = sliderReach(move.after, color);
   if (!before || !after) return null;
   let found: LineChange | null = null;
   let biggest = 0;
@@ -154,4 +155,43 @@ export function supportsAdvancedPieceText(fenBefore: string, move: Move): string
 /** What the engine's move did for the pieces, for "X was better: it …". */
 export function coordinationFragment(fenBefore: string, move: Move): string | null {
   return pilesOnText(fenBefore, move) ?? connectsRooksText(fenBefore, move) ?? supportsAdvancedPieceText(fenBefore, move);
+}
+
+/** A move that frees one of the opponent's long-range pieces: "exf4 frees
+ * Black's bishop on d6, from 6 squares to 9: Bxf4 attacks the knight on d2".
+ * Either the move itself opens the piece's lines, or one of the engine's replies is
+ * that piece taking back on the same square (the pawn it took was shutting
+ * the piece in) and landing on a much longer line. The reply is named only
+ * when the freed piece makes it and it hits something. */
+export function freesEnemyPieceText(fenBefore: string, move: Move, replies: readonly string[], threatAfter: (fen: string, san: string) => string | null): string | null {
+  if (move.san.endsWith('+') || move.piece === 'k') return null;
+  const owner = move.color === 'w' ? 'Black' : 'White';
+  const replyMoves = replies.flatMap((reply) => safeMove(move.after, reply) ?? []);
+  const freed = lineChange(fenBefore, move, 'opens', 'enemy');
+  if (freed) {
+    const base = `${move.san} frees ${owner}'s ${sliderName(freed)}, from ${squares(freed.before)} to ${freed.after}`;
+    const reply = replyMoves.find((each) => each.from === freed.square && threatAfter(move.after, each.san));
+    return reply ? `${base}: ${reply.san} ${threatAfter(move.after, reply.san)}` : base;
+  }
+  return replyMoves.map((reply) => recaptureFrees(fenBefore, move, reply, owner, threatAfter)).find((text) => text !== null) ?? null;
+}
+
+/** The pawn taken was the piece's own blocker: the piece takes back, lands on
+ * a longer line (two squares or more) and attacks something from there. */
+function recaptureFrees(fenBefore: string, move: Move, reply: Move | null, owner: string, threatAfter: (fen: string, san: string) => string | null): string | null {
+  if (move.captured !== 'p' || !reply?.captured || reply.to !== move.to || !SLIDERS.includes(reply.piece)) return null;
+  const enemy = move.color === 'w' ? 'b' : 'w';
+  const was = sliderReach(fenBefore, enemy)?.get(reply.from as Square);
+  const now = sliderReach(reply.after, enemy)?.get(reply.to as Square);
+  const threat = threatAfter(move.after, reply.san);
+  if (!threat || !was || !now || now.squares.size < MIN_REACH || now.squares.size - was.squares.size < 2) return null;
+  return `${move.san} takes the pawn that shut in ${owner}'s ${PIECE_NAMES[reply.piece]} on ${reply.from}: ${reply.san} frees it, from ${squares(was.squares.size)} to ${now.squares.size}, and ${threat}`;
+}
+
+function safeMove(fen: string, san: string): Move | null {
+  try {
+    return new Chess(fen).move(san);
+  } catch {
+    return null;
+  }
 }
