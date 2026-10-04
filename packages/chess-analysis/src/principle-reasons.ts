@@ -45,7 +45,8 @@ export function principleReason(input: PrincipleInput): string | null {
     castlesSooner(input.fenBefore, input.moveSan, best.moveSan) ??
     blocksText(input, best.moveSan) ??
     pilesText(input, best.moveSan) ??
-    freesText(input)
+    freesText(input) ??
+    bestDoesText(input, best.moveSan)
   );
 }
 
@@ -57,6 +58,19 @@ function pilesText(input: PrincipleInput, best: string): string | null {
   const text = better && !better.captured && smallLoss(input) ? coordinationFragment(input.fenBefore, better) : null;
   return text ? `${best} was better: it ${text}` : null;
 }
+
+/** The last word on a move nothing else explained: what the engine's move
+ * does. A pawn break that attacks a pawn, a capture, a rook onto an open file. */
+function bestDoesText(input: PrincipleInput, best: string): string | null {
+  const bestCp = input.evalBefore.lines[0]?.cp;
+  const playedCp = input.evalAfter?.lines[0]?.cp;
+  if (bestCp == null || playedCp == null || Math.abs(bestCp - playedCp) > BEST_DOES_MAX_LOSS_CP) return null;
+  const what = candidateDoes(input.fenBefore, best);
+  return what ? `${best} was better: it ${what}` : null;
+}
+
+/** A move that cost more than this lost it some other way than by missing the engine's. */
+const BEST_DOES_MAX_LOSS_CP = 300;
 
 function freesText(input: PrincipleInput): string | null {
   const [played] = line(input.fenBefore, [input.moveSan], 1);
@@ -252,8 +266,23 @@ function candidateDoes(fen: string, san: string): string | null {
   else if (target) parts.push(`attacks the ${PIECE_NAMES[target.type]} on ${target.square}`);
   const piling = pilesOnText(fen, move);
   if (piling && !move.captured) parts.push(piling);
+  if (move.piece === 'p' && !move.captured && !target) {
+    const lever = pawnLever(fen, move);
+    if (lever) parts.push(lever);
+  }
   if (move.piece === 'r' && !move.captured && !fileHasPawn(move)) parts.push(`puts the rook on the ${move.to[0]}-file, which has no pawns`);
   return parts.length ? parts.join(' and ') : null;
+}
+
+/** A pawn move that attacks an enemy pawn it did not attack before: the
+ * break that challenges the centre. */
+function pawnLever(fen: string, move: Move): string | null {
+  const again = flipActiveColorFen(move.after);
+  if (!again) return null;
+  const board = new Chess(move.after);
+  const before = capturesFrom(fen, move.from as Square);
+  const square = [...capturesFrom(again, move.to as Square)].find((each) => !before.has(each) && board.get(each)?.type === 'p');
+  return square ? `attacks the pawn on ${square}` : null;
 }
 
 /** Whether the rook's new file has a pawn on it. */
