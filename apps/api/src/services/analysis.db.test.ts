@@ -362,9 +362,11 @@ describe('runAnalyzeGameJob', () => {
     const game = await gamesRepo.findById(db, gameId);
     const moves = parseAnnotatedPgn(game!.annotatedPgn!, game!.userColor);
     expect(moves.find((move) => move.ply === 1)?.quality).toBe('brilliant');
-    // One chunk (both positions), and nothing after it.
-    expect(analyzeGamePositions).toHaveBeenCalledTimes(1);
-    expect(analyzeGamePositions.mock.calls[0]?.[0]).toContain(BRILLIANT_AFTER_FEN);
+    // One chunk of the game's own positions answers the soundness check; the
+    // only calls after it are the in-memory pass scan (turn-flipped positions).
+    const [gameFens = [], ...laterCalls] = analyzeGamePositions.mock.calls.map((call) => call[0]);
+    expect(gameFens).toContain(BRILLIANT_AFTER_FEN);
+    for (const fen of laterCalls.flat()) expect(gameFens).not.toContain(fen);
   });
 
   // The planner's own HttpError-vs-generic-error handling moved with it to
