@@ -32,7 +32,7 @@ export function principleReason(input: PrincipleInput): string | null {
   const best = input.evalBefore.lines[0];
   if (!best) return null;
   if (input.quality === 'book' || input.quality === 'forced') return null;
-  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan) ?? plainDevelopmentText(input) ?? openFileRookText(input) ?? outpostText(input.fenBefore, input.moveSan) ?? castleText(input.fenBefore, input.moveSan) ?? (best.moveSan === input.moveSan ? goodCoordinationText(input) : goodMoveComparison(input, best.moveSan));
+  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan) ?? plainDevelopmentText(input) ?? openFileRookText(input) ?? outpostText(input.fenBefore, input.moveSan) ?? castleText(input.fenBefore, input.moveSan) ?? freeCaptureText(input) ?? (best.moveSan === input.moveSan ? goodCoordinationText(input) : goodMoveComparison(input, best.moveSan));
   if (best.moveSan === input.moveSan) return null;
 
   const playedLine = [input.moveSan, ...(input.evalAfter?.lines[0]?.pvSan ?? [])];
@@ -104,6 +104,17 @@ function bestDoesText(input: PrincipleInput, best: string): string | null {
 
 /** A move that cost more than this lost it some other way than by missing the engine's. */
 const BEST_DOES_MAX_LOSS_CP = 300;
+
+/** A good capture of a piece nothing defended: "Takes the knight on c5, which
+ * nothing defended". The tactics say what a capture wins when the eval moves;
+ * this is the plain fact for the capture that does not. */
+function freeCaptureText(input: PrincipleInput): string | null {
+  if (input.quality === 'book' || input.quality === 'forced') return null;
+  const [move] = line(input.fenBefore, [input.moveSan], 1);
+  if (!move?.captured || move.captured === 'p' && move.piece === 'p') return null;
+  const defenders = new Chess(input.fenBefore).attackers(move.to as Square, move.color === 'w' ? 'b' : 'w');
+  return defenders.length === 0 ? `Takes the ${PIECE_NAMES[move.captured]} on ${move.to}, which nothing defended` : null;
+}
 
 /** A minor piece brought out in the opening, with nothing else to say about it. */
 function plainDevelopmentText(input: PrincipleInput): string | null {

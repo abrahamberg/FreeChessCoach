@@ -160,6 +160,14 @@ describe('stronger candidates without a capture or attack', () => {
     expect(principleReason({ fenBefore: fen, moveSan: 'dxe4', quality: 'good', evalBefore: withCp(fen, 100, 'Nd2'), evalAfter: withCp(fen, 85, 'Qxf3') })).toBeNull();
   });
 
+  it('says a good capture of a piece nothing defended, and stays silent when it was defended', () => {
+    const withCp = (fen: string, moveSan: string): EngineEval => ({ fen, ply: 0, depth: 12, lines: [{ moveSan, moveUci: '', cp: 0, mateIn: null, pvSan: [moveSan] }] });
+    const free = '4k3/8/8/3n4/8/1B6/8/4K3 w - - 0 1';
+    expect(principleReason({ fenBefore: free, moveSan: 'Bxd5', quality: 'best', evalBefore: withCp(free, 'Bxd5') })).toBe('Takes the knight on d5, which nothing defended');
+    const defended = '4k3/8/4p3/3n4/8/1B6/8/4K3 w - - 0 1';
+    expect(principleReason({ fenBefore: defended, moveSan: 'Bxd5', quality: 'best', evalBefore: withCp(defended, 'Bxd5') })).toBeNull();
+  });
+
   it('says a pawn move that cuts off its own bishop, against the move that keeps it open', () => {
     const fen = '2kr3r/ppp2ppp/2bb1q2/3p1p2/3P4/2P1PN2/PPQN1PPP/R4RK1 b - - 1 12';
     const withCp = (cp: number, moveSan: string): EngineEval => ({ fen, ply: 0, depth: 12, lines: [{ moveSan, moveUci: '', cp, mateIn: null, pvSan: [moveSan] }] });

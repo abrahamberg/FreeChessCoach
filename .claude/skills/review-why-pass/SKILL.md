@@ -41,6 +41,15 @@ hold on a centre square, flight squares of a trapped queen). The owner's rule:
 
 ## Facts learned
 
+- Run **at most three agents at a time**, each told to use its own scratch folder
+  and to probe one position at a time: eight in parallel returned one probe of a
+  position outside its batch, and two agents killed each other's jobs with
+  `pkill -f` on a shared script path. The probe's `--moves` needs two separate
+  arguments (`--moves "Nxe5 Rxd3"` through shell expansion arrives as one word).
+- Join the agents' answers with what the pipeline says today on the same plies
+  (`analyseGame` over the stored evals): the table "app has text / silent / thin" by
+  the agent's kind is what tells you what to build. "Has text" is not "right text".
+
 - The stored evals are depth 12 (the app never searches deeper). Agents must
   re-check gaps at depth 20+: in one game 4 of 30 "best" moves were not best at
   depth 22, and gaps under about 20 cp have no concrete reason. Stay silent there.

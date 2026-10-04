@@ -32,7 +32,46 @@ engine's best differed), both on one game, `d690d041` (Black reader, 500 vs 507,
 | Plain development / rook onto a pawn-free file | "Develops the bishop" | `plainDevelopmentText`, `openFileRookText` | fine moves only |
 | Leaves the king open to checks | "dxe4 leaves the king facing 4 possible checks; Nd2 allows only 2" | `allowsChecksText` | ≥3 checks and ≥2 more than best |
 | Gives up a pawn's hold on the centre | "e4 gives up a pawn's hold on d4 (1 pawn guards it, 0 after); Nf6 keeps it" | `givesUpCentreText` | opening/middlegame only (move ≤ 20), best not a capture or king move |
+| Takes a piece nothing defended | "Takes the pawn on e4, which nothing defended" | `freeCaptureText` | best/good captures with no other note; 7 hits on 4 games, all true; recaptures keep their "Recaptures" note |
 | Trapped piece leads a tie | "…win a queen through a trapped piece" | `rank-tactic-claims.ts` `prizeMismatch` | claim whose prize matches the line's win leads |
+
+## Pass 3: four more games, 8 agents (2026-10-04)
+
+Games `0a1f`, `34a1`, `9b05`, `d971` (dev DB), 118 entries (83 not-best, 35
+best-with-a-gap), `min-loss 45`, `good-gap 60`. Joined with what the pipeline says
+today on the same plies:
+
+| | entries |
+|---|---|
+| agent found a concrete difference | 96 (tactical 83, positional 8, mixed 3, rest) |
+| ...app has text / silent / only a generic note | 61 / 21 / 14 |
+| no concrete difference (gap gone at depth 20+, or both lines mate) | 22 (19%) |
+
+"App has text" is not "right text": it was not checked entry by entry.
+
+Recurring in the silent and thin ones (count = entries, games):
+
+| Idea | Count | Status |
+|---|---|---|
+| A good capture of an undefended piece | 7 in 4 games | **built** (`freeCaptureText`) |
+| Safe checks / king flight squares after a move (Qd1+ / Qc1+ / Nd2+ chains; Kb2 leaves 0 safe checks, Kb3 1) | 7 in 1 game (d971 77–89) | not built: one game, and the count of immediate checks is not the agent's count (it follows the chain). A real rule would need "checks the opponent has that the king cannot answer with a capture", over two plies. |
+| Overloaded guard (the d8 rook guards a8 and must recapture on d3) | 3 in 1 game (34a1 40–42) | the tactic layer has an overloaded-defender detector; it was silent here. Look at why before building. |
+| Piece attacked more often than defended, x-ray included (b4 leaves the knight on d3 at 2 v 1; Rb1 leaves d2 at 2 v 1) | 4 in 2 games (34a1 33, 9b05 27/33/35) | partly built (`leftLooseReason`). Gap: x-ray rooks behind the first attacker, and "good"-labelled moves. |
+| Guard of a promotion square (a8 against the a-pawn) | 4 in 1 game (34a1 40–43) | one game |
+| Knight check that forks king and queen (…Ne2+) | 5 in 1 game (0a1f 23–28) | the fork detector exists; texts were present |
+| Development tempo and castling (Nf6 covers g4/h5 and lets Black castle) | 4 in 1 game (0a1f 15–20) | note exists ("develops the knight and attacks…"); the agent's extra detail (blocks castling, covers the mate square) is not said |
+| Promotion piece choice (queen reaches the long diagonal, rook does not) | 1 | one example |
+
+**Depth and mates (again):** 34a1 45–49 had depth-12 gaps of 221 to 2793 cp where
+both lines were forced mates: shallow search missing mates. The decided-game rule
+already treats mate-versus-mate as no fault; those entries confirm it matters.
+In already-won positions (+5 and more) the cp gap is squeezed (a clean loss of a
+bishop shows 74 cp): judge by material there.
+
+**Method lessons** (also in the skill): eight agents probing at once gave one wrong
+result (a probe of a position outside its batch) and two agents killed each
+other's jobs with `pkill`. Run at most three agents at a time, each with its own
+scratch folder, and tell them to probe one position at a time.
 
 ## Dropped
 
