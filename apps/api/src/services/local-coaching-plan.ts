@@ -1,9 +1,8 @@
-import type { CandidateMoment, ClassifiedMove } from '@freechesscoach/chess-analysis';
+import { KIND_PRIORITY, type CandidateMoment, type ClassifiedMove } from '@freechesscoach/chess-analysis';
 import type { CoachingMoment, CoachingPlan } from '@freechesscoach/shared';
 
 const MAX_MOMENTS = 5;
 const REVEAL_DEPTH_PLIES = 4;
-const KIND_PRIORITY: Record<CandidateMoment['kind'], number> = { user_mistake: 3, instructive: 2, turning_point: 1 };
 
 /**
  * The coaching plan for a local-model setup, built from the engine review
@@ -93,6 +92,7 @@ function toMoment(move: ClassifiedMove, kind: CandidateMoment['kind']): Coaching
 
 function questionFor(kind: CandidateMoment['kind'], label: string): string {
   if (kind === 'instructive') return `What made ${label} work here?`;
+  if (kind === 'focus_failure') return `Before you played ${label}, what did you check — and what did that check leave out?`;
   if (kind === 'turning_point') return `What changed in the position after ${label}?`;
   return `What were you weighing when you played ${label}, and what did it allow?`;
 }

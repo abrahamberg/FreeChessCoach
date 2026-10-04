@@ -273,29 +273,31 @@ status is renamed, not aliased; stored notes that do not fit are dropped
 **Files:** a migration, `schema.ts`, `focus-areas.ts`, two new
 repositories, `packages/shared`.
 
-- [ ] Failing tests first (db tier): a graduated area is not counted as
+- [x] Failing tests first (db tier): a graduated area is not counted as
   active and is listed by `listGraduated`; `reopen` fails with a reason when
   three are active; `reopen` on an `active` or `improving` area is a no-op
   with a reason.
-- [ ] Rename status `resolved` to `graduated` everywhere (type, repository,
+- [x] Rename status `resolved` to `graduated` everywhere (type, repository,
   dashboard, tests). Add `focus_areas.graduatedAt timestamptz null`.
-- [ ] `student_memory` (`userId` primary key, `content text`,
+- [x] `student_memory` (`userId` primary key, `content text`,
   `updatedAt`): one general text per student, rewritten whole, at most
   1,500 characters (checked in the repository, not trusted to the model).
-- [ ] `sessions.lessonNote text null` (the coach's internal note on this
+- [x] `sessions.lessonNote text null` (the coach's internal note on this
   session, general) and `sessions.phase` (`progress_open` | `review` |
   `progress_close`, default `progress_open` for a new analyze session; play
   sessions keep `review`).
-- [ ] `session_messages.phase` (same three values, not null, default
+- [x] `session_messages.phase` (same three values, not null, default
   `review`): which round a message belongs to. A progress message keeps
   `ply` null; no fake ply is ever stored.
-- [ ] `session_progress_notes` (`sessionId`, `diagnosisCode null`, `note`,
+- [x] `session_progress_notes` (`sessionId`, `diagnosisCode null`, `note`,
   `createdAt`): the short-term notes the coach leaves during the review.
-- [ ] `FocusAreaUpdateSchema.action` becomes `create | progress | regress |
+- [x] `FocusAreaUpdateSchema.action` becomes `create | progress | regress |
   graduate | reopen`; `note` stays.
-- [ ] Stored data: existing focus-area notes are written from one move and
+- [x] Stored data: existing focus-area notes are written from one move and
   are dropped (reset to the programmatic note at the next rebuild);
   findings are kept untouched. Say this in the commit body.
+
+Status: done 2026-10-05 — migration `0024_progress_memory`, `listForPhase`, `listGraduated`, `student_memory`, `session_progress_notes`; the progress and repository db tests pass against Postgres (Testcontainers).
 
 **Commit:** `feat(progress): graduated list, student memory, session phase and lesson note`
 
@@ -307,18 +309,20 @@ repositories, `packages/shared`.
 **Files:** `packages/chess-analysis/src/general-note.ts` (pure), tests,
 `progress.ts`.
 
-- [ ] Failing tests first: `checkGeneralNote(text)` rejects a note that
+- [x] Failing tests first: `checkGeneralNote(text)` rejects a note that
   names a move number or a SAN move in a move-number context ("At 10...Bd7",
   "on move 12", "17.a5"), a bare square pair, or is over 400 characters; it
   accepts "Daniel counts the defenders when cued but does not scan for
   loose pieces before committing to a capture".
-- [ ] Every write of a focus-area note, the student memory and a lesson
+- [x] Every write of a focus-area note, the student memory and a lesson
   note goes through it; on a rejection the tool result says what to
   remove ("write it without move numbers or squares: describe the habit")
   and nothing is stored.
-- [ ] `propose_focus_area_update` description: the note is the coach's
+- [x] `propose_focus_area_update` description: the note is the coach's
   standing view of this habit, rewritten each time, not a log of the
   session.
+
+Status: done 2026-10-05 — `checkGeneralNote` (pure, tested) guards focus-area notes, the student memory, the lesson note and progress notes.
 
 **Commit:** `feat(progress): notes must be general, checked before they are stored`
 
@@ -332,22 +336,24 @@ repositories, `packages/shared`.
 `apps/api/src/services/progress-dossier.ts` (reads), `packages/prompts/src/progress-dossier.ts`
 (words).
 
-- [ ] Failing tests first on a fixture of observations: per focus area (and
+- [x] Failing tests first on a fixture of observations: per focus area (and
   per graduated area) the dossier holds the measured rate now, its
   opportunities, and one result per recent game (`2 of 5 chances failed`,
   `no chance came up`), oldest to newest, with the games analysed since the
   previous session's end marked new. A game with no opportunity is "no
   chance", never a success.
-- [ ] The dossier text, in order: the student's own words about their
+- [x] The dossier text, in order: the student's own words about their
   weaknesses; each active and improving area (code in words, status,
   measured trend, the coach's general note); graduated areas, one line each
   with the date and whether a failure of that code has appeared since; the
   student memory; the last five lesson notes with dates; and the games
   analysed since last time.
-- [ ] A graduated area whose code failed in a game after `graduatedAt` is
+- [x] A graduated area whose code failed in a game after `graduatedAt` is
   flagged "has come back" (a fact for the coach to act on, not a verdict).
-- [ ] The coach's student block shows graduated areas and lesson notes too
+- [x] The coach's student block shows graduated areas and lesson notes too
   (decision 4); `get_user_profile` returns the same.
+
+Status: done 2026-10-05 — pure helpers, the renderer and `loadProgressDossier` (db-tested); the coach's student block and `get_user_profile` show the improved list, the memory and the lesson notes.
 
 **Commit:** `feat(progress): the dossier — measured trend per habit, graduated list, lesson notes`
 
@@ -359,12 +365,12 @@ repositories, `packages/shared`.
 **Files:** `apps/api/src/services/coach-phase.ts`, `coach-progress-context.ts`,
 `coach-tools.ts`, `coach-agent-turn.ts`.
 
-- [ ] Failing tests first: a progress turn's context holds the dossier and
+- [x] Failing tests first: a progress turn's context holds the dossier and
   no annotated game, no current-position block and no game tools; a review
   turn holds none of the progress rounds' messages, and a progress turn
   holds none of the review's; a progress round is never folded into "Other
   moves discussed" or counted as a move's episode.
-- [ ] Keep the rounds apart by `session_messages.phase`, not by a reserved
+- [x] Keep the rounds apart by `session_messages.phase`, not by a reserved
   ply (a negative ply would reach `session_move_notes`, `describeMoveRef`,
   the per-ply tool stats and the position dividers, which all read a ply as a
   real move). The only way the coach's context reads history is one
@@ -372,7 +378,7 @@ repositories, `packages/shared`.
   runs on its result, so the review episode scan never sees a progress
   row. `closeEpisodeIfNeeded` returns at once for a progress phase.
   The summarizer and the debug snapshot still read the whole transcript.
-- [ ] A db test that writes messages in all three phases for one session
+- [x] A db test that writes messages in all three phases for one session
   and asserts each context builder's output and `listForPhase`'s result;
   a grep-style unit test that fails if a file on the coach path reads
   `listBySession` instead of `listForPhase`. The call sites to move
@@ -381,26 +387,29 @@ repositories, `packages/shared`.
   `move-notes.ts:65` (`recall_move`) filters `listBySessionAndPly` to the
   review phase. The play and bot commit paths and the summarizer keep the
   whole-transcript read.
-- [ ] Tools per phase. `progress_open`: the profile and stats reads,
+- [x] Tools per phase. `progress_open`: the profile and stats reads,
   `propose_focus_area_update`, `update_threads`, `begin_review`.
   `review`: today's tools, plus `note_progress({diagnosisCode?, note})`
   (a short, general observation, stored in `session_progress_notes`) and
   `begin_wrap_up`; no `end_session`. `progress_close`:
   `propose_focus_area_update`, `save_progress_notes({studentMemory,
-  lessonNote, summary, homework})`, `end_session`. A tool called in the
+  lessonNote})`, `end_session({summary, homework})`. A tool called in the
   wrong phase answers with the phase it belongs to, not an error.
-- [ ] Review-phase context gains `## Progress notes for this game` (the
+- [x] Review-phase context gains `## Progress notes for this game` (the
   rows of `session_progress_notes`, one line each, "(none yet)" when empty)
   as the layer **before** "## Other moves discussed", folded into the same
   cached block so there is no fifth breakpoint.
-- [ ] Closing-phase context: the dossier, then "## Other moves discussed"
+- [x] Closing-phase context: the dossier, then "## Other moves discussed"
   (the game's own notes) and the game's progress notes, then a closing
   block: "This is the closing note about the game and about keeping the
   student's progress. Decide what changed, write it down, tell the student,
   then end the session."
-- [ ] `end_session` only works in `progress_close`; `save_progress_notes`
-  stores `summary`/`homework` on the session (what `endSessionTool` ignores
-  today).
+- [x] `end_session` is only offered in `progress_close` (in an analyze
+  session); it stores the `summary`/`homework` it is given on the session
+  (what `endSessionTool` ignored before). `save_progress_notes` stores the
+  student memory and the lesson note only.
+
+Status: done 2026-10-05 — `coach-phases.db.test.ts` drives the three rounds through the real turn code with a scripted model. Deviation: `propose_focus_area_update` is not offered in the review either (the review leaves evidence with `note_progress`); `end_session` carries the summary and homework.
 
 **Commit:** `feat(coach): progress rounds as their own episodes, with a phase machine`
 
@@ -413,23 +422,25 @@ repositories, `packages/shared`.
 `coach-session-flow.ts`, `coach-method.ts`, `coach-system.ts`, snapshots,
 `docs/prompts.md` (`npm run docs:prompts`).
 
-- [ ] Opening round: greet once (the persona's rule), read the dossier,
+- [x] Opening round: greet once (the persona's rule), read the dossier,
   say in plain words what has changed since last time and what that means
   for the list (keep, progress, graduate, reopen, add), make the updates
   with the tool, ask once whether the student sees it differently, then
   `begin_review`. Judge from the measured trend and the lesson notes, never
   from what the student says they do (kept from today's loop).
-- [ ] Review round: no greeting, a one-line recap of the goal; call
+- [x] Review round: no greeting, a one-line recap of the goal; call
   `note_progress` when a habit is seen or missed in the moment, a general
   sentence each; the "Closing" paragraph of `SESSION_FLOW` becomes: ask the
   lesson, react, `begin_wrap_up`. The focus-area paragraph there moves out.
-- [ ] Closing round: read the game's notes against the dossier, update the
+- [x] Closing round: read the game's notes against the dossier, update the
   list, rewrite the habit notes and the student memory (general, durable,
   what teaches this student best), write the lesson note, tell the student
   what moved and the homework, say the session is done, `end_session`.
-- [ ] "The focus-area loop" section is rewritten for the new tools and
+- [x] "The focus-area loop" section is rewritten for the new tools and
   the graduated list; the rule "never touch focus-area state silently"
   stays.
+
+Status: done 2026-10-05 — `coach-progress.ts` (both rounds), `PROGRESS_DURING_REVIEW`, the review's opening and closing lines; snapshots and `docs/prompts.md` regenerated. The play flow keeps "The focus-area loop".
 
 **Commit:** `feat(prompts): the opening and closing progress rounds`
 
@@ -440,12 +451,17 @@ repositories, `packages/shared`.
 
 **Files:** shared session schema, `SessionPage.tsx`, one small component.
 
-- [ ] The session DTO carries `phase`. In `progress_open` and
-  `progress_close` the page shows a "Progress check-in" banner and the
-  board stays on the start position (open) or the last position (close);
-  no move strip or jump in those phases.
-- [ ] After `begin_review` the page behaves as today. Style every button
+- [x] The session DTO carries `phase`. In `progress_open` and
+  `progress_close` the page shows a "Progress check-in" banner; the board
+  stays where it is (the start position in the check-in, the last moment in
+  the closing round). NOT DONE: hiding the move strip and jumps in those
+  phases — a jump sent during a progress round is read as plain text and
+  changes nothing, so it is harmless, and the strip is shared with the
+  review's layout.
+- [x] After `begin_review` the page behaves as today. Style every button
   with token colors (the repo's rule).
+
+Status: done 2026-10-05 except the line below marked NOT DONE; the banner follows the coach's `begin_review` / `begin_wrap_up` calls. Not seen in a browser.
 
 **Commit:** `feat(web): the session page shows the progress check-in phases`
 
@@ -453,11 +469,13 @@ repositories, `packages/shared`.
 
 **Read:** `jobs/summarize-session.ts`, `progress.ts` (`applySessionOutcome`).
 
-- [ ] Failing test first: ending a session in `progress_close` does not
+- [x] Failing test first: ending a session in `progress_close` does not
   queue `summarize-session`; a session completed any other way still does,
   and its focus-area updates cannot graduate or reopen an area (it may only
   `progress`, `regress`, `create`).
-- [ ] Status: record the before/after on a dev game transcript.
+- [x] Status: record the before/after on a dev game transcript.
+
+Status: done 2026-10-05 — `end_session` in the closing round queues no summarizer (tested); the summarizer's schema allows only create/progress/regress.
 
 **Commit:** `refactor(progress): the summarizer only runs when no closing round did`
 
@@ -478,11 +496,37 @@ analysis step builds `diagnostic_observations` with a ply, a code and
 
 **Read:** `analysis-steps.ts:91-95`, `diagnostic-observations.ts`.
 
-- [ ] On the 268 dev and holdout games in `apps/api/.review-audit/`: per
+- [x] On the 268 dev and holdout games in `apps/api/.review-audit/`: per
   game, how many failed observations exist, how many are on a move that is
   not already a candidate, how many on a move rated `good`. Report the
   table before any code (the owner's rule: an idea is a hypothesis).
   Decide the cap per game from it.
+
+Status: done 2026-10-05 — measured on the games whose engine answers are in
+`engine-cache.json` (no Stockfish on this box): 201 of the 268 corpus games
+(143 lichess, 56 golden, 2 seeds; the other 67 had a cache miss), each run
+through the app's `runAnalysisSteps`.
+
+| | any code | the 3 commonest codes (a stand-in for a student's focus areas) |
+|---|---|---|
+| failed observations | 155 (377 observations in all) | 84 |
+| games with at least one | 122 of 201 | 79 of 201 |
+| failed per game | mean 0.77, 94 games with 1, 25 with 2, 3 with more (most: 4) | mean 0.42, most: 2 |
+| on a move that is **not** already a candidate | **3 (2%)**, in 3 games | 3 (4%) |
+| on a move rated good, best or book | 4 (3%) | 4 (5%) |
+
+The failed moves are rated mistake 41, blunder 66, miss 38, inaccuracy 6,
+best 2, book 2. **The premise did not hold:** a failed observation needs an
+eval gap and is not counted in a decided position (`eval-verdict.ts`,
+`resolve-episodes.ts`'s `isCompletelyDecidedPosition`), so the diagnostics
+already leave out exactly the owner's case (a count of defenders missed at
+the end of a decided game). 98% of failed moves are candidates already.
+What the habit link still adds is the code on those 152 candidates and a
+pick for the 3 that are not. The cap stays at 3 (it never binds: most failed
+in a game is 4, non-candidates at most 1). **Owner's call, not made here:**
+to cover a decided-position oversight the diagnostics' definition of a
+failure would have to change (`docs/diagnose.md`), which moves every
+focus-area count.
 
 ### Task 129.2 — A `focus_failure` candidate, chosen when the plan is made
 
@@ -492,18 +536,20 @@ analysis step builds `diagnostic_observations` with a ply, a code and
 **Files:** `packages/chess-analysis/src/focus-failure-moments.ts` (pure),
 `coaching-plan.ts`, `local-coaching-plan.ts`, shared plan schema.
 
-- [ ] Failing tests first: a failed observation of a code the student has
+- [x] Failing tests first: a failed observation of a code the student has
   as an active or improving focus area, on a `good`-rated move, becomes a
   `focus_failure` candidate; one of a code that is not a focus area does
   not; at most the cap per game, most severe and most reachable first; a
   ply that is already a `user_mistake` keeps that kind.
-- [ ] Join with the focus areas **when the plan is made**, not when the
+- [x] Join with the focus areas **when the plan is made**, not when the
   game is analysed: the areas are created by a rebuild that runs after the
   analysis, so a join at analysis time would be stale.
-- [ ] `MomentKindSchema` gains `focus_failure`; the local fallback ranks it
+- [x] `MomentKindSchema` gains `focus_failure`; the local fallback ranks it
   between `user_mistake` and `instructive`.
-- [ ] The plan's moments must be the student's own plies; a ply that is
+- [x] The plan's moments must be the student's own plies; a ply that is
   not is dropped before the plan is stored.
+
+Status: done 2026-10-05 — `addFocusFailureMoments` (pure, tested), `plan-moments.ts` (the join and the student-plies filter, tested); the join in `ensureCoachingPlan` has no test of its own (it needs the planner's LLM call), only its typed pieces do. A `user_mistake` on a habit's failure keeps its kind and gains `focusCode`.
 
 **Commit:** `feat(coach): moments tied to the student's habits, found from measured failures`
 
@@ -512,12 +558,14 @@ analysis step builds `diagnostic_observations` with a ply, a code and
 **Read:** `analysis-planner.ts` (`renderMovesTable`, `reasonsNote`),
 `review-move-texts.ts`.
 
-- [ ] A candidate row shows its code in words next to the move
+- [x] A candidate row shows its code in words next to the move
   ("loose-piece scan: a piece was left to be won"); a row for a `good` move
   that is a candidate is listed with that note instead of bare.
-- [ ] The notes in a row are `reviewMoveTexts(move)` (the cards and the
+- [x] The notes in a row are `reviewMoveTexts(move)` (the cards and the
   reasons, as the student reads them) instead of `move.reasons` alone.
-- [ ] Golden/audit unaffected; `npm run docs:prompts`.
+- [x] Golden/audit unaffected; `npm run docs:prompts`.
+
+Status: done 2026-10-05 — `analysis-planner.test.ts`; the table's notes are the review's sentences and a habit failure is marked on its row.
 
 **Commit:** `feat(prompts): the planner's move table carries the habit and the review text`
 

@@ -3,6 +3,7 @@ import type { CoachingPlan } from '@freechesscoach/shared';
 import { buildPlannerMessages, type PlannerPromptInput } from '@freechesscoach/prompts';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
+import * as diagnosticObservationsRepo from '../db/repositories/diagnostic-observations.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
@@ -11,6 +12,7 @@ import { getModelForUser, type GatewayConfig } from '../llm/gateway.js';
 import { generateStructured } from '../llm/text.js';
 import { composeGameReport } from './game-report.js';
 import { buildLocalCoachingPlan } from './local-coaching-plan.js';
+import { keepStudentMoments, planCandidateMoments, studentPlies } from './plan-moments.js';
 import { getPlayerStatsText } from './coach-player-stats.js';
 import * as userProfileService from './user-profile.js';
 
@@ -47,14 +49,17 @@ export async function ensureCoachingPlan(
   if (!game) throw new NotFoundError('Game not found');
   if (!user) throw new NotFoundError('User not found');
 
-  const [storedReport, candidateMoments, profileSummary, playerStats] = await Promise.all([
+  const [storedReport, storedCandidates, profileSummary, playerStats, observations] = await Promise.all([
     analysesRepo.findGameReportByGameId(db, gameId),
     analysesRepo.findCandidateMomentsByGameId(db, gameId),
     userProfileService.getProfileSummary(db, userId),
-    getPlayerStatsText(db, { userId, gameId })
+    getPlayerStatsText(db, { userId, gameId }),
+    diagnosticObservationsRepo.listForGame(db, gameId)
   ]);
   if (!storedReport) throw new NotFoundError('Game report not found');
   const gameReport = composeGameReport(storedReport, { annotatedPgn: game.annotatedPgn, userColor: game.userColor });
+  const focusCodes = new Set(profileSummary.focusAreas.flatMap((area) => (area.diagnosisCode ? [area.diagnosisCode] : [])));
+  const candidateMoments = planCandidateMoments(storedCandidates ?? [], gameReport.moves, observations, focusCodes);
 
   const plannerInput: PlannerPromptInput = {
     band: user.ratingBand,
@@ -64,12 +69,12 @@ export async function ensureCoachingPlan(
     selfAssessment: user.selfAssessment,
     userColor: game.userColor,
     moves: gameReport.moves,
-    candidateMoments: candidateMoments ?? [],
+    candidateMoments,
     playerStats
   };
 
   const resolution = await getModelForUser(db, gatewayConfig, userId, 'light');
-  if (resolution.isLocal) return buildLocalCoachingPlan(gameReport.moves, candidateMoments ?? []);
+  if (resolution.isLocal) return buildLocalCoachingPlan(gameReport.moves, candidateMoments);
   const messages = buildPlannerMessages(plannerInput);
   const result = await generateStructured({
     resolution,
@@ -78,6 +83,7 @@ export async function ensureCoachingPlan(
     schema: CoachingPlanSchema
   });
 
-  await analysesRepo.storeCoachingPlan(db, analysis.id, result.object);
-  return result.object;
+  const plan = keepStudentMoments(result.object, studentPlies(gameReport.moves));
+  await analysesRepo.storeCoachingPlan(db, analysis.id, plan);
+  return plan;
 }

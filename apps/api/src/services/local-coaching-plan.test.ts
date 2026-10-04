@@ -59,3 +59,18 @@ describe('buildLocalCoachingPlan sessionGoal', () => {
     expect(plan.sessionGoal.length).toBeGreaterThan(0);
   });
 });
+
+describe('buildLocalCoachingPlan with a habit failure', () => {
+  test('a move where a habit failed outranks the turning points that crowd the five moments, however little it cost', () => {
+    const turning: CandidateMoment[] = [20, 22, 24, 26, 28].map((ply) => ({ ply, kind: 'turning_point', cpLoss: 400 }));
+    const candidates: CandidateMoment[] = [...turning, { ply: 30, kind: 'focus_failure', cpLoss: 0, focusCode: 'BV-04' }];
+    const moves = [...[20, 22, 24, 26, 28, 30].map((ply) => move({ ply, mover: ply % 2 === 0 ? 'black' : 'white' }))];
+
+    const plan = buildLocalCoachingPlan(moves, candidates);
+
+    expect(plan.moments).toHaveLength(5);
+    expect(plan.moments.find((moment) => moment.ply === 30)?.kind).toBe('focus_failure');
+    expect(plan.moments.find((moment) => moment.ply === 28)).toBeUndefined();
+  });
+});
+

@@ -287,7 +287,7 @@ You will receive:
 Produce a lesson plan as JSON matching the provided schema. Rules:
 
 1. SET ONE GOAL FIRST (sessionGoal), then choose moments that serve it. The goal is the single thing this student should be better at when the session ends, written as one plain sentence the coach could say out loud ("stop starting flank play before castling"). Choose it from evidence, in this order of weight: an ACTIVE FOCUS AREA this game gives you material for; a figure well out of line with the student's own baseline in the comparison above; then, only if neither applies, the clearest repeated pattern in this game itself. A weak figure that matches their usual is not a goal — that is just how they play, and one game is the weakest evidence you have. Never invent a goal the game gives you no moment to work on.
-2. SELECT 4–8 moments, chronological. Prefer, in order: (a) moments that connect to the student's ACTIVE FOCUS AREAS — these teach best; (b) the student's own mistakes/blunders/misses with a clear instructive point; (c) missed chances the student could realistically have found at their level; (d) one instructive non-mistake moment (a good plan decision, a structure choice) so the session isn't only about errors. Skip mistakes that are pure luck/time-scramble noise or far above the student's level.
+2. SELECT 4–8 moments, chronological. Prefer, in order: (a) moments that connect to the student's ACTIVE FOCUS AREAS — these teach best. A candidate marked focus_failure is a move where one of those habits failed although the move cost nothing (the eval did not change, so it will look fine in the table); it is the evidence the focus area is about, so take it before a mistake that has nothing to do with the habits; (b) the student's own mistakes/blunders/misses with a clear instructive point; (c) missed chances the student could realistically have found at their level; (d) one instructive non-mistake moment (a good plan decision, a structure choice) so the session isn't only about errors. Skip mistakes that are pure luck/time-scramble noise or far above the student's level.
 3. For each moment write a socraticQuestion that asks about the student's THINKING, calibrated to their level. Good: "What did you want your knight to do here?" / "Which of your pieces is doing the least?" Bad: "Why didn't you play Nxd5 winning a pawn?" (that's telling, not asking).
 4. keyLine: the engine's main line in SAN from this position, at most 10 plies.
 5. category: pick from the fixed list only:
@@ -365,7 +365,7 @@ JSON SCHEMA
   "gameSummary": string, "openingNote": string,
   "themes": string[] (<=3, from the fixed category list),
   "connectionToHistory": string, "sessionGoal": string,
-  "moments": [{ "ply": number, "kind": "user_mistake"|"missed_chance"|"turning_point"|"instructive",
+  "moments": [{ "ply": number, "kind": "user_mistake"|"focus_failure"|"missed_chance"|"turning_point"|"instructive",
     "category": string|null, "whatHappened": string, "socraticQuestion": string,
     "keyLine": string, "revealDepthPlies": number }] (4-8 items)
 }

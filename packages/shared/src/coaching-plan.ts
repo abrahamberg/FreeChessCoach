@@ -3,6 +3,7 @@ import { MISTAKE_CATEGORIES } from './constants.js';
 
 export const MomentKindSchema = z.enum([
   'user_mistake',
+  'focus_failure',
   'missed_chance',
   'turning_point',
   'instructive'

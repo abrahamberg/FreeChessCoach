@@ -1,4 +1,4 @@
-import type { EngineEval } from '@freechesscoach/shared';
+import type { DiagnosisCodeId, EngineEval } from '@freechesscoach/shared';
 import type { ClassifiedMove } from './classify.js';
 import { whitePerspectiveCp } from './classify.js';
 import { winPctWhite } from './win-probability.js';
@@ -10,16 +10,23 @@ import { winPctWhite } from './win-probability.js';
  * turning point near 0 and noise once a position is already decided. */
 const TURNING_POINT_WINPCT_THRESHOLD = 65;
 
-export type CandidateMomentKind = 'user_mistake' | 'turning_point' | 'instructive';
+export type CandidateMomentKind = 'user_mistake' | 'focus_failure' | 'turning_point' | 'instructive';
 
 export interface CandidateMoment {
   ply: number;
   kind: CandidateMomentKind;
   cpLoss: number;
+  /** The student's focus-area habit that failed on this move (`focus_failure`,
+   * found when the plan is made — `focus-failure-moments.ts`); also set on a
+   * `user_mistake` that is a failure of one too. */
+  focusCode?: DiagnosisCodeId;
 }
 
-const KIND_PRIORITY: Record<CandidateMomentKind, number> = {
-  user_mistake: 3,
+/** Higher wins when several rules fire on one ply, and ranks the moments a
+ * plan without a planner model keeps. */
+export const KIND_PRIORITY: Record<CandidateMomentKind, number> = {
+  user_mistake: 4,
+  focus_failure: 3,
   instructive: 2,
   turning_point: 1
 };
