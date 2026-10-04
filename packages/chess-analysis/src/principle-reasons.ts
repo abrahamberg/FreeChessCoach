@@ -32,7 +32,7 @@ export function principleReason(input: PrincipleInput): string | null {
   const best = input.evalBefore.lines[0];
   if (!best) return null;
   if (input.quality === 'book' || input.quality === 'forced') return null;
-  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan) ?? plainDevelopmentText(input) ?? openFileRookText(input) ?? outpostText(input.fenBefore, input.moveSan) ?? castleText(input.fenBefore, input.moveSan) ?? freeCaptureText(input) ?? (best.moveSan === input.moveSan ? goodCoordinationText(input) : goodMoveComparison(input, best.moveSan));
+  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan) ?? plainDevelopmentText(input) ?? openFileRookText(input) ?? outpostText(input.fenBefore, input.moveSan) ?? castleText(input.fenBefore, input.moveSan) ?? freeCaptureText(input) ?? (best.moveSan === input.moveSan ? goodCoordinationText(input) : null);
   if (best.moveSan === input.moveSan) return null;
 
   const playedLine = [input.moveSan, ...(input.evalAfter?.lines[0]?.pvSan ?? [])];
@@ -57,18 +57,6 @@ export function principleReason(input: PrincipleInput): string | null {
 const BLOCK_MAX_LOSS_CP = 150;
 
 /** The king left open to more checks than the engine's move allows. */
-/** A fine move whose engine alternative was clearly better: only the rules
- * that compare two boards, never the generic "what the best move does". */
-const GOOD_MOVE_MIN_GAP_CP = 30;
-
-function goodMoveComparison(input: PrincipleInput, best: string): string | null {
-  if (input.quality !== 'good') return null;
-  const bestCp = input.evalBefore.lines[0]?.cp;
-  const playedCp = input.evalAfter?.lines[0]?.cp;
-  if (bestCp == null || playedCp == null || Math.abs(bestCp - playedCp) < GOOD_MOVE_MIN_GAP_CP) return null;
-  return checksText(input, best) ?? blocksText(input, best) ?? centreText(input, best) ?? pilesText(input, best);
-}
-
 function checksText(input: PrincipleInput, best: string): string | null {
   const [played] = line(input.fenBefore, [input.moveSan], 1);
   const [better] = line(input.fenBefore, [best], 1);

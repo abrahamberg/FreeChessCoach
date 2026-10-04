@@ -34,7 +34,7 @@ export function rankTacticClaims(claims: readonly VerifiedTacticClaim[], movedTo
     const byScore = claimScore(right) - claimScore(left);
     if (Math.abs(byScore) > 1e-9) return byScore;
     const byPrize = prizeMismatch(left) - prizeMismatch(right);
-    if (Math.abs(byPrize) > 1e-9) return byPrize;
+    if (Math.abs(byPrize) >= PRIZE_MISMATCH_MIN_PAWNS) return byPrize;
     return detectorPriority(left) - detectorPriority(right);
   });
   return dropSubsumedClaims(ranked, movedTo);
@@ -83,14 +83,22 @@ export function gainWeight(kind: TacticGainKind, pawns: number): number {
 }
 
 /**
- * How far the prize a claim names is from what the line won. Two claims that
+ * How far the prize a claim names is from what the line won, for the motifs
+ * whose prize is "the piece behind" (`skewer`, `xRayAttack`). Two claims that
  * the line pays off equally tie on score, and the card then reads out the
  * leader's own prize: Re6 against a queen is a skewer to a pawn on a6 and a
- * trapped queen, both paid by Rxd6 — "wins a pawn" is the wrong one to say
- * when the queen went. The claim that names what was won leads.
+ * trapped queen, both paid by Rxd6 — "wins a pawn" is the wrong one to say when
+ * the queen went. A pin or a trap names what it holds, so they are not marked
+ * down: a pin on a queen expects less than the line wins and is still the
+ * better word.
  */
+const NAMES_THE_PIECE_BEHIND: ReadonlySet<string> = new Set(['skewer', 'xRayAttack']);
+
+/** A smaller difference is not a reason to prefer one claim. */
+const PRIZE_MISMATCH_MIN_PAWNS = 3;
+
 function prizeMismatch(claim: VerifiedTacticClaim): number {
-  return claim.gainKind === 'material' ? Math.abs(claim.verifiedGain - claim.expectedGain) : 0;
+  return claim.gainKind === 'material' && NAMES_THE_PIECE_BEHIND.has(claim.type) ? Math.abs(claim.verifiedGain - claim.expectedGain) : 0;
 }
 
 function detectorPriority(claim: VerifiedTacticClaim): number {

@@ -112,6 +112,15 @@ export const CONFIG = {
     materialityBandGap: 2
   },
 
+  /** `decisive-notes.ts` — a mistake that loses a piece or allows mate keeps
+   * only the notes that explain it. On: the owner's call (2026-10-04) after 99
+   * redundant sentences in 73 of 220 dev games. */
+  decisiveNotes: {
+    enabled: true,
+    /** An allowed material gain this big (in pawns) is a lost piece. */
+    minPawns: 3
+  },
+
   /** §5.8 — Miss (M1-M4) re-label. */
   miss: {
     opportunityWinPctMin: 75,

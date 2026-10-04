@@ -153,19 +153,10 @@ describe('stronger candidates without a capture or attack', () => {
     expect(principleReason({ fenBefore: file, moveSan: 'Rfe1', quality: 'good', evalBefore: withCp(file, 'Rfe1') })).toBe('Puts the rook on the e-file, which has no pawns');
   });
 
-  it('compares a good move with a clearly better one by the checks it leaves', () => {
+  it('says nothing about a better move for a good move: the comparison held in 40% of cases at true depth 22', () => {
     const withCp = (fen: string, cp: number, moveSan: string): EngineEval => ({ fen, ply: 0, depth: 12, lines: [{ moveSan, moveUci: '', cp, mateIn: null, pvSan: [moveSan] }] });
     const fen = 'rnb1k2r/ppp2pp1/5q1p/2bP4/4p3/P2P1P2/1PP3PP/RN1QKBNR w KQkq - 0 8';
-    expect(principleReason({ fenBefore: fen, moveSan: 'dxe4', quality: 'good', evalBefore: withCp(fen, 100, 'Nd2'), evalAfter: withCp(fen, 60, 'Qxf3') })).toBe('dxe4 leaves the king facing 4 possible checks; Nd2 allows only 2');
-    expect(principleReason({ fenBefore: fen, moveSan: 'dxe4', quality: 'good', evalBefore: withCp(fen, 100, 'Nd2'), evalAfter: withCp(fen, 85, 'Qxf3') })).toBeNull();
-  });
-
-  it('says a good capture of a piece nothing defended, and stays silent when it was defended', () => {
-    const withCp = (fen: string, moveSan: string): EngineEval => ({ fen, ply: 0, depth: 12, lines: [{ moveSan, moveUci: '', cp: 0, mateIn: null, pvSan: [moveSan] }] });
-    const free = '4k3/8/8/3n4/8/1B6/8/4K3 w - - 0 1';
-    expect(principleReason({ fenBefore: free, moveSan: 'Bxd5', quality: 'best', evalBefore: withCp(free, 'Bxd5') })).toBe('Takes the knight on d5, which nothing defended');
-    const defended = '4k3/8/4p3/3n4/8/1B6/8/4K3 w - - 0 1';
-    expect(principleReason({ fenBefore: defended, moveSan: 'Bxd5', quality: 'best', evalBefore: withCp(defended, 'Bxd5') })).toBeNull();
+    expect(principleReason({ fenBefore: fen, moveSan: 'dxe4', quality: 'good', evalBefore: withCp(fen, 100, 'Nd2'), evalAfter: withCp(fen, 60, 'Qxf3') })).toBeNull();
   });
 
   it('says a pawn move that cuts off its own bishop, against the move that keeps it open', () => {

@@ -1,6 +1,8 @@
 import type { ClassifiedMoveDto, EngineEval } from '@freechesscoach/shared';
 import { withoutCardedGain } from './fork-reasons.js';
 import { decideMoveVerdict, DEFAULT_VERDICT_DEPS, type MoveVerdict, type MoveVerdictDeps, type PreventionScans } from './move-verdict/index.js';
+import { CONFIG } from './config.js';
+import { hasDecisiveNote, withoutClutterBesideDecisive } from './decisive-notes.js';
 import { withoutCardedKick } from './kick-reason.js';
 import { withoutCardedOnlyMove } from './only-move-reason.js';
 import { withoutCardedPin } from './pin-reason.js';
@@ -77,7 +79,8 @@ function withVerdictCard(move: ClassifiedMoveDto, verdict: MoveVerdict | null): 
     .filter((sentence): sentence is string => sentence !== undefined);
   const detailLine = detail ? [`${detail.charAt(0).toUpperCase()}${detail.slice(1)}.`] : [];
   const plain = withoutCardedGain(withoutCardedOnlyMove(withoutCardedKick(withoutCardedPin(base ?? [], carded.tacticOpportunity), carded), carded), carded);
-  return { ...carded, reasons: [...plain, ...ordered, ...detailLine] };
+  const kept = CONFIG.decisiveNotes.enabled && hasDecisiveNote(carded) ? withoutClutterBesideDecisive(plain, ordered) : plain;
+  return { ...carded, reasons: [...kept, ...ordered, ...detailLine] };
 }
 
 /**
