@@ -1,0 +1,19 @@
+.progress-phase-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 8px 16px;
+  background: var(--color-surface-subtle);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.progress-phase-banner__title {
+  color: var(--color-text);
+}
+
+.progress-phase-banner__detail {
+  color: var(--color-text-secondary);
+  font-size: 0.9em;
+}

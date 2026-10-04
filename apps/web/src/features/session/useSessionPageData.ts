@@ -1,5 +1,5 @@
 import { parsePgn, resolveSanMove } from '@freechesscoach/chess-analysis';
-import { UserProfileSchema } from '@freechesscoach/shared';
+import { UserProfileSchema, type CoachPhase } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -36,10 +36,10 @@ interface UndoLastMoveOutput {
  * the session (react-chessboard fed `''`) until a hard reload rebuilds it
  * from the server's own truth. */
 /** The two client tools that end a round of a coaching session. */
-const PHASE_TOOLS: ReadonlySet<string> = new Set(['begin_review', 'begin_wrap_up']);
+const PHASE_AFTER_TOOL: Record<string, CoachPhase> = { begin_review: 'review', begin_wrap_up: 'progress_close' };
 
 function isPhaseTool(toolName: string): boolean {
-  return PHASE_TOOLS.has(toolName);
+  return toolName in PHASE_AFTER_TOOL;
 }
 
 function isErrorOutput(output: unknown): boolean {
@@ -155,6 +155,10 @@ export function useSessionPageData(sessionId: string) {
   const initialPly = isSessionFresh ? sessionQuery.data?.subjectPly : undefined;
   const boardState = useSessionBoardState(positions, initialPly);
   const divergedLine = useDivergedLine();
+  // The round the conversation is in: what the server says on load, then what
+  // the coach's begin_review / begin_wrap_up calls move it to as they happen.
+  const [livePhase, setLivePhase] = useState<CoachPhase | null>(null);
+  const phase = livePhase ?? sessionQuery.data?.phase ?? 'review';
   const [autoplayIntervalMs, setAutoplayIntervalMs] = useState(DEFAULT_AUTOPLAY_INTERVAL_MS);
   const currentRealPosition =
     positions.find((position) => position.ply === boardState.ply) ?? positions[0] ?? FALLBACK_POSITION;
@@ -168,7 +172,10 @@ export function useSessionPageData(sessionId: string) {
     // The coach moving the session between its rounds (the progress check-in,
     // the review, the closing round) needs nothing from the board: the
     // acknowledgement is what starts the next round on the server.
-    if (isPhaseTool(toolCall.toolName)) return { acknowledged: true };
+    if (isPhaseTool(toolCall.toolName)) {
+      setLivePhase(PHASE_AFTER_TOOL[toolCall.toolName] ?? 'review');
+      return { acknowledged: true };
+    }
     const real = { ply: currentRealPosition.ply, fen: currentRealPosition.fen };
     const hypotheticalResult = divergedLine.handleToolCall(toolCall, real, positions);
     const boardResult = boardState.handleToolCall(toolCall);
@@ -310,6 +317,7 @@ export function useSessionPageData(sessionId: string) {
     sessionQuery,
     profileQuery,
     gameQuery,
+    phase,
     sanMoves,
     positions,
     classifiedMoves,

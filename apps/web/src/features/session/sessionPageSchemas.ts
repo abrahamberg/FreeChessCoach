@@ -1,6 +1,7 @@
 import {
   AnalysisStatusSchema,
   ClassifiedMoveSchema,
+  CoachPhaseSchema,
   GameReportSchema,
   GameReviewTierSchema,
   MoveQualitySchema,
@@ -25,6 +26,8 @@ export const SessionDetailSchema = z.object({
    * reopen (useSessionPageData.ts), instead of scanning the transcript for
    * the last show_position (which could be a trailing flashback). */
   subjectPly: z.number(),
+  /** Which round of a coaching session the conversation is in. */
+  phase: CoachPhaseSchema,
   summary: z.string().nullable(),
   homework: z.string().nullable(),
   /** The Thinking log's opt-in flag (0043_bot_thinking_log.ts) — off by

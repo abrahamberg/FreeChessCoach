@@ -27,6 +27,7 @@ import { UnlockPhraseModal } from '../settings/UnlockPhraseModal.js';
 import { buildKickoffFacts } from './kickoff-facts.js';
 import { MobileCoachSessionBody } from './MobileCoachSessionBody.js';
 import { SessionBoardColumn } from './SessionBoardColumn.js';
+import { ProgressPhaseBanner } from './ProgressPhaseBanner.js';
 import { SessionHeader } from './SessionHeader.js';
 import { useSessionPageData } from './useSessionPageData.js';
 import '../../styles/board-bottom-bar.css';
@@ -51,6 +52,7 @@ export function SessionPage(): ReactNode {
     sessionQuery,
     profileQuery,
     gameQuery,
+    phase,
     sanMoves,
     positions,
     boardState,
@@ -296,6 +298,7 @@ export function SessionPage(): ReactNode {
       />
       {isDebugOpen && <DebugPanel sessionId={sessionId} onClose={() => setIsDebugOpen(false)} />}
       {completedBanner}
+      <ProgressPhaseBanner phase={phase} />
       {isSideBySide ? (
         <div className="session-body desktop">
           {isDesktop &&

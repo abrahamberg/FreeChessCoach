@@ -22,6 +22,7 @@ function session(subjectPly: number, replies: string[]) {
     status: 'active',
     mode: 'analyze',
     subjectPly,
+    phase: 'review',
     summary: null,
     homework: null,
     messages: replies.map((text, index) => ({ id: `m${index}`, role: 'assistant', content: text }))
