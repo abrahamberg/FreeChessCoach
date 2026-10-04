@@ -33,6 +33,12 @@ section is its "what is next".
 Dev code-check failures: 63 of 53,639 sentences, all in Phase 127's first
 task.
 
+**Unexplained or generic move notes** (positional "why"): the method is the
+skill `.claude/skills/review-why-pass/SKILL.md` (Opus `review-why-analyst`
+agents compare the played and best positions); what is built, dropped and
+still unsure, with example counts, is `docs/review-open-ideas.md`. Add to it
+after every pass.
+
 **Next, in this order:**
 
 1. **Phase 127** below (three clusters, biggest first). One `review-fixer`
