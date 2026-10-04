@@ -10,6 +10,7 @@ import { EngineUnavailableError, HttpError } from '../lib/errors.js';
 import { analyzeInChunks } from './analysis-chunks.js';
 import type { AnalysisJobDependencies } from './analysis-deps.js';
 import { runAnalysisSteps, type AnalysisStepsResult } from './analysis-steps.js';
+import { refutedComparisons } from './deep-comparison.js';
 import { scanPasses } from './pass-scans.js';
 import { createStepTimer, formatTimings, type StepTimer } from './step-timer.js';
 
@@ -62,6 +63,15 @@ export async function runAnalyzeGameJob(
     // The pass scans (`pass-scan.ts`) are an in-memory second request: never
     // stored, so the stored evals stay the game's own positions.
     const passEvals = await timer.timed('passScan', () => scanPasses(counted.deps.analyzeGamePositions, [parsedGame.positions]));
+    const analyzeDeep = counted.deps.analyzeDeepPositions;
+    const refutedComparisonPlies = analyzeDeep
+      ? await timer.timed('deepCheck', () =>
+          refutedComparisons(parsedGame, evals, game.userColor, analyzeDeep).catch((error: unknown) => {
+            console.error(`deep check failed for game ${gameId}:`, error);
+            return new Set<number>();
+          })
+        )
+      : undefined;
     // Flipped here, not after the report/diagnostics build below: those
     // steps are the slow part but report no countable progress, so the
     // progress screen's indeterminate "planning" wave needs to start now.
@@ -77,7 +87,8 @@ export async function runAnalyzeGameJob(
         pgnResult: game.result,
         parsedGame,
         evals,
-        passEvals
+        passEvals,
+        refutedComparisonPlies
       },
       timer
     );
@@ -135,7 +146,8 @@ function countingEngine(deps: AnalysisJobDependencies): { deps: AnalysisJobDepen
       analyzeGamePositions: (fens) => {
         calls += 1;
         return deps.analyzeGamePositions(fens);
-      }
+      },
+      ...(deps.analyzeDeepPositions ? { analyzeDeepPositions: deps.analyzeDeepPositions } : {})
     },
     calls: () => calls
   };

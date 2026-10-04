@@ -24,6 +24,9 @@ import type { ParsedGame } from './pgn.js';
 export type ClassifiedMove = ClassifiedMoveDto;
 
 export interface ClassifyMovesOptions {
+  /** Plies whose "the engine's move was better" notes a deeper search did not
+   * confirm (`apps/api/src/services/deep-comparison.ts`): the notes are skipped. */
+  refutedComparisonPlies?: ReadonlySet<number>;
   /** Results of the API-layer B6 engine check, keyed by move ply. */
   brilliantSoundnessByPly?: ReadonlyMap<number, boolean>;
   /** The B6 check as a callback over the move's first classification: return
@@ -67,6 +70,7 @@ export function classifyMoves(
       isBookMove: bookWalk[index]?.classification === 'book',
       opening,
       brilliantSoundness: options.brilliantSoundnessByPly?.get(position.ply),
+      comparisonRefuted: options.refutedComparisonPlies?.has(position.ply),
       isRecapture: isRecapture(game.positions[index - 1], before, position)
     };
     const move = buildClassifiedMove(moveInput);
@@ -123,6 +127,7 @@ export function classifyLiveMove(input: {
 }
 
 interface ClassifiedMoveInput {
+  comparisonRefuted?: boolean;
   position: ParsedGame['positions'][number];
   beforeFen: string;
   evalBefore: EngineEval;
@@ -183,6 +188,7 @@ function buildClassifiedMove(input: ClassifiedMoveInput): ClassifiedMove {
     evalAfter: input.evalAfter,
     isRecapture: input.isRecapture,
     isBookMove: input.isBookMove,
+    comparisonRefuted: input.comparisonRefuted,
     openingName: input.opening?.name,
     eco: input.opening?.eco,
     featureDelta: input.featureDelta,

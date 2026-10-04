@@ -266,3 +266,29 @@ describe('a decided game (18.Rb1 … Rxd2)', () => {
     expect(found.join(' ')).not.toContain('Missed');
   });
 });
+
+describe('a deeper search that did not confirm the better move', () => {
+  const fen = 'r1bqk1nr/2pp1pp1/p1n4p/1p1B4/1b1PP3/8/PP1N1PPP/RNBQK2R b KQkq - 3 8';
+  const input = (comparisonRefuted: boolean) => {
+    const chess = new Chess(fen);
+    chess.move('Bxd2+');
+    const line = (moveSan: string, pvSan: string[]) => ({ moveSan, moveUci: '', cp: 0, mateIn: null, pvSan });
+    return {
+      mover: 'black' as const,
+      fenBefore: fen,
+      fenAfter: chess.fen(),
+      moveSan: 'Bxd2+',
+      quality: 'inaccuracy' as const,
+      isUserMove: true,
+      isBookMove: false,
+      comparisonRefuted,
+      evalBefore: { ply: 0, fen, depth: 12, lines: [line('Nge7', ['Nge7', 'a3'])] },
+      evalAfter: { ply: 0, fen: chess.fen(), depth: 12, lines: [line('Nxd2', ['Nxd2', 'Nge7'])] }
+    };
+  };
+
+  test('names the better move when confirmed, and leaves the note out when refuted', () => {
+    expect(buildReasons(input(false)).join(' ')).toContain('Nge7 develops the knight');
+    expect(buildReasons(input(true)).join(' ')).not.toContain('Nge7');
+  });
+});

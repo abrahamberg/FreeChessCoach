@@ -4,6 +4,7 @@ import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import type { Database } from '../db/schema.js';
 import { resolveReviewEngineBackend, type ResolveEngineBackendOptions } from '../services/engine/resolve-engine-backend.js';
+import { DEEP_CHECK } from '../services/deep-comparison.js';
 import { runAnalyzeGameJob, type AnalysisJobDependencies } from '../services/analysis.js';
 import { rebuildDiagnosticProfileJobSpec, type RebuildDiagnosticProfileJobPayload } from './rebuild-diagnostic-profile.js';
 
@@ -39,7 +40,8 @@ export function createAnalyzeGameTask(options: AnalyzeGameTaskOptions): Task {
     // this game and never leak into another job.
     const backend = await resolveReviewEngineBackend(options.engineBackendOptions, game.userId);
     const deps: AnalysisJobDependencies = {
-      analyzeGamePositions: (fens) => backend.analyzeGame(fens)
+      analyzeGamePositions: (fens) => backend.analyzeGame(fens),
+      ...(process.env.REVIEW_DEEP_CHECK === '1' ? { analyzeDeepPositions: (fens: string[]) => backend.analyzeGame(fens, { depth: DEEP_CHECK.depth, multiPv: 1 }) } : {})
     };
 
     await runAnalyzeGameJob(options.db, deps, gameId);

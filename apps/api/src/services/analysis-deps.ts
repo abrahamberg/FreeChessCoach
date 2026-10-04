@@ -6,4 +6,7 @@ import type { EngineEval } from '@freechesscoach/shared';
 export interface AnalysisJobDependencies {
   /** Wraps `POST engine/analyze-game` (architecture §4). */
   analyzeGamePositions: (fens: string[]) => Promise<EngineEval[]>;
+  /** The deep check (`deep-comparison.ts`): the same call at depth 18, one line.
+   * Absent unless `REVIEW_DEEP_CHECK=1`; a failure of it is logged, never fatal. */
+  analyzeDeepPositions?: (fens: string[]) => Promise<EngineEval[]>;
 }

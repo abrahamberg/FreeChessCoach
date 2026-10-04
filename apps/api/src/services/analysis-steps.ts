@@ -31,6 +31,9 @@ export interface AnalysisStepsInput {
   /** The pass scans (`pass-scan.ts`), by flipped position: for the steps that
    * ask whether the side to move is hurt by having to move. */
   passEvals: PassEvals;
+  /** Plies whose "the engine's move was better" notes the deep check did not
+   * confirm (`deep-comparison.ts`); unset when the check is off. */
+  refutedComparisonPlies?: ReadonlySet<number>;
 }
 
 /** The benchmark's counters (Task 77.5); the job passes none. */
@@ -98,6 +101,7 @@ function classifyGame(input: AnalysisStepsInput): ClassifiedMoveDto[] {
   const { parsedGame, evals, userColor } = input;
   const bookWalk = inBookWalk(parsedGame.positions);
   return classifyMoves(parsedGame, evals, userColor, {
+    refutedComparisonPlies: input.refutedComparisonPlies,
     resolveBrilliantSoundness: (move) => brilliantSoundnessOf(move, evals, bookWalk)
   });
 }

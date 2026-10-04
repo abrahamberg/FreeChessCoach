@@ -34,6 +34,9 @@ export interface MoveReasonsInput {
   evalAfter?: EngineEval;
   /** The opponent's previous move captured on this square. */
   isRecapture?: boolean;
+  /** A deeper search did not confirm that the engine's move was clearly better
+   * (`apps/api` deep check): the notes that name a better move are left out. */
+  comparisonRefuted?: boolean;
   isBookMove: boolean;
   openingName?: string | null;
   eco?: string | null;
@@ -100,10 +103,11 @@ export function buildReasons(input: MoveReasonsInput): string[] {
 function addPrinciple(input: MoveReasonsInput, reasons: Reason[]): void {
   const castling = givesUpCastlingText(input);
   if (castling) reasons.push({ category: 'principle', text: castling });
-  if (replaceMissedCaptureWithCandidates(input, reasons)) return;
+  if (!input.comparisonRefuted && replaceMissedCaptureWithCandidates(input, reasons)) return;
   if (castling) return;
   if (reasons.some((reason) => reason.category !== 'trade' && reason.category !== 'mobility')) return;
   if (!isFault(input) && reasons.length > 0) return;
+  if (input.comparisonRefuted && isImprovableQuality(input.quality)) return;
   const text = principleReason(input);
   if (!text) return;
   const kept = reasons.filter((reason) => reason.category !== 'trade');

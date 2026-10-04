@@ -73,6 +73,19 @@ result (a probe of a position outside its batch) and two agents killed each
 other's jobs with `pkill`. Run at most three agents at a time, each with its own
 scratch folder, and tell them to probe one position at a time.
 
+## Decisions and what is done (2026-10-04, `docs/review-owner-decisions-2026-10-04.md`)
+
+| Decision | Status |
+|---|---|
+| Labels stay at the stored depth; a deep check removes "X was better" notes that depth 18 does not confirm | **built**, off by default: `REVIEW_DEEP_CHECK=1` (`deep-comparison.ts`). On 14 stored games it re-searches 0-14 plies a game at about 1.2 s each, and refutes the plies the agents marked "no concrete difference" (d690 17, 23, 25, 29, 14). Not yet judged on a larger sample, so it is not on. |
+| No "X was better" on a *good* move | **done** (comparison removed) |
+| Drop minor notes beside a decisive fault | **done**, `CONFIG.decisiveNotes.enabled` (`decisive-notes.ts`) |
+| Mate counts: no change | nothing to do |
+| Kick notes: keep all | nothing to do |
+| "The only move that holds": once per run of 3+ identical notes | **not built**: golden opposition drill loses 5 expected lines, so the golden file changes in the same commit |
+| Probe prints the depth reached; check prod's depth | probe **done**; prod's depth **open** (needs the private kube values) |
+| Two golden trap plies allow mate in 1-2 with no sentence (5…Bxd1, 3…Nf6) | **open**, re-run with `show` |
+
 ## Dropped
 
 | Idea | Why |
