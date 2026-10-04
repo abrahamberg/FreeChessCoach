@@ -15,6 +15,7 @@ export * from './move-inspection-summary.js';
 export * from './onboarding-profiler.js';
 export * from './player-stats-summary.js';
 export * from './position-analysis-summary.js';
+export * from './progress-dossier.js';
 export * from './progress-summarizer.js';
 export * from './puzzle-coach-system.js';
 export * from './render.js';

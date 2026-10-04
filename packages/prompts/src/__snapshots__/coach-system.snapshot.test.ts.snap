@@ -550,8 +550,12 @@ exports[`buildCoachSystemPrompt snapshots > mode=analyze persona=commander > dyn
 - Sessions together so far: 3
 - Active focus areas (the things you two are currently working on):
 (none yet — this is early in your work together)
-- Recent findings from past sessions (newest first):
-(none yet — no findings recorded so far)
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+(nothing has graduated yet)
+- What you remember about this student (your own long-term note):
+(nothing written yet)
+- Your notes on recent sessions (newest first):
+(no lesson notes yet)
 - Student's own words about their weaknesses: "I blunder pieces"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.
@@ -775,8 +779,12 @@ exports[`buildCoachSystemPrompt snapshots > mode=analyze persona=gambler > dynam
 - Sessions together so far: 3
 - Active focus areas (the things you two are currently working on):
 (none yet — this is early in your work together)
-- Recent findings from past sessions (newest first):
-(none yet — no findings recorded so far)
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+(nothing has graduated yet)
+- What you remember about this student (your own long-term note):
+(nothing written yet)
+- Your notes on recent sessions (newest first):
+(no lesson notes yet)
 - Student's own words about their weaknesses: "I blunder pieces"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.
@@ -1008,8 +1016,12 @@ exports[`buildCoachSystemPrompt snapshots > mode=analyze persona=general > dynam
 - Sessions together so far: 3
 - Active focus areas (the things you two are currently working on):
 (none yet — this is early in your work together)
-- Recent findings from past sessions (newest first):
-(none yet — no findings recorded so far)
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+(nothing has graduated yet)
+- What you remember about this student (your own long-term note):
+(nothing written yet)
+- Your notes on recent sessions (newest first):
+(no lesson notes yet)
 - Student's own words about their weaknesses: "I blunder pieces"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.
@@ -1218,8 +1230,12 @@ exports[`buildCoachSystemPrompt snapshots > mode=analyze persona=general_female 
 - Sessions together so far: 3
 - Active focus areas (the things you two are currently working on):
 (none yet — this is early in your work together)
-- Recent findings from past sessions (newest first):
-(none yet — no findings recorded so far)
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+(nothing has graduated yet)
+- What you remember about this student (your own long-term note):
+(nothing written yet)
+- Your notes on recent sessions (newest first):
+(no lesson notes yet)
 - Student's own words about their weaknesses: "I blunder pieces"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.
@@ -1428,8 +1444,12 @@ exports[`buildCoachSystemPrompt snapshots > mode=analyze persona=huntress > dyna
 - Sessions together so far: 3
 - Active focus areas (the things you two are currently working on):
 (none yet — this is early in your work together)
-- Recent findings from past sessions (newest first):
-(none yet — no findings recorded so far)
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+(nothing has graduated yet)
+- What you remember about this student (your own long-term note):
+(nothing written yet)
+- Your notes on recent sessions (newest first):
+(no lesson notes yet)
 - Student's own words about their weaknesses: "I blunder pieces"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.
@@ -1653,8 +1673,12 @@ exports[`buildCoachSystemPrompt snapshots > mode=analyze persona=scholar > dynam
 - Sessions together so far: 3
 - Active focus areas (the things you two are currently working on):
 (none yet — this is early in your work together)
-- Recent findings from past sessions (newest first):
-(none yet — no findings recorded so far)
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+(nothing has graduated yet)
+- What you remember about this student (your own long-term note):
+(nothing written yet)
+- Your notes on recent sessions (newest first):
+(no lesson notes yet)
 - Student's own words about their weaknesses: "I blunder pieces"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.
@@ -1878,8 +1902,12 @@ exports[`buildCoachSystemPrompt snapshots > mode=analyze persona=shark > dynamic
 - Sessions together so far: 3
 - Active focus areas (the things you two are currently working on):
 (none yet — this is early in your work together)
-- Recent findings from past sessions (newest first):
-(none yet — no findings recorded so far)
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+(nothing has graduated yet)
+- What you remember about this student (your own long-term note):
+(nothing written yet)
+- Your notes on recent sessions (newest first):
+(no lesson notes yet)
 - Student's own words about their weaknesses: "I blunder pieces"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.
@@ -2103,8 +2131,12 @@ exports[`buildCoachSystemPrompt snapshots > mode=analyze persona=sunzi > dynamic
 - Sessions together so far: 3
 - Active focus areas (the things you two are currently working on):
 (none yet — this is early in your work together)
-- Recent findings from past sessions (newest first):
-(none yet — no findings recorded so far)
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+(nothing has graduated yet)
+- What you remember about this student (your own long-term note):
+(nothing written yet)
+- Your notes on recent sessions (newest first):
+(no lesson notes yet)
 - Student's own words about their weaknesses: "I blunder pieces"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.
@@ -2328,8 +2360,12 @@ exports[`buildCoachSystemPrompt snapshots > mode=play persona=commander > dynami
 - Sessions together so far: 3
 - Active focus areas (the things you two are currently working on):
 (none yet — this is early in your work together)
-- Recent findings from past sessions (newest first):
-(none yet — no findings recorded so far)
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+(nothing has graduated yet)
+- What you remember about this student (your own long-term note):
+(nothing written yet)
+- Your notes on recent sessions (newest first):
+(no lesson notes yet)
 - Student's own words about their weaknesses: "I blunder pieces"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.
@@ -2565,8 +2601,12 @@ exports[`buildCoachSystemPrompt snapshots > mode=play persona=gambler > dynamicP
 - Sessions together so far: 3
 - Active focus areas (the things you two are currently working on):
 (none yet — this is early in your work together)
-- Recent findings from past sessions (newest first):
-(none yet — no findings recorded so far)
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+(nothing has graduated yet)
+- What you remember about this student (your own long-term note):
+(nothing written yet)
+- Your notes on recent sessions (newest first):
+(no lesson notes yet)
 - Student's own words about their weaknesses: "I blunder pieces"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.
@@ -2810,8 +2850,12 @@ exports[`buildCoachSystemPrompt snapshots > mode=play persona=general > dynamicP
 - Sessions together so far: 3
 - Active focus areas (the things you two are currently working on):
 (none yet — this is early in your work together)
-- Recent findings from past sessions (newest first):
-(none yet — no findings recorded so far)
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+(nothing has graduated yet)
+- What you remember about this student (your own long-term note):
+(nothing written yet)
+- Your notes on recent sessions (newest first):
+(no lesson notes yet)
 - Student's own words about their weaknesses: "I blunder pieces"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.
@@ -3032,8 +3076,12 @@ exports[`buildCoachSystemPrompt snapshots > mode=play persona=general_female > d
 - Sessions together so far: 3
 - Active focus areas (the things you two are currently working on):
 (none yet — this is early in your work together)
-- Recent findings from past sessions (newest first):
-(none yet — no findings recorded so far)
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+(nothing has graduated yet)
+- What you remember about this student (your own long-term note):
+(nothing written yet)
+- Your notes on recent sessions (newest first):
+(no lesson notes yet)
 - Student's own words about their weaknesses: "I blunder pieces"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.
@@ -3254,8 +3302,12 @@ exports[`buildCoachSystemPrompt snapshots > mode=play persona=huntress > dynamic
 - Sessions together so far: 3
 - Active focus areas (the things you two are currently working on):
 (none yet — this is early in your work together)
-- Recent findings from past sessions (newest first):
-(none yet — no findings recorded so far)
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+(nothing has graduated yet)
+- What you remember about this student (your own long-term note):
+(nothing written yet)
+- Your notes on recent sessions (newest first):
+(no lesson notes yet)
 - Student's own words about their weaknesses: "I blunder pieces"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.
@@ -3491,8 +3543,12 @@ exports[`buildCoachSystemPrompt snapshots > mode=play persona=scholar > dynamicP
 - Sessions together so far: 3
 - Active focus areas (the things you two are currently working on):
 (none yet — this is early in your work together)
-- Recent findings from past sessions (newest first):
-(none yet — no findings recorded so far)
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+(nothing has graduated yet)
+- What you remember about this student (your own long-term note):
+(nothing written yet)
+- Your notes on recent sessions (newest first):
+(no lesson notes yet)
 - Student's own words about their weaknesses: "I blunder pieces"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.
@@ -3728,8 +3784,12 @@ exports[`buildCoachSystemPrompt snapshots > mode=play persona=shark > dynamicPar
 - Sessions together so far: 3
 - Active focus areas (the things you two are currently working on):
 (none yet — this is early in your work together)
-- Recent findings from past sessions (newest first):
-(none yet — no findings recorded so far)
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+(nothing has graduated yet)
+- What you remember about this student (your own long-term note):
+(nothing written yet)
+- Your notes on recent sessions (newest first):
+(no lesson notes yet)
 - Student's own words about their weaknesses: "I blunder pieces"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.
@@ -3965,8 +4025,12 @@ exports[`buildCoachSystemPrompt snapshots > mode=play persona=sunzi > dynamicPar
 - Sessions together so far: 3
 - Active focus areas (the things you two are currently working on):
 (none yet — this is early in your work together)
-- Recent findings from past sessions (newest first):
-(none yet — no findings recorded so far)
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+(nothing has graduated yet)
+- What you remember about this student (your own long-term note):
+(nothing written yet)
+- Your notes on recent sessions (newest first):
+(no lesson notes yet)
 - Student's own words about their weaknesses: "I blunder pieces"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.

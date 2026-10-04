@@ -27,6 +27,24 @@ describe('buildCoachSystemPrompt', () => {
     expect(a.staticPart).toBe(b.staticPart);
   });
 
+  test('the student block carries the improved list, the coach\'s own memory and its notes on recent sessions, and no per-move findings', () => {
+    const { dynamicPart } = buildCoachSystemPrompt(
+      baseInput({
+        studentMemory: {
+          graduatedAreas: [{ category: 'missed_tactic', diagnosisCode: 'TA-01', graduatedAt: now, note: 'Finds mates in one reliably.' }],
+          memory: 'Responds to being asked what the opponent threatens.',
+          lessons: [{ endedAt: now, note: 'Worked on checking forcing replies; finds them once prompted.' }]
+        }
+      })
+    );
+
+    expect(dynamicPart).toContain('Improved list');
+    expect(dynamicPart).toContain('missed_tactic (TA-01), graduated today: Finds mates in one reliably.');
+    expect(dynamicPart).toContain('Responds to being asked what the opponent threatens.');
+    expect(dynamicPart).toContain('- today: Worked on checking forcing replies; finds them once prompted.');
+    expect(dynamicPart).not.toContain('Recent findings');
+  });
+
   test('staticPart is byte-identical for two users in the same band with different numeric ratings (§8.1 cache shape — the scoped diagnosis-code vocabulary is numeric-rating-keyed, so it lives in dynamicPart, never staticPart)', () => {
     const a = buildCoachSystemPrompt(baseInput({ rating: 900 }));
     const b = buildCoachSystemPrompt(baseInput({ rating: 1690 }));

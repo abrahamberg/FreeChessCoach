@@ -21,10 +21,11 @@ import {
   briefToolCue,
   renderCoachingPlanBlock,
   renderFocusAreasBlock,
-  renderRecentFindingsBlock,
+  renderGraduatedBlock,
+  renderLessonNotesBlock,
   renderScopedDiagnosisCodes,
   type FocusAreaSummary,
-  type RecentFinding
+  type StudentMemory
 } from './render.js';
 import { COACH_TOOL_SPECS } from './tools.js';
 import { PLAY_COACH_TOOL_SPECS } from './tools-play.js';
@@ -60,7 +61,8 @@ export interface CoachPromptInput {
    * (never null) when mode is 'analyze'. */
   plan: CoachingPlan | null;
   focusAreas: FocusAreaSummary[];
-  recentFindings: RecentFinding[];
+  /** What the coach remembers beyond the focus areas (replaces the old list of recent findings). */
+  studentMemory: StudentMemory;
   /** Injected for deterministic relative-date rendering; defaults to `new Date()`. */
   now?: Date;
   /** A local (LM Studio/Ollama) model is reading this same prompt with a
@@ -142,7 +144,7 @@ function buildDynamicPart(input: CoachPromptInput): string {
   const gameSection = input.mode === 'play' ? thisPlayModeGame(input.game) : thisGame(input.game, requirePlan(input.plan));
   return [
     greeting(input.user.displayName),
-    yourStudent(input.user, calibration, input.focusAreas, input.recentFindings, now),
+    yourStudent(input.user, calibration, input.focusAreas, input.studentMemory, now),
     diagnosisCodesForThisStudent(input.rating),
     gameSection
   ].join('\n\n');
@@ -174,7 +176,7 @@ function yourStudent(
   user: CoachPromptUser,
   calibration: { label: string; description: string },
   focusAreas: FocusAreaSummary[],
-  recentFindings: RecentFinding[],
+  memory: StudentMemory,
   now: Date
 ): string {
   return `## Your student
@@ -184,8 +186,12 @@ function yourStudent(
 - Sessions together so far: ${user.sessionCount}
 - Active focus areas (the things you two are currently working on):
 ${renderFocusAreasBlock(focusAreas, now)}
-- Recent findings from past sessions (newest first):
-${renderRecentFindingsBlock(recentFindings, now)}
+- Improved list (habits that graduated — if one fails again, say so and reopen it):
+${renderGraduatedBlock(memory.graduatedAreas, now)}
+- What you remember about this student (your own long-term note):
+${memory.memory ?? '(nothing written yet)'}
+- Your notes on recent sessions (newest first):
+${renderLessonNotesBlock(memory.lessons, now)}
 - Student's own words about their weaknesses: "${user.selfAssessment ?? ''}"
 
 This profile, get_diagnostic_profile and get_player_stats are what the session's goal is chosen from — not the impression this one game leaves.`;

@@ -138,6 +138,44 @@ export function renderRecentFindingsBlock(findings: RecentFinding[], now: Date):
     .join('\n');
 }
 
+/** An area on the improved list. */
+export interface GraduatedAreaSummary {
+  category: MistakeCategory;
+  diagnosisCode: DiagnosisCodeId | null;
+  graduatedAt: Date;
+  note: string;
+}
+
+/** The coach's own note on one finished session. */
+export interface LessonNote {
+  endedAt: Date;
+  note: string;
+}
+
+/** What the coach remembers about the student beyond the three habits it is
+ * working on: the improved list, its one general memory text, and its notes on
+ * the last few sessions. */
+export interface StudentMemory {
+  graduatedAreas: GraduatedAreaSummary[];
+  memory: string | null;
+  lessons: LessonNote[];
+}
+
+export function renderGraduatedBlock(areas: GraduatedAreaSummary[], now: Date): string {
+  if (areas.length === 0) return '(nothing has graduated yet)';
+  return areas
+    .map((area) => {
+      const label = area.diagnosisCode ? `${area.category} (${area.diagnosisCode})` : area.category;
+      return `- ${label}, graduated ${relativeDate(area.graduatedAt, now)}: ${area.note}`;
+    })
+    .join('\n');
+}
+
+export function renderLessonNotesBlock(lessons: LessonNote[], now: Date): string {
+  if (lessons.length === 0) return '(no lesson notes yet)';
+  return lessons.map((lesson) => `- ${relativeDate(lesson.endedAt, now)}: ${lesson.note}`).join('\n');
+}
+
 /** Standard chess move-pair phrasing for any ply — "the game start" for
  * ply 0, otherwise "White's/Black's move N". Shared by the coaching-plan
  * renderer and the coach context restructure's annotated-PGN/other-moves-

@@ -50,7 +50,7 @@ export function baseCoachInput(overrides: Partial<CoachPromptInput> = {}): Coach
     },
     plan: basePlan,
     focusAreas: [],
-    recentFindings: [],
+    studentMemory: { graduatedAreas: [], memory: null, lessons: [] },
     now,
     ...overrides
   };

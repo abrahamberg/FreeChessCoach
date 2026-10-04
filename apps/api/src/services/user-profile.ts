@@ -1,7 +1,9 @@
 import type { Kysely } from 'kysely';
+import type { StudentMemory } from '@freechesscoach/prompts';
 import { deriveRatingBand, type UpdateUserProfileRequest, type UserProfile } from '@freechesscoach/shared';
 import * as findingsRepo from '../db/repositories/findings.js';
 import * as focusAreasRepo from '../db/repositories/focus-areas.js';
+import * as studentMemoryRepo from '../db/repositories/student-memory.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
@@ -84,9 +86,17 @@ export async function updateProfile(
   });
 }
 
+const RECENT_LESSONS_LIMIT = 5;
+
 export interface ProfileSummary {
   focusAreas: focusAreasRepo.FocusAreaRow[];
+  /** The improved list, newest graduate first. */
+  graduatedAreas: focusAreasRepo.FocusAreaRow[];
   recentFindings: findingsRepo.FindingRow[];
+  /** The coach's one general text about the student, if it has written one. */
+  studentMemory: string | null;
+  /** The coach's notes on the last few finished sessions, newest first. */
+  lessons: sessionsRepo.LessonNoteRow[];
   findingCounts: Record<string, number>;
   sessionCount: number;
 }
@@ -94,13 +104,31 @@ export interface ProfileSummary {
 /** Powers the coach system prompt (packages/prompts) and the get_user_profile
  * tool (architecture §7.1) — never raw rows, only this pre-shaped summary. */
 export async function getProfileSummary(db: Kysely<Database>, userId: string): Promise<ProfileSummary> {
-  const [focusAreas, recentFindings, findingCounts, sessionCount] = await Promise.all([
+  const [focusAreas, graduatedAreas, recentFindings, memory, lessons, findingCounts, sessionCount] = await Promise.all([
     focusAreasRepo.listActiveAndImproving(db, userId),
+    focusAreasRepo.listGraduated(db, userId),
     findingsRepo.listRecentByUser(db, userId, RECENT_FINDINGS_LIMIT),
+    studentMemoryRepo.findByUserId(db, userId),
+    sessionsRepo.listRecentLessonNotes(db, userId, RECENT_LESSONS_LIMIT),
     findingsRepo.countByCategoryForRecentGames(db, userId, RECENT_GAMES_FOR_COUNTS),
     sessionsRepo.countByUser(db, userId)
   ]);
-  return { focusAreas, recentFindings, findingCounts, sessionCount };
+  return { focusAreas, graduatedAreas, recentFindings, studentMemory: memory?.content ?? null, lessons, findingCounts, sessionCount };
+}
+
+/** The shape the coach's prompt renders: the improved list, the one general
+ * text and the lesson notes. */
+export function toStudentMemory(summary: ProfileSummary): StudentMemory {
+  return {
+    graduatedAreas: summary.graduatedAreas.map((area) => ({
+      category: area.category,
+      diagnosisCode: area.diagnosisCode,
+      graduatedAt: area.graduatedAt ?? area.lastSeenAt,
+      note: area.note
+    })),
+    memory: summary.studentMemory,
+    lessons: summary.lessons.map((lesson) => ({ endedAt: lesson.endedAt, note: lesson.lessonNote }))
+  };
 }
 
 export async function toUserProfile(

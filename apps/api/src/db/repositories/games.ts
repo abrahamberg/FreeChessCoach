@@ -379,6 +379,32 @@ export function listWithActiveCoachingByUser(db: Kysely<Database>, userId: strin
     .execute();
 }
 
+export interface AnalysedGameRef {
+  id: string;
+  whiteName: string | null;
+  blackName: string | null;
+  userColor: PlayerColor;
+  result: string | null;
+  timeControl: string | null;
+  playedAt: Date | null;
+  createdAt: Date;
+}
+
+/** The student's `limit` newest games whose analysis is ready, newest first by
+ * the date played (the date imported when a game has none) — the games the
+ * progress dossier reads habit results from. */
+export function listRecentAnalysed(db: Kysely<Database>, userId: string, limit: number): Promise<AnalysedGameRef[]> {
+  return db
+    .selectFrom('games')
+    .innerJoin('analyses', 'analyses.gameId', 'games.id')
+    .select(['games.id', 'games.whiteName', 'games.blackName', 'games.userColor', 'games.result', 'games.timeControl', 'games.playedAt', 'games.createdAt'])
+    .where('games.userId', '=', userId)
+    .where('analyses.status', '=', 'ready')
+    .orderBy(sql`coalesce(games.played_at, games.created_at)`, 'desc')
+    .limit(limit)
+    .execute();
+}
+
 /** The coach nudge (services/coach-nudge.ts): the user's `limit` newest
  * imported games that are analyzed and have never had a coaching session —
  * the pool the coach offers a game from. Newest import first. */

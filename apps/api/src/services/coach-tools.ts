@@ -19,6 +19,8 @@ import {
   renderDiagnosticProfileBlock,
   renderEngineAnalysisSummary,
   renderFocusAreasBlock,
+  renderGraduatedBlock,
+  renderLessonNotesBlock,
   renderMoveInspection,
   renderRecentFindingsBlock,
   showPositionParameters,
@@ -271,6 +273,7 @@ async function recallMoveTool(
 async function getUserProfileText(db: Kysely<Database>, userId: string): Promise<string> {
   const summary = await userProfileService.getProfileSummary(db, userId);
   const now = new Date();
+  const memory = userProfileService.toStudentMemory(summary);
   const findingCounts =
     Object.entries(summary.findingCounts)
       .map(([category, count]) => `${category}: ${count}`)
@@ -278,7 +281,10 @@ async function getUserProfileText(db: Kysely<Database>, userId: string): Promise
 
   return [
     `FOCUS AREAS\n${renderFocusAreasBlock(summary.focusAreas, now)}`,
-    `RECENT FINDINGS\n${renderRecentFindingsBlock(summary.recentFindings, now)}`,
+    `IMPROVED LIST (graduated)\n${renderGraduatedBlock(memory.graduatedAreas, now)}`,
+    `WHAT YOU REMEMBER ABOUT THIS STUDENT\n${memory.memory ?? '(nothing written yet)'}`,
+    `YOUR NOTES ON RECENT SESSIONS (newest first)\n${renderLessonNotesBlock(memory.lessons, now)}`,
+    `RECENT FINDINGS (one line per moment, for evidence)\n${renderRecentFindingsBlock(summary.recentFindings, now)}`,
     `FINDING COUNTS (last 20 games)\n${findingCounts}`,
     `SESSIONS TOGETHER: ${summary.sessionCount}`
   ].join('\n\n');

@@ -47,7 +47,7 @@ export async function buildSystemPromptForSession(
     },
     plan,
     focusAreas: profileSummary.focusAreas,
-    recentFindings: profileSummary.recentFindings,
+    studentMemory: userProfileService.toStudentMemory(profileSummary),
     isLocal,
     devCommands: isDevCommandsEnabled()
   });
@@ -83,7 +83,7 @@ async function buildPlayModeSystemPrompt(db: Kysely<Database>, session: SessionR
     },
     plan: null,
     focusAreas: profileSummary.focusAreas,
-    recentFindings: profileSummary.recentFindings,
+    studentMemory: userProfileService.toStudentMemory(profileSummary),
     isLocal,
     devCommands: isDevCommandsEnabled()
   });

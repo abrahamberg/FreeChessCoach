@@ -153,6 +153,20 @@ export function clearPrimary(db: Kysely<Database>, id: string): Promise<FocusAre
   return db.updateTable('focusAreas').set({ isPrimary: false }).where('id', '=', id).returningAll().executeTakeFirstOrThrow();
 }
 
+/** Every area the student has ever had, whatever its status — what the progress
+ * dossier reads. Active and improving first, primary leading, then the
+ * graduated ones newest first. */
+export function listAllByUser(db: Kysely<Database>, userId: string): Promise<FocusAreaRow[]> {
+  return db
+    .selectFrom('focusAreas')
+    .selectAll()
+    .where('userId', '=', userId)
+    .orderBy((eb) => eb.case().when('status', '=', 'graduated').then(1).else(0).end())
+    .orderBy('isPrimary', 'desc')
+    .orderBy('lastSeenAt', 'desc')
+    .execute();
+}
+
 /** The improved list: the dashboard's "Graduated ✓" accordion and the coach's
  * dossier, newest graduate first. */
 export function listGraduated(db: Kysely<Database>, userId: string): Promise<FocusAreaRow[]> {

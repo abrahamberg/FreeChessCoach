@@ -67,6 +67,12 @@ export function listForUserSince(db: Kysely<Database>, userId: string, since: Da
     .execute();
 }
 
+/** The observations of several games at once — the progress dossier's recent-games view. */
+export function listForGames(db: Kysely<Database>, gameIds: readonly string[]): Promise<DiagnosticObservationRow[]> {
+  if (gameIds.length === 0) return Promise.resolve([]);
+  return db.selectFrom('diagnosticObservations').selectAll().where('gameId', 'in', gameIds).execute();
+}
+
 /** One game's observations — the Task 58.1 evidence drill-down. */
 export function listForGame(db: Kysely<Database>, gameId: string): Promise<DiagnosticObservationRow[]> {
   return db.selectFrom('diagnosticObservations').selectAll().where('gameId', '=', gameId).orderBy('ply', 'asc').execute();

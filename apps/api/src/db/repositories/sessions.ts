@@ -325,6 +325,40 @@ export function listCompletedWithGameByUser(
     .execute();
 }
 
+export interface LessonNoteRow {
+  endedAt: Date;
+  lessonNote: string;
+}
+
+/** The coach's own notes on the student's last `limit` finished sessions,
+ * newest first — its "recent lessons". */
+export async function listRecentLessonNotes(db: Kysely<Database>, userId: string, limit: number): Promise<LessonNoteRow[]> {
+  const rows = await db
+    .selectFrom('sessions')
+    .select(['endedAt', 'lessonNote'])
+    .where('userId', '=', userId)
+    .where('status', '=', 'completed')
+    .where('lessonNote', 'is not', null)
+    .orderBy('endedAt', 'desc')
+    .limit(limit)
+    .execute();
+  return rows.flatMap((row) => (row.endedAt && row.lessonNote ? [{ endedAt: row.endedAt, lessonNote: row.lessonNote }] : []));
+}
+
+/** When the student's previous coaching session ended (not `exceptSessionId`,
+ * the one in progress); null if there was none. */
+export async function latestEndedAtForUser(db: Kysely<Database>, userId: string, exceptSessionId: string): Promise<Date | null> {
+  const row = await db
+    .selectFrom('sessions')
+    .select((eb) => eb.fn.max('endedAt').as('endedAt'))
+    .where('userId', '=', userId)
+    .where('status', '=', 'completed')
+    .where('mode', '=', 'analyze')
+    .where('id', '!=', exceptSessionId)
+    .executeTakeFirst();
+  return row?.endedAt ?? null;
+}
+
 export async function countByUser(db: Kysely<Database>, userId: string): Promise<number> {
   const result = await db
     .selectFrom('sessions')
