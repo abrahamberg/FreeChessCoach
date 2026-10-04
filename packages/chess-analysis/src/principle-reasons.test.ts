@@ -159,6 +159,12 @@ describe('stronger candidates without a capture or attack', () => {
     expect(principleReason({ fenBefore: fen, moveSan: 'dxe4', quality: 'good', evalBefore: withCp(fen, 100, 'Nd2'), evalAfter: withCp(fen, 60, 'Qxf3') })).toBeNull();
   });
 
+  it('does not say a bare "gives check" as the reason the better move was better', () => {
+    const withCp = (fen: string, cp: number, moveSan: string): EngineEval => ({ fen, ply: 0, depth: 12, lines: [{ moveSan, moveUci: '', cp, mateIn: null, pvSan: [moveSan] }] });
+    const fen = '4k3/8/8/8/8/8/R7/4K3 w - - 0 1';
+    expect(principleReason({ fenBefore: fen, moveSan: 'Kd1', quality: 'inaccuracy', evalBefore: withCp(fen, 80, 'Ra8+'), evalAfter: withCp(fen, 10, 'Kd7') })).toBeNull();
+  });
+
   it('says a pawn move that cuts off its own bishop, against the move that keeps it open', () => {
     const fen = '2kr3r/ppp2ppp/2bb1q2/3p1p2/3P4/2P1PN2/PPQN1PPP/R4RK1 b - - 1 12';
     const withCp = (cp: number, moveSan: string): EngineEval => ({ fen, ply: 0, depth: 12, lines: [{ moveSan, moveUci: '', cp, mateIn: null, pvSan: [moveSan] }] });

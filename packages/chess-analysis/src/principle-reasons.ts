@@ -87,7 +87,8 @@ function bestDoesText(input: PrincipleInput, best: string): string | null {
   // Both take the same piece: the capture is not what made one better.
   if (played?.captured && better?.captured && played.to === better.to) return null;
   const what = candidateDoes(input.fenBefore, best);
-  return what ? `${best} was better: it ${what}` : null;
+  // "X was better: it gives check" says nothing the + in the move does not.
+  return what && what !== 'gives check' ? `${best} was better: it ${what}` : null;
 }
 
 /** A move that cost more than this lost it some other way than by missing the engine's. */
