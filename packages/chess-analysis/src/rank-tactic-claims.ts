@@ -33,6 +33,8 @@ export function rankTacticClaims(claims: readonly VerifiedTacticClaim[], movedTo
   const ranked = [...claims].sort((left, right) => {
     const byScore = claimScore(right) - claimScore(left);
     if (Math.abs(byScore) > 1e-9) return byScore;
+    const byPrize = prizeMismatch(left) - prizeMismatch(right);
+    if (Math.abs(byPrize) > 1e-9) return byPrize;
     return detectorPriority(left) - detectorPriority(right);
   });
   return dropSubsumedClaims(ranked, movedTo);
@@ -78,6 +80,17 @@ export function claimScore(claim: VerifiedTacticClaim): number {
  */
 export function gainWeight(kind: TacticGainKind, pawns: number): number {
   return GAIN_KIND_WEIGHT[kind] + Math.max(0, pawns);
+}
+
+/**
+ * How far the prize a claim names is from what the line won. Two claims that
+ * the line pays off equally tie on score, and the card then reads out the
+ * leader's own prize: Re6 against a queen is a skewer to a pawn on a6 and a
+ * trapped queen, both paid by Rxd6 — "wins a pawn" is the wrong one to say
+ * when the queen went. The claim that names what was won leads.
+ */
+function prizeMismatch(claim: VerifiedTacticClaim): number {
+  return claim.gainKind === 'material' ? Math.abs(claim.verifiedGain - claim.expectedGain) : 0;
 }
 
 function detectorPriority(claim: VerifiedTacticClaim): number {
