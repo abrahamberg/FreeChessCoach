@@ -137,6 +137,31 @@ describe('renderCurrentMoveBlock: what the move did', () => {
   });
 });
 
+describe('renderCurrentMoveBlock: review and starting fen', () => {
+  const BEFORE = '4r1k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1';
+  const AFTER = '4r1k1/5ppp/8/8/8/8/3R1PPP/6K1 b - - 1 1';
+  const line = (moveSan: string, pvSan: string[]) => ({ moveSan, pvSan, cp: 0, mateIn: null });
+  const analysis = { fen: BEFORE, bestMove: 'h3', lines: [line('h3', ['h3', 'h6'])] } as unknown as PositionAnalysis;
+
+  test('the review is split into what was good or bad about the move and why the best one was better', () => {
+    const review = { aboutMove: ['Rd2 stops guarding e1.'], bestWasBetter: ['h3 gives the king air.'] };
+    const block = renderCurrentMoveBlock(1, AFTER, 'white', '(empty)', 'Rd2', { analysis, review });
+
+    expect(block).toContain('What was good or bad about Rd2:\n- Rd2 stops guarding e1.');
+    expect(block).toContain('Why h3 was better:\n- h3 gives the king air.');
+  });
+
+  test('no review heading when the review has nothing to say', () => {
+    const block = renderCurrentMoveBlock(1, AFTER, 'white', '(empty)', 'Rd2', { analysis, review: { aboutMove: [], bestWasBetter: [] } });
+    expect(block).not.toContain('Review of this move');
+  });
+
+  test('the position before the move is given, so the coach never looks it up', () => {
+    const block = renderCurrentMoveBlock(1, AFTER, 'white', '(empty)', 'Rd2', { analysis });
+    expect(block).toContain(`The position before Rd2 (verified, ready to pass to a tool — never look it up): ${BEFORE}`);
+  });
+});
+
 describe('renderFocusFacts', () => {
   const loose = [{ square: 'c4', piece: 'b', owner: 'w', tier: 'free' }] as const;
   const options = { checks: ['Rh8+'], captures: ['Bxd5'], threats: [] };

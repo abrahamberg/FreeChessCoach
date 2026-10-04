@@ -1,4 +1,4 @@
-import { inspectMoves, isSoundQuality, PIECE_NAMES, plyToMoveRef, renderBoardFact, type BoardFact, type ClassifiedMove, type CurrentMoveFacts, type FeatureDelta, type FocusFacts, type MoveOptions } from '@freechesscoach/chess-analysis';
+import { inspectMoves, isSoundQuality, PIECE_NAMES, plyToMoveRef, renderBoardFact, type BoardFact, type ClassifiedMove, type CoachReviewTexts, type CurrentMoveFacts, type FeatureDelta, type FocusFacts, type MoveOptions } from '@freechesscoach/chess-analysis';
 import {
   MOVE_QUALITY_SYMBOLS,
   TACTIC_MOTIF_LABELS,
@@ -166,15 +166,16 @@ export interface CurrentMoveAnalysisContext {
   analysis: PositionAnalysis;
   /** This ply's classified-move entry, if the batch pipeline (analyze mode)
    * or the live classifier (play mode, game_move_qualities) has reached it
-   * yet — supplies the cp-loss headline and the deterministic "why" text
-   * (move-reasons.ts's §11 reasons, which also carry Game Review's own
-   * tactic sentences — build-game-report.ts and analysis.ts append
-   * tacticOpportunityReason/tacticPreventionReason to this same array).
-   * Only the three fields actually read below are required, so a play-mode
-   * game_move_qualities row satisfies this without a fake shim for the
-   * ClassifiedMove-only fields it lacks (isUserMove, hangsPiece). Absent for
-   * a freshly-imported game the batch job hasn't classified yet. */
-  classifiedMove?: Pick<ClassifiedMove, 'cpLoss' | 'evalAfterCp' | 'reasons'>;
+   * yet — supplies the cp-loss headline. Absent for a freshly-imported game
+   * the batch job hasn't classified yet. Only the two fields actually read
+   * below are required, so a play-mode game_move_qualities row satisfies
+   * this without a fake shim for the ClassifiedMove-only fields it lacks. */
+  classifiedMove?: Pick<ClassifiedMove, 'cpLoss' | 'evalAfterCp'>;
+  /** Game Review's own sentences for this move (`coachReviewTexts`, which
+   * also carries its tactic sentences — "you missed a chance to win a rook",
+   * "they defused your fork"): what the played move did well or badly, and
+   * why the best move was better. */
+  review?: CoachReviewTexts;
   /** Engine analysis of the position AFTER the played move — supplies the "Played line" continuation. Omitted when the student played the engine's own best move (nothing to add) or when not fetched. */
   postMoveAnalysis?: PositionAnalysis;
   /** Diff between "after the engine's best move" and "after the move actually played" — omitted when there's no best move to compare against. */
@@ -316,14 +317,12 @@ function renderAnalysisSection(ply: number, playedMove: string | null, ctx: Curr
     parts.push(`Played line: ${formatPvLine(linePly, [playedMove, ...continuation])}`);
   }
 
-  // The review notes for this move (classify.ts's deterministic "why" plus
-  // Game Review's own tactic sentences — "you missed a chance to win a
-  // rook", "they defused your fork"). Rendered on every branch, not only
-  // when the move wasn't the engine's best: a move can be sound and still
-  // be the one where the student defused — or walked into — a named
-  // tactic, and that note is the most coachable fact the pipeline has
-  // about it.
-  if (classifiedMove?.reasons?.length) parts.push(`Review notes for this move: ${classifiedMove.reasons.join('; ')}`);
+  // Game Review's sentences for this move, rendered on every branch, not only
+  // when the move wasn't the engine's best: a move can be sound and still be
+  // the one where the student defused — or walked into — a named tactic, and
+  // that note is the most coachable fact the pipeline has about it.
+  const review = ctx.review ? renderReview(ctx.review, playedMove, bestMove) : '';
+  if (review) parts.push(review);
 
   if (featureDelta) {
     const bullets = renderFeatureDeltaBullets(featureDelta);
@@ -360,6 +359,16 @@ function renderAnalysisSection(ply: number, playedMove: string | null, ctx: Curr
   return parts.length > 0 ? `\n\n${parts.join('\n\n')}` : '';
 }
 
+/** What the review already says about the move, so the coach builds on it and
+ * never spends a tool call re-checking it. */
+function renderReview({ aboutMove, bestWasBetter }: CoachReviewTexts, playedMove: string | null, bestMove: string | null): string {
+  const about = aboutMove.length ? `What was good or bad about ${playedMove ?? 'this move'}:\n${aboutMove.map((text) => `- ${text}`).join('\n')}` : '';
+  const better = bestWasBetter.length ? `Why ${bestMove ?? 'the best move'} was better:\n${bestWasBetter.map((text) => `- ${text}`).join('\n')}` : '';
+  if (!about && !better) return '';
+  const intro = 'Review of this move (the sentences the student can already read on their game review — build on them, never recite them, and do not re-check what they state):';
+  return [intro, about, better].filter(Boolean).join('\n');
+}
+
 /**
  * The board's own facts for the position the conversation is on — side to
  * move, check/mate, how many legal replies there are, what is hanging,
@@ -381,11 +390,12 @@ function boardFacts(fen: string): string {
  * out both starting points with the literal base address to pass, rather
  * than leaving the model to derive "one ply before" itself.
  */
-function renderLineOrientation(ply: number, fen: string, playedMove: string): string {
+function renderLineOrientation(ply: number, fen: string, playedMove: string, preMoveFen: string | undefined): string {
   const toMove = fen.split(' ')[1] === 'b' ? 'Black' : 'White';
   const before = plyToMoveRef(ply - 1);
+  const beforeFen = preMoveFen ? ` The position before ${playedMove} (verified, ready to pass to a tool — never look it up): ${preMoveFen}` : '';
   const baseArg = `base: { moveNumber: ${before.moveNumber}, color: ${before.color === null ? 'null' : `"${before.color}"`} }`;
-  return `Which position is which: the board and FEN above already include ${playedMove} — it is ${toMove} to move. The engine lines below start one move earlier, BEFORE ${playedMove} (numbered ${describeMoveRef(ply)}). With hypothetical_line: to play out an alternative to ${playedMove}, pass ${baseArg} (the position before ${playedMove}) and start with that alternative move; to continue from the real game position above, leave base out and start with ${toMove}'s move. While a hypothetical is already open, moves alone extend it from its own last position instead.`;
+  return `Which position is which: the board and FEN above already include ${playedMove} — it is ${toMove} to move. The engine lines below start one move earlier, BEFORE ${playedMove} (numbered ${describeMoveRef(ply)}). With hypothetical_line: to play out an alternative to ${playedMove}, pass ${baseArg} (the position before ${playedMove}) and start with that alternative move; to continue from the real game position above, leave base out and start with ${toMove}'s move. While a hypothetical is already open, moves alone extend it from its own last position instead.${beforeFen}`;
 }
 
 /**
@@ -429,7 +439,7 @@ export function renderCurrentMoveBlock(
   const finishedGameNote = gameSoFar === undefined ? ' This game is already finished — refer to its moves in the past tense.' : '';
   const playedMoveSentence = playedMove !== null ? ` The move actually played here was ${playedMove}.${finishedGameNote}` : '';
   const analysisBlock = analysisContext ? renderAnalysisSection(ply, playedMove, analysisContext) : '';
-  const orientation = playedMove !== null ? `\n\n${renderLineOrientation(ply, fen, playedMove)}` : '';
+  const orientation = playedMove !== null ? `\n\n${renderLineOrientation(ply, fen, playedMove, analysisContext?.analysis.fen)}` : '';
   const gameSoFarBlock = gameSoFar !== undefined ? `## Game so far\n\n${gameSoFar}\n\n` : '';
   return `${gameSoFarBlock}## Current position\n\nYou are now discussing ${describeMoveRef(ply)} — this is what's actively on the board. Your student is playing ${studentColor} in this game.${playedMoveSentence} FEN : ${fen}.\n\n${boardFacts(fen)}${orientation}${analysisBlock}\n\n## Your thread ledger\n\n${threadsBlock}`;
 }

@@ -135,6 +135,20 @@ export const ClientToolResultSchema = z.object({
 });
 export type ClientToolResult = z.infer<typeof ClientToolResultSchema>;
 
+/** What the browser reports for a hypothetical_line call: the moves it could
+ * play from `startFen`, and why it stopped if one was illegal. */
+export const HypotheticalLineResultSchema = z.object({
+  ok: z.boolean(),
+  continuedLine: z.boolean(),
+  basePly: z.number().int().nonnegative(),
+  startFen: z.string(),
+  moves: z.array(z.object({ san: z.string() })),
+  resultFen: z.string().optional(),
+  nextToMove: z.enum(['white', 'black']).optional(),
+  error: z.string().optional()
+});
+export type HypotheticalLineResult = z.infer<typeof HypotheticalLineResultSchema>;
+
 /** An empty body is valid — it resumes the turn on whatever is already
  * pending in the session's history (e.g. the [session_start] marker) rather
  * than adding new input, mirroring startTurn's own content/clientToolResult

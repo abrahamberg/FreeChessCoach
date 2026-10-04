@@ -45,4 +45,25 @@ describe('replyInProgress', () => {
 
     await expect(guarded({ fen: 'z' })).resolves.toBe(BUDGET_EXHAUSTED);
   });
+
+  // Regression: hypothetical_line is a client tool, so the reply continued in a
+  // new turn whose repeat-call cache was empty — the coach ran the same
+  // check_moves before and after it.
+  it('answers an identical lookup from before a client-tool round trip without running it again', async () => {
+    const messages: ChatMessage[] = [
+      { role: 'user', content: 'ok' },
+      { role: 'assistant', content: [{ type: 'tool-call', toolCallId: 'a', toolName: 'check_moves', input: { fen: 'x', moves: ['Bxf4'] } }] },
+      { role: 'tool', content: [{ type: 'tool-result', toolCallId: 'a', toolName: 'check_moves', output: { type: 'text', value: 'Bxf4: legal' } }] },
+      ...toolCallStep('hypothetical_line', 'b', { moves: ['e4'] })
+    ];
+    let runs = 0;
+    const guarded = withTurnGuards(replyInProgress(messages).state, 'check_moves', () => {
+      runs++;
+      return Promise.resolve('fresh');
+    });
+
+    await expect(guarded({ fen: 'x', moves: ['Bxf4'] })).resolves.toBe('Bxf4: legal');
+    await expect(guarded({ fen: 'x', moves: ['Qxf4'] })).resolves.toBe('fresh');
+    expect(runs).toBe(1);
+  });
 });

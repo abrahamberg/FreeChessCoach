@@ -15,13 +15,15 @@ type Fork = z.infer<typeof ForkSchema>;
  * episode-context.ts's renderAnalysisSection curates the "Current position"
  * block instead of dumping PositionAnalysis/PositionFeatures raw.
  */
-export function renderEngineAnalysisSummary(analysis: PositionAnalysis): string {
+export function renderEngineAnalysisSummary(analysis: PositionAnalysis, { compact = false } = {}): string {
   const { bestMove, lines, features } = analysis;
   const bestLine = lines.find((line) => line.moveSan === bestMove);
   const parts: string[] = [bestMoveLine(bestMove, bestLine, features)];
 
+  // `compact` is the verdict riding on a hypothetical_line result: the best
+  // move and what is hanging, without the runner-up lines.
   const otherLines = bestLine ? lines.filter((line) => line !== bestLine) : lines;
-  if (otherLines.length > 0) {
+  if (!compact && otherLines.length > 0) {
     const otherText = otherLines
       .map((line) => `- ${line.moveSan} (${formatEval(line.cp, line.mateIn)}): ${line.pvSan.join(' ')}`)
       .join('\n');

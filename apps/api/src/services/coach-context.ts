@@ -1,6 +1,7 @@
 import { cachedSystemMessage, systemMessage, type ChatMessage, type SystemChatMessage } from '../llm/messages.js';
 import {
   applySanSequence,
+  coachReviewTexts,
   currentMoveFacts,
   focusFacts,
   computePositionFeatures,
@@ -16,10 +17,9 @@ import {
   renderGameSoFarInline,
   renderOtherMovesSummary,
   renderTacticMotifsSummary,
-  renderThreadsBlock,
-  type AnnotatedMoveLike
+  renderThreadsBlock
 } from '@freechesscoach/prompts';
-import type { CoachMovePlan, PositionAnalysis } from '@freechesscoach/shared';
+import type { ClassifiedMoveDto, CoachMovePlan, PositionAnalysis } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
@@ -262,7 +262,15 @@ export async function buildEpisodeContext(input: BuildEpisodeContextInput): Prom
     input.studentColor,
     renderThreadsBlock(threads),
     playedMove,
-    { analysis, classifiedMove, postMoveAnalysis, featureDelta, moveFacts, ...(studentFocusFacts ? { focusFacts: studentFocusFacts } : {}) },
+    {
+      analysis,
+      classifiedMove,
+      ...(classifiedMove ? { review: coachReviewTexts(classifiedMove) } : {}),
+      postMoveAnalysis,
+      featureDelta,
+      moveFacts,
+      ...(studentFocusFacts ? { focusFacts: studentFocusFacts } : {})
+    },
     gameSoFar
   );
 
@@ -292,7 +300,7 @@ export function withCoachMovePlan(context: EpisodeContext, plan: CoachMovePlan |
  * `annotatedPgn`), so this is one read for both instead of a branch between
  * `analysesRepo` and `game_move_qualities` — null (never analyzed / no live
  * moves yet) reads as no moves, same as the old empty-array fallbacks. */
-function movesFromAnnotatedPgn(annotatedPgn: string | null, userColor: 'white' | 'black'): AnnotatedMoveLike[] {
+function movesFromAnnotatedPgn(annotatedPgn: string | null, userColor: 'white' | 'black'): ClassifiedMoveDto[] {
   return annotatedPgn ? parseAnnotatedPgn(annotatedPgn, userColor) : [];
 }
 

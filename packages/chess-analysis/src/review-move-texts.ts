@@ -46,3 +46,21 @@ export function reviewMoveTexts(move: ClassifiedMoveDto): { kind: ReviewTextKind
   if (better) texts.push({ kind: 'betterWas', text: better });
   return texts;
 }
+
+/** Game Review's sentences for a move, sorted by who they are about, for the
+ * coach: what the move that was played did well or badly, and what the best
+ * move had that it did not. A missed tactic is the best move's merit; a found
+ * one is the played move's. */
+export interface CoachReviewTexts {
+  aboutMove: string[];
+  bestWasBetter: string[];
+}
+
+export function coachReviewTexts(move: ClassifiedMoveDto): CoachReviewTexts {
+  const texts: CoachReviewTexts = { aboutMove: [], bestWasBetter: [] };
+  for (const { kind, text } of reviewMoveTexts(move)) {
+    const aboutBest = kind === 'betterWas' || (kind === 'opportunity' && move.tacticOpportunity?.found === false);
+    (aboutBest ? texts.bestWasBetter : texts.aboutMove).push(text);
+  }
+  return texts;
+}

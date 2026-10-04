@@ -29,6 +29,9 @@ export interface ProposeDivergedLineToolResult {
    * starting one — tells the coach where they were played from. */
   continuedLine: boolean;
   basePly: number;
+  /** The position the first of `moves` was played from — what the server
+   * replays them on to say what each move does. */
+  startFen: string;
   moves: { san: string }[];
   resultFen?: string;
   /** Who moves next at the line's end — the side any extension starts with. */
@@ -189,11 +192,12 @@ export function useDivergedLine(): UseDivergedLineResult {
             ? `${applied.error} — this continued your open hypothetical from its last move; pass newLine: true to start a separate line instead`
             : applied.error;
         const result: ProposeDivergedLineToolResult = error
-          ? { ok: false, continuedLine: continuing, basePly, moves, error }
+          ? { ok: false, continuedLine: continuing, basePly, startFen, moves, error }
           : {
               ok: true,
               continuedLine: continuing,
               basePly,
+              startFen,
               moves,
               resultFen,
               nextToMove: resultFen?.split(" ")[1] === "b" ? "black" : "white",

@@ -87,10 +87,10 @@ describe('buildCoachSystemPrompt', () => {
   // A hypothetical position is not in the game's PGN, so getPositionAtPly
   // never covers it and nothing analyzes it for the coach — the one case
   // where get_engine_analysis is the only way to see the position.
-  test('staticPart tells the coach a hypothetical position is never analyzed for it, and to pass hypothetical_line\'s fen to get_engine_analysis', () => {
+  test('staticPart tells the coach a hypothetical is judged from its own result, never from the real move\'s evaluation', () => {
     const { staticPart } = buildCoachSystemPrompt(baseInput());
-    expect(staticPart).toContain('A HYPOTHETICAL IS NEVER ANALYZED FOR YOU');
-    expect(staticPart).toContain('pass the fen hypothetical_line returned to get_engine_analysis');
+    expect(staticPart).toContain('A HYPOTHETICAL IS NOT THE REAL GAME');
+    expect(staticPart).toContain('already carries the engine\'s verdict');
     expect(staticPart).toContain('never carry it in');
   });
 
@@ -98,11 +98,20 @@ describe('buildCoachSystemPrompt', () => {
   // knight" without checking whether something actually blocked that
   // defense — hypothetical_line's legality validation says nothing about
   // whether such a specific tactical/positional claim is true.
-  test('staticPart tells the coach to verify a specific claim about a line (defends/wins/escapes) with get_engine_analysis or investigate_position before stating it as fact', () => {
+  test('staticPart tells the coach to test a claim the context does not cover in a hypothetical_line before stating it as fact', () => {
     const { staticPart } = buildCoachSystemPrompt(baseInput());
     expect(staticPart).toContain('LEGAL IS NOT THE SAME AS TRUE');
-    expect(staticPart).toContain('it needs checking the same turn you make it');
+    expect(staticPart).toContain('For a claim they do not cover, open the line in a hypothetical_line');
     expect(staticPart).toContain('never hand it over as settled fact');
+  });
+
+  // The coach used to run check_moves, check_position and get_engine_analysis
+  // on things its context already held, repeatedly, and ran out of steps.
+  test('staticPart makes the context the first source and a tool call the exception', () => {
+    const { staticPart } = buildCoachSystemPrompt(baseInput());
+    expect(staticPart).toContain('TOOLS ARE FOR WHAT YOU DO NOT ALREADY HAVE');
+    expect(staticPart).toContain('Never repeat a call you already made this reply');
+    expect(staticPart).toContain('never spend a call confirming them');
   });
 
   test('staticPart tells the coach show_position\'s result carries the real fen and never to invent one itself', () => {
@@ -236,10 +245,10 @@ describe('buildCoachSystemPrompt', () => {
       expect(staticPart).toContain('never from memory of the game');
     });
 
-    test('staticPart routes every unverified move through check_moves before the coach names it', () => {
+    test('staticPart proves every move outside the context with one whole-line hypothetical_line before the coach names it', () => {
       const { staticPart } = buildCoachSystemPrompt(baseInput());
-      expect(staticPart).toContain('NAME ONLY MOVES YOU HAVE SEEN OR CHECKED');
-      expect(staticPart).toContain('goes through check_moves FIRST');
+      expect(staticPart).toContain('NAME ONLY MOVES YOU HAVE SEEN OR PROVEN');
+      expect(staticPart).toContain('you prove by putting the WHOLE line in ONE hypothetical_line call');
     });
 
     test('staticPart forbids inventing a move number and points at check_position to confirm one', () => {

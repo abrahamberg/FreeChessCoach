@@ -7,6 +7,7 @@ import { currentEpisode } from '../lib/episodes.js';
 import * as coachContext from './coach-context.js';
 import { getPositionAtPly } from './game-positions.js';
 import type { CoachAgentDependencies, StartTurnInput } from './coach-agent-types.js';
+import { enrichHypotheticalLineResult } from './coach-hypothetical-result.js';
 
 export interface AppliedClientToolResult {
   /** What the board/analysis now shows — moves on every show_position. */
@@ -50,6 +51,9 @@ export async function applyClientToolResult(
       }
     }
     result = await withAuthoritativeFen(deps.db, session.gameId, ply, toolResult.result);
+  }
+  if (toolResult.toolName === 'hypothetical_line') {
+    result = await enrichHypotheticalLineResult(deps.analyzePosition, toolResult.result);
   }
   await sessionMessagesRepo.insert(
     deps.db,

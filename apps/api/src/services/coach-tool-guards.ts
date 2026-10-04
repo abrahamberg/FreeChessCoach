@@ -69,18 +69,48 @@ export interface ReplyInProgress {
  */
 export function replyInProgress(messages: readonly ChatMessage[]): ReplyInProgress {
   const state = createTurnGuardState();
+  const calls = new Map<string, { toolName: string; input: unknown }>();
   let priorSteps = 0;
-  for (let index = messages.length - 1; index >= 0; index--) {
-    const message = messages[index];
-    if (message === undefined || message.role === 'user' || message.role === 'system') break;
+  for (const message of replyMessages(messages)) {
+    if (message.role === 'tool') {
+      seedRepeatCache(state, calls, message.content);
+      continue;
+    }
     if (message.role !== 'assistant') continue;
     priorSteps++;
     if (typeof message.content === 'string') continue;
     for (const part of message.content) {
-      if (part.type === 'tool-call') state.callCounts.set(part.toolName, (state.callCounts.get(part.toolName) ?? 0) + 1);
+      if (part.type !== 'tool-call') continue;
+      state.callCounts.set(part.toolName, (state.callCounts.get(part.toolName) ?? 0) + 1);
+      calls.set(part.toolCallId, { toolName: part.toolName, input: part.input });
     }
   }
   return { state, priorSteps };
+}
+
+/** The messages after the student's last one, oldest first. */
+function replyMessages(messages: readonly ChatMessage[]): ChatMessage[] {
+  const lastStudentIndex = messages.findLastIndex((message) => message.role === 'user' || message.role === 'system');
+  return messages.slice(lastStudentIndex + 1);
+}
+
+/** Tools whose answer depends only on their arguments, so an identical call
+ * later in the same reply is answered from the first one's result. Without
+ * this a client-tool round trip (which starts a new turn) forgot the lookup
+ * and the coach paid for the same check_moves twice. */
+const REPEATABLE_TOOLS: ReadonlySet<string> = new Set(['check_moves', 'check_position', 'get_engine_analysis']);
+
+function seedRepeatCache(
+  state: TurnGuardState,
+  calls: ReadonlyMap<string, { toolName: string; input: unknown }>,
+  content: Extract<ChatMessage, { role: 'tool' }>['content']
+): void {
+  for (const part of content) {
+    if (part.type !== 'tool-result' || !REPEATABLE_TOOLS.has(part.toolName)) continue;
+    const call = calls.get(part.toolCallId);
+    if (!call || (part.output.type !== 'text' && part.output.type !== 'json')) continue;
+    state.cache.set(`${call.toolName}:${JSON.stringify(call.input)}`, part.output.value);
+  }
 }
 
 export function withTurnGuards<Args, Result>(
