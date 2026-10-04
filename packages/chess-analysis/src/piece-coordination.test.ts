@@ -1,6 +1,6 @@
 import { Chess } from 'chess.js';
 import { describe, expect, it } from 'vitest';
-import { blocksOwnPieceText, connectsRooksText, freesEnemyPieceText, opensOwnPieceText, pilesOnText, supportsAdvancedPieceText } from './piece-coordination.js';
+import { allowsChecksText, givesUpCentreText, blocksOwnPieceText, connectsRooksText, freesEnemyPieceText, opensOwnPieceText, pilesOnText, supportsAdvancedPieceText } from './piece-coordination.js';
 
 const FEN = '2kr3r/ppp2ppp/2bb1q2/3p1p2/3P4/2P1PN2/PPQN1PPP/R4RK1 b - - 1 12';
 const play = (fen: string, san: string) => new Chess(fen).move(san);
@@ -46,5 +46,15 @@ describe('piece coordination', () => {
     const fen = '2kr3r/ppp2ppp/2bb1q2/3p4/3P1p2/2P1PN2/PPQN1PPP/R4RK1 w - - 0 13';
     const text = freesEnemyPieceText(fen, play(fen, 'exf4'), ['Qxf4', 'Bxf4'], (after, san) => (san === 'Bxf4' ? 'attacks the knight on d2' : null));
     expect(text).toMatch(/^exf4 takes the pawn that shut in Black's bishop on d6: Bxf4 frees it, from 6 squares to \d+, and attacks the knight on d2$/);
+  });
+
+  it('counts the checks a move leaves the opponent', () => {
+    const fen = 'rnb1k2r/ppp2pp1/5q1p/2bP4/4p3/P2P1P2/1PP3PP/RN1QKBNR w KQkq - 0 8';
+    expect(allowsChecksText(play(fen, 'dxe4'), play(fen, 'Nd2'))).toBe('dxe4 leaves the king facing 4 possible checks; Nd2 allows only 2');
+  });
+
+  it('says a pawn move that gives up a centre square the better move keeps', () => {
+    const fen = 'rnbqkbnr/ppp2ppp/8/3pp3/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 3';
+    expect(givesUpCentreText(fen, play(fen, 'e4'), play(fen, 'Nf6'))).toBe("e4 gives up a pawn's hold on d4 (1 pawn guards it, 0 after); Nf6 keeps it");
   });
 });

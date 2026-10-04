@@ -195,3 +195,48 @@ function safeMove(fen: string, san: string): Move | null {
     return null;
   }
 }
+
+const CHECK_MIN = 3;
+const CHECK_GAP = 2;
+
+/** How many checks the side to move in `fen` has available. */
+function checksAvailable(fen: string): number {
+  return new Chess(fen).moves().filter((san) => san.endsWith('+') || san.endsWith('#')).length;
+}
+
+/** A move that leaves the mover's king open to more checks than the engine's
+ * move does: "Kxd8 leaves your king facing 4 possible checks; Qxd8 allows
+ * only 2". Counted on the board after each move, with the opponent to move. */
+export function allowsChecksText(played: Move, best: Move): string | null {
+  if (played.san.endsWith('+') || best.san.endsWith('+')) return null;
+  const allowed = checksAvailable(played.after);
+  const bestAllowed = checksAvailable(best.after);
+  if (allowed < CHECK_MIN || allowed - bestAllowed < CHECK_GAP) return null;
+  return `${played.san} leaves the king facing ${allowed} possible checks; ${best.san} allows ${bestAllowed === 0 ? 'none' : `only ${bestAllowed}`}`;
+}
+
+/** Past this move the centre is no longer what the pawns are for. */
+const CENTRE_LAST_MOVE = 20;
+
+const CENTRE: readonly Square[] = ['d4', 'e4', 'd5', 'e5'];
+
+function pawnHold(fen: string, color: Color, square: Square): number {
+  const chess = new Chess(fen);
+  return chess.attackers(square, color).filter((from) => chess.get(from)?.type === 'p').length;
+}
+
+/** A pawn move that gives up a pawn's hold on a centre square the engine's
+ * move keeps: "f4 gives up a pawn's hold on e4 (2 pawns guard it, 1 after);
+ * g5 keeps it". */
+export function givesUpCentreText(fenBefore: string, played: Move, best: Move): string | null {
+  if (played.piece !== 'p' || played.captured || best.captured || best.piece === 'k' || Number(fenBefore.split(' ')[5]) > CENTRE_LAST_MOVE) return null;
+  let worst: { square: Square; before: number; after: number } | null = null;
+  for (const square of CENTRE) {
+    const before = pawnHold(fenBefore, played.color, square);
+    const after = pawnHold(played.after, played.color, square);
+    if (after >= before || pawnHold(best.after, best.color, square) < before) continue;
+    if (!worst || before - after > worst.before - worst.after) worst = { square, before, after };
+  }
+  if (!worst) return null;
+  return `${played.san} gives up a pawn's hold on ${worst.square} (${worst.before} ${worst.before === 1 ? 'pawn guards' : 'pawns guard'} it, ${worst.after} after); ${best.san} keeps it`;
+}

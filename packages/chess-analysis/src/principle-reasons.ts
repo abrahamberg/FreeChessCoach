@@ -1,7 +1,7 @@
 import { Chess, type Color, type Move, type PieceSymbol, type Square } from 'chess.js';
 import { isImprovableQuality, type EngineEval, type MoveQuality } from '@freechesscoach/shared';
 import { flipActiveColorFen } from './null-move-fen.js';
-import { blocksOwnPieceText, connectsRooksText, coordinationFragment, freesEnemyPieceText, opensOwnPieceText, pilesOnText, supportsAdvancedPieceText } from './piece-coordination.js';
+import { allowsChecksText, blocksOwnPieceText, givesUpCentreText, connectsRooksText, coordinationFragment, freesEnemyPieceText, opensOwnPieceText, pilesOnText, supportsAdvancedPieceText } from './piece-coordination.js';
 import { PIECE_NAMES } from './piece-names.js';
 import { pinReason } from './pin-reason.js';
 import { PIECE_VALUES } from './tactics.js';
@@ -45,6 +45,7 @@ export function principleReason(input: PrincipleInput): string | null {
     (bestFragment && !developsAt(input.fenBefore, input.moveSan) ? `${best.moveSan} was better: it ${bestFragment}` : null) ??
     castlesSooner(input.fenBefore, input.moveSan, best.moveSan) ??
     blocksText(input, best.moveSan) ??
+    exposesText(input, best.moveSan) ??
     pilesText(input, best.moveSan) ??
     freesText(input) ??
     bestDoesText(input, best.moveSan)
@@ -53,6 +54,15 @@ export function principleReason(input: PrincipleInput): string | null {
 
 /** A move that cost more than this lost it some other way than by cutting a piece off. */
 const BLOCK_MAX_LOSS_CP = 150;
+
+/** What the played move gave up that the engine's move kept: the king's cover
+ * from checks, a pawn's hold on the centre. */
+function exposesText(input: PrincipleInput, best: string): string | null {
+  const [played] = line(input.fenBefore, [input.moveSan], 1);
+  const [better] = line(input.fenBefore, [best], 1);
+  if (!played || !better || !smallLoss(input)) return null;
+  return allowsChecksText(played, better) ?? givesUpCentreText(input.fenBefore, played, better);
+}
 
 function pilesText(input: PrincipleInput, best: string): string | null {
   const [better] = line(input.fenBefore, [best], 1);
