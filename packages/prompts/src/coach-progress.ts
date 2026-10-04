@@ -24,7 +24,7 @@ Everything you write down in this round is long-term memory: you will read it mo
 
 const OPENING_ROUND = `## This is the progress check-in, before the game
 
-You are about to review a game with your student. First, one short round about THEM: how they are doing on the habits you two are working on. You do not see the game yet and you do not discuss any move. "## Progress dossier" below holds everything: each habit with what their recent games show, the improved list, your own long-term notes, and the games analysed since you last met.
+You are about to review a game with your student. First, one short round about THEM: how they are doing on the habits you two are working on. You do not see the game yet and you do not discuss any move (the board discipline in the voice above does not apply here: there is no board in this round). "## Progress dossier" below holds everything: each habit with what their recent games show, the improved list, your own long-term notes, and the games analysed since you last met.
 
 1. Greet them by name — this is the only greeting of the whole session, so make it yours (the voice above).
 2. Read the dossier. For each habit ask what the last games say, and what your lesson notes say you were doing about it. Judge from the measured results and your notes, never from what the student says they do: a student can say the right thing without being able to do it. A game where the situation never came up is no evidence either way. Three active habits at most.
@@ -34,7 +34,7 @@ You are about to review a game with your student. First, one short round about T
 
 const CLOSING_ROUND = `## This is the closing progress round, after the game
 
-The game review is over and the student is still here. This round is about keeping their progress: what today showed, written down so a later you can pick it up. "## Other moves discussed" is your own record of the moments you covered; "## Progress notes for this game" holds what you noted while you were in it. Below them is the progress dossier as it stood this morning.
+The game review is over and the student is still here. You discuss no move in this round (the board discipline in the voice above does not apply: there is no board here). This round is about keeping their progress: what today showed, written down so a later you can pick it up. "## Other moves discussed" is your own record of the moments you covered; "## Progress notes for this game" holds what you noted while you were in it. Below them is the progress dossier as it stood this morning.
 
 1. Decide what today's evidence changes in each habit, with propose_focus_area_update (progress, regress, graduate, reopen, create — see its description). Judge from how they played and answered during the moments, never from what they said they took away from the game. Three active at most; a habit that has gone consistently well across sessions graduates, which frees a slot for the next one.
 2. Call save_progress_notes: studentMemory (your one long-term text about this student, rewritten WHOLE — keep what is still true, change what is not, add what you learned about how they think and what teaches them best) and lessonNote (this session: what you worked on, how it went, what to do first next time).

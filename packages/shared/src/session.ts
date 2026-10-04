@@ -21,11 +21,18 @@ export const COACH_PHASES = ['progress_open', 'review', 'progress_close'] as con
 export const CoachPhaseSchema = z.enum(COACH_PHASES);
 export type CoachPhase = z.infer<typeof CoachPhaseSchema>;
 
+/** The post-session summarizer is the fallback for a session that ended
+ * without its closing progress round, so it may only note progress, a
+ * regression or a new area — graduating and reopening are the coach's call. */
+export const SummarizerFocusAreaUpdateSchema = FocusAreaUpdateSchema.extend({
+  action: z.enum(['create', 'progress', 'regress'])
+});
+
 export const SessionOutcomeSchema = z.object({
   sessionSummary: z.string(),
   homework: z.string().nullable(),
   findings: z.array(FindingSchema).max(10),
-  focusAreaUpdates: z.array(FocusAreaUpdateSchema).max(4)
+  focusAreaUpdates: z.array(SummarizerFocusAreaUpdateSchema).max(4)
 });
 export type SessionOutcome = z.infer<typeof SessionOutcomeSchema>;
 

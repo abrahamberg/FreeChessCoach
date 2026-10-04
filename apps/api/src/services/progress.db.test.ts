@@ -528,51 +528,31 @@ describe('progress service', () => {
       expect(rows).toHaveLength(1);
     });
 
-    test('applies a resolve focus-area update, moving state to resolved', async () => {
-      const ctx = await makeSession('outcome-resolve@example.com');
-      await focusAreasRepo.insert(db, {
-        userId: ctx.userId,
-        category: 'king_safety',
-        diagnosisCode: 'MS-01',
-        status: 'active',
-        note: 'n'
-      });
-      await applyFocusAreaUpdate(db, ctx.userId, { diagnosisCode: 'MS-01', action: 'progress', note: 'n' });
+    test('applies a progress focus-area update, moving an active area to improving', async () => {
+      const ctx = await makeSession('outcome-progress@example.com');
+      await focusAreasRepo.insert(db, { userId: ctx.userId, category: 'king_safety', diagnosisCode: 'MS-01', status: 'active', note: 'n' });
 
       await applySessionOutcome(
         db,
         ctx,
-        outcome({
-          focusAreaUpdates: [{ diagnosisCode: 'MS-01', action: 'graduate', note: 'consistently castling now' }]
-        })
+        outcome({ focusAreaUpdates: [{ diagnosisCode: 'MS-01', action: 'progress', note: 'castles earlier than before' }] })
       );
 
-      const area = await focusAreasRepo.findByUserAndDiagnosisCode(db, ctx.userId, 'MS-01');
-      expect(area?.status).toBe('graduated');
+      expect((await focusAreasRepo.findByUserAndDiagnosisCode(db, ctx.userId, 'MS-01'))?.status).toBe('improving');
     });
 
-    test('applies a reopen focus-area update on a graduated area, moving it back to active', async () => {
+    test('applies a regress focus-area update, moving an improving area back to active', async () => {
       const ctx = await makeSession('outcome-regress@example.com');
-      await focusAreasRepo.insert(db, {
-        userId: ctx.userId,
-        category: 'king_safety',
-        diagnosisCode: 'MS-01',
-        status: 'active',
-        note: 'n'
-      });
+      await focusAreasRepo.insert(db, { userId: ctx.userId, category: 'king_safety', diagnosisCode: 'MS-01', status: 'active', note: 'n' });
       await applyFocusAreaUpdate(db, ctx.userId, { diagnosisCode: 'MS-01', action: 'progress', note: 'n' });
-      await applyFocusAreaUpdate(db, ctx.userId, { diagnosisCode: 'MS-01', action: 'graduate', note: 'n' });
 
       await applySessionOutcome(
         db,
         ctx,
-        outcome({
-          focusAreaUpdates: [{ diagnosisCode: 'MS-01', action: 'reopen', note: 'left king in center again' }]
-        })
+        outcome({ focusAreaUpdates: [{ diagnosisCode: 'MS-01', action: 'regress', note: 'left the king in the centre again' }] })
       );
 
-      const area = await focusAreasRepo.findByUserAndDiagnosisCode(db, ctx.userId, 'MS-01');
-      expect(area?.status).toBe('active');
+      expect((await focusAreasRepo.findByUserAndDiagnosisCode(db, ctx.userId, 'MS-01'))?.status).toBe('active');
     });
 
     test('stores the summary and homework on the session', async () => {
