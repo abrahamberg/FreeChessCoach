@@ -82,7 +82,7 @@ export function blocksOwnPieceText(fenBefore: string, played: Move, best: Move):
 
 /** What a good move did for the pieces behind it: "opens the bishop on c1 (from 2 squares to 8)". */
 export function opensOwnPieceText(fenBefore: string, played: Move): string | null {
-  if (played.captured || played.san.endsWith('+') || played.piece !== 'p') return null;
+  if (played.captured || played.san.endsWith('+') || played.piece !== 'p' || played.from[1] === (played.color === 'w' ? '2' : '7')) return null;
   const opened = lineChange(fenBefore, played, 'opens');
   return opened ? `Opens the ${sliderName(opened)}, from ${squares(opened.before)} to ${opened.after}` : null;
 }
@@ -119,3 +119,39 @@ export function pilesOnText(fenBefore: string, move: Move): string | null {
 }
 
 const PIECE_VALUE_ORDER: readonly PieceSymbol[] = ['p', 'n', 'b', 'r', 'q'];
+
+/** Whether `color`'s two rooks see each other along a rank or file. */
+function rooksConnected(fen: string, color: Color): boolean {
+  const chess = new Chess(fen);
+  const rooks = chess.findPiece({ type: 'r', color });
+  const [first, second] = rooks;
+  return rooks.length === 2 && first !== undefined && second !== undefined && chess.attackers(first, color).includes(second);
+}
+
+/** "connects the rooks": the move clears the last piece between them. */
+export function connectsRooksText(fenBefore: string, move: Move): string | null {
+  if (move.captured || move.san.endsWith('+') || move.piece === 'r' || move.piece === 'k') return null;
+  return !rooksConnected(fenBefore, move.color) && rooksConnected(move.after, move.color) ? 'connects the rooks' : null;
+}
+
+/** "supports the knight on e5 with the pawn": a pawn move that defends an
+ * advanced minor piece of its own that no pawn defended. */
+export function supportsAdvancedPieceText(fenBefore: string, move: Move): string | null {
+  if (move.piece !== 'p' || move.captured || move.san.endsWith('+')) return null;
+  const before = new Chess(fenBefore);
+  const after = new Chess(move.after);
+  const rankOf = (square: Square): number => (move.color === 'w' ? Number(square[1]) : 9 - Number(square[1]));
+  const pawnDefends = (chess: Chess, square: Square): boolean => chess.attackers(square, move.color).some((from) => chess.get(from)?.type === 'p');
+  for (const row of after.board()) {
+    for (const piece of row) {
+      if (!piece || piece.color !== move.color || (piece.type !== 'n' && piece.type !== 'b') || rankOf(piece.square) < 4) continue;
+      if (pawnDefends(after, piece.square) && !pawnDefends(before, piece.square)) return `supports the ${PIECE_NAMES[piece.type]} on ${piece.square} with the pawn`;
+    }
+  }
+  return null;
+}
+
+/** What the engine's move did for the pieces, for "X was better: it …". */
+export function coordinationFragment(fenBefore: string, move: Move): string | null {
+  return pilesOnText(fenBefore, move) ?? connectsRooksText(fenBefore, move) ?? supportsAdvancedPieceText(fenBefore, move);
+}

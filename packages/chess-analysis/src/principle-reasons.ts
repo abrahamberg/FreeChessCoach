@@ -1,7 +1,7 @@
 import { Chess, type Color, type Move, type PieceSymbol, type Square } from 'chess.js';
 import { isImprovableQuality, type EngineEval, type MoveQuality } from '@freechesscoach/shared';
 import { flipActiveColorFen } from './null-move-fen.js';
-import { blocksOwnPieceText, opensOwnPieceText, pilesOnText } from './piece-coordination.js';
+import { blocksOwnPieceText, connectsRooksText, coordinationFragment, opensOwnPieceText, pilesOnText, supportsAdvancedPieceText } from './piece-coordination.js';
 import { PIECE_NAMES } from './piece-names.js';
 import { PIECE_VALUES } from './tactics.js';
 
@@ -31,7 +31,7 @@ export function principleReason(input: PrincipleInput): string | null {
   const best = input.evalBefore.lines[0];
   if (!best) return null;
   if (input.quality === 'book' || input.quality === 'forced') return null;
-  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan) ?? outpostText(input.fenBefore, input.moveSan) ?? castleText(input.fenBefore, input.moveSan) ?? (best.moveSan === input.moveSan ? opensText(input) : null);
+  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan) ?? outpostText(input.fenBefore, input.moveSan) ?? castleText(input.fenBefore, input.moveSan) ?? (best.moveSan === input.moveSan ? goodCoordinationText(input) : null);
   if (best.moveSan === input.moveSan) return null;
 
   const playedLine = [input.moveSan, ...(input.evalAfter?.lines[0]?.pvSan ?? [])];
@@ -48,27 +48,33 @@ export function principleReason(input: PrincipleInput): string | null {
   );
 }
 
-function opensText(input: PrincipleInput): string | null {
-  const [move] = line(input.fenBefore, [input.moveSan], 1);
-  return move ? opensOwnPieceText(input.fenBefore, move) : null;
-}
+/** A move that cost more than this lost it some other way than by cutting a piece off. */
+const BLOCK_MAX_LOSS_CP = 150;
 
 function pilesText(input: PrincipleInput, best: string): string | null {
   const [better] = line(input.fenBefore, [best], 1);
-  const text = better && !better.captured ? pilesOnText(input.fenBefore, better) : null;
+  const text = better && !better.captured && smallLoss(input) ? coordinationFragment(input.fenBefore, better) : null;
   return text ? `${best} was better: it ${text}` : null;
 }
 
-/** A move that cost more than this lost it some other way than by cutting a piece off. */
-const BLOCK_MAX_LOSS_CP = 150;
+function goodCoordinationText(input: PrincipleInput): string | null {
+  const [move] = line(input.fenBefore, [input.moveSan], 1);
+  if (!move) return null;
+  const text = opensOwnPieceText(input.fenBefore, move) ?? connectsRooksText(input.fenBefore, move) ?? supportsAdvancedPieceText(input.fenBefore, move);
+  return text ? `${text.charAt(0).toUpperCase()}${text.slice(1)}` : null;
+}
+
+/** A positional reason fits a small loss; a big one has a sharper cause. */
+function smallLoss(input: PrincipleInput): boolean {
+  const bestCp = input.evalBefore.lines[0]?.cp;
+  const playedCp = input.evalAfter?.lines[0]?.cp;
+  return bestCp != null && playedCp != null && Math.abs(bestCp - playedCp) <= BLOCK_MAX_LOSS_CP;
+}
 
 function blocksText(input: PrincipleInput, best: string): string | null {
   const [played] = line(input.fenBefore, [input.moveSan], 1);
   const [better] = line(input.fenBefore, [best], 1);
-  // A positional reason fits a small loss; a big one has a sharper cause.
-  const bestCp = input.evalBefore.lines[0]?.cp;
-  const playedCp = input.evalAfter?.lines[0]?.cp;
-  if (bestCp == null || playedCp == null || Math.abs(bestCp - playedCp) > BLOCK_MAX_LOSS_CP) return null;
+  if (!smallLoss(input)) return null;
   return played && better && !better.captured ? blocksOwnPieceText(input.fenBefore, played, better) : null;
 }
 
