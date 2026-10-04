@@ -41,6 +41,22 @@ engine's best differed), both on one game, `d690d041` (Black reader, 500 vs 507,
 | "Defends X a second time, though nothing attacks it" | 12 hits in 5 games, all noise ("Qc2 defends the pawn on c3"). The real fault was elsewhere. |
 | Pawn-shield count to explain a recapture (fxg3 vs hxg3) | Shield pawns counted equal for both captures; see the open row below for what might work. |
 
+## Built, but silent on the plies that motivated them (checked 2026-10-04)
+
+The rules in "Built" were measured on other positions, not on these. On game
+`d690` the real pipeline says nothing of the kind on:
+
+| Rule | Motivating plies | What the app says instead | Why |
+|---|---|---|---|
+| Leaves the king open to checks | 46 (…Kxd8), 48 (…Qf6), 60 (…c4) | "Recaptures the knight on d8" / the cut-off note / nothing | 46 is labelled "good", and the rule only runs on inaccuracy or worse; 48's cut-off note wins first; 60's loss is too big and its mate too long to count |
+| Gives up a pawn's hold on the centre | 12 (…Be6 vs g6), 24 (…f4) | "Develops the bishop" / the cut-off note | 12 is "good"; 24 is taken by the cut-off note first |
+| Pin and a second attacker on a pinned piece | 56–57 (Re1 vs the pinned e8 bishop) | "Leaves the pawn on c5 undefended" / "Puts the rook on the e-file" | the pile-on rule skips a pinned target nothing else defends; 57 is a best move with only the open-file note |
+| Open file taken first | 27 (a4 vs Rfe1) | nothing | 27 is a "good" move: no comparison is made |
+
+Decide per row whether to let a rule run on "good" moves with a gap of 30 cp or
+more, and whether one of two true notes should win. Do not count these rows
+as covered.
+
 ## Not built yet
 
 | Idea | Seen | Count | Why not built / what would change it |
