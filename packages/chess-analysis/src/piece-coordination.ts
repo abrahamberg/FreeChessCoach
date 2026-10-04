@@ -1,6 +1,7 @@
 import { Chess, type Color, type Move, type PieceSymbol, type Square } from 'chess.js';
 import { flipActiveColorFen } from './null-move-fen.js';
 import { PIECE_NAMES } from './piece-names.js';
+import { PIECE_VALUES } from './tactics.js';
 
 /** A bishop, rook or queen that had at least this many squares to go to. */
 const MIN_REACH = 5;
@@ -85,3 +86,36 @@ export function opensOwnPieceText(fenBefore: string, played: Move): string | nul
   const opened = lineChange(fenBefore, played, 'opens');
   return opened ? `Opens the ${sliderName(opened)}, from ${squares(opened.before)} to ${opened.after}` : null;
 }
+
+const ORDINALS = ['', '', 'second', 'third', 'fourth', 'fifth'];
+
+/** A move that adds an attacker to an enemy piece the opponent defends, and
+ * leaves it attacked more often than defended: "adds a third attacker to the
+ * knight on d5, which has one defender". A piece nothing defends is a plain
+ * capture threat for the tactics to name. */
+export function pilesOnText(fenBefore: string, move: Move): string | null {
+  if (move.san.endsWith('+') || move.piece === 'k') return null;
+  const enemy = move.color === 'w' ? 'b' : 'w';
+  const before = new Chess(fenBefore);
+  const after = new Chess(move.after);
+  let best: { square: Square; type: PieceSymbol; attackers: number; defenders: number } | null = null;
+  for (const row of after.board()) {
+    for (const piece of row) {
+      if (!piece || piece.color !== enemy || piece.type === 'k') continue;
+      const attackers = after.attackers(piece.square, move.color);
+      const defenders = after.attackers(piece.square, enemy).length;
+      if (!attackers.includes(move.to as Square) || attackers.length < 2 || defenders === 0 || attackers.length <= defenders) continue;
+      // Winning the exchange needs an attacker no dearer than the target.
+      const cheapest = Math.min(...attackers.map((square) => PIECE_VALUES[after.get(square)!.type]));
+      if (cheapest > PIECE_VALUES[piece.type]) continue;
+      if (before.attackers(piece.square, move.color).length >= attackers.length) continue;
+      const better = !best || PIECE_VALUE_ORDER.indexOf(piece.type) > PIECE_VALUE_ORDER.indexOf(best.type);
+      if (better) best = { square: piece.square, type: piece.type, attackers: attackers.length, defenders };
+    }
+  }
+  if (!best) return null;
+  const ordinal = ORDINALS[best.attackers] ?? `${best.attackers}th`;
+  return `adds a ${ordinal} attacker to the ${PIECE_NAMES[best.type]} on ${best.square}, which has ${best.defenders === 1 ? 'one defender' : `${best.defenders} defenders`}`;
+}
+
+const PIECE_VALUE_ORDER: readonly PieceSymbol[] = ['p', 'n', 'b', 'r', 'q'];

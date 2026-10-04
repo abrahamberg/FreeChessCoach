@@ -1,7 +1,7 @@
 import { Chess, type Color, type Move, type PieceSymbol, type Square } from 'chess.js';
 import { isImprovableQuality, type EngineEval, type MoveQuality } from '@freechesscoach/shared';
 import { flipActiveColorFen } from './null-move-fen.js';
-import { blocksOwnPieceText, opensOwnPieceText } from './piece-coordination.js';
+import { blocksOwnPieceText, opensOwnPieceText, pilesOnText } from './piece-coordination.js';
 import { PIECE_NAMES } from './piece-names.js';
 import { PIECE_VALUES } from './tactics.js';
 
@@ -43,13 +43,20 @@ export function principleReason(input: PrincipleInput): string | null {
     queenOutEarly(input.fenBefore, playedLine, best.moveSan, bestFragment) ??
     (bestFragment && !developsAt(input.fenBefore, input.moveSan) ? `${best.moveSan} was better: it ${bestFragment}` : null) ??
     castlesSooner(input.fenBefore, input.moveSan, best.moveSan) ??
-    blocksText(input, best.moveSan)
+    blocksText(input, best.moveSan) ??
+    pilesText(input, best.moveSan)
   );
 }
 
 function opensText(input: PrincipleInput): string | null {
   const [move] = line(input.fenBefore, [input.moveSan], 1);
   return move ? opensOwnPieceText(input.fenBefore, move) : null;
+}
+
+function pilesText(input: PrincipleInput, best: string): string | null {
+  const [better] = line(input.fenBefore, [best], 1);
+  const text = better && !better.captured ? pilesOnText(input.fenBefore, better) : null;
+  return text ? `${best} was better: it ${text}` : null;
 }
 
 /** A move that cost more than this lost it some other way than by cutting a piece off. */
@@ -230,6 +237,8 @@ function candidateDoes(fen: string, san: string): string | null {
   const target = move.san.endsWith('+') ? null : newlyAttacked(fen, move);
   if (move.san.endsWith('+')) parts.push('gives check');
   else if (target) parts.push(`attacks the ${PIECE_NAMES[target.type]} on ${target.square}`);
+  const piling = pilesOnText(fen, move);
+  if (piling && !move.captured) parts.push(piling);
   if (move.piece === 'r' && !move.captured && !fileHasPawn(move)) parts.push(`puts the rook on the ${move.to[0]}-file, which has no pawns`);
   return parts.length ? parts.join(' and ') : null;
 }
