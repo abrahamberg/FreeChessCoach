@@ -30,7 +30,7 @@ export function see(fen: string, targetSquare: Square, sideToMove: SeeColor): nu
  * negative value. Each target square is resolved once: the exchange on a
  * square does not depend on which capture was listed first.
  */
-export function seeOnAllOpponentCaptures(fenAfterMove: string, movingColor: SeeColor): number {
+export function seeOnAllOpponentCaptures(fenAfterMove: string, movingColor: SeeColor, credit?: { square: string; value: number }): number {
   const mover = toChessColor(movingColor);
   const opponent = oppositeColor(mover);
   const chess = new Chess(withSideToMove(fenAfterMove, opponent));
@@ -38,7 +38,9 @@ export function seeOnAllOpponentCaptures(fenAfterMove: string, movingColor: SeeC
 
   if (targets.size === 0) return 0;
 
-  return Math.min(...[...targets].map((square) => -evaluateCapture(chess, square)));
+  // `credit`: what the move itself just took on `square`, so a knight taking a
+  // rook and being taken back is +rook-knight, not a lost knight.
+  return Math.min(...[...targets].map((square) => -evaluateCapture(chess, square) + (credit && credit.square === square ? credit.value : 0)));
 }
 
 /** The exchange on `targetSquare` for the side to move of `chess`, played

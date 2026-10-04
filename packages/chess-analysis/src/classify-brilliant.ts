@@ -60,7 +60,10 @@ function hasSacrificeOn(
   isCapture: boolean,
   destination: string
 ): boolean {
-  const worstReply = seeOnAllOpponentCaptures(fenAfter, mover);
+  // What the move took on its own square counts for it: 23.Nxd8 Kxd8 is a
+  // knight for a rook, an exchange won, not a sacrifice.
+  const taken = isCapture ? new Chess(fenBefore).get(destination as Square) : undefined;
+  const worstReply = seeOnAllOpponentCaptures(fenAfter, mover, taken ? { square: destination, value: PIECE_VALUES[taken.type] } : undefined);
   if (worstReply <= SACRIFICE_SEE_THRESHOLD) return true;
   if (!isCapture) return false;
 
