@@ -137,6 +137,22 @@ describe('stronger candidates without a capture or attack', () => {
     expect(principleReason({ fenBefore: pawn, moveSan: 'Kd2', quality: 'inaccuracy', evalBefore: withCp(pawn, 50, 'c4'), evalAfter: withCp(pawn, -20, 'Kd7') })).toBe('c4 was better: it attacks the pawn on d5');
   });
 
+  it('says a pin, not a bare attack, and says nothing about a capture both moves make', () => {
+    const withCp = (fen: string, cp: number, moveSan: string): EngineEval => ({ fen, ply: 0, depth: 12, lines: [{ moveSan, moveUci: '', cp, mateIn: null, pvSan: [moveSan] }] });
+    const fen = 'r3k2r/ppp2ppp/2nbbq2/3p1p2/3P4/2PBPN2/PP3PPP/RN1Q1RK1 w kq - 1 9';
+    expect(principleReason({ fenBefore: fen, moveSan: 'Qc2', quality: 'inaccuracy', evalBefore: withCp(fen, 30, 'Bb5'), evalAfter: withCp(fen, -27, 'Qd7') })).toBe('Bb5 was better: it pins the knight on c6 to the king');
+    const take = '2kr3r/1pp3pp/p2q4/PbNp4/3P4/2P3p1/1PQ2P1P/R3R1K1 w - - 0 21';
+    expect(principleReason({ fenBefore: take, moveSan: 'fxg3', quality: 'inaccuracy', evalBefore: withCp(take, 26, 'hxg3'), evalAfter: withCp(take, -22, 'Rde8') })).toBeNull();
+  });
+
+  it('describes a plain development and a rook onto a file without pawns on a good move', () => {
+    const withCp = (fen: string, moveSan: string): EngineEval => ({ fen, ply: 0, depth: 12, lines: [{ moveSan, moveUci: '', cp: 0, mateIn: null, pvSan: [moveSan] }] });
+    const dev = 'rnbqkb1r/ppp2ppp/5p2/3p4/3P4/4P3/PPP2PPP/RN1QKBNR b KQkq - 0 4';
+    expect(principleReason({ fenBefore: dev, moveSan: 'Bd6', quality: 'best', evalBefore: withCp(dev, 'Bd6') })).toBe('Develops the bishop');
+    const file = '2kr3r/ppp2ppp/3q4/8/8/8/PPP2PPP/R4RK1 w - - 0 14';
+    expect(principleReason({ fenBefore: file, moveSan: 'Rfe1', quality: 'good', evalBefore: withCp(file, 'Rfe1') })).toBe('Puts the rook on the e-file, which has no pawns');
+  });
+
   it('says a pawn move that cuts off its own bishop, against the move that keeps it open', () => {
     const fen = '2kr3r/ppp2ppp/2bb1q2/3p1p2/3P4/2P1PN2/PPQN1PPP/R4RK1 b - - 1 12';
     const withCp = (cp: number, moveSan: string): EngineEval => ({ fen, ply: 0, depth: 12, lines: [{ moveSan, moveUci: '', cp, mateIn: null, pvSan: [moveSan] }] });

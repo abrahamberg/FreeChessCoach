@@ -3,6 +3,7 @@ import { isImprovableQuality, type EngineEval, type MoveQuality } from '@freeche
 import { flipActiveColorFen } from './null-move-fen.js';
 import { blocksOwnPieceText, connectsRooksText, coordinationFragment, freesEnemyPieceText, opensOwnPieceText, pilesOnText, supportsAdvancedPieceText } from './piece-coordination.js';
 import { PIECE_NAMES } from './piece-names.js';
+import { pinReason } from './pin-reason.js';
 import { PIECE_VALUES } from './tactics.js';
 
 export interface PrincipleInput {
@@ -31,7 +32,7 @@ export function principleReason(input: PrincipleInput): string | null {
   const best = input.evalBefore.lines[0];
   if (!best) return null;
   if (input.quality === 'book' || input.quality === 'forced') return null;
-  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan) ?? outpostText(input.fenBefore, input.moveSan) ?? castleText(input.fenBefore, input.moveSan) ?? (best.moveSan === input.moveSan ? goodCoordinationText(input) : null);
+  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan) ?? plainDevelopmentText(input) ?? openFileRookText(input) ?? outpostText(input.fenBefore, input.moveSan) ?? castleText(input.fenBefore, input.moveSan) ?? (best.moveSan === input.moveSan ? goodCoordinationText(input) : null);
   if (best.moveSan === input.moveSan) return null;
 
   const playedLine = [input.moveSan, ...(input.evalAfter?.lines[0]?.pvSan ?? [])];
@@ -65,12 +66,30 @@ function bestDoesText(input: PrincipleInput, best: string): string | null {
   const bestCp = input.evalBefore.lines[0]?.cp;
   const playedCp = input.evalAfter?.lines[0]?.cp;
   if (bestCp == null || playedCp == null || Math.abs(bestCp - playedCp) > BEST_DOES_MAX_LOSS_CP) return null;
+  const [played] = line(input.fenBefore, [input.moveSan], 1);
+  const [better] = line(input.fenBefore, [best], 1);
+  // Both take the same piece: the capture is not what made one better.
+  if (played?.captured && better?.captured && played.to === better.to) return null;
   const what = candidateDoes(input.fenBefore, best);
   return what ? `${best} was better: it ${what}` : null;
 }
 
 /** A move that cost more than this lost it some other way than by missing the engine's. */
 const BEST_DOES_MAX_LOSS_CP = 300;
+
+/** A minor piece brought out in the opening, with nothing else to say about it. */
+function plainDevelopmentText(input: PrincipleInput): string | null {
+  const [move] = line(input.fenBefore, [input.moveSan], 1);
+  if (!move || !isDevelopment(move) || fullmoveOf(input.fenBefore) > OPENING_LAST_MOVE) return null;
+  return `Develops the ${PIECE_NAMES[move.piece]}`;
+}
+
+/** A rook that goes to a file without pawns. */
+function openFileRookText(input: PrincipleInput): string | null {
+  const [move] = line(input.fenBefore, [input.moveSan], 1);
+  if (!move || move.piece !== 'r' || move.captured || move.from[0] === move.to[0] || fileHasPawn(move)) return null;
+  return `Puts the rook on the ${move.to[0]}-file, which has no pawns`;
+}
 
 function freesText(input: PrincipleInput): string | null {
   const [played] = line(input.fenBefore, [input.moveSan], 1);
@@ -149,9 +168,11 @@ function developsWithPurpose(fen: string, san: string): string | null {
   const [move] = line(fen, [san], 1);
   if (!move || !isDevelopment(move)) return null;
   const check = move.san.endsWith('+');
-  const target = check ? null : newlyAttacked(fen, move);
-  if (!check && !target) return null;
+  const pin = check ? null : pinNote(fen, move);
+  const target = check || pin ? null : newlyAttacked(fen, move);
+  if (!check && !pin && !target) return null;
   const base = `develops the ${PIECE_NAMES[move.piece]}`;
+  if (pin) return `${base} and ${pin}`;
   return check ? `${base} with check` : `${base} and attacks the ${PIECE_NAMES[target!.type]} on ${target!.square}`;
 }
 
@@ -250,8 +271,16 @@ export function threatNote(fen: string, san: string): string | null {
   const [move] = line(fen, [san], 1);
   if (!move) return null;
   if (move.san.endsWith('+')) return 'gives check';
+  const pin = pinNote(fen, move);
+  if (pin) return pin;
   const target = newlyAttacked(fen, move);
   return target ? `attacks the ${PIECE_NAMES[target.type]} on ${target.square}` : null;
+}
+
+/** "pins the knight on c6 to the king" (the pin note, said as part of a sentence). */
+function pinNote(fen: string, move: Move): string | null {
+  const text = pinReason(fen, move.san, move.color === 'w' ? 'white' : 'black');
+  return text ? `${text.charAt(0).toLowerCase()}${text.slice(1)}` : null;
 }
 
 function candidateDoes(fen: string, san: string): string | null {
@@ -262,7 +291,9 @@ function candidateDoes(fen: string, san: string): string | null {
   if (move.captured) parts.push(`takes the ${PIECE_NAMES[move.captured]} on ${move.to}`);
   if (isDevelopment(move)) parts.push(`develops the ${PIECE_NAMES[move.piece]}`);
   const target = move.san.endsWith('+') ? null : newlyAttacked(fen, move);
+  const pin = pinNote(fen, move);
   if (move.san.endsWith('+')) parts.push('gives check');
+  else if (pin) parts.push(pin);
   else if (target) parts.push(`attacks the ${PIECE_NAMES[target.type]} on ${target.square}`);
   const piling = pilesOnText(fen, move);
   if (piling && !move.captured) parts.push(piling);
