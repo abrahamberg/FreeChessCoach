@@ -117,6 +117,20 @@ as covered.
 
 ## Engine-depth caveat
 
+**Correction (2026-10-04, from a proxy review; each point checked in code).** The
+engine server stops every search after `DEFAULT_TIMEOUT_MS = 5000`
+(`services/engine/src/uci.ts`), and the response's `depth` was the depth *asked
+for*, not reached. So every "depth 20/22/24" probe number in this file and in the
+agents' answers is really about depth 19-21 on a busy position. The probe now
+prints the depth reached ("asked for 24; stopped by the engine's time limit",
+reached 21) and `PositionAnalysis.reachedDepth` carries it; stored game evals
+still record the asked-for depth. The conclusions stand (deeper search changes
+gaps and labels) but the numbers are softer than they read. **Open:** the helm
+chart (`deploy/helm/freechesscoach/values.yaml`) sets the engine's default depth
+to 18 with a 3 s cutoff, so prod may not be at depth 12 at all and may be cutting
+depth-18 searches short; check the private kube values or prod's `engine_evals`.
+
+
 **Measured 2026-10-04 (probe, depth 20, against the stored depth 12):** 46…Kxd8
 vs Qxd8: 38 cp stored (labelled "good"), 51 cp at depth 20, about 67 cp at depth
 22. 48…Qf6 vs Qf8: 99 cp stored, 129 cp at depth 20. Deeper search makes the

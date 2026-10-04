@@ -6,6 +6,7 @@ describe('parseInfoLine', () => {
     const line =
       'info depth 1 seldepth 3 multipv 1 score cp 569 nodes 18 nps 18000 hashfull 0 tbhits 0 time 1 pv b1h1';
     expect(parseInfoLine(line)).toEqual({
+      depth: 1,
       multipv: 1,
       cp: 569,
       mateIn: null,
@@ -17,6 +18,7 @@ describe('parseInfoLine', () => {
     const line =
       'info depth 4 seldepth 5 multipv 1 score mate 2 nodes 107 nps 107000 hashfull 0 tbhits 0 time 1 pv b1h1 a8b8 h1h8';
     expect(parseInfoLine(line)).toEqual({
+      depth: 4,
       multipv: 1,
       cp: null,
       mateIn: 2,
@@ -27,6 +29,7 @@ describe('parseInfoLine', () => {
   test('parses a negative mate score (side to move is getting mated)', () => {
     const line = 'info depth 6 multipv 1 score mate -3 nodes 500 time 5 pv a1a2 b2b3 c3c4';
     expect(parseInfoLine(line)).toEqual({
+      depth: 6,
       multipv: 1,
       cp: null,
       mateIn: -3,
@@ -38,6 +41,7 @@ describe('parseInfoLine', () => {
     const line =
       'info depth 8 seldepth 10 multipv 2 score cp 42 nodes 900 time 10 pv d2d4 d7d5';
     expect(parseInfoLine(line)).toEqual({
+      depth: 8,
       multipv: 2,
       cp: 42,
       mateIn: null,

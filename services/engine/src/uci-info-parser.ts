@@ -3,6 +3,8 @@ export interface UciInfoLine {
   cp: number | null;
   mateIn: number | null;
   pvUci: string[];
+  /** The search depth this line was reported at (`info depth N`). */
+  depth: number | null;
 }
 
 /** Parses a single UCI `info ...` line into its score and principal variation.
@@ -25,7 +27,9 @@ export function parseInfoLine(line: string): UciInfoLine | null {
   const multipvMatch = /\bmultipv (\d+)/.exec(line);
   const multipvStr = multipvMatch?.[1];
 
+  const depthMatch = /\bdepth (\d+)/.exec(line);
   return {
+    depth: depthMatch?.[1] ? Number(depthMatch[1]) : null,
     multipv: multipvStr ? Number(multipvStr) : 1,
     cp: kind === 'cp' ? value : null,
     mateIn: kind === 'mate' ? value : null,

@@ -50,7 +50,7 @@ hold on a centre square, flight squares of a trapped queen). The owner's rule:
   (`analyseGame` over the stored evals): the table "app has text / silent / thin" by
   the agent's kind is what tells you what to build. "Has text" is not "right text".
 
-- The stored evals are depth 12 (the app never searches deeper). Agents must
+- The stored evals are depth 12 in dev (the chart's prod default is 18; unchecked). The engine stops any search after 5 s, so a probe `--depth 22` usually reaches 19-21; the probe prints the depth reached. Agents must
   re-check gaps at depth 20+: in one game 4 of 30 "best" moves were not best at
   depth 22, and gaps under about 20 cp have no concrete reason. Stay silent there.
 - A positional note fits a small loss only; past 150 cp the real cause is

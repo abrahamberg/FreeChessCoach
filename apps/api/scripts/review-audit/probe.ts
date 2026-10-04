@@ -42,7 +42,7 @@ export async function probe(options: ProbeOptions): Promise<string> {
   if (!chess.isGameOver()) {
     const analysis = await new NativeEngineBackend(options.engineUrl).analyzePosition(fen, { depth: options.depth, multiPv: 3 });
     const lines = analysis.lines.map((line) => ({ san: line.moveSan, cp: line.cp, mate: line.mateIn, pv: line.pvSan.slice(0, 12) }));
-    rows.push(`engine depth ${analysis.depth} (White's view): ${linesText(lines)}`);
+    rows.push(`engine depth ${analysis.reachedDepth ?? analysis.depth}${analysis.reachedDepth && analysis.reachedDepth < analysis.depth ? ` (asked for ${analysis.depth}; stopped by the engine's time limit)` : ''} (White's view): ${linesText(lines)}`);
   }
   return rows.join('\n');
 }

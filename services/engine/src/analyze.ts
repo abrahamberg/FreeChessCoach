@@ -64,6 +64,7 @@ export async function analyzePositionDetailed(
   return {
     fen,
     depth,
+    reachedDepth: reachedDepthOf(detailedLines),
     multiPv: lines.length,
     bestMove: best?.moveSan ?? null,
     eval: { cp: best?.cp ?? null, mateIn: best?.mateIn ?? null },
@@ -90,4 +91,11 @@ export async function analyzeGame(
  * check, which chess.js accepts and Stockfish segfaults on. */
 function assertValidFen(fen: string): void {
   if (!isLegalFen(fen)) throw new InvalidFenError(fen);
+}
+
+/** The shallowest depth any line reached: what the search stood behind when the
+ * time limit stopped it. Null when the engine reported none. */
+function reachedDepthOf(lines: readonly { reachedDepth?: number | null }[]): number | null {
+  const depths = lines.flatMap((line) => (line.reachedDepth == null ? [] : [line.reachedDepth]));
+  return depths.length ? Math.min(...depths) : null;
 }

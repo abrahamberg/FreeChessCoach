@@ -28,6 +28,9 @@ export interface UciEngineOptions {
  * the first move. */
 export interface DetailedEngineLine extends EngineLine {
   pvUci: string[];
+  /** The depth this line was searched to when the search ended: lower than
+   * the depth asked for when the time limit stopped it. */
+  reachedDepth?: number | null;
 }
 
 /** Replays a UCI move sequence against one position to collect each move's
@@ -184,7 +187,8 @@ function recordInfoLine(
     moveSan: uciToSan(fen, moveUci),
     cp: info.cp === null ? null : info.cp * sign,
     mateIn: info.mateIn === null ? null : info.mateIn * sign,
-    pvUci: info.pvUci
+    pvUci: info.pvUci,
+    reachedDepth: info.depth
   });
 }
 
@@ -199,7 +203,7 @@ function sortedLines(collected: Map<number, DetailedEngineLine>): DetailedEngine
 }
 
 function stripPv(line: DetailedEngineLine): EngineLine {
-  const { pvUci: _pvUci, ...rest } = line;
+  const { pvUci: _pvUci, reachedDepth: _reachedDepth, ...rest } = line;
   return rest;
 }
 

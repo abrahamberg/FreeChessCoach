@@ -462,6 +462,10 @@ export type MoveReport = ClassifiedMoveDto;
 export const PositionAnalysisSchema = z.object({
   fen: z.string(),
   depth: z.number().int().positive(),
+  /** The depth the search reached: below `depth` when the engine's time limit
+   * stopped it first (`depth` is the depth that was asked for). Absent on an
+   * analysis from before the field. */
+  reachedDepth: z.number().int().positive().nullable().optional(),
   multiPv: z.number().int().positive(),
   bestMove: z.string().nullable(),
   eval: z.object({ cp: z.number().int().nullable(), mateIn: z.number().int().nullable() }),
