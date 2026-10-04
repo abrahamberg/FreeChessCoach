@@ -1,6 +1,7 @@
 import { Chess, type Color, type Move, type PieceSymbol, type Square } from 'chess.js';
 import { isImprovableQuality, type EngineEval, type MoveQuality } from '@freechesscoach/shared';
 import { flipActiveColorFen } from './null-move-fen.js';
+import { blocksOwnPieceText, opensOwnPieceText } from './piece-coordination.js';
 import { PIECE_NAMES } from './piece-names.js';
 import { PIECE_VALUES } from './tactics.js';
 
@@ -30,7 +31,7 @@ export function principleReason(input: PrincipleInput): string | null {
   const best = input.evalBefore.lines[0];
   if (!best) return null;
   if (input.quality === 'book' || input.quality === 'forced') return null;
-  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan) ?? outpostText(input.fenBefore, input.moveSan) ?? castleText(input.fenBefore, input.moveSan);
+  if (!isImprovableQuality(input.quality)) return developsWithPurposeText(input.fenBefore, input.moveSan) ?? outpostText(input.fenBefore, input.moveSan) ?? castleText(input.fenBefore, input.moveSan) ?? (best.moveSan === input.moveSan ? opensText(input) : null);
   if (best.moveSan === input.moveSan) return null;
 
   const playedLine = [input.moveSan, ...(input.evalAfter?.lines[0]?.pvSan ?? [])];
@@ -41,8 +42,27 @@ export function principleReason(input: PrincipleInput): string | null {
     chasedTwice(input.fenBefore, playedLine, best.moveSan) ??
     queenOutEarly(input.fenBefore, playedLine, best.moveSan, bestFragment) ??
     (bestFragment && !developsAt(input.fenBefore, input.moveSan) ? `${best.moveSan} was better: it ${bestFragment}` : null) ??
-    castlesSooner(input.fenBefore, input.moveSan, best.moveSan)
+    castlesSooner(input.fenBefore, input.moveSan, best.moveSan) ??
+    blocksText(input, best.moveSan)
   );
+}
+
+function opensText(input: PrincipleInput): string | null {
+  const [move] = line(input.fenBefore, [input.moveSan], 1);
+  return move ? opensOwnPieceText(input.fenBefore, move) : null;
+}
+
+/** A move that cost more than this lost it some other way than by cutting a piece off. */
+const BLOCK_MAX_LOSS_CP = 150;
+
+function blocksText(input: PrincipleInput, best: string): string | null {
+  const [played] = line(input.fenBefore, [input.moveSan], 1);
+  const [better] = line(input.fenBefore, [best], 1);
+  // A positional reason fits a small loss; a big one has a sharper cause.
+  const bestCp = input.evalBefore.lines[0]?.cp;
+  const playedCp = input.evalAfter?.lines[0]?.cp;
+  if (bestCp == null || playedCp == null || Math.abs(bestCp - playedCp) > BLOCK_MAX_LOSS_CP) return null;
+  return played && better && !better.captured ? blocksOwnPieceText(input.fenBefore, played, better) : null;
 }
 
 const HOME_RANK: Record<Color, string> = { w: '1', b: '8' };

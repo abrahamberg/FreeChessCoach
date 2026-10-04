@@ -128,4 +128,11 @@ describe('stronger candidates without a capture or attack', () => {
     });
     expect(text).toContain('O-O-O (castles)');
   });
+
+  it('says a pawn move that cuts off its own bishop, against the move that keeps it open', () => {
+    const fen = '2kr3r/ppp2ppp/2bb1q2/3p1p2/3P4/2P1PN2/PPQN1PPP/R4RK1 b - - 1 12';
+    const withCp = (cp: number, moveSan: string): EngineEval => ({ fen, ply: 0, depth: 12, lines: [{ moveSan, moveUci: '', cp, mateIn: null, pvSan: [moveSan] }] });
+    const text = principleReason({ fenBefore: fen, moveSan: 'f4', quality: 'inaccuracy', evalBefore: withCp(-20, 'g5'), evalAfter: withCp(70, 'exf4') });
+    expect(text).toBe('f4 cuts off the bishop on d6, from 9 squares to 6; g5 keeps it open');
+  });
 });
