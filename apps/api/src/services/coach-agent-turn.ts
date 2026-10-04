@@ -7,15 +7,17 @@ import { classifyLlmError } from '../llm/provider-error.js';
 import { createKeyedLock } from '../lib/keyedLock.js';
 import { currentEpisode } from '../lib/episodes.js';
 import { findSuccessfulToolResult } from '../lib/tool-parts.js';
-import { buildCoachTools, type CoachToolsDependencies } from './coach-tools.js';
+import { buildCoachTools } from './coach-tools.js';
+import { buildTurnToolsDependencies } from './coach-turn-dependencies.js';
 import { replyInProgress } from './coach-tool-guards.js';
 import * as coachContext from './coach-context.js';
 import { applyClientToolResult } from './coach-agent-client-tool-result.js';
+import { applyPhaseToolResult, isPhaseToolName } from './coach-phase.js';
+import { startProgressTurn } from './coach-progress-turn.js';
 import { buildSystemPromptForSession } from './coach-agent-system-prompt.js';
 import { serializeTools, type TurnDebugSnapshot } from './coach-agent-debug.js';
-import { investigatePosition } from './position-investigator.js';
 import { planCoachMove } from './coach-move-plan.js';
-import type { CoachAgentDependencies, ModelResolver, StartTurnInput } from './coach-agent-types.js';
+import type { CoachAgentDependencies, StartTurnInput } from './coach-agent-types.js';
 import type { CoachMovePlan } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema.js';
@@ -33,9 +35,11 @@ const sessionLock = createKeyedLock();
  */
 export async function startTurn(
   deps: CoachAgentDependencies,
-  session: SessionRow,
-  input: StartTurnInput
+  initialSession: SessionRow,
+  initialInput: StartTurnInput
 ): Promise<CoachTurnStream> {
+  let session = initialSession;
+  let input = initialInput;
   // Held until onFinish below has persisted this turn's messages — a client
   // tool-result arrives as a brand-new HTTP request the instant the tool-call
   // streams to the browser, which can otherwise race this turn's own
@@ -54,6 +58,17 @@ export async function startTurn(
     const resolveModel = deps.resolveModel ?? getModelForUser;
     const resolution = await resolveModel(deps.db, deps.gatewayConfig, session.userId, 'standard');
     const { callLightModel } = deps;
+
+    // Leaving the progress check-in for the review, or the review for the
+    // closing round, is a client tool the browser has acknowledged: turn it
+    // into the phase change, then carry on as the next round's first turn.
+    if (input.clientToolResult && isPhaseToolName(input.clientToolResult.toolName)) {
+      session = await applyPhaseToolResult(deps, callLightModel, session, input.clientToolResult);
+      input = { ...input, clientToolResult: undefined };
+    }
+    if (session.mode === 'analyze' && session.phase !== 'review') {
+      return await startProgressTurn({ deps, session, content: input.content, resolution, callLightModel, resolveModel, releaseOnce });
+    }
 
     // Resolved before anything below persists a message: buildSystemPromptForSession
     // (via a game's first turn -> coaching-plan.ts's ensureCoachingPlan) can
@@ -87,7 +102,7 @@ export async function startTurn(
       // this jump path.
       const jump = await coachContext.resolvePositionContextJump(deps.db, session.gameId, input.content);
       if (jump && jump.ply !== subjectPly) {
-        const historyBeforeTurn = await sessionMessagesRepo.listBySession(deps.db, session.id);
+        const historyBeforeTurn = await sessionMessagesRepo.listForPhase(deps.db, session.id, 'review');
         const closedEpisode = currentEpisode(historyBeforeTurn, subjectPly);
         await coachContext.closeEpisodeIfNeeded({ db: deps.db, callLightModel }, session.id, closedEpisode.messages, subjectPly);
         currentPly = jump.ply;
@@ -105,7 +120,7 @@ export async function startTurn(
     // Picked alongside the context build, not after it: the engine search
     // overlaps the context's own DB reads and engine calls.
     const plannedMove = planCoachMoveForTurn(deps, session);
-    const historyAfterTurn = await sessionMessagesRepo.listBySession(deps.db, session.id);
+    const historyAfterTurn = await sessionMessagesRepo.listForPhase(deps.db, session.id, 'review');
     const episodeContext = await coachContext.buildEpisodeContext({
       db: deps.db,
       callLightModel,
@@ -205,34 +220,6 @@ export async function startTurn(
   }
 }
 
-/** Assembles buildCoachTools' dependency object for one turn — split out of
- * startTurn (AGENTS.md rule 2: ~250-line file guideline) once
- * investigate_position's own closure needed to be wired in here alongside
- * the rest. `resolveModel` is the SAME resolver startTurn already resolved
- * for its own standard-tier call above — investigatePosition calls it again
- * itself, with 'light', so a test that injects a mock resolveModel controls
- * both tiers by branching on the tier argument. */
-function buildTurnToolsDependencies(
-  deps: CoachAgentDependencies,
-  session: SessionRow,
-  callLightModel: (messages: { system: string; user: string }) => Promise<string>,
-  resolveModel: ModelResolver
-): CoachToolsDependencies {
-  return {
-    db: deps.db,
-    jobQueue: deps.jobQueue,
-    analyzePosition: deps.analyzePosition,
-    callLightModel,
-    investigatePosition: (args) =>
-      investigatePosition(
-        { db: deps.db, gatewayConfig: deps.gatewayConfig, resolveModel, analyzePosition: deps.analyzePosition },
-        { userId: session.userId, sessionId: session.id },
-        args
-      ),
-    puzzlePool: deps.puzzlePool
-  };
-}
-
 /** Play mode's planned move for this turn, null when there is none (not the
  * coach's move, no selector wired) or picking it failed — the coach then
  * falls back to choosing via get_candidate_moves, so a failure here never
@@ -285,7 +272,7 @@ async function advancePlyForPlayMove(
 ): Promise<void> {
   const coachMove = findSuccessfulToolResult(messages, 'play_coach_move') as PlayCoachMoveResult | null;
   if (coachMove) {
-    const historyAfterTurn = await sessionMessagesRepo.listBySession(db, sessionId);
+    const historyAfterTurn = await sessionMessagesRepo.listForPhase(db, sessionId, 'review');
     const closedEpisode = currentEpisode(historyAfterTurn, closedPly);
     await coachContext.closeEpisodeIfNeeded({ db, callLightModel }, sessionId, closedEpisode.messages, closedPly);
     // A newly-played move is always a subject change — play mode has no

@@ -1,10 +1,10 @@
 import type { Kysely } from 'kysely';
+import { MAX_STUDENT_MEMORY_CHARS } from '@freechesscoach/chess-analysis';
 import { ValidationError } from '../../lib/errors.js';
 import type { Database } from '../schema.js';
 
 /** One general text per student, rewritten whole — the coach's long-term view
  * of how this student thinks and what teaches them best. */
-export const MAX_STUDENT_MEMORY_CHARS = 1500;
 
 export interface StudentMemoryRow {
   userId: string;

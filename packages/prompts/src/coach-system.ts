@@ -8,6 +8,7 @@ import {
   FORMATTING,
   GROUND_TRUTH,
   HOMEWORK_OPTIONS,
+  PROGRESS_DURING_REVIEW,
   SESSION_GOALS,
   WHO_YOU_ARE,
   howYouRunTheSession
@@ -27,7 +28,7 @@ import {
   type FocusAreaSummary,
   type StudentMemory
 } from './render.js';
-import { COACH_TOOL_SPECS } from './tools.js';
+import { COACH_TOOL_SPECS, coachToolSpecsFor } from './tools.js';
 import { PLAY_COACH_TOOL_SPECS } from './tools-play.js';
 
 export interface CoachPromptUser {
@@ -125,7 +126,7 @@ function buildStaticPart(band: RatingBand, mode: SessionMode, persona: CoachPers
     GROUND_TRUTH,
     howYouRunTheSession(calibration.revealDepthPlies),
     SESSION_GOALS,
-    FOCUS_AREA_LIFECYCLE,
+    mode === 'play' ? FOCUS_AREA_LIFECYCLE : PROGRESS_DURING_REVIEW,
     HOMEWORK_OPTIONS,
     FORMATTING,
     yourToolsAndWhenToUseThem(mode, isLocal),
@@ -156,7 +157,7 @@ function buildDynamicPart(input: CoachPromptInput): string {
  * or bust the shared per-band cache (if the numeric rating leaked into the
  * part meant to be byte-identical across a whole band). `dynamicPart`
  * already varies per user, so this adds no new cache cost. */
-function diagnosisCodesForThisStudent(rating: number): string {
+export function diagnosisCodesForThisStudent(rating: number): string {
   return `## Diagnosis codes for this student
 
 When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. A code is a claim about THIS student, so it needs evidence from this session: before you use one, state to yourself the exact thing the student said or did that shows it, then read the entries below and pick the one whose description that evidence matches precisely. The codes are close neighbours — a missed fork, a missed pin and a hung piece look alike but are different problems — so compare the nearest two or three entries and choose the one the evidence fits, never the one you expected from their profile or focus areas. Their existing focus areas are not evidence: a mistake that merely resembles a known weakness may have a different cause. If the evidence fits no entry exactly, leave diagnosisCode unset rather than force, stretch or invent one.
@@ -247,7 +248,7 @@ You are playing a live game WITH your student — they are ${game.userColor}, yo
 }
 
 function yourToolsAndWhenToUseThem(mode: SessionMode, isLocal: boolean): string {
-  const specs = mode === 'play' ? PLAY_COACH_TOOL_SPECS : COACH_TOOL_SPECS;
+  const specs = coachToolSpecsFor(mode, 'review', mode === 'play' ? PLAY_COACH_TOOL_SPECS : COACH_TOOL_SPECS);
   // A local model's own tool-calling schema already carries each tool's
   // full description verbatim (tools.ts's COACH_TOOL_SPECS doc comment) —
   // repeating all of it again here doubles the token cost of tool

@@ -5,6 +5,8 @@
 
 export const MAX_HABIT_NOTE_CHARS = 400;
 export const MAX_LESSON_NOTE_CHARS = 600;
+/** The coach's one long-term text about a student, rewritten whole each time. */
+export const MAX_STUDENT_MEMORY_CHARS = 1500;
 
 export type GeneralNoteCheck = { ok: true } | { ok: false; reason: string };
 

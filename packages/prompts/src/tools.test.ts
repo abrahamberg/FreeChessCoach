@@ -6,6 +6,7 @@ import {
   checkPositionParameters,
   COACH_TOOL_SPECS,
   coachToolDescription,
+  coachToolSpecsFor,
   endSessionParameters,
   expectMoveParameters,
   getEngineAnalysisParameters,
@@ -200,11 +201,15 @@ describe('COACH_TOOL_SPECS / coachToolDescription — single source of truth for
     'update_threads',
     'record_move_note',
     'recall_move',
+    'note_progress',
+    'begin_wrap_up',
+    'begin_review',
+    'save_progress_notes',
     'investigate_position',
     'end_session'
   ];
 
-  test('has exactly the coach agent\'s 18 tools, each with a unique name and a non-empty description', () => {
+  test('has exactly the coach agent\'s 22 tools, each with a unique name and a non-empty description', () => {
     expect(COACH_TOOL_SPECS.map((spec) => spec.name)).toEqual(EXPECTED_NAMES);
     for (const spec of COACH_TOOL_SPECS) {
       expect(spec.description.length).toBeGreaterThan(0);
@@ -246,5 +251,45 @@ describe('checkMovesParameters', () => {
 describe('getPlayerStatsParameters', () => {
   test('takes no arguments — there is no address to get wrong', () => {
     expect(getPlayerStatsParameters.safeParse({}).success).toBe(true);
+  });
+});
+
+describe('coachToolSpecsFor — the tools of each round', () => {
+  const names = (mode: 'analyze' | 'play', phase: 'progress_open' | 'review' | 'progress_close') =>
+    coachToolSpecsFor(mode, phase).map((spec) => spec.name);
+
+  test('the check-in has the reads, the list and the way into the review, and no board or game tools', () => {
+    expect(names('analyze', 'progress_open')).toEqual([
+      'get_user_profile',
+      'get_diagnostic_profile',
+      'get_player_stats',
+      'propose_focus_area_update',
+      'update_threads',
+      'begin_review'
+    ]);
+  });
+
+  test('the review collects evidence and cannot change the list or end the session', () => {
+    const review = names('analyze', 'review');
+    expect(review).toEqual(expect.arrayContaining(['show_position', 'hypothetical_line', 'note_progress', 'begin_wrap_up']));
+    expect(review).not.toContain('propose_focus_area_update');
+    expect(review).not.toContain('end_session');
+    expect(review).not.toContain('begin_review');
+    expect(review).not.toContain('save_progress_notes');
+  });
+
+  test('the closing round updates the list, writes the notes and is the only place to end the session', () => {
+    const closing = names('analyze', 'progress_close');
+    expect(closing).toEqual(expect.arrayContaining(['propose_focus_area_update', 'save_progress_notes', 'end_session']));
+    expect(closing).not.toContain('show_position');
+    expect(closing).not.toContain('note_progress');
+  });
+
+  test('a play session has no rounds: it keeps end_session and the list tool and none of the progress tools', () => {
+    const play = names('play', 'review');
+    expect(play).toEqual(expect.arrayContaining(['end_session', 'propose_focus_area_update']));
+    for (const progressTool of ['note_progress', 'begin_wrap_up', 'begin_review', 'save_progress_notes']) {
+      expect(play).not.toContain(progressTool);
+    }
   });
 });

@@ -31,6 +31,10 @@ const TOOL_ORDER = [
   'update_threads',
   'record_move_note',
   'recall_move',
+  'note_progress',
+  'begin_wrap_up',
+  'begin_review',
+  'save_progress_notes',
   'investigate_position',
   'end_session',
   // Play mode's tools (architecture §14) — fixed at the end, never

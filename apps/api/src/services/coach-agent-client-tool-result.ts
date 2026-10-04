@@ -39,7 +39,7 @@ export async function applyClientToolResult(
       // defensive, since the schema requires it for every new call the
       // model makes; only reachable from a malformed/stale client.
       if ((intent ?? 'subject') === 'subject' && claimedPly !== subjectPly) {
-        const historyBeforeTurn = await sessionMessagesRepo.listBySession(deps.db, session.id);
+        const historyBeforeTurn = await sessionMessagesRepo.listForPhase(deps.db, session.id, 'review');
         const closedEpisode = currentEpisode(historyBeforeTurn, subjectPly);
         await coachContext.closeEpisodeIfNeeded({ db: deps.db, callLightModel }, session.id, closedEpisode.messages, subjectPly);
         subject = claimedPly;

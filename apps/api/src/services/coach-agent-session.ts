@@ -17,7 +17,9 @@ const SESSION_START_CONTENT = '[session_start]';
  * so the seeding logic exists in exactly one place. */
 export async function createSessionForGame(db: Kysely<Database>, values: NewSession): Promise<SessionRow> {
   const session = await sessionsRepo.insert(db, values);
-  await sessionMessagesRepo.insert(db, session.id, 'user', SESSION_START_CONTENT, session.subjectPly);
+  // A progress message has no ply: it is not about a move of the game.
+  const ply = session.phase === 'review' ? session.subjectPly : null;
+  await sessionMessagesRepo.insert(db, session.id, 'user', SESSION_START_CONTENT, ply, session.phase);
   return session;
 }
 
@@ -30,7 +32,8 @@ export async function createSession(
   const game = await gamesRepo.findByIdForUser(db, gameId, userId);
   if (!game) throw new NotFoundError('Game not found');
 
-  return createSessionForGame(db, { gameId: game.id, userId, mode });
+  // A coaching session opens with a progress check-in; a live game has none.
+  return createSessionForGame(db, { gameId: game.id, userId, mode, phase: mode === 'analyze' ? 'progress_open' : 'review' });
 }
 
 /** The Games page's "start session" action: if the student already has an

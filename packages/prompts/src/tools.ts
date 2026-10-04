@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { DIAGNOSIS_CODE_PUZZLE_THEMES } from '@freechesscoach/chess-analysis';
-import { FindingSchema, FocusAreaUpdateSchema, ThreadSchema } from '@freechesscoach/shared';
+import { DIAGNOSIS_CODE_PUZZLE_THEMES, MAX_HABIT_NOTE_CHARS, MAX_LESSON_NOTE_CHARS, MAX_STUDENT_MEMORY_CHARS } from '@freechesscoach/chess-analysis';
+import { DiagnosisCodeIdSchema, FindingSchema, FocusAreaUpdateSchema, ThreadSchema, type CoachPhase, type SessionMode } from '@freechesscoach/shared';
 
 /** architecture §7.1 — parameter schemas for the coach agent's 18 tools. Pure
  * (no execute functions here); apps/api/src/services/coach-tools.ts binds
@@ -85,6 +85,27 @@ export const assignFocusedSessionParameters = z.object({
 
 export const updateThreadsParameters = z.object({
   threads: z.array(ThreadSchema)
+});
+
+/** No arguments, like show_position's cousins that only signal: the browser
+ * acknowledges it and the server moves the session into the review. */
+export const beginReviewParameters = z.object({});
+
+/** The same shape for the way out of the review into the closing progress round. */
+export const beginWrapUpParameters = z.object({});
+
+/** A short, general observation left during the review for the closing round
+ * to read. Addressed by diagnosisCode when it is about one of the habits. */
+export const noteProgressParameters = z.object({
+  diagnosisCode: DiagnosisCodeIdSchema.nullable(),
+  note: z.string().min(1).max(MAX_HABIT_NOTE_CHARS)
+});
+
+/** The closing round's durable notes. Both are checked for being general
+ * (chess-analysis's `checkGeneralNote`) before anything is stored. */
+export const saveProgressNotesParameters = z.object({
+  studentMemory: z.string().min(1).max(MAX_STUDENT_MEMORY_CHARS),
+  lessonNote: z.string().min(1).max(MAX_LESSON_NOTE_CHARS)
 });
 
 export const endSessionParameters = z.object({
@@ -259,6 +280,26 @@ export const COACH_TOOL_SPECS: readonly CoachToolSpec[] = [
       'Look up more detail on a specific earlier move in THIS session than the one-line summary in "Other moves discussed" gives you — call it when that summary is not enough to answer the student. Addressed like show_position/check_position ({ moveNumber, color }) — never a bare ply.'
   },
   {
+    name: 'note_progress',
+    description:
+      'Leave yourself a short note for the closing progress round, while the review is going: one general observation about how the student handles a habit you are working on — seen or missed in the moment, cued or unprompted. Pass the diagnosisCode when it is about one of their focus areas (null otherwise). Write the habit, never the move: no move numbers, no moves, no squares (a note that names one is refused). Not every moment needs one; leave one when you saw something you would want to remember when you write the student\'s progress down. You will read them back as "## Progress notes for this game".'
+  },
+  {
+    name: 'begin_wrap_up',
+    description:
+      'Call this when the last moment has been discussed and the student has said what they think the lesson was — it ends the game review and starts the closing progress round, where you update their focus areas and notes, tell them what moved and close the session. Say a short, natural line to the student first. Nothing after this call belongs to the game; the next thing you do is the progress round.'
+  },
+  {
+    name: 'begin_review',
+    description:
+      'Call this when the progress check-in is done — you have updated what changed, told the student, and heard their reply — to start the game review. Say a short, natural line first ("Now, to the game."). Nothing after this call belongs to the check-in.'
+  },
+  {
+    name: 'save_progress_notes',
+    description:
+      'Write down what you know about this student, for every later session. studentMemory is your one long-term text about them — how they think, what they tend to miss, what teaches them best, what is settled — rewritten WHOLE each time (keep what is still true, change what is not; at most 1,500 characters). lessonNote is this session in a few sentences: what you worked on, how it went, what to do next time. Both are general: about habits and how they learn, never about one move — no move numbers, no moves, no squares (a note that names one is refused and nothing is stored; rewrite it). Call it in the closing round, after you have updated the focus areas and before end_session.'
+  },
+  {
     name: 'investigate_position',
     description:
       "Hand an open-ended question that needs OTHER positions checked — candidate replies, a few plies of a line, a sibling variation, a position that never happened — to a sub-agent that investigates on its own and returns one short, engine-grounded answer. Use it when answering well needs more than the position in front of you: 'does Black have a defense to this plan a few moves out?', 'is this candidate sound, or does it hang something two moves later?', 'compare these two replies.' Do NOT use it for something check_moves or one get_engine_analysis call already answers — those are free/cheap; this runs its own multi-step investigation and is tightly budgeted, so fold related sub-questions into one call. Pass a fen from show_position/check_position/hypothetical_line, never one you reconstructed; optionally pass moves (SAN) to start from a line applied on top of it. You get back a short answer only — none of its lookups reach your context."
@@ -266,9 +307,43 @@ export const COACH_TOOL_SPECS: readonly CoachToolSpec[] = [
   {
     name: 'end_session',
     description:
-      'Mark the session complete and trigger the post-session summary — call it when the walkthrough is done and you have wrapped up. Include a 2–3 sentence summary in the student\'s own words and one concrete homework task tied to the goal you actually worked on. Before calling it, check your thread ledger: every open or parked thread must be resolved or deliberately let go (it is fine to close one briefly: "we did not finish the h3 line — it is in your homework").'
+      'Mark the session complete — call it as the last step, when everything is said. Include a 2–3 sentence summary addressed to the student and one concrete homework task tied to the goal you actually worked on (null if there is none): both are shown on their dashboard. In a coaching session you call it in the closing progress round, after save_progress_notes. Before calling it, check your thread ledger: every open or parked thread must be resolved or deliberately let go (it is fine to close one briefly: "we did not finish the h3 line — it is in your homework").'
   }
 ];
+
+const PROGRESS_ONLY_TOOLS: readonly string[] = ['note_progress', 'begin_wrap_up', 'begin_review', 'save_progress_notes'];
+
+/** The tools of each round of a coaching session. The two progress rounds are
+ * short and only touch the student's progress; the review has everything but
+ * the way to end the session, which belongs to the closing round. */
+const PHASE_TOOL_NAMES: Record<CoachPhase, readonly string[] | 'all-but-closing'> = {
+  progress_open: ['get_user_profile', 'get_diagnostic_profile', 'get_player_stats', 'propose_focus_area_update', 'update_threads', 'begin_review'],
+  review: 'all-but-closing',
+  progress_close: [
+    'get_user_profile',
+    'get_diagnostic_profile',
+    'get_player_stats',
+    'propose_focus_area_update',
+    'assign_focused_session',
+    'update_threads',
+    'save_progress_notes',
+    'end_session'
+  ]
+};
+
+/** Not in the review: changing the list and ending the session belong to the
+ * rounds, so the review collects evidence (note_progress) and leaves the rest. */
+const NOT_IN_THE_REVIEW: readonly string[] = ['begin_review', 'save_progress_notes', 'end_session', 'propose_focus_area_update'];
+
+/** The tool specs the coach has in `mode` during `phase`, in COACH_TOOL_SPECS
+ * order. A play session has no progress rounds, so it keeps its own tools and
+ * end_session and none of the progress ones. */
+export function coachToolSpecsFor(mode: SessionMode, phase: CoachPhase, all: readonly CoachToolSpec[] = COACH_TOOL_SPECS): CoachToolSpec[] {
+  if (mode !== 'analyze') return all.filter((spec) => !PROGRESS_ONLY_TOOLS.includes(spec.name));
+  const names = PHASE_TOOL_NAMES[phase];
+  if (names === 'all-but-closing') return all.filter((spec) => !NOT_IN_THE_REVIEW.includes(spec.name));
+  return all.filter((spec) => names.includes(spec.name));
+}
 
 export function coachToolDescription(name: string): string {
   const spec = COACH_TOOL_SPECS.find((s) => s.name === name);

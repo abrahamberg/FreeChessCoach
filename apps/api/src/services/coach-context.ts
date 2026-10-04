@@ -16,6 +16,7 @@ import {
   renderCurrentMoveBlock,
   renderGameSoFarInline,
   renderOtherMovesSummary,
+  renderProgressNotesBlock,
   renderTacticMotifsSummary,
   renderThreadsBlock
 } from '@freechesscoach/prompts';
@@ -26,6 +27,7 @@ import * as gamesRepo from '../db/repositories/games.js';
 import * as focusAreasRepo from '../db/repositories/focus-areas.js';
 import type { SessionMessageRow } from '../db/repositories/session-messages.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
+import * as sessionProgressNotesRepo from '../db/repositories/session-progress-notes.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { SessionRow } from '../db/repositories/sessions.js';
 import type { Database } from '../db/schema.js';
@@ -177,14 +179,15 @@ export async function buildEpisodeContext(input: BuildEpisodeContextInput): Prom
   const orphanExtendedMessages = includeOrphanedToolCall(input.historyAfterTurn, episode.messages);
   const isPlayMode = input.session.mode === 'play';
 
-  const [position, previousMovePosition, game, otherNotes, threads, gameReport, focusAreas] = await Promise.all([
+  const [position, previousMovePosition, game, otherNotes, threads, gameReport, focusAreas, progressNotes] = await Promise.all([
     getPositionAtPly(input.db, input.session.gameId, input.currentPly),
     input.currentPly > 0 ? getPositionAtPly(input.db, input.session.gameId, input.currentPly - 1) : undefined,
     gamesRepo.findById(input.db, input.session.gameId),
     sessionMoveNotesRepo.listOtherPlies(input.db, input.session.id, [input.currentPly, input.subjectPly]),
     sessionsRepo.getThreads(input.db, input.session.id),
     isPlayMode ? undefined : analysesRepo.findGameReportByGameId(input.db, input.session.gameId),
-    focusAreasRepo.listActiveAndImproving(input.db, input.session.userId)
+    focusAreasRepo.listActiveAndImproving(input.db, input.session.userId),
+    isPlayMode ? Promise.resolve([]) : sessionProgressNotesRepo.listBySession(input.db, input.session.id)
   ]);
   if (!position) throw new NotFoundError('Current position not found for this session');
   if (!game) throw new NotFoundError('Game not found for this session');
@@ -205,7 +208,11 @@ export async function buildEpisodeContext(input: BuildEpisodeContextInput): Prom
     ? null
     : [renderAnnotatedPgn(moveQualities, isLocal), tacticMotifsSummary].filter(Boolean).join('\n\n');
   const gameSoFar = isPlayMode ? renderGameSoFarInline(moveQualities, isLocal) : undefined;
-  const otherMovesSummary = renderOtherMovesSummary(otherNotes, moveQualities);
+  // The progress notes the coach left in this review sit just above "## Other
+  // moves discussed", in the same cached block: both change as the review goes on.
+  const otherMovesSummary = [isPlayMode ? '' : renderProgressNotesBlock(progressNotes), renderOtherMovesSummary(otherNotes, moveQualities)]
+    .filter(Boolean)
+    .join('\n\n');
   // The engine's "top choice here" / "best line" analysis is always about
   // the position BEFORE the move under discussion — analyzePosition is
   // called on the pre-move fen for that reason. ply 0 (game start) has no

@@ -6,6 +6,7 @@ export * from './coach-persona.js';
 export * from './course/course-voice.js';
 export * from './persona-words.js';
 export * from './coach-system.js';
+export * from './coach-progress.js';
 export * from './dev-commands.js';
 export * from './diagnostic-report.js';
 export * from './episode-context.js';

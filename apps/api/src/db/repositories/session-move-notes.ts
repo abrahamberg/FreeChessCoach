@@ -90,6 +90,11 @@ export function findByPly(
  * mid-flashback it's the subject AND the board ply (the board ply's own
  * fresh analysis is already in "## Current position", so repeating its
  * note here would just be redundant). */
+/** Every note of the session, by ply — the closing progress round reads them all. */
+export function listAllBySession(db: Kysely<Database>, sessionId: string): Promise<SessionMoveNoteRow[]> {
+  return db.selectFrom('sessionMoveNotes').selectAll().where('sessionId', '=', sessionId).orderBy('ply', 'asc').execute();
+}
+
 export function listOtherPlies(
   db: Kysely<Database>,
   sessionId: string,

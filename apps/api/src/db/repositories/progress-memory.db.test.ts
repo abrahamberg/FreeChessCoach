@@ -1,5 +1,6 @@
 import { describe, expect, test, beforeAll, afterAll } from 'vitest';
 import type { Kysely } from 'kysely';
+import { MAX_STUDENT_MEMORY_CHARS } from '@freechesscoach/chess-analysis';
 import { createTestDb, type TestDb } from '../../../test/helpers/db.js';
 import * as usersRepo from './users.js';
 import * as gamesRepo from './games.js';
@@ -47,7 +48,7 @@ describe('progress memory rows', () => {
 
     expect(second.content).toBe('second view');
     expect((await studentMemoryRepo.findByUserId(db, user.id))?.content).toBe('second view');
-    expect(() => studentMemoryRepo.upsert(db, user.id, 'x'.repeat(studentMemoryRepo.MAX_STUDENT_MEMORY_CHARS + 1))).toThrow('limit');
+    expect(() => studentMemoryRepo.upsert(db, user.id, 'x'.repeat(MAX_STUDENT_MEMORY_CHARS + 1))).toThrow('limit');
   });
 
   test('listForPhase returns only that round, and a progress message keeps a null ply', async () => {

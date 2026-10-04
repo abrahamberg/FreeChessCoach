@@ -1,6 +1,7 @@
 import type { CandidateMoment, ClassifiedMove } from '@freechesscoach/chess-analysis';
 import type { CoachingPlan } from '@freechesscoach/shared';
 import type { CoachPromptInput } from './coach-system.js';
+import type { ProgressPhase, ProgressPromptInput } from './coach-progress.js';
 import type { PlannerPromptInput } from './analysis-planner.js';
 import type { SummarizerPromptInput } from './progress-summarizer.js';
 import type { ProfilerPromptInput } from './onboarding-profiler.js';
@@ -33,6 +34,20 @@ export const basePlan: CoachingPlan = {
     }
   ]
 };
+
+export function baseProgressInput(phase: ProgressPhase, overrides: Partial<ProgressPromptInput> = {}): ProgressPromptInput {
+  return {
+    phase,
+    user: { displayName: 'Ann', selfAssessment: null, sessionCount: 3 },
+    band: 'club',
+    rating: 1500,
+    persona: 'general',
+    dossier: { studentName: 'Ann', selfAssessment: null, areas: [], graduated: [], memory: null, lessons: [], newGames: [] },
+    game: phase === 'progress_close' ? { whiteName: 'Ann', blackName: 'Bob', result: '1-0', timeControl: '10+0', userColor: 'white' } : null,
+    sessionGoal: null,
+    ...overrides
+  };
+}
 
 export function baseCoachInput(overrides: Partial<CoachPromptInput> = {}): CoachPromptInput {
   return {

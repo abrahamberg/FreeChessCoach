@@ -84,6 +84,6 @@ export function toStoredMessages(messages: SessionMessageRow[]): StoredMessage[]
   return messages.map((message) => ({ id: message.id, role: message.role, content: message.content }));
 }
 
-function toChatMessage(message: StoredMessage): ChatMessage {
+export function toChatMessage(message: StoredMessage): ChatMessage {
   return { role: message.role, content: upgradeStoredParts(message.content) } as ChatMessage;
 }

@@ -7,6 +7,7 @@ const base: ProgressDossierInput = {
   areas: [
     {
       label: 'Loose-piece scan',
+      code: 'BV-04',
       status: 'active',
       isPrimary: true,
       note: 'Counts defenders when cued; does not scan for loose pieces unprompted.',
@@ -19,8 +20,8 @@ const base: ProgressDossierInput = {
     }
   ],
   graduated: [
-    { label: 'Mate in one', graduatedAt: new Date('2026-09-20T10:00:00Z'), cameBack: true },
-    { label: 'Free pieces', graduatedAt: new Date('2026-09-01T10:00:00Z'), cameBack: false }
+    { label: 'Mate in one', code: 'TA-01', graduatedAt: new Date('2026-09-20T10:00:00Z'), cameBack: true },
+    { label: 'Free pieces', code: null, graduatedAt: new Date('2026-09-01T10:00:00Z'), cameBack: false }
   ],
   memory: 'Responds to being asked what the opponent threatens.',
   lessons: [{ endedAt: new Date('2026-10-01T10:00:00Z'), note: 'Worked on checking forcing replies.' }],
@@ -30,13 +31,13 @@ const base: ProgressDossierInput = {
 describe('renderProgressDossier', () => {
   test('a habit shows the measure and one result per game, and a game without a chance is not a success', () => {
     const text = renderProgressDossier(base);
-    expect(text).toContain('Loose-piece scan [active, the main one] — measured over recent games: it failed 4 of 20 chances (20%), probable confidence.');
+    expect(text).toContain('Loose-piece scan (BV-04) [active, the main one] — measured over recent games: it failed 4 of 20 chances (20%), probable confidence.');
     expect(text).toContain('Last games, oldest to newest: failed 1 of 2 chances; no chance came up; failed 0 of 1 chance (new).');
   });
 
   test('a graduated habit says whether it has come back', () => {
     const text = renderProgressDossier(base);
-    expect(text).toContain('Mate in one, graduated 2026-09-20. It has failed again in a game played since.');
+    expect(text).toContain('Mate in one (TA-01), graduated 2026-09-20. It has failed again in a game played since.');
     expect(text).toContain('Free pieces, graduated 2026-09-01. No failure since.');
   });
 

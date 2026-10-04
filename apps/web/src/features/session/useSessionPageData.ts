@@ -35,6 +35,13 @@ interface UndoLastMoveOutput {
  * handleServerToolResult below), corrupting the board's fen for the rest of
  * the session (react-chessboard fed `''`) until a hard reload rebuilds it
  * from the server's own truth. */
+/** The two client tools that end a round of a coaching session. */
+const PHASE_TOOLS: ReadonlySet<string> = new Set(['begin_review', 'begin_wrap_up']);
+
+function isPhaseTool(toolName: string): boolean {
+  return PHASE_TOOLS.has(toolName);
+}
+
 function isErrorOutput(output: unknown): boolean {
   return typeof output === 'object' && output !== null && 'error' in output;
 }
@@ -158,6 +165,10 @@ export function useSessionPageData(sessionId: string) {
   // and exits on a real show_position; boardState owns show_position/
   // annotate_board — so exactly one of these ever returns a defined result.
   function handleCoachToolCall(toolCall: CoachToolCall): unknown {
+    // The coach moving the session between its rounds (the progress check-in,
+    // the review, the closing round) needs nothing from the board: the
+    // acknowledgement is what starts the next round on the server.
+    if (isPhaseTool(toolCall.toolName)) return { acknowledged: true };
     const real = { ply: currentRealPosition.ply, fen: currentRealPosition.fen };
     const hypotheticalResult = divergedLine.handleToolCall(toolCall, real, positions);
     const boardResult = boardState.handleToolCall(toolCall);

@@ -1,9 +1,13 @@
 import {
   annotateBoardParameters,
   assignFocusedSessionParameters,
+  beginReviewParameters,
+  beginWrapUpParameters,
   checkMovesParameters,
   checkPositionParameters,
   coachToolDescription,
+  coachToolSpecsFor,
+  COACH_TOOL_SPECS,
   endSessionParameters,
   expectMoveParameters,
   getDiagnosticProfileParameters,
@@ -12,6 +16,8 @@ import {
   getUserProfileParameters,
   hypotheticalLineParameters,
   investigatePositionParameters,
+  noteProgressParameters,
+  PLAY_COACH_TOOL_SPECS,
   proposeFocusAreaUpdateParameters,
   recallMoveParameters,
   recordFindingParameters,
@@ -23,6 +29,7 @@ import {
   renderLessonNotesBlock,
   renderMoveInspection,
   renderRecentFindingsBlock,
+  saveProgressNotesParameters,
   showPositionParameters,
   updateThreadsParameters,
   type DiagnosticReportItem,
@@ -30,6 +37,7 @@ import {
 } from '@freechesscoach/prompts';
 import { CONFIG, evaluateGates, inspectMoves, moveRefToPly, type DiagnosticProfileEntry, type PuzzleRecord } from '@freechesscoach/chess-analysis';
 import type {
+  CoachPhase,
   DiagnosisCodeId,
   EmittableConfidenceLevel,
   Finding,
@@ -98,7 +106,8 @@ export function buildCoachTools(
   ctx: CoachToolsContext,
   deps: CoachToolsDependencies,
   mode: SessionMode = 'analyze',
-  guardState: TurnGuardState = createTurnGuardState()
+  guardState: TurnGuardState = createTurnGuardState(),
+  phase: CoachPhase = 'review'
 ): ToolSet {
 
   const analyzeTools: ToolSet = {
@@ -197,17 +206,45 @@ export function buildCoachTools(
         deps.investigatePosition(args)
       )
     }),
+    begin_review: tool({
+      description: coachToolDescription('begin_review'),
+      inputSchema: beginReviewParameters
+    }),
+    begin_wrap_up: tool({
+      description: coachToolDescription('begin_wrap_up'),
+      inputSchema: beginWrapUpParameters
+    }),
+    note_progress: tool({
+      description: coachToolDescription('note_progress'),
+      inputSchema: noteProgressParameters,
+      execute: withTurnGuards(guardState, 'note_progress', (args: { diagnosisCode: DiagnosisCodeId | null; note: string }) =>
+        progressService.noteProgress(deps.db, ctx.sessionId, args.diagnosisCode, args.note)
+      )
+    }),
+    save_progress_notes: tool({
+      description: coachToolDescription('save_progress_notes'),
+      inputSchema: saveProgressNotesParameters,
+      execute: withTurnGuards(guardState, 'save_progress_notes', (args: { studentMemory: string; lessonNote: string }) =>
+        progressService.saveProgressNotes(deps.db, ctx, args)
+      )
+    }),
     end_session: tool({
       description: coachToolDescription('end_session'),
       inputSchema: endSessionParameters,
-      execute: withTurnGuards(guardState, 'end_session', () => endSessionTool(deps, ctx))
+      execute: withTurnGuards(guardState, 'end_session', (args: { summary: string; homework: string | null }) =>
+        endSessionTool(deps, ctx, args)
+      )
     })
   };
 
-  if (mode !== 'play') {
-    return analyzeTools;
-  }
-  return { ...analyzeTools, ...buildPlayCoachTools(ctx, deps, guardState) };
+  const all = mode === 'play' ? { ...analyzeTools, ...buildPlayCoachTools(ctx, deps, guardState) } : analyzeTools;
+  return onlyToolsOf(all, coachToolSpecsFor(mode, phase, mode === 'play' ? PLAY_COACH_TOOL_SPECS : COACH_TOOL_SPECS).map((spec) => spec.name));
+}
+
+/** The tools the coach has in this round, in the order they were built. A tool
+ * the round does not name is not offered at all, so the coach cannot call it. */
+function onlyToolsOf(tools: ToolSet, names: readonly string[]): ToolSet {
+  return Object.fromEntries(Object.entries(tools).filter(([name]) => names.includes(name)));
 }
 
 interface EngineAnalysisArgs {
@@ -410,11 +447,18 @@ async function assignFocusedSessionTool(
   return assignFocusedSessionForCode(deps.db, ctx.userId, diagnosisCode, deps.puzzlePool ?? null, studentRating);
 }
 
+/** Stores the summary and homework the coach just wrote, completes the
+ * session, and queues the post-session summary only when no closing progress
+ * round already did that work (the summarizer is the fallback for a session
+ * that ends without one). */
 async function endSessionTool(
   deps: CoachToolsDependencies,
-  ctx: CoachToolsContext
+  ctx: CoachToolsContext,
+  args: { summary: string; homework: string | null }
 ): Promise<{ ended: boolean }> {
+  const session = await sessionsRepo.findById(deps.db, ctx.sessionId);
+  await sessionsRepo.storeSummary(deps.db, ctx.sessionId, args.summary, args.homework);
   await progressService.completeSession(deps.db, ctx.sessionId);
-  await deps.jobQueue?.enqueueSummarizeSession(ctx.sessionId);
+  if (session?.phase !== 'progress_close') await deps.jobQueue?.enqueueSummarizeSession(ctx.sessionId);
   return { ended: true };
 }

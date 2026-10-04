@@ -443,6 +443,14 @@ describe('sessions routes', () => {
     expect(JSON.stringify(messages)).toContain('Hold on, one sec.');
   });
 
+  /** A new coaching session opens with the progress check-in. These tests are
+   * about the review, so move the session there the way the coach's
+   * begin_review does. */
+  async function startReview(sessionId: string): Promise<void> {
+    await db.updateTable('sessions').set({ phase: 'review' }).where('id', '=', sessionId).execute();
+    await db.updateTable('sessionMessages').set({ phase: 'review', ply: 0 }).where('sessionId', '=', sessionId).execute();
+  }
+
   describe('POST /api/sessions/:id/messages', () => {
     test('the system prompt sent to the model contains the focus areas and the coaching plan', async () => {
       const { user, game } = await setupReadyGame('prompt@example.com');
@@ -455,6 +463,7 @@ describe('sessions routes', () => {
         payload: { gameId: game.id }
       });
       const sessionId = created.json().id;
+      await startReview(sessionId);
 
       await app.inject({
         method: 'POST',
@@ -491,6 +500,7 @@ describe('sessions routes', () => {
         payload: { gameId: game.id }
       });
       const sessionId = created.json().id;
+      await startReview(sessionId);
 
       const streamResponse = await app.inject({
         method: 'POST',
@@ -669,6 +679,7 @@ describe('sessions routes', () => {
         payload: { gameId: game.id }
       });
       const sessionId = created.json().id;
+      await startReview(sessionId);
 
       await app.inject({
         method: 'POST',

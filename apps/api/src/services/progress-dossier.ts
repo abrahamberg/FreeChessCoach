@@ -68,6 +68,7 @@ function toArea(
 ): DossierArea {
   return {
     label: labelOf(area),
+    code: area.diagnosisCode,
     status: area.status === 'improving' ? 'improving' : 'active',
     isPrimary: area.isPrimary,
     note: area.note,
@@ -87,6 +88,7 @@ function toGraduated(area: focusAreasRepo.FocusAreaRow, games: DossierGame[], ob
   const graduatedAt = area.graduatedAt ?? area.lastSeenAt;
   return {
     label: labelOf(area),
+    code: area.diagnosisCode,
     graduatedAt,
     cameBack: area.diagnosisCode ? hasComeBack(area.diagnosisCode, graduatedAt, games, observations) : false
   };

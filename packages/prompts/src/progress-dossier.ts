@@ -13,6 +13,8 @@ export interface DossierMeasure {
 
 export interface DossierArea {
   label: string;
+  /** The handle the coach addresses the area by in propose_focus_area_update; never said to the student. */
+  code: string | null;
   status: 'active' | 'improving';
   isPrimary: boolean;
   /** The coach's own standing note, or the measured one the rebuild wrote. */
@@ -24,6 +26,7 @@ export interface DossierArea {
 
 export interface DossierGraduated {
   label: string;
+  code: string | null;
   graduatedAt: Date;
   /** A failure of this habit in a game played after it graduated. */
   cameBack: boolean;
@@ -67,7 +70,7 @@ function renderArea(area: DossierArea): string {
   const measure = area.measure
     ? `measured over recent games: it failed ${area.measure.episodes} of ${area.measure.opportunities} chances (${Math.round(area.measure.failureRate * 100)}%), ${area.measure.confidence} confidence`
     : 'not measured yet';
-  return [`- ${area.label} [${area.status}${primary}] — ${measure}.`, `  Last games, oldest to newest: ${renderResults(area.results)}.`, `  Note: ${area.note}`].join('\n');
+  return [`- ${area.label}${codeOf(area.code)} [${area.status}${primary}] — ${measure}.`, `  Last games, oldest to newest: ${renderResults(area.results)}.`, `  Note: ${area.note}`].join('\n');
 }
 
 function renderResults(results: HabitGameResult[]): string {
@@ -83,13 +86,17 @@ function renderResult(result: HabitGameResult): string {
 
 function renderGraduated(entry: DossierGraduated): string {
   const back = entry.cameBack ? ' It has failed again in a game played since.' : ' No failure since.';
-  return `- ${entry.label}, graduated ${date(entry.graduatedAt)}.${back}`;
+  return `- ${entry.label}${codeOf(entry.code)}, graduated ${date(entry.graduatedAt)}.${back}`;
 }
 
 function renderNewGame(game: DossierNewGame): string {
   if (game.habits.length === 0) return `- ${game.label}: none of your habits came up.`;
   const habits = game.habits.map((habit) => `${habit.label} failed ${habit.failures} of ${habit.opportunities}`).join('; ');
   return `- ${game.label}: ${habits}.`;
+}
+
+function codeOf(code: string | null): string {
+  return code ? ` (${code})` : '';
 }
 
 function date(value: Date): string {

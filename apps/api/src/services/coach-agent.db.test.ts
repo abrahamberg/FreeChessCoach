@@ -43,6 +43,16 @@ const PGN = `[Event "Test"]
 
 1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6 4. Qxf7# 1-0`;
 
+/** These tests are about the game review. A new coaching session opens with
+ * the progress check-in, so move it into the review the way the coach's
+ * begin_review does: phase and seed message together. */
+async function createReviewSession(db: Kysely<Database>, userId: string, gameId: string) {
+  const session = await coachAgent.createSession(db, userId, gameId);
+  await sessionsRepo.setPhase(db, session.id, 'review');
+  await db.updateTable('sessionMessages').set({ phase: 'review', ply: 0 }).where('sessionId', '=', session.id).execute();
+  return { ...session, phase: 'review' as const };
+}
+
 describe('coach-agent startTurn concurrency', () => {
   let testDb: TestDb;
   let db: Kysely<Database>;
@@ -113,7 +123,7 @@ describe('coach-agent startTurn concurrency', () => {
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id);
     await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
-    const session = await coachAgent.createSession(db, user.id, game.id);
+    const session = await createReviewSession(db, user.id, game.id);
 
     const { model, finish } = controllableStreamModel('Let me show you.', {
       toolCallId: 'call-race-1',
@@ -185,7 +195,7 @@ describe('coach-agent startTurn concurrency', () => {
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id);
     await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
-    const session = await coachAgent.createSession(db, user.id, game.id);
+    const session = await createReviewSession(db, user.id, game.id);
 
     // No 'finish' part at all — mirrors a provider rejecting the request
     // mid-stream, the case where the SDK never calls onFinish.
@@ -216,7 +226,7 @@ describe('coach-agent startTurn concurrency', () => {
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id);
     await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
-    const session = await coachAgent.createSession(db, user.id, game.id);
+    const session = await createReviewSession(db, user.id, game.id);
 
     // 400 fresh + 2000 read back from cache. The SDK reports these in one
     // normalized shape now, so there is no provider-specific metadata here.
@@ -261,7 +271,7 @@ describe('coach-agent startTurn concurrency', () => {
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id);
     await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
-    const session = await coachAgent.createSession(db, user.id, game.id);
+    const session = await createReviewSession(db, user.id, game.id);
 
     const turn = await coachAgent.startTurn(deps(instantTextModel('Got it.')), session, {
       clientToolResult: {
@@ -303,7 +313,7 @@ describe('coach-agent startTurn concurrency', () => {
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id);
     await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
-    const session = await coachAgent.createSession(db, user.id, game.id);
+    const session = await createReviewSession(db, user.id, game.id);
 
     // Turn 1: the model itself calls show_position — no clientToolResult
     // input yet, this is the coach DECIDING to move, before any client
@@ -380,7 +390,7 @@ describe('coach-agent startTurn concurrency', () => {
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id);
     await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
-    const session = await coachAgent.createSession(db, user.id, game.id);
+    const session = await createReviewSession(db, user.id, game.id);
 
     // Turn 1: one assistant step makes TWO tool-calls — record_move_note
     // (server-executed, its result lands in the same turn) and show_position
@@ -467,7 +477,7 @@ describe('coach-agent startTurn concurrency', () => {
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id);
     await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
-    const session = await coachAgent.createSession(db, user.id, game.id);
+    const session = await createReviewSession(db, user.id, game.id);
 
     const testDeps = deps(instantTextModel('Sure.'));
     const turn = await coachAgent.startTurn(testDeps, session, {
@@ -504,7 +514,7 @@ describe('coach-agent startTurn concurrency', () => {
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id);
     await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
-    const session = await coachAgent.createSession(db, user.id, game.id);
+    const session = await createReviewSession(db, user.id, game.id);
 
     // Turn 1: coach shows move 2 for white (ply 3) and talks about it.
     const moveTurn = await coachAgent.startTurn(deps(instantTextModel('Talking about move 2.')), session, {
@@ -556,7 +566,7 @@ describe('coach-agent startTurn concurrency', () => {
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id);
     await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
-    const session = await coachAgent.createSession(db, user.id, game.id);
+    const session = await createReviewSession(db, user.id, game.id);
 
     // Turn 1: the model calls record_move_note (a SERVER-executed tool —
     // buildCoachTools wires up a real execute, not a hand-constructed
@@ -620,7 +630,7 @@ describe('coach-agent startTurn concurrency', () => {
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id);
     await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
-    const session = await coachAgent.createSession(db, user.id, game.id);
+    const session = await createReviewSession(db, user.id, game.id);
 
     const agentDeps = deps(instantTextModel('Got it.'));
     const callLightModel = vi.fn().mockResolvedValue('AUTO NOTE: discussed the opening move order.');
@@ -682,7 +692,7 @@ describe('coach-agent startTurn concurrency', () => {
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id);
     await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
-    const session = await coachAgent.createSession(db, user.id, game.id);
+    const session = await createReviewSession(db, user.id, game.id);
 
     const turn1 = await coachAgent.startTurn(deps(instantTextModel('Hello!')), session, { content: 'hi coach' });
     await drain(turn1);
@@ -724,7 +734,7 @@ describe('coach-agent startTurn concurrency', () => {
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id);
     await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
-    const session = await coachAgent.createSession(db, user.id, game.id);
+    const session = await createReviewSession(db, user.id, game.id);
 
     const outerModel = multiStepModel([
       {
@@ -776,7 +786,7 @@ describe('coach-agent startTurn concurrency', () => {
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id);
     await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
-    const session = await coachAgent.createSession(db, user.id, game.id);
+    const session = await createReviewSession(db, user.id, game.id);
 
     // Claim a ply far beyond the game's actual length.
     const badTurn = await coachAgent.startTurn(deps(instantTextModel('Got it.')), session, {

@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { buildCoachSystemPrompt } from './coach-system.js';
-import { baseCoachInput } from './fixtures.js';
+import { buildProgressSystemPrompt } from './coach-progress.js';
+import { baseCoachInput, baseProgressInput } from './fixtures.js';
 
 /**
  * coach-system.ts and coach-persona.ts point at each other's rules in plain
@@ -22,8 +23,8 @@ const CROSS_REFERENCES: { reference: string; anchor: string }[] = [
   { reference: "PERSONA_VOICE's BOARD_DISCIPLINE_REMINDER refers to show_position discipline defined in howYouRunTheSession", anchor: 'show_position' },
   { reference: "CONVERSATION_THREADING's durable-memory note refers to record_move_note, defined in yourToolsAndWhenToUseThem", anchor: 'record_move_note' },
   { reference: "GROUND_TRUTH points at check_moves as the free legality check every unverified move goes through", anchor: 'check_moves' },
-  { reference: "both session flows' closing lines invoke FOCUS_AREA_LIFECYCLE ('see \"The focus-area loop\"')", anchor: '## The focus-area loop' },
-  { reference: "both session flows' closing lines invoke HOMEWORK_OPTIONS ('see \"Homework, made concrete\"')", anchor: '## Homework, made concrete' }
+  { reference: "the review's closing line hands over to the closing round, which note_progress feeds (PROGRESS_DURING_REVIEW)", anchor: '## Progress while you review' },
+  { reference: "SESSION_GOALS and the play flow's closing line invoke HOMEWORK_OPTIONS ('see \"Homework, made concrete\"')", anchor: '## Homework, made concrete' }
 ];
 
 describe('coach-system.ts internal cross-references', () => {
@@ -31,5 +32,17 @@ describe('coach-system.ts internal cross-references', () => {
 
   test.each(CROSS_REFERENCES)('anchor for "$reference" is still present verbatim', ({ anchor }) => {
     expect(staticPart).toContain(anchor);
+  });
+});
+
+describe('the progress rounds\' cross-references', () => {
+  test('the closing round points the coach at the homework options it names', () => {
+    const { staticPart } = buildProgressSystemPrompt(baseProgressInput('progress_close'));
+    expect(staticPart).toContain('## Homework, made concrete');
+  });
+
+  test('the play flow still invokes the focus-area loop at its closing line', () => {
+    const { staticPart } = buildCoachSystemPrompt(baseCoachInput({ mode: 'play', plan: null }));
+    expect(staticPart).toContain('## The focus-area loop');
   });
 });

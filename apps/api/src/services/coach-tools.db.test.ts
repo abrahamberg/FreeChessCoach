@@ -9,7 +9,11 @@ import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import { buildCoachTools, type CoachToolsDependencies } from './coach-tools.js';
-import { TOOL_BUDGETS } from './coach-tool-guards.js';
+import { createTurnGuardState, TOOL_BUDGETS } from './coach-tool-guards.js';
+import * as sessionsRepo from '../db/repositories/sessions.js';
+import * as sessionProgressNotesRepo from '../db/repositories/session-progress-notes.js';
+import * as studentMemoryRepo from '../db/repositories/student-memory.js';
+import type { JobQueue } from '../jobs/queue.js';
 
 /** The execution options the SDK hands a tool's `execute`. None of the coach's
  * tools read them — they close over their own context from buildCoachTools —
@@ -140,7 +144,7 @@ describe('buildCoachTools', () => {
     };
   }
 
-  test('exposes all 18 architecture §7.1 tools', async () => {
+  test('the review has the game tools and the evidence tools, but not the list or the way out', async () => {
     const ctx = await setupCtx();
     const tools = buildCoachTools(ctx, makeDeps());
 
@@ -148,9 +152,9 @@ describe('buildCoachTools', () => {
       [
         'annotate_board',
         'assign_focused_session',
+        'begin_wrap_up',
         'check_moves',
         'check_position',
-        'end_session',
         'expect_move',
         'get_diagnostic_profile',
         'get_engine_analysis',
@@ -158,7 +162,7 @@ describe('buildCoachTools', () => {
         'get_user_profile',
         'hypothetical_line',
         'investigate_position',
-        'propose_focus_area_update',
+        'note_progress',
         'recall_move',
         'record_finding',
         'record_move_note',
@@ -166,6 +170,34 @@ describe('buildCoachTools', () => {
         'update_threads'
       ].sort()
     );
+  });
+
+  test('the check-in and the closing round each have only their own tools', async () => {
+    const ctx = await setupCtx();
+    const open = buildCoachTools(ctx, makeDeps(), 'analyze', createTurnGuardState(), 'progress_open');
+    const close = buildCoachTools(ctx, makeDeps(), 'analyze', createTurnGuardState(), 'progress_close');
+
+    expect(Object.keys(open).sort()).toEqual(
+      ['begin_review', 'get_diagnostic_profile', 'get_player_stats', 'get_user_profile', 'propose_focus_area_update', 'update_threads'].sort()
+    );
+    expect(Object.keys(close).sort()).toEqual(
+      [
+        'assign_focused_session',
+        'end_session',
+        'get_diagnostic_profile',
+        'get_player_stats',
+        'get_user_profile',
+        'propose_focus_area_update',
+        'save_progress_notes',
+        'update_threads'
+      ].sort()
+    );
+  });
+
+  test('begin_review and begin_wrap_up are client tools: the browser acknowledges them, the server has no execute', async () => {
+    const ctx = await setupCtx();
+    expect(buildCoachTools(ctx, makeDeps(), 'analyze', createTurnGuardState(), 'progress_open').begin_review?.execute).toBeUndefined();
+    expect(buildCoachTools(ctx, makeDeps()).begin_wrap_up?.execute).toBeUndefined();
   });
 
   test('defaults to analyze mode: play mode\'s 3 tools (get_candidate_moves, play_coach_move, undo_last_move) are absent unless mode is explicitly "play"', async () => {
@@ -411,7 +443,7 @@ describe('buildCoachTools', () => {
         status: 'active',
         note: 'n'
       });
-      const tools = buildCoachTools(ctx, makeDeps());
+      const tools = buildCoachTools(ctx, makeDeps(), 'analyze', createTurnGuardState(), 'progress_close');
 
       const result = await tools.propose_focus_area_update?.execute?.(
         { diagnosisCode: 'TA-07', action: 'graduate', note: 'consistently spotting the fork now' },
@@ -423,7 +455,7 @@ describe('buildCoachTools', () => {
 
     test('a diagnosisCode with no existing focus area is a no-op (applied: false) — the LLM cannot create one', async () => {
       const ctx = await setupCtx();
-      const tools = buildCoachTools(ctx, makeDeps());
+      const tools = buildCoachTools(ctx, makeDeps(), 'analyze', createTurnGuardState(), 'progress_close');
 
       const result = await tools.propose_focus_area_update?.execute?.(
         { diagnosisCode: 'TA-07', action: 'progress', note: 'note' },
@@ -631,6 +663,57 @@ describe('buildCoachTools', () => {
       const result = await tools.get_diagnostic_profile?.execute?.({}, TOOL_OPTIONS);
 
       expect(result).toContain('Failed gates: DQ-05');
+    });
+  });
+
+  describe('the progress rounds\' tools', () => {
+    test('note_progress stores a general note and refuses one that names a move, saying what to change', async () => {
+      const ctx = await setupCtx();
+      const tools = buildCoachTools(ctx, makeDeps());
+
+      const refused = await tools.note_progress?.execute?.({ diagnosisCode: 'BV-04', note: 'At 10...Bd7 he saw the knight was defended.' }, TOOL_OPTIONS);
+      const stored = await tools.note_progress?.execute?.({ diagnosisCode: 'BV-04', note: 'Scanned for loose pieces unprompted.' }, TOOL_OPTIONS);
+
+      expect(refused).toMatchObject({ saved: false, reason: expect.stringContaining('move number') });
+      expect(stored).toEqual({ saved: true });
+      expect((await sessionProgressNotesRepo.listBySession(db, ctx.sessionId)).map((row) => row.note)).toEqual(['Scanned for loose pieces unprompted.']);
+    });
+
+    test('save_progress_notes stores the memory and the lesson note together', async () => {
+      const ctx = await setupCtx();
+      const tools = buildCoachTools(ctx, makeDeps(), 'analyze', createTurnGuardState(), 'progress_close');
+
+      const result = await tools.save_progress_notes?.execute?.(
+        { studentMemory: 'Counts defenders when cued.', lessonNote: 'Worked on scanning for loose pieces.' },
+        TOOL_OPTIONS
+      );
+
+      expect(result).toEqual({ saved: true });
+      expect((await studentMemoryRepo.findByUserId(db, ctx.userId))?.content).toBe('Counts defenders when cued.');
+      expect((await sessionsRepo.findById(db, ctx.sessionId))?.lessonNote).toBe('Worked on scanning for loose pieces.');
+    });
+
+    test('end_session in the closing round stores the summary and homework, completes the session and does not queue the summarizer', async () => {
+      const ctx = await setupCtx();
+      await sessionsRepo.setPhase(db, ctx.sessionId, 'progress_close');
+      const enqueueSummarizeSession = vi.fn();
+      const tools = buildCoachTools(ctx, makeDeps({ jobQueue: { enqueueSummarizeSession } as unknown as JobQueue }), 'analyze', createTurnGuardState(), 'progress_close');
+
+      const result = await tools.end_session?.execute?.({ summary: 'You worked on loose pieces.', homework: '20 fork puzzles' }, TOOL_OPTIONS);
+
+      expect(result).toEqual({ ended: true });
+      expect(await sessionsRepo.findById(db, ctx.sessionId)).toMatchObject({ status: 'completed', summary: 'You worked on loose pieces.', homework: '20 fork puzzles' });
+      expect(enqueueSummarizeSession).not.toHaveBeenCalled();
+    });
+
+    test('end_session in a play session still queues the post-session summary', async () => {
+      const ctx = await setupCtx();
+      const enqueueSummarizeSession = vi.fn();
+      const tools = buildCoachTools(ctx, makeDeps({ jobQueue: { enqueueSummarizeSession } as unknown as JobQueue }), 'play');
+
+      await tools.end_session?.execute?.({ summary: 's', homework: null }, TOOL_OPTIONS);
+
+      expect(enqueueSummarizeSession).toHaveBeenCalledWith(ctx.sessionId);
     });
   });
 });

@@ -1,6 +1,6 @@
 import { DIAGNOSIS_CODES_BY_ID, MISTAKE_CATEGORIES } from '@freechesscoach/shared';
 import type { DiagnosisCodeId, Finding, FocusAreaUpdate, MistakeCategory, SessionOutcome } from '@freechesscoach/shared';
-import { checkGeneralNote, MAX_HABIT_NOTE_CHARS, MAX_LESSON_NOTE_CHARS, selectFocus, type DiagnosticProfileEntry, type FocusCandidate } from '@freechesscoach/chess-analysis';
+import { checkGeneralNote, MAX_HABIT_NOTE_CHARS, MAX_LESSON_NOTE_CHARS, MAX_STUDENT_MEMORY_CHARS, selectFocus, type DiagnosticProfileEntry, type FocusCandidate } from '@freechesscoach/chess-analysis';
 import type { Kysely } from 'kysely';
 import * as findingsRepo from '../db/repositories/findings.js';
 import * as focusAreasRepo from '../db/repositories/focus-areas.js';
@@ -138,7 +138,7 @@ export async function saveProgressNotes(
   ctx: { userId: string; sessionId: string },
   notes: { studentMemory: string; lessonNote: string }
 ): Promise<NoteWriteResult> {
-  const memory = checkGeneralNote(notes.studentMemory, studentMemoryRepo.MAX_STUDENT_MEMORY_CHARS);
+  const memory = checkGeneralNote(notes.studentMemory, MAX_STUDENT_MEMORY_CHARS);
   if (!memory.ok) return { saved: false, reason: `studentMemory: ${memory.reason}` };
   const lesson = checkGeneralNote(notes.lessonNote, MAX_LESSON_NOTE_CHARS);
   if (!lesson.ok) return { saved: false, reason: `lessonNote: ${lesson.reason}` };
