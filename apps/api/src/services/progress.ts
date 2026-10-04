@@ -1,10 +1,12 @@
 import { DIAGNOSIS_CODES_BY_ID, MISTAKE_CATEGORIES } from '@freechesscoach/shared';
 import type { DiagnosisCodeId, Finding, FocusAreaUpdate, MistakeCategory, SessionOutcome } from '@freechesscoach/shared';
-import { selectFocus, type DiagnosticProfileEntry, type FocusCandidate } from '@freechesscoach/chess-analysis';
+import { checkGeneralNote, MAX_HABIT_NOTE_CHARS, MAX_LESSON_NOTE_CHARS, selectFocus, type DiagnosticProfileEntry, type FocusCandidate } from '@freechesscoach/chess-analysis';
 import type { Kysely } from 'kysely';
 import * as findingsRepo from '../db/repositories/findings.js';
 import * as focusAreasRepo from '../db/repositories/focus-areas.js';
+import * as sessionProgressNotesRepo from '../db/repositories/session-progress-notes.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
+import * as studentMemoryRepo from '../db/repositories/student-memory.js';
 import type { Database } from '../db/schema.js';
 import { ValidationError } from '../lib/errors.js';
 
@@ -103,6 +105,8 @@ export async function applyFocusAreaUpdate(
   update: FocusAreaUpdate
 ): Promise<FocusAreaUpdateResult> {
   assertValidDiagnosisCode(update.diagnosisCode);
+  const note = checkGeneralNote(update.note, MAX_HABIT_NOTE_CHARS);
+  if (!note.ok) return { applied: false, reason: note.reason };
 
   const existing = await focusAreasRepo.findByUserAndDiagnosisCode(db, userId, update.diagnosisCode);
 
@@ -117,6 +121,46 @@ export async function applyFocusAreaUpdate(
 
   const focusArea = await focusAreasRepo.updateStatusAndNote(db, existing.id, nextStatusFor(action), update.note);
   return { applied: true, focusArea };
+}
+
+export interface NoteWriteResult {
+  saved: boolean;
+  /** Set when `saved` is false: what to change, in words the coach can act on. */
+  reason?: string;
+}
+
+/** The coach's durable notes on the student, written in the closing round:
+ * the one general memory (rewritten whole) and this session's lesson note. A
+ * note that names a move or a square is refused and nothing is stored, so the
+ * coach rewrites it as a habit. */
+export async function saveProgressNotes(
+  db: Kysely<Database>,
+  ctx: { userId: string; sessionId: string },
+  notes: { studentMemory: string; lessonNote: string }
+): Promise<NoteWriteResult> {
+  const memory = checkGeneralNote(notes.studentMemory, studentMemoryRepo.MAX_STUDENT_MEMORY_CHARS);
+  if (!memory.ok) return { saved: false, reason: `studentMemory: ${memory.reason}` };
+  const lesson = checkGeneralNote(notes.lessonNote, MAX_LESSON_NOTE_CHARS);
+  if (!lesson.ok) return { saved: false, reason: `lessonNote: ${lesson.reason}` };
+
+  await studentMemoryRepo.upsert(db, ctx.userId, notes.studentMemory.trim());
+  await sessionsRepo.setLessonNote(db, ctx.sessionId, notes.lessonNote.trim());
+  return { saved: true };
+}
+
+/** A short, general observation the coach leaves during the review for the
+ * closing round to read. */
+export async function noteProgress(
+  db: Kysely<Database>,
+  sessionId: string,
+  diagnosisCode: DiagnosisCodeId | null,
+  text: string
+): Promise<NoteWriteResult> {
+  assertValidDiagnosisCode(diagnosisCode ?? undefined);
+  const note = checkGeneralNote(text, MAX_HABIT_NOTE_CHARS);
+  if (!note.ok) return { saved: false, reason: note.reason };
+  await sessionProgressNotesRepo.insert(db, sessionId, diagnosisCode, text.trim());
+  return { saved: true };
 }
 
 /** Why `action` cannot be applied to `existing`, or null when it can. */

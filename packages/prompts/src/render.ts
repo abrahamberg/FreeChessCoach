@@ -95,7 +95,7 @@ function startOfDay(date: Date): Date {
 /** `diagnosisCode` is Task 57.3's code-level target — nullable for legacy
  * category-only rows. Rendered so `propose_focus_area_update` has something
  * to address: since selection is now programmatic, the code is the only
- * stable handle the LLM can reference in a later progress/regress/resolve
+ * stable handle the LLM can reference in a later progress/regress/graduate
  * call. */
 export interface FocusAreaSummary {
   category: MistakeCategory;

@@ -127,6 +127,7 @@ export * from './tactic-baseline.js';
 export * from './tactic-allowed.js';
 export * from './tactic-card-order.js';
 export * from './review-move-texts.js';
+export * from './general-note.js';
 export * from './report-tactic-verdicts.js';
 export * from './tactic-baseline-text.js';
 export * from './tactic-detectors/context.js';

@@ -10,7 +10,9 @@ import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { ValidationError } from '../lib/errors.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
-import { applyFocusAreaUpdate, applySessionOutcome, recordFinding, syncProgrammaticFocusAreas } from './progress.js';
+import * as sessionProgressNotesRepo from '../db/repositories/session-progress-notes.js';
+import * as studentMemoryRepo from '../db/repositories/student-memory.js';
+import { applyFocusAreaUpdate, applySessionOutcome, noteProgress, recordFinding, saveProgressNotes, syncProgrammaticFocusAreas } from './progress.js';
 
 /** Minimal `DiagnosticProfileEntry` fixture — mirrors
  * `select-focus.test.ts`'s own `profile()` helper (same defaults produce a
@@ -584,6 +586,61 @@ describe('progress service', () => {
 
       const session = await sessionsRepo.findById(db, ctx.sessionId);
       expect(session).toMatchObject({ summary: 'Great progress on tactics.', homework: 'Solve 10 puzzles.' });
+    });
+  });
+
+  describe('notes are general', () => {
+    async function makeSession(email: string) {
+      const user = await usersRepo.insert(db, { email, displayName: email });
+      const game = await gamesRepo.insert(db, {
+        userId: user.id,
+        pgn: '1. e4 e5',
+        source: 'paste',
+        userColor: 'white',
+        whiteName: null,
+        blackName: null,
+        result: null,
+        timeControl: null,
+        eco: null,
+        playedAt: null
+      });
+      const session = await sessionsRepo.insert(db, { gameId: game.id, userId: user.id });
+      return { userId: user.id, sessionId: session.id };
+    }
+
+    const MOVE_NOTE = 'At 10...Bd7 he saw the knight on c6 was defended.';
+
+    test('a focus-area note that names a move is refused, with the reason, and nothing changes', async () => {
+      const { userId } = await makeSession('general-focus@example.com');
+      await focusAreasRepo.insert(db, { userId, category: 'hanging_piece', diagnosisCode: 'BV-04', status: 'active', note: 'standing view' });
+
+      const result = await applyFocusAreaUpdate(db, userId, { diagnosisCode: 'BV-04', action: 'progress', note: MOVE_NOTE });
+
+      expect(result).toMatchObject({ applied: false, reason: expect.stringContaining('move number') });
+      expect(await focusAreasRepo.findByUserAndDiagnosisCode(db, userId, 'BV-04')).toMatchObject({ status: 'active', note: 'standing view' });
+    });
+
+    test('the student memory and the lesson note are stored together, and refused together when either names a move', async () => {
+      const ctx = await makeSession('general-memory@example.com');
+
+      const refused = await saveProgressNotes(db, ctx, { studentMemory: 'Counts defenders when cued.', lessonNote: MOVE_NOTE });
+      expect(refused).toMatchObject({ saved: false, reason: expect.stringContaining('lessonNote') });
+      expect(await studentMemoryRepo.findByUserId(db, ctx.userId)).toBeUndefined();
+
+      const saved = await saveProgressNotes(db, ctx, { studentMemory: 'Counts defenders when cued.', lessonNote: 'Worked on scanning for loose pieces; he finds them once prompted.' });
+      expect(saved).toEqual({ saved: true });
+      expect((await studentMemoryRepo.findByUserId(db, ctx.userId))?.content).toBe('Counts defenders when cued.');
+      expect((await sessionsRepo.findById(db, ctx.sessionId))?.lessonNote).toContain('scanning for loose pieces');
+    });
+
+    test('a progress note during the review is stored when general and refused when it names a move', async () => {
+      const ctx = await makeSession('general-progress-note@example.com');
+
+      expect(await noteProgress(db, ctx.sessionId, 'BV-04', MOVE_NOTE)).toMatchObject({ saved: false });
+      expect(await noteProgress(db, ctx.sessionId, 'BV-04', 'Scanned for loose pieces unprompted twice.')).toEqual({ saved: true });
+
+      const rows = await sessionProgressNotesRepo.listBySession(db, ctx.sessionId);
+      expect(rows.map((row) => row.note)).toEqual(['Scanned for loose pieces unprompted twice.']);
     });
   });
 });
