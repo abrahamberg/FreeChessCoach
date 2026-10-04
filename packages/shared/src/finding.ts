@@ -54,7 +54,7 @@ export type Finding = z.infer<typeof FindingSchema>;
  */
 export const FocusAreaUpdateSchema = z.object({
   diagnosisCode: DiagnosisCodeIdSchema,
-  action: z.enum(['create', 'progress', 'regress', 'resolve']),
+  action: z.enum(['create', 'progress', 'regress', 'graduate', 'reopen']),
   note: z.string()
 });
 export type FocusAreaUpdate = z.infer<typeof FocusAreaUpdateSchema>;

@@ -519,7 +519,7 @@ describe('DashboardResponseSchema', () => {
           lastSeenAt: '2026-07-20T10:00:00.000Z'
         }
       ],
-      resolved: []
+      graduated: []
     },
     mistakeTrends: [{ category: 'king_safety', last5: 1, last20: 3 }],
     sessionHistory: [
@@ -542,7 +542,7 @@ describe('DashboardResponseSchema', () => {
   });
 
   test('rejects an unknown focus-area status', () => {
-    const bad = { ...valid, focusAreas: { active: [{ ...valid.focusAreas.active[0], status: 'archived' }], resolved: [] } };
+    const bad = { ...valid, focusAreas: { active: [{ ...valid.focusAreas.active[0], status: 'archived' }], graduated: [] } };
     expect(DashboardResponseSchema.safeParse(bad).success).toBe(false);
   });
 

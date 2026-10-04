@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { SessionMode, Thread } from '@freechesscoach/shared';
+import type { CoachPhase, SessionMode, Thread } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 import * as debugTurnsRepo from './debug-turns.js';
 
@@ -17,6 +17,10 @@ export interface SessionRow {
   subjectPly: number;
   summary: string | null;
   homework: string | null;
+  /** The coach's internal, general note on the session (a progress round writes it). */
+  lessonNote: string | null;
+  /** The round the conversation is in; 'review' for every session but a new analyze one. */
+  phase: CoachPhase;
   /** Whether bot-move traces are recorded for the Thinking log — see
    * schema.ts's SessionsTable. */
   botThinkingLog: boolean;
@@ -34,6 +38,8 @@ const BASE_COLUMNS = [
   'subjectPly',
   'summary',
   'homework',
+  'lessonNote',
+  'phase',
   'botThinkingLog',
   'startedAt',
   'endedAt'
@@ -44,6 +50,8 @@ export interface NewSession {
   userId: string;
   /** Defaults to 'analyze' (today's only mode) when omitted. */
   mode?: SessionMode;
+  /** Defaults to 'review'; a new analyze session starts in 'progress_open'. */
+  phase?: CoachPhase;
   /** Defaults to false (0043_bot_thinking_log.ts) — the Thinking log is
    * opt-in per session. */
   botThinkingLog?: boolean;
@@ -192,6 +200,14 @@ export function markAbandoned(db: Kysely<Database>, id: string): Promise<void> {
 /** Moves only the board/analysis position — used for a flashback
  * show_position, which must NOT move subjectPly (that would incorrectly
  * shift the episode boundary — see coach-agent-client-tool-result.ts). */
+export function setPhase(db: Kysely<Database>, id: string, phase: CoachPhase): Promise<void> {
+  return db.updateTable('sessions').set({ phase }).where('id', '=', id).execute().then(() => undefined);
+}
+
+export function setLessonNote(db: Kysely<Database>, id: string, lessonNote: string): Promise<void> {
+  return db.updateTable('sessions').set({ lessonNote }).where('id', '=', id).execute().then(() => undefined);
+}
+
 export function updateCurrentPly(db: Kysely<Database>, id: string, ply: number): Promise<void> {
   return db
     .updateTable('sessions')

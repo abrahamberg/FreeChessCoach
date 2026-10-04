@@ -1,4 +1,5 @@
 import { sql, type Kysely } from 'kysely';
+import type { CoachPhase } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
 export type SessionMessageRole = 'user' | 'assistant' | 'tool';
@@ -9,6 +10,8 @@ export interface SessionMessageRow {
   role: SessionMessageRole;
   content: unknown;
   ply: number | null;
+  /** The round the message belongs to; a progress message has `ply` null. */
+  phase: CoachPhase;
   createdAt: Date;
 }
 
@@ -17,11 +20,12 @@ export function insert(
   sessionId: string,
   role: SessionMessageRole,
   content: unknown,
-  ply: number | null = null
+  ply: number | null = null,
+  phase: CoachPhase = 'review'
 ): Promise<SessionMessageRow> {
   return db
     .insertInto('sessionMessages')
-    .values({ sessionId, role, content: JSON.stringify(content), ply })
+    .values({ sessionId, role, content: JSON.stringify(content), ply, phase })
     .returningAll()
     .executeTakeFirstOrThrow();
 }
@@ -32,6 +36,19 @@ export function listBySession(db: Kysely<Database>, sessionId: string): Promise<
     .selectFrom('sessionMessages')
     .selectAll()
     .where('sessionId', '=', sessionId)
+    .orderBy('id', 'asc')
+    .execute();
+}
+
+/** The only read the coach's own context makes: the messages of one round,
+ * oldest first. A review turn never sees a progress round's messages and a
+ * progress round never sees the review's (the rounds are separate episodes). */
+export function listForPhase(db: Kysely<Database>, sessionId: string, phase: CoachPhase): Promise<SessionMessageRow[]> {
+  return db
+    .selectFrom('sessionMessages')
+    .selectAll()
+    .where('sessionId', '=', sessionId)
+    .where('phase', '=', phase)
     .orderBy('id', 'asc')
     .execute();
 }
@@ -52,6 +69,7 @@ export function listBySessionAndPly(
     .selectFrom('sessionMessages')
     .selectAll()
     .where('sessionId', '=', sessionId)
+    .where('phase', '=', 'review')
     .where('ply', '=', ply)
     .orderBy('id', 'asc')
     .execute();

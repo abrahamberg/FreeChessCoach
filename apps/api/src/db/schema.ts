@@ -1,6 +1,6 @@
 import type { ColumnType, Generated } from 'kysely';
 import type { CourseDossier, GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
-import type { BotConfig, CoachPersona, CourseDebugCall, CourseDocument, CourseEnrollmentPlace, CourseGeneration, CourseKind, CourseStage, CourseStatus, DiagnosisCodeId, Direction, EngineMode, GameReviewTier, Mechanism, MistakeCategory, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
+import type { BotConfig, CoachPersona, CourseDebugCall, CourseDocument, CourseEnrollmentPlace, CourseGeneration, CourseKind, CourseStage, CourseStatus, CoachPhase, DiagnosisCodeId, Direction, EngineMode, GameReviewTier, Mechanism, MistakeCategory, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
 
 /** jsonb columns: pg parses them to JS values on select; inserts/updates must pass a JSON string. */
 type Jsonb<T> = ColumnType<T, string, string>;
@@ -146,6 +146,11 @@ export interface SessionsTable {
   debugSnapshot: ColumnType<unknown, string | null | undefined, string | null>;
   summary: string | null;
   homework: string | null;
+  /** The coach's internal note on this session, general and not about one move. */
+  lessonNote: string | null;
+  /** Which round the conversation is in (0024_progress_memory.ts): the two
+   * progress rounds are separate episodes from the game review. */
+  phase: Generated<CoachPhase>;
   /** 0043_bot_thinking_log.ts — whether this play_bot session records bot-move
    * traces for the Thinking log (bot-thinking-registry.ts). Off by default:
    * when false the commit paths never start a trace, so the default game
@@ -161,6 +166,24 @@ export interface SessionMessagesTable {
   role: 'user' | 'assistant' | 'tool';
   content: Jsonb<unknown>;
   ply: number | null;
+  /** The round this message belongs to; a progress message keeps `ply` null. */
+  phase: Generated<CoachPhase>;
+  createdAt: Generated<Date>;
+}
+
+/** One general text per student, rewritten whole by the coach. */
+export interface StudentMemoryTable {
+  userId: string;
+  content: string;
+  updatedAt: Generated<Date>;
+}
+
+/** What the coach leaves for itself during a review: a short, general note per habit. */
+export interface SessionProgressNotesTable {
+  id: Generated<string>;
+  sessionId: string;
+  diagnosisCode: DiagnosisCodeId | null;
+  note: string;
   createdAt: Generated<Date>;
 }
 
@@ -196,12 +219,14 @@ export interface FocusAreasTable {
   userId: string;
   category: MistakeCategory;
   diagnosisCode: DiagnosisCodeId | null;
-  status: 'active' | 'improving' | 'resolved';
+  status: 'active' | 'improving' | 'graduated';
   note: string;
   evidenceCount: Generated<number>;
   lastSeenAt: Generated<Date>;
   createdAt: Generated<Date>;
   isPrimary: Generated<boolean>;
+  /** When the area went onto the improved list; null while it is on the list of three. */
+  graduatedAt: Date | null;
 }
 
 /** 0025_diagnostics.ts — one row per surviving `DiagnosticEntry`
@@ -405,6 +430,8 @@ export interface Database {
   findings: FindingsTable;
   focusAreas: FocusAreasTable;
   diagnosticObservations: DiagnosticObservationsTable;
+  studentMemory: StudentMemoryTable;
+  sessionProgressNotes: SessionProgressNotesTable;
   diagnosticProfiles: DiagnosticProfilesTable;
   puzzleAssignments: PuzzleAssignmentsTable;
   puzzleSessions: PuzzleSessionsTable;

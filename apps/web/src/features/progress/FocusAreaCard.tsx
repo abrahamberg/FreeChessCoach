@@ -14,19 +14,19 @@ export interface FocusAreaCardProps {
 const TREND_ICON: Record<FocusAreaSummary['status'], ComponentType<IconProps>> = {
   improving: TrendingUpIcon,
   active: ArrowRightIcon,
-  resolved: CheckIcon
+  graduated: CheckIcon
 };
 
 const TREND_LABEL: Record<FocusAreaSummary['status'], string> = {
   improving: 'Improving',
   active: 'Needs attention',
-  resolved: 'Resolved'
+  graduated: 'Graduated'
 };
 
 const TREND_BADGE_VARIANT: Record<FocusAreaSummary['status'], string> = {
   improving: 'badge--primary',
   active: 'badge--warning',
-  resolved: 'badge--success'
+  graduated: 'badge--success'
 };
 
 /** design-improvements.md §3.5: focus-area card — category in plain words,

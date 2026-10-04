@@ -15,6 +15,7 @@ import * as gamesRepo from '../db/repositories/games.js';
 import type { GameListRow } from '../db/repositories/games.js';
 import * as sessionMessagesRepo from '../db/repositories/session-messages.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
+import * as sessionProgressNotesRepo from '../db/repositories/session-progress-notes.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { SessionRow } from '../db/repositories/sessions.js';
 import type { Database } from '../db/schema.js';
@@ -109,6 +110,7 @@ export async function cascadeDeleteGame(db: Kysely<Database>, gameId: string): P
   for (const sessionId of sessionIds) {
     await sessionMessagesRepo.deleteBySessionId(db, sessionId);
     await sessionMoveNotesRepo.deleteBySessionId(db, sessionId);
+    await sessionProgressNotesRepo.deleteBySessionId(db, sessionId);
     // Findings can point at the session without carrying this game's id, so
     // deleteByGameId below would miss them and the session delete would fail.
     await findingsRepo.deleteBySessionId(db, sessionId);

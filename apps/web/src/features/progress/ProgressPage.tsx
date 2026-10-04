@@ -30,7 +30,7 @@ interface EvidenceTarget {
 export function ProgressPage(): ReactNode {
   const navigate = useNavigate();
   const [range, setRange] = useState<TrendRange>('last20');
-  const [resolvedOpen, setResolvedOpen] = useState(false);
+  const [graduatedOpen, setGraduatedOpen] = useState(false);
   const [evidenceTarget, setEvidenceTarget] = useState<EvidenceTarget | null>(null);
 
   const dashboardQuery = useQuery({
@@ -106,13 +106,13 @@ export function ProgressPage(): ReactNode {
             />
           ))
         )}
-        {focusAreas.resolved.length > 0 && (
-          <div className="progress-page__resolved">
-            <button type="button" onClick={() => setResolvedOpen((open) => !open)}>
-              Resolved ✓ ({focusAreas.resolved.length})
+        {focusAreas.graduated.length > 0 && (
+          <div className="progress-page__graduated">
+            <button type="button" onClick={() => setGraduatedOpen((open) => !open)}>
+              Graduated ✓ ({focusAreas.graduated.length})
             </button>
-            {resolvedOpen &&
-              focusAreas.resolved.map((area) => (
+            {graduatedOpen &&
+              focusAreas.graduated.map((area) => (
                 <FocusAreaCard
                   key={area.diagnosisCode ?? area.category}
                   area={area}

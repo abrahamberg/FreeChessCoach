@@ -14,9 +14,9 @@ const SESSION_HISTORY_LIMIT = 20;
  * 5/20 games), and session history. All aggregation SQL lives in the
  * repositories; this just combines their results into the response shape. */
 export async function getDashboard(db: Kysely<Database>, userId: string): Promise<DashboardResponse> {
-  const [active, resolved, last5Counts, last20Counts, sessionHistory] = await Promise.all([
+  const [active, graduated, last5Counts, last20Counts, sessionHistory] = await Promise.all([
     focusAreasRepo.listActiveAndImproving(db, userId),
-    focusAreasRepo.listResolved(db, userId),
+    focusAreasRepo.listGraduated(db, userId),
     findingsRepo.countByCategoryForRecentGames(db, userId, LAST_5_GAMES),
     findingsRepo.countByCategoryForRecentGames(db, userId, LAST_20_GAMES),
     sessionsRepo.listCompletedWithGameByUser(db, userId, SESSION_HISTORY_LIMIT)
@@ -25,7 +25,7 @@ export async function getDashboard(db: Kysely<Database>, userId: string): Promis
   return {
     focusAreas: {
       active: active.map(toFocusAreaSummary),
-      resolved: resolved.map(toFocusAreaSummary)
+      graduated: graduated.map(toFocusAreaSummary)
     },
     mistakeTrends: MISTAKE_CATEGORIES.filter((category) => (last20Counts[category] ?? 0) > 0).map((category) => ({
       category,

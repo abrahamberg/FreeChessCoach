@@ -11,10 +11,12 @@ into a course (a lesson on the board, a YouTube video and a reel).
 
 ## Docs — read only what your task names
 
-- `docs/plan.md` — the plan being built now: Phases 120–124, the review
-  audit. Game Review's move notes and the course dossier are checked
-  sentence by sentence on real games until 98% are correct on held-out
-  games. Work one task at a time and read only that task's **Read:** files.
+- `docs/plan.md` — the plan being built now: Phases 120–127, the review
+  audit, and Phases 128–129, the coach's progress memory (two progress
+  rounds per session, general notes, a graduated list; the moment picker
+  sees the student's habits). The audit checks Game Review's move notes and
+  the course dossier sentence by sentence on real games until 98% are
+  correct on held-out games. Work one task at a time and read only that task's **Read:** files.
   Its "How to work through this plan" section applies to every task. The
   daily loop itself is the skill `.claude/skills/review-audit/SKILL.md`
   (agents `review-judge` and `review-fixer` in `.claude/agents/`).

@@ -100,7 +100,7 @@ function startOfDay(date: Date): Date {
 export interface FocusAreaSummary {
   category: MistakeCategory;
   diagnosisCode: DiagnosisCodeId | null;
-  status: 'active' | 'improving' | 'resolved';
+  status: 'active' | 'improving' | 'graduated';
   note: string;
   evidenceCount: number;
   lastSeenAt: Date;

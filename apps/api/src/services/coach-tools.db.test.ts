@@ -414,11 +414,11 @@ describe('buildCoachTools', () => {
       const tools = buildCoachTools(ctx, makeDeps());
 
       const result = await tools.propose_focus_area_update?.execute?.(
-        { diagnosisCode: 'TA-07', action: 'resolve', note: 'consistently spotting the fork now' },
+        { diagnosisCode: 'TA-07', action: 'graduate', note: 'consistently spotting the fork now' },
         TOOL_OPTIONS
       );
 
-      expect(result).toMatchObject({ applied: true, focusArea: { status: 'resolved' } });
+      expect(result).toMatchObject({ applied: true, focusArea: { status: 'graduated' } });
     });
 
     test('a diagnosisCode with no existing focus area is a no-op (applied: false) — the LLM cannot create one', async () => {

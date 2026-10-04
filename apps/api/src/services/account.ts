@@ -10,6 +10,7 @@ import * as gameImportEventsRepo from '../db/repositories/game-import-events.js'
 import * as gamesRepo from '../db/repositories/games.js';
 import * as llmSetupsRepo from '../db/repositories/llm-setups.js';
 import * as puzzleAssignmentsRepo from '../db/repositories/puzzle-assignments.js';
+import * as studentMemoryRepo from '../db/repositories/student-memory.js';
 import * as puzzleSessionsRepo from '../db/repositories/puzzle-sessions.js';
 import * as statsArchiveRepo from '../db/repositories/stats-archive.js';
 import * as usersRepo from '../db/repositories/users.js';
@@ -41,6 +42,7 @@ export async function deleteAccount(db: Kysely<Database>, userId: string): Promi
 
     await findingsRepo.deleteByUserId(trx, userId);
     await focusAreasRepo.deleteByUserId(trx, userId);
+    await studentMemoryRepo.deleteByUserId(trx, userId);
     await diagnosticProfilesRepo.deleteByUserId(trx, userId);
     await gameImportEventsRepo.deleteByUserId(trx, userId);
     await bugReportsRepo.deleteByUserId(trx, userId);

@@ -14,6 +14,13 @@ export type SessionStatus = z.infer<typeof SessionStatusSchema>;
 export const SessionModeSchema = z.enum(['analyze', 'play', 'play_bot']);
 export type SessionMode = z.infer<typeof SessionModeSchema>;
 
+/** Which round of an analyze session the conversation is in: a progress
+ * round before the game review, the review itself, and a progress round
+ * before closing. Play and puzzle sessions stay in 'review'. */
+export const COACH_PHASES = ['progress_open', 'review', 'progress_close'] as const;
+export const CoachPhaseSchema = z.enum(COACH_PHASES);
+export type CoachPhase = z.infer<typeof CoachPhaseSchema>;
+
 export const SessionOutcomeSchema = z.object({
   sessionSummary: z.string(),
   homework: z.string().nullable(),

@@ -15,7 +15,7 @@ export const FocusAreaSummarySchema = z.object({
   /** Task 64.2 — persisted rank, not recomputed client-side: at most one
    * `true` per user's active+improving set. */
   isPrimary: z.boolean(),
-  status: z.enum(['active', 'improving', 'resolved']),
+  status: z.enum(['active', 'improving', 'graduated']),
   note: z.string(),
   evidenceCount: z.number().int(),
   lastSeenAt: z.string()
@@ -45,7 +45,7 @@ export type SessionHistoryEntry = z.infer<typeof SessionHistoryEntrySchema>;
 export const DashboardResponseSchema = z.object({
   focusAreas: z.object({
     active: z.array(FocusAreaSummarySchema),
-    resolved: z.array(FocusAreaSummarySchema)
+    graduated: z.array(FocusAreaSummarySchema)
   }),
   mistakeTrends: z.array(MistakeTrendSchema),
   sessionHistory: z.array(SessionHistoryEntrySchema)

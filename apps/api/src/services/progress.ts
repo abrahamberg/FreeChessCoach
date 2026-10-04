@@ -87,16 +87,15 @@ export interface FocusAreaUpdateResult {
 }
 
 /**
- * Task 57.3 restricted this to progress/regress/resolve on a focus area the
- * system already created (a code with no existing row was a no-op, not an
- * error — the LLM could not conjure one into existence by naming it). Task
- * 64.3 restores a narrower `'create'`: real transcript evidence can now
- * start tracking a code, but it goes through the exact same
- * anti-duplication and cap checks `syncProgrammaticFocusAreas` already
- * enforces for the programmatic path — `'create'` is never a way to bypass
- * them. A `'create'` for a code that already has a row quietly folds into a
- * `'progress'` note instead of erroring or duplicating (never robotic
- * re-adds of something already tracked).
+ * The state machine for one focus area: `progress` (active → improving),
+ * `regress` (improving → active), `graduate` (any → the improved list, which
+ * frees a slot) and `reopen` (graduated → active, which needs a free slot).
+ * A code with no existing row is a no-op for every action but `create`, which
+ * starts tracking a code on real evidence under the same cap and
+ * anti-duplication checks `syncProgrammaticFocusAreas` enforces. A `create`
+ * for a code that already has a row is folded into `progress` — or `reopen`
+ * when the area had graduated. A move that is not possible comes back
+ * `applied: false` with a reason the coach can say to the student.
  */
 export async function applyFocusAreaUpdate(
   db: Kysely<Database>,
@@ -107,23 +106,42 @@ export async function applyFocusAreaUpdate(
 
   const existing = await focusAreasRepo.findByUserAndDiagnosisCode(db, userId, update.diagnosisCode);
 
-  if (update.action === 'create') {
-    if (existing) {
-      const focusArea = await focusAreasRepo.updateStatusAndNote(db, existing.id, nextStatusFor('progress', existing.status), update.note);
-      return { applied: true, focusArea };
-    }
+  if (update.action === 'create' && !existing) {
     return createFocusAreaFromConversation(db, userId, update.diagnosisCode, update.note);
   }
-
   if (!existing) return { applied: false };
 
-  const focusArea = await focusAreasRepo.updateStatusAndNote(
-    db,
-    existing.id,
-    nextStatusFor(update.action, existing.status),
-    update.note
-  );
+  const action = update.action === 'create' ? (existing.status === 'graduated' ? 'reopen' : 'progress') : update.action;
+  const refusal = await refuseMove(db, userId, existing, action);
+  if (refusal) return { applied: false, reason: refusal };
+
+  const focusArea = await focusAreasRepo.updateStatusAndNote(db, existing.id, nextStatusFor(action), update.note);
   return { applied: true, focusArea };
+}
+
+/** Why `action` cannot be applied to `existing`, or null when it can. */
+async function refuseMove(
+  db: Kysely<Database>,
+  userId: string,
+  existing: focusAreasRepo.FocusAreaRow,
+  action: Exclude<FocusAreaUpdate['action'], 'create'>
+): Promise<string | null> {
+  if (action === 'graduate') return existing.status === 'graduated' ? 'already graduated' : null;
+  if (action === 'reopen') {
+    if (existing.status !== 'graduated') return `not graduated (it is ${existing.status}); reopen only brings back a graduated area`;
+    return (await hasFreeSlot(db, userId)) ? null : activeCapReason();
+  }
+  if (existing.status === 'graduated') return 'graduated; use reopen to bring it back';
+  if (action === 'regress' && existing.status === 'improving' && !(await hasFreeSlot(db, userId))) return activeCapReason();
+  return null;
+}
+
+async function hasFreeSlot(db: Kysely<Database>, userId: string): Promise<boolean> {
+  return (await focusAreasRepo.countActiveByUser(db, userId)) < MAX_ACTIVE_FOCUS_AREAS;
+}
+
+function activeCapReason(): string {
+  return `already tracking ${MAX_ACTIVE_FOCUS_AREAS} active focus areas — graduate one, or mark one as improving with progress, first`;
 }
 
 /** Task 64.3's `'create'` branch — same cap enforcement
@@ -138,10 +156,7 @@ async function createFocusAreaFromConversation(
   diagnosisCode: DiagnosisCodeId,
   note: string
 ): Promise<FocusAreaUpdateResult> {
-  const activeCount = await focusAreasRepo.countActiveByUser(db, userId);
-  if (activeCount >= MAX_ACTIVE_FOCUS_AREAS) {
-    return { applied: false, reason: `already tracking ${MAX_ACTIVE_FOCUS_AREAS} active focus areas` };
-  }
+  if (!(await hasFreeSlot(db, userId))) return { applied: false, reason: activeCapReason() };
 
   const category = DIAGNOSIS_CODES_BY_ID.get(diagnosisCode)?.parentCategory;
   if (!category) return { applied: false, reason: 'diagnosisCode has no catalog category' };
@@ -167,7 +182,7 @@ async function refreshExistingFocusArea(
   existing: focusAreasRepo.FocusAreaRow,
   entry: DiagnosticProfileEntry
 ): Promise<void> {
-  if (existing.status === 'resolved') return;
+  if (existing.status === 'graduated') return;
   const note = existing.note.startsWith(PROGRAMMATIC_NOTE_PREFIX) ? defaultProgrammaticNote(entry) : existing.note;
   await focusAreasRepo.refreshMeasuredEvidence(db, existing.id, note, entry.episodes);
 }
@@ -249,13 +264,10 @@ async function promoteToPrimary(db: Kysely<Database>, userId: string, code: Diag
   await focusAreasRepo.setPrimary(db, target.id);
 }
 
-function nextStatusFor(
-  action: 'progress' | 'regress' | 'resolve',
-  current: focusAreasRepo.FocusAreaStatus
-): focusAreasRepo.FocusAreaStatus {
-  if (action === 'resolve') return 'resolved';
-  if (action === 'regress') return 'active';
-  return current === 'resolved' ? 'resolved' : 'improving';
+function nextStatusFor(action: Exclude<FocusAreaUpdate['action'], 'create'>): focusAreasRepo.FocusAreaStatus {
+  if (action === 'graduate') return 'graduated';
+  if (action === 'progress') return 'improving';
+  return 'active';
 }
 
 function assertValidCategory(category: string): asserts category is MistakeCategory {

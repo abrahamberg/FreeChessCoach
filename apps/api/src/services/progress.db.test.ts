@@ -181,26 +181,76 @@ describe('progress service', () => {
       expect(result.focusArea?.status).toBe('active');
     });
 
-    test('resolve moves an improving area to resolved', async () => {
-      const userId = await makeUser('focus-resolve@example.com');
+    test('graduate moves an improving area to the improved list, dated, and frees its slot', async () => {
+      const userId = await makeUser('focus-graduate@example.com');
       await seedFocusArea(userId, 'MS-01');
       await applyFocusAreaUpdate(db, userId, { diagnosisCode: 'MS-01', action: 'progress', note: 'note' });
 
       const result = await applyFocusAreaUpdate(db, userId, {
         diagnosisCode: 'MS-01',
-        action: 'resolve',
+        action: 'graduate',
         note: 'consistently castling now'
       });
 
-      expect(result.focusArea?.status).toBe('resolved');
+      expect(result.focusArea?.status).toBe('graduated');
+      expect(result.focusArea?.graduatedAt).toBeInstanceOf(Date);
+      expect(await focusAreasRepo.countActiveByUser(db, userId)).toBe(0);
+      expect((await focusAreasRepo.listGraduated(db, userId)).map((area) => area.diagnosisCode)).toEqual(['MS-01']);
+      expect(await focusAreasRepo.listActiveAndImproving(db, userId)).toEqual([]);
     });
 
-    test('progress/regress/resolve on a non-existent focus area is a no-op', async () => {
+    test('reopen brings a graduated area back as active and clears its graduation date', async () => {
+      const userId = await makeUser('focus-reopen@example.com');
+      await seedFocusArea(userId, 'MS-01');
+      await applyFocusAreaUpdate(db, userId, { diagnosisCode: 'MS-01', action: 'graduate', note: 'done' });
+
+      const result = await applyFocusAreaUpdate(db, userId, { diagnosisCode: 'MS-01', action: 'reopen', note: 'it came back' });
+
+      expect(result.focusArea).toMatchObject({ status: 'active', graduatedAt: null });
+    });
+
+    test('reopen with three active areas is refused with a reason, and leaves the area graduated', async () => {
+      const userId = await makeUser('focus-reopen-full@example.com');
+      await seedFocusArea(userId, 'MS-01');
+      await applyFocusAreaUpdate(db, userId, { diagnosisCode: 'MS-01', action: 'graduate', note: 'done' });
+      for (const code of ['MS-02', 'MS-03', 'MS-04'] as const) await seedFocusArea(userId, code);
+
+      const result = await applyFocusAreaUpdate(db, userId, { diagnosisCode: 'MS-01', action: 'reopen', note: 'back' });
+
+      expect(result).toMatchObject({ applied: false, reason: expect.stringContaining('graduate one') });
+      expect((await focusAreasRepo.findByUserAndDiagnosisCode(db, userId, 'MS-01'))?.status).toBe('graduated');
+    });
+
+    test('reopen on an area that is not graduated is a no-op with a reason; progress on a graduated one says to reopen', async () => {
+      const userId = await makeUser('focus-reopen-noop@example.com');
+      await seedFocusArea(userId, 'MS-01');
+      await seedFocusArea(userId, 'MS-02');
+      await applyFocusAreaUpdate(db, userId, { diagnosisCode: 'MS-02', action: 'graduate', note: 'done' });
+
+      const notGraduated = await applyFocusAreaUpdate(db, userId, { diagnosisCode: 'MS-01', action: 'reopen', note: 'n' });
+      const graduated = await applyFocusAreaUpdate(db, userId, { diagnosisCode: 'MS-02', action: 'progress', note: 'n' });
+
+      expect(notGraduated).toMatchObject({ applied: false, reason: expect.stringContaining('not graduated') });
+      expect(graduated).toMatchObject({ applied: false, reason: expect.stringContaining('use reopen') });
+    });
+
+    test('regress of an improving area needs a free slot', async () => {
+      const userId = await makeUser('focus-regress-full@example.com');
+      await seedFocusArea(userId, 'MS-01');
+      await applyFocusAreaUpdate(db, userId, { diagnosisCode: 'MS-01', action: 'progress', note: 'n' });
+      for (const code of ['MS-02', 'MS-03', 'MS-04'] as const) await seedFocusArea(userId, code);
+
+      const result = await applyFocusAreaUpdate(db, userId, { diagnosisCode: 'MS-01', action: 'regress', note: 'n' });
+
+      expect(result).toMatchObject({ applied: false, reason: expect.stringContaining('graduate one') });
+    });
+
+    test('progress/regress/graduate/reopen on a non-existent focus area is a no-op', async () => {
       const userId = await makeUser('focus-noop@example.com');
 
       const result = await applyFocusAreaUpdate(db, userId, {
         diagnosisCode: 'MS-01',
-        action: 'resolve',
+        action: 'graduate',
         note: 'note'
       });
 
@@ -312,14 +362,14 @@ describe('progress service', () => {
       expect(row?.evidenceCount).toBeGreaterThanOrEqual(9);
     });
 
-    test('leaves a coach-written note and a resolved area untouched', async () => {
+    test('leaves a coach-written note and a graduated area untouched', async () => {
       const userId = await makeUser('sync-refresh-keep@example.com');
       await focusAreasRepo.insert(db, { userId, category: 'missed_tactic', diagnosisCode: 'MS-01', status: 'active', note: 'coach wrote this' });
       await focusAreasRepo.insert(db, {
         userId,
         category: 'missed_tactic',
         diagnosisCode: 'BV-01',
-        status: 'resolved',
+        status: 'graduated',
         note: 'Selected automatically from measured play: done'
       });
 
@@ -491,15 +541,15 @@ describe('progress service', () => {
         db,
         ctx,
         outcome({
-          focusAreaUpdates: [{ diagnosisCode: 'MS-01', action: 'resolve', note: 'consistently castling now' }]
+          focusAreaUpdates: [{ diagnosisCode: 'MS-01', action: 'graduate', note: 'consistently castling now' }]
         })
       );
 
       const area = await focusAreasRepo.findByUserAndDiagnosisCode(db, ctx.userId, 'MS-01');
-      expect(area?.status).toBe('resolved');
+      expect(area?.status).toBe('graduated');
     });
 
-    test('applies a regress focus-area update on a resolved area, moving it back to active', async () => {
+    test('applies a reopen focus-area update on a graduated area, moving it back to active', async () => {
       const ctx = await makeSession('outcome-regress@example.com');
       await focusAreasRepo.insert(db, {
         userId: ctx.userId,
@@ -509,13 +559,13 @@ describe('progress service', () => {
         note: 'n'
       });
       await applyFocusAreaUpdate(db, ctx.userId, { diagnosisCode: 'MS-01', action: 'progress', note: 'n' });
-      await applyFocusAreaUpdate(db, ctx.userId, { diagnosisCode: 'MS-01', action: 'resolve', note: 'n' });
+      await applyFocusAreaUpdate(db, ctx.userId, { diagnosisCode: 'MS-01', action: 'graduate', note: 'n' });
 
       await applySessionOutcome(
         db,
         ctx,
         outcome({
-          focusAreaUpdates: [{ diagnosisCode: 'MS-01', action: 'regress', note: 'left king in center again' }]
+          focusAreaUpdates: [{ diagnosisCode: 'MS-01', action: 'reopen', note: 'left king in center again' }]
         })
       );
 

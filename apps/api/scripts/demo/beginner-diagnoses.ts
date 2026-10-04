@@ -56,7 +56,7 @@ export const BEGINNER_PROFILE: DiagnosticProfileEntry[] = [
 export interface FocusAreaSpec {
   category: MistakeCategory;
   code: DiagnosisCodeId;
-  status: 'active' | 'improving' | 'resolved';
+  status: 'active' | 'improving' | 'graduated';
   isPrimary: boolean;
   evidence: number;
   note: string;
@@ -99,7 +99,7 @@ export const BEGINNER_FOCUS_AREAS: FocusAreaSpec[] = [
   {
     category: 'missed_tactic',
     code: 'TA-01',
-    status: 'resolved',
+    status: 'graduated',
     isPrimary: false,
     evidence: 6,
     note: "You have found every mate in one for three weeks running, including two with under a minute on the clock. This one is done."
@@ -107,7 +107,7 @@ export const BEGINNER_FOCUS_AREAS: FocusAreaSpec[] = [
   {
     category: 'hanging_piece',
     code: 'BV-02',
-    status: 'resolved',
+    status: 'graduated',
     isPrimary: false,
     evidence: 5,
     note: "Free pieces used to slip past you. You have taken every free piece offered in your last twelve games."

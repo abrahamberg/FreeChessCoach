@@ -2,7 +2,7 @@ import type { Kysely } from 'kysely';
 import type { DiagnosisCodeId, MistakeCategory } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
-export type FocusAreaStatus = 'active' | 'improving' | 'resolved';
+export type FocusAreaStatus = 'active' | 'improving' | 'graduated';
 
 export interface FocusAreaRow {
   id: string;
@@ -15,6 +15,8 @@ export interface FocusAreaRow {
   lastSeenAt: Date;
   createdAt: Date;
   isPrimary: boolean;
+  /** Set while the area is on the improved list. */
+  graduatedAt: Date | null;
 }
 
 /** Legacy lookup for category-only rows created before Task 57.3 — new
@@ -69,7 +71,8 @@ export interface NewFocusArea {
 }
 
 export function insert(db: Kysely<Database>, values: NewFocusArea): Promise<FocusAreaRow> {
-  return db.insertInto('focusAreas').values(values).returningAll().executeTakeFirstOrThrow();
+  const graduatedAt = values.status === 'graduated' ? new Date() : null;
+  return db.insertInto('focusAreas').values({ ...values, graduatedAt }).returningAll().executeTakeFirstOrThrow();
 }
 
 export function updateStatusAndNote(
@@ -84,6 +87,7 @@ export function updateStatusAndNote(
       status,
       note,
       lastSeenAt: new Date(),
+      graduatedAt: status === 'graduated' ? new Date() : null,
       evidenceCount: eb('evidenceCount', '+', 1)
     }))
     .where('id', '=', id)
@@ -149,14 +153,15 @@ export function clearPrimary(db: Kysely<Database>, id: string): Promise<FocusAre
   return db.updateTable('focusAreas').set({ isPrimary: false }).where('id', '=', id).returningAll().executeTakeFirstOrThrow();
 }
 
-/** design.md §4.3: the dashboard's "Resolved ✓" history accordion. */
-export function listResolved(db: Kysely<Database>, userId: string): Promise<FocusAreaRow[]> {
+/** The improved list: the dashboard's "Graduated ✓" accordion and the coach's
+ * dossier, newest graduate first. */
+export function listGraduated(db: Kysely<Database>, userId: string): Promise<FocusAreaRow[]> {
   return db
     .selectFrom('focusAreas')
     .selectAll()
     .where('userId', '=', userId)
-    .where('status', '=', 'resolved')
-    .orderBy('lastSeenAt', 'desc')
+    .where('status', '=', 'graduated')
+    .orderBy('graduatedAt', 'desc')
     .execute();
 }
 
