@@ -46,7 +46,13 @@ export const CONFIG = {
     dampingLowWin: 10,
     deadDrawWinLow: 45,
     deadDrawWinHigh: 55,
-    deadDrawCpAbs: 30
+    deadDrawCpAbs: 30,
+    /** Past the damping win%, a move that gives away this many centipawns is
+     * an inaccuracy (a mistake and a blunder are `botMistake.decided*CpLoss`). */
+    decidedInaccuracyCpLoss: 50,
+    /** Scores this far from zero are mate scores (2000 less 10 a move). Being
+     * mated slower or faster lost nothing; mating slower costs 10 cp a move. */
+    decidedMateScaleCp: 1800
   },
 
   /** How a bot goes looking for a mistake to play (bot-mistake-pool.ts): it

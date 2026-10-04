@@ -244,3 +244,25 @@ describe('a missed mate is not held against a move that still mates (judges, 202
     expect(missed(null)).toEqual(['Missed mate in 2 starting with Ra7']);
   });
 });
+
+describe('a decided game (18.Rb1 … Rxd2)', () => {
+  const withBest = (fenBefore: string, moveSan: string, best: string, quality: MoveQuality, pvSan: string[]): string[] => {
+    const chess = new Chess(fenBefore);
+    const mover = chess.turn() === 'w' ? 'white' : 'black';
+    chess.move(moveSan);
+    const evalBefore: EngineEval = { ply: 0, fen: fenBefore, depth: 12, lines: [{ moveSan: best, cp: -800, mateIn: null, pvSan }] } as EngineEval;
+    return buildReasons({ mover, fenBefore, fenAfter: chess.fen(), moveSan, evalBefore, quality, isBookMove: false });
+  };
+
+  test('a piece the move left to be won names the move that defends it', () => {
+    const fen = '1n3rk1/4bppp/2p1p3/2PpN3/q2Pn3/4P3/r2BQPPP/5RK1 w - - 4 18';
+    expect(withBest(fen, 'Rb1', 'Nf3', 'inaccuracy', ['Nf3', 'Qc2'])).toContain('Leaves the bishop on d2 where it can be won; Nf3 defends it');
+  });
+
+  test('taking on the same square is not a missed capture, but the tempo is named', () => {
+    const fen = '1n3rk1/4bppp/2p1p3/2PpN3/q2Pn3/4P3/r2BQPPP/1R4K1 b - - 5 18';
+    const found = withBest(fen, 'Rxd2', 'Nxd2', 'excellent', ['Nxd2', 'Re1', 'Ne4']);
+    expect(found).toContain('Nxd2 takes the bishop with tempo: it attacks the rook on b1');
+    expect(found.join(' ')).not.toContain('Missed');
+  });
+});

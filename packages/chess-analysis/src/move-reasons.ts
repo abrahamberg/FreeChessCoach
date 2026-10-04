@@ -17,7 +17,7 @@ import { CONFIG } from './config.js';
 import { flipActiveColorFen } from './null-move-fen.js';
 import { allowedForkReasons, gainReasons, missedForkReasons } from './fork-reasons.js';
 import { stalemateReason } from './stalemate-reason.js';
-import { givesUpCastlingText, principleReason, strongerCandidatesText } from './principle-reasons.js';
+import { givesUpCastlingText, principleReason, strongerCandidatesText, threatNote } from './principle-reasons.js';
 
 export interface MoveReasonsInput {
   mover: 'white' | 'black';
@@ -172,6 +172,13 @@ function missedCaptureReason(input: MoveReasonsInput): Reason[] {
     return [];
   }
   if (!move.captured) return [];
+  // The move played took on the same square: the win was not missed, only
+  // the way of taking ("Missed Nxd2" after Rxd2 took the bishop too).
+  const played = playedMove(input);
+  if (played?.captured && played.to === move.to) {
+    const extra = threatNote(input.fenBefore, best.moveSan);
+    return extra ? [{ category: 'material', text: `${best.moveSan} takes the ${PIECE_NAMES[move.captured]} with tempo: it ${extra}` }] : [];
+  }
 
   const side = input.mover === 'white' ? 'w' : 'b';
   if (see(input.fenBefore, move.to as Square, side) < MIN_THREAT_SEE_CP) return [];
@@ -192,12 +199,44 @@ function looseReasons(input: MoveReasonsInput): Reason[] {
   const owner = input.mover === 'white' ? 'w' : 'b';
   const before = new Map(loosePieces(input.fenBefore, owner).map((piece) => [piece.square, piece.tier]));
   const traded = tradedSquare(input);
-  return loosePieces(input.fenAfter, owner)
+  const unfixed = leftLooseReason(input, owner, before);
+  const made: Reason[] = loosePieces(input.fenAfter, owner)
     .filter((piece) => piece.square !== traded && (before.get(piece.square) === undefined || (before.get(piece.square) === 'winnable' && piece.tier === 'free')))
     .map((piece) => ({
       category: 'material',
       text: `Leaves the ${PIECE_NAMES[piece.piece]} on ${piece.square} ${piece.tier === 'free' ? 'undefended' : 'where it can be won'}`
     }));
+  return made.length || !unfixed ? made : [unfixed];
+}
+
+/** A piece that was already loose, which the move did nothing about and the
+ * engine's move would have saved: 18.Rb1 left the bishop on d2 to Nxd2 where
+ * Nf3 defended it. Said only when the best move really makes it safe, and
+ * only for the most valuable such piece. */
+function leftLooseReason(input: MoveReasonsInput, owner: 'w' | 'b', before: Map<string, 'free' | 'winnable'>): Reason | null {
+  const best = input.evalBefore.lines[0]?.moveSan;
+  if (!best || best === input.moveSan) return null;
+  // A move that allows mate has a bigger fault than a loose piece.
+  const after = input.evalAfter?.lines[0];
+  if (after && moverMateIn(after, input.mover === 'white' ? 'black' : 'white') !== null) return null;
+  let afterBest: string;
+  try {
+    const chess = new Chess(input.fenBefore);
+    chess.move(best);
+    afterBest = chess.fen();
+  } catch {
+    return null;
+  }
+  const stillLoose = new Set(loosePieces(input.fenAfter, owner).map((piece) => piece.square));
+  const looseAfterBest = new Set(loosePieces(afterBest, owner).map((piece) => piece.square));
+  const left = loosePieces(input.fenAfter, owner)
+    .filter((piece) => before.has(piece.square) && stillLoose.has(piece.square) && !looseAfterBest.has(piece.square) && piece.square !== playedMove(input)?.to)
+    .sort((a, b) => PIECE_VALUES[b.piece] - PIECE_VALUES[a.piece])[0];
+  if (!left) return null;
+  // Moving the piece itself is just the best move: other notes name it.
+  const bestMove = new Chess(input.fenBefore).moves({ verbose: true }).find((each) => each.san === best);
+  if (bestMove?.from === left.square) return null;
+  return { category: 'material', text: `Leaves the ${PIECE_NAMES[left.piece]} on ${left.square} where it can be won; ${best} defends it` };
 }
 
 /** The square the move captured on, when what it took was worth at least

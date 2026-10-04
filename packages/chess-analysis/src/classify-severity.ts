@@ -23,12 +23,35 @@ const {
 } = CONFIG.resultBand;
 
 /** Applies §5.2's drop thresholds followed by §5.3's position damping. */
-export function classifySeverity(input: Pick<MoveClassificationInput, 'drop' | 'beforeWin' | 'afterWin' | 'cpBefore' | 'cpAfter'>): SeverityQuality {
+export function classifySeverity(input: Pick<MoveClassificationInput, 'drop' | 'beforeWin' | 'afterWin' | 'cpBefore' | 'cpAfter' | 'mover'>): SeverityQuality {
   const base = baseSeverity(input.drop);
-  if (input.beforeWin >= DAMPING_HIGH_WIN && input.afterWin >= DAMPING_HIGH_WIN) return capSeverity(base, 'inaccuracy');
-  if (input.beforeWin <= DAMPING_LOW_WIN && input.afterWin <= DAMPING_LOW_WIN) return capSeverity(base, 'inaccuracy');
+  const decided = (input.beforeWin >= DAMPING_HIGH_WIN && input.afterWin >= DAMPING_HIGH_WIN) || (input.beforeWin <= DAMPING_LOW_WIN && input.afterWin <= DAMPING_LOW_WIN);
+  if (decided) return worstSeverity(capSeverity(base, 'inaccuracy'), decidedSeverity(input));
   if (isDeadDrawTechnicalPosition(input)) return capSeverity(base, 'good');
   return base;
+}
+
+/** In a decided game (either side past the damping win%) the win percentage
+ * has flattened: a queen thrown away at +9 moves it from 99.3 to 98.8. The move
+ * is judged by the centipawns it gave away, in the bands the bot's own
+ * mistake judge uses (`CONFIG.botMistake`), so a hung piece or an allowed
+ * mate is not "good" just because the game was already won (or lost). */
+function decidedSeverity(input: Pick<MoveClassificationInput, 'cpBefore' | 'cpAfter' | 'mover'>): SeverityQuality {
+  const { decidedMateScaleCp: MATE_SCALE } = CONFIG.severity;
+  const loss = input.mover === 'white' ? input.cpBefore - input.cpAfter : input.cpAfter - input.cpBefore;
+  const moverCp = input.mover === 'white' ? input.cpBefore : -input.cpBefore;
+  const bothMates = Math.abs(input.cpBefore) >= MATE_SCALE && Math.abs(input.cpAfter) >= MATE_SCALE && Math.sign(input.cpBefore) === Math.sign(input.cpAfter);
+  // Being mated a move sooner or later lost nothing. Mating slower did: the
+  // fastest mate is the best one, 10 cp a move on the mate score.
+  if (bothMates && moverCp < 0) return 'excellent';
+  if (loss >= CONFIG.botMistake.decidedBlunderCpLoss) return 'blunder';
+  if (loss >= CONFIG.botMistake.decidedMistakeCpLoss) return 'mistake';
+  if (loss >= CONFIG.severity.decidedInaccuracyCpLoss) return 'inaccuracy';
+  return 'excellent';
+}
+
+function worstSeverity(a: SeverityQuality, b: SeverityQuality): SeverityQuality {
+  return SEVERITY_ORDER[Math.max(SEVERITY_ORDER.indexOf(a), SEVERITY_ORDER.indexOf(b))] ?? a;
 }
 
 export function baseSeverity(drop: number): SeverityQuality {

@@ -190,6 +190,16 @@ export function strongerCandidatesText(input: PrincipleInput): string | null {
   return `${names} were stronger than ${input.moveSan}`;
 }
 
+/** What a move does beyond taking: "attacks the rook on b1" / "gives check",
+ * or null. */
+export function threatNote(fen: string, san: string): string | null {
+  const [move] = line(fen, [san], 1);
+  if (!move) return null;
+  if (move.san.endsWith('+')) return 'gives check';
+  const target = newlyAttacked(fen, move);
+  return target ? `attacks the ${PIECE_NAMES[target.type]} on ${target.square}` : null;
+}
+
 function candidateDoes(fen: string, san: string): string | null {
   const [move] = line(fen, [san], 1);
   if (!move) return null;
