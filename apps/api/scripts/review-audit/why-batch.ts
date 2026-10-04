@@ -10,7 +10,7 @@ import { Chess } from 'chess.js';
  * `review-why-analyst` agents.
  *
  *   npx tsx apps/api/scripts/review-audit/why-batch.ts --pgn game.pgn --evals evals.json \
- *     --out <dir> [--reader black] [--min-loss 20] [--skip-plies 6] [--parts 2]
+ *     --out <dir> [--reader black] [--min-loss 20] [--good-gap 25] [--skip-plies 6] [--parts 2]
  *
  * `evals.json` is the game's stored evals (`analyses.engine_evals`: one
  * White-perspective eval per position, `evals[ply]` the position after that
@@ -42,6 +42,7 @@ chess.loadPgn(readFileSync(arg('pgn'), 'utf8'));
 const minLoss = Number(arg('min-loss', '20'));
 const skipPlies = Number(arg('skip-plies', '6'));
 const parts = Number(arg('parts', '2'));
+const goodGap = Number(arg('good-gap', '25'));
 const reader = arg('reader', 'the reader');
 
 const rows: string[] = [];
@@ -51,7 +52,24 @@ chess.history({ verbose: true }).forEach((move, index) => {
   const best = before?.lines[0];
   const playedLine = after?.lines[0];
   if (!before || !after || !best || !playedLine || index < skipPlies) return;
-  if (best.moveSan === move.san || best.cp === null || playedLine.cp === null) return;
+  if (best.moveSan === move.san) {
+    const second = before.lines[1];
+    const sure = best.mateIn !== null && second?.mateIn === null;
+    const gap = best.cp !== null && second?.cp != null ? Math.abs(best.cp - second.cp) : 0;
+    if ((!sure && gap < goodGap) || !second || new Chess(before.fen).moves().length < 2) return;
+    rows.push(
+      [
+        `### GOOD ply ${index + 1}: ${Math.ceil((index + 1) / 2)}${index % 2 ? '...' : '.'} ${move.san}   (${move.color === 'w' ? 'White' : 'Black'} to move; the engine's best, ${sure ? 'the only mating line' : `${gap} cp ahead of the next candidate`})`,
+        `fen before: ${before.fen}`,
+        `BEST (played) ${move.san}: eval ${score(best)}; continuation: ${best.pvSan.slice(0, 7).join(' ')}`,
+        `next candidates: ${before.lines.slice(1, 4).map((line) => `${line.moveSan} (${score(line)}) ${line.pvSan.slice(0, 4).join(' ')}`).join(' | ')}`,
+        "(evals are from White's point of view, in pawns)",
+        ''
+      ].join('\n')
+    );
+    return;
+  }
+  if (best.cp === null || playedLine.cp === null) return;
   const loss = Math.round((move.color === 'w' ? 1 : -1) * (best.cp - playedLine.cp));
   if (loss < minLoss) return;
   const others = before.lines.slice(1, 4).map((line) => `${line.moveSan} (${score(line)})`).join(', ');

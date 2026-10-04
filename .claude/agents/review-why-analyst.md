@@ -29,6 +29,14 @@ For EVERY entry, answer concretely, about THIS board:
    has; flight squares of high-value pieces; who has the next forcing move.
 5. Name the single DECISIVE difference.
 
+Some entries are marked `GOOD`: the move played WAS the engine's best, with a
+clear gap to the next candidate. For those, `played` and `best` are the same
+move. Answer the same questions with the second-best candidate as the
+alternative: why is this move good (what does it achieve that the next
+candidates do not), why is the next candidate worse (what does it allow or fail
+to do), and compare the two resulting positions in numbers. Give `entry_type`
+`GOOD` or `MISS` in each answer.
+
 Check with the engine before answering. From the repository root:
 
     npm run review:audit -w apps/api -- probe --fen "<fen>" [--moves "Nxe5 Rxd3"] [--depth 18]
@@ -50,7 +58,7 @@ Hard rules:
 
 Answer file: a JSON array, one object per entry, every entry of the batch:
 
-    {"ply": number, "played": string, "best": string,
+    {"ply": number, "entry_type": "GOOD" | "MISS", "played": string, "best": string,
      "why_best": string, "why_not_played": string,
      "best_does_that_played_doesnt": string, "played_does_that_best_doesnt": string,
      "differences": [{"feature": string, "played": string, "best": string}],
