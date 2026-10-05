@@ -17,6 +17,7 @@ import type { ArrowRef } from '../chat/arrowToken.js';
 import { ChatPane } from '../chat/ChatPane.js';
 import { DebugPanel } from '../chat/DebugPanel.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
+import { CoachActivityContext } from '../chat/coach-activity-context.js';
 import { KickoffFactsContext } from '../chat/kickoff-facts-context.js';
 import type { HoverMove } from '../chat/MessageList.js';
 import { encodePositionContext, sanForPly } from '../chat/positionDivider.js';
@@ -32,6 +33,8 @@ import { SessionHeader } from './SessionHeader.js';
 import { useSessionPageData } from './useSessionPageData.js';
 import '../../styles/board-bottom-bar.css';
 import './SessionPage.css';
+
+const NO_KICKOFF_FACTS: string[] = [];
 
 /** design.md §5: composes board + chat for an active coaching session.
  * All fetching lives in useSessionPageData (AGENTS.md rule 7); this is
@@ -351,5 +354,11 @@ export function SessionPage(): ReactNode {
     </div>
   );
 
-  return <KickoffFactsContext.Provider value={kickoffFacts}>{page}</KickoffFactsContext.Provider>;
+  // The walk through the game's facts belongs to the review's wait; the progress
+  // rounds are about the student, and show the coach's own steps instead.
+  return (
+    <KickoffFactsContext.Provider value={phase === 'review' ? kickoffFacts : NO_KICKOFF_FACTS}>
+      <CoachActivityContext.Provider value={chat.activity}>{page}</CoachActivityContext.Provider>
+    </KickoffFactsContext.Provider>
+  );
 }

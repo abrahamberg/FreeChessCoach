@@ -38,6 +38,12 @@ interface UndoLastMoveOutput {
 /** The two client tools that end a round of a coaching session. */
 const PHASE_AFTER_TOOL: Record<string, CoachPhase> = { begin_review: 'review', begin_wrap_up: 'progress_close' };
 
+const PROGRESS_KICKOFF_LABEL = 'Checking in on your progress…';
+/** The check-in's last word is the question whether to go on to the game; if
+ * the coach used its tools and wrote nothing, this is that question. */
+const PROGRESS_EMPTY_REPLY_NOTE =
+  'I have looked over your progress. Whenever you are ready, say so and we will go through the game together.';
+
 function isPhaseTool(toolName: string): boolean {
   return toolName in PHASE_AFTER_TOOL;
 }
@@ -257,6 +263,8 @@ export function useSessionPageData(sessionId: string) {
     onServerToolResult: handleServerToolResult,
     onUnlockRequired: handleUnlockRequired,
     onSetupRequired: handleSetupRequired,
+    kickoffLabel: sessionQuery.data?.phase === 'progress_open' ? PROGRESS_KICKOFF_LABEL : undefined,
+    emptyReplyNote: phase === 'progress_open' ? PROGRESS_EMPTY_REPLY_NOTE : undefined,
     initialMessages,
     sanMoves
   });

@@ -49,7 +49,6 @@ import type {
 import { tool, type ToolSet } from '../llm/tools.js';
 import type { Kysely } from 'kysely';
 import * as diagnosticProfilesRepo from '../db/repositories/diagnostic-profiles.js';
-import type { FocusAreaRow } from '../db/repositories/focus-areas.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import * as usersRepo from '../db/repositories/users.js';
@@ -404,34 +403,30 @@ async function recordFindingTool(
   return { recorded: true };
 }
 
-/** `applyFocusAreaUpdate` returns the raw `FocusAreaRow`, whose `lastSeenAt`/
- * `createdAt` are live `Date` instances from Kysely. The AI SDK validates
- * tool-result content as plain JSON when it builds the next step's prompt, so
- * a `Date` here throws `AI_InvalidPromptError` on the *following* turn instead
- * of failing where the bug is — this narrows the result to JSON-safe values
- * at the tool boundary, the same way `recordFindingTool` already does. */
+/** What the coach sees of a focus area after an update: plain fields only.
+ * `applyFocusAreaUpdate` returns the raw `FocusAreaRow`, whose dates
+ * (`lastSeenAt`, `createdAt`, and `graduatedAt` once a habit graduates) are
+ * live `Date` instances from Kysely. The AI SDK validates tool-result content
+ * as plain JSON when it builds the next step's prompt, so a `Date` here throws
+ * `AI_InvalidPromptError` on the *following* step instead of failing where the
+ * bug is — which is how ending a session after a graduation used to fail. Only
+ * the fields the coach acts on are returned, so a column added to the row later
+ * cannot reintroduce it. */
+interface FocusAreaUpdateToolResult {
+  applied: boolean;
+  reason?: string;
+  focusArea?: { diagnosisCode: DiagnosisCodeId | null; status: string; note: string; evidenceCount: number; isPrimary: boolean };
+}
+
 async function proposeFocusAreaUpdateTool(
   db: Kysely<Database>,
   ctx: CoachToolsContext,
   update: FocusAreaUpdate
-): Promise<{
-  applied: boolean;
-  reason?: string;
-  focusArea?: Omit<FocusAreaRow, 'lastSeenAt' | 'createdAt'> & {
-    lastSeenAt: string;
-    createdAt: string;
-  };
-}> {
+): Promise<FocusAreaUpdateToolResult> {
   const result = await progressService.applyFocusAreaUpdate(db, ctx.userId, update);
   if (!result.focusArea) return { applied: result.applied, reason: result.reason };
-  return {
-    ...result,
-    focusArea: {
-      ...result.focusArea,
-      lastSeenAt: result.focusArea.lastSeenAt.toISOString(),
-      createdAt: result.focusArea.createdAt.toISOString()
-    }
-  };
+  const { diagnosisCode, status, note, evidenceCount, isPrimary } = result.focusArea;
+  return { applied: result.applied, focusArea: { diagnosisCode, status, note, evidenceCount, isPrimary } };
 }
 
 /** Task 66.2 — resolves the student's rating the same way

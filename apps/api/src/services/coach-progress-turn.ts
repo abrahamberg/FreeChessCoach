@@ -19,17 +19,23 @@ import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { isDevCommandsEnabled } from '../lib/dev-commands.js';
 import { NotFoundError } from '../lib/errors.js';
-import { MAX_STEPS, runCoachTurn, type CoachTurnStream } from '../llm/chat.js';
+import { runCoachTurn, type CoachTurnStream } from '../llm/chat.js';
 import { streamTimeoutsFor } from '../llm/gateway.js';
 import { classifyLlmError } from '../llm/provider-error.js';
 import { cachedSystemMessage, systemMessage, type ChatMessage, type SystemChatMessage } from '../llm/messages.js';
 import { toChatMessage, toStoredMessages } from './coach-context-replay.js';
-import { serializeTools, type TurnDebugSnapshot } from './coach-agent-debug.js';
+import { serializeTools, toResponseSnapshot, type TurnDebugSnapshot } from './coach-agent-debug.js';
 import type { CoachAgentDependencies, ModelResolver } from './coach-agent-types.js';
 import { replyInProgress } from './coach-tool-guards.js';
 import { buildCoachTools } from './coach-tools.js';
 import { buildTurnToolsDependencies } from './coach-turn-dependencies.js';
 import { loadProgressDossier } from './progress-dossier.js';
+
+/** A progress round reads the dossier, updates each habit it changed, writes
+ * its notes and closes: more model steps than a review reply needs, and the
+ * last step is forced to speak, so a short budget would cut the round off
+ * before end_session. */
+const PROGRESS_MAX_STEPS = 14;
 
 interface ProgressTurnArgs {
   deps: CoachAgentDependencies;
@@ -75,6 +81,7 @@ export async function startProgressTurn(args: ProgressTurnArgs): Promise<CoachTu
     tools,
     timeouts: streamTimeoutsFor(deps.gatewayConfig, resolution),
     speakAfterToolNames: undefined,
+    maxSteps: PROGRESS_MAX_STEPS,
     priorSteps: reply.priorSteps,
     onFinish: async (completion) => {
       try {
@@ -85,16 +92,11 @@ export async function startProgressTurn(args: ProgressTurnArgs): Promise<CoachTu
             instructions,
             messages,
             tools: serializeTools(tools),
-            maxSteps: MAX_STEPS,
+            maxSteps: PROGRESS_MAX_STEPS,
             reasoning: resolution.callOptions.reasoning,
             providerOptions: resolution.callOptions.providerOptions ?? null
           },
-          response: {
-            messages: completion.messages,
-            finishReason: completion.finishReason,
-            usage: completion.usage,
-            providerMetadata: completion.providerMetadata
-          }
+          response: toResponseSnapshot(completion)
         } satisfies TurnDebugSnapshot);
         for (const message of completion.messages) {
           await sessionMessagesRepo.insert(deps.db, session.id, message.role, message.content, null, phase);

@@ -2,6 +2,7 @@ import { hasToolCall, stepCountIs, streamText, type TextStreamPart, type ToolSet
 import type { ModelResolution } from './gateway.js';
 import type { ChatMessage, ResponseChatMessage, SystemChatMessage } from './messages.js';
 import type { StreamTimeouts } from './model-options.js';
+import { createTurnTimer, type TurnTimings } from './turn-timings.js';
 import { toTurnUsage, type TurnUsage } from './usage.js';
 
 /** architecture §8.3: the coach may take at most this many model round-trips
@@ -65,6 +66,8 @@ export interface CoachTurnCompletion {
   finishReason: string;
   usage: TurnUsage;
   providerMetadata: unknown;
+  /** How long each model call and server tool of the turn took. */
+  timings: TurnTimings;
 }
 
 export interface RunCoachTurnArgs {
@@ -90,6 +93,9 @@ export interface RunCoachTurnArgs {
    * stopOnToolNames, the move lands on the board before any commentary on it,
    * and a reply can never talk about a move without having played it. */
   speakAfterToolNames?: string[];
+  /** Overrides MAX_STEPS for this turn: the closing progress round has more
+   * to do (read, update each habit, write notes, close) than a review reply. */
+  maxSteps?: number;
   /** Model steps this reply already took in earlier turns — a client tool
    * result resumes the reply as a new turn (services/coach-tool-guards.ts's
    * replyInProgress), and MAX_STEPS caps the whole reply, not each hop. */
@@ -106,9 +112,10 @@ export interface RunCoachTurnArgs {
 
 /** Wraps the streaming coach call. The only place `streamText` is invoked. */
 export function runCoachTurn(args: RunCoachTurnArgs): CoachTurnStream {
-  const stepBudget = Math.max(1, MAX_STEPS - (args.priorSteps ?? 0));
+  const stepBudget = Math.max(1, (args.maxSteps ?? MAX_STEPS) - (args.priorSteps ?? 0));
   const speakAfterToolNames = args.speakAfterToolNames ?? [];
   const commitToolNames = [...(args.stopOnToolNames ?? []), ...speakAfterToolNames];
+  const timer = createTurnTimer();
   const result = streamText({
     model: args.resolution.model,
     instructions: args.instructions,
@@ -141,6 +148,16 @@ export function runCoachTurn(args: RunCoachTurnArgs): CoachTurnStream {
     // session's turn lock forever, wedging every later message in the session.
     timeout: { firstChunkMs: args.timeouts.firstChunkMs, chunkMs: args.timeouts.chunkMs },
     ...args.resolution.callOptions,
+    onLanguageModelCallEnd: (event) =>
+      timer.modelCallEnded({
+        responseTimeMs: event.performance.responseTimeMs,
+        timeToFirstOutputMs: event.performance.timeToFirstOutputMs,
+        outputTokens: toTurnUsage(event.usage).outputTokens,
+        finishReason: event.finishReason,
+        toolNames: event.content.flatMap((part) => (part.type === 'tool-call' ? [part.toolName] : []))
+      }),
+    onToolExecutionEnd: (event) =>
+      timer.toolEnded({ toolName: event.toolCall.toolName, durationMs: event.toolExecutionMs, ok: event.toolOutput.type === 'tool-result' }),
     onFinish: (event) =>
       args.onFinish({
         // `responseMessages` spans every step; the per-step `response.messages`
@@ -149,7 +166,8 @@ export function runCoachTurn(args: RunCoachTurnArgs): CoachTurnStream {
         messages: event.responseMessages,
         finishReason: event.finishReason,
         usage: toTurnUsage(event.usage),
-        providerMetadata: event.providerMetadata
+        providerMetadata: event.providerMetadata,
+        timings: timer.finish()
       }),
     onError: ({ error }) => args.onError(error),
     onAbort: () => args.onAbort()

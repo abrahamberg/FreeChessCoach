@@ -614,4 +614,44 @@ describe('useCoachChat', () => {
     expect(transcript).not.toContain('missed the fork');
     expect(result.current.messages.at(-1)?.text).toBe('What did Qb3 threaten?');
   });
+
+  test('a server tool shows as an activity step that finishes with its result, and the text after it is its own message', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        streamResponse([
+          ...textFrames('One moment.', 'text-1'),
+          toolCallFrame({ toolCallId: 'call-1', toolName: 'get_user_profile', input: {} }),
+          toolOutputFrame('call-1', 'profile text'),
+          ...textFrames('Here is what I see.', 'text-2')
+        ])
+      )
+    );
+
+    const { result } = renderHook(() => useCoachChat('session-1'));
+    await act(async () => {
+      await result.current.sendMessage('hi');
+    });
+
+    expect(result.current.activity).toHaveLength(1);
+    expect(result.current.activity[0]).toMatchObject({ toolName: 'get_user_profile', status: 'done' });
+    expect(result.current.messages.filter((message) => message.role === 'assistant').map((message) => message.text)).toEqual([
+      'One moment.',
+      'Here is what I see.'
+    ]);
+  });
+
+  test('a turn that used tools and wrote nothing gets the empty-reply note instead of a blank bubble', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(streamResponse([toolCallFrame({ toolCallId: 'call-1', toolName: 'get_user_profile', input: {} }), toolOutputFrame('call-1', 'profile text')]))
+    );
+
+    const { result } = renderHook(() => useCoachChat('session-1', { emptyReplyNote: 'Ready when you are.' }));
+    await act(async () => {
+      await result.current.kickoff();
+    });
+
+    expect(result.current.messages.at(-1)?.text).toBe('Ready when you are.');
+  });
 });

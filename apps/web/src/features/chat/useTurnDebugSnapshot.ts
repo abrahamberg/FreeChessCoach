@@ -6,6 +6,25 @@ import { apiGet, ApiError } from '../../api/client.js';
  * and the literal object it returned (coach debug mode design doc, "No
  * reshaping of the captured data") — this validates the envelope, not the
  * internal message/part shapes, which vary by provider and step. */
+const TimelineEntrySchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('model'),
+    atMs: z.number(),
+    durationMs: z.number(),
+    firstOutputMs: z.number().nullable(),
+    outputTokens: z.number(),
+    finishReason: z.string(),
+    calls: z.array(z.string())
+  }),
+  z.object({ kind: z.literal('tool'), atMs: z.number(), durationMs: z.number(), toolName: z.string(), ok: z.boolean() })
+]);
+
+/** How long each model call and server tool of the turn took (api
+ * llm/turn-timings.ts), in the order they finished. */
+const TurnTimingsSchema = z.object({ totalMs: z.number(), entries: z.array(TimelineEntrySchema) });
+
+export type TimelineEntry = z.infer<typeof TimelineEntrySchema>;
+
 const TurnUsageSchema = z.object({
   freshInputTokens: z.number(),
   cacheReadTokens: z.number(),
@@ -37,7 +56,8 @@ export const TurnDebugSnapshotSchema = z.object({
     usage: TurnUsageSchema,
     /** Absent when the provider returns none (e.g. local models): the key is
      * `undefined` server-side, so it never survives the jsonb round-trip. */
-    providerMetadata: z.unknown().optional()
+    providerMetadata: z.unknown().optional(),
+    timings: TurnTimingsSchema
   })
 });
 

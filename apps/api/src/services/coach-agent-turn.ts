@@ -15,7 +15,7 @@ import { applyClientToolResult } from './coach-agent-client-tool-result.js';
 import { applyPhaseToolResult, isPhaseToolName } from './coach-phase.js';
 import { startProgressTurn } from './coach-progress-turn.js';
 import { buildSystemPromptForSession } from './coach-agent-system-prompt.js';
-import { serializeTools, type TurnDebugSnapshot } from './coach-agent-debug.js';
+import { serializeTools, toResponseSnapshot, type TurnDebugSnapshot } from './coach-agent-debug.js';
 import { planCoachMove } from './coach-move-plan.js';
 import type { CoachAgentDependencies, StartTurnInput } from './coach-agent-types.js';
 import type { CoachMovePlan } from '@freechesscoach/shared';
@@ -180,12 +180,7 @@ export async function startTurn(
               reasoning: resolution.callOptions.reasoning,
               providerOptions: resolution.callOptions.providerOptions ?? null
             },
-            response: {
-              messages: completion.messages,
-              finishReason: completion.finishReason,
-              usage: completion.usage,
-              providerMetadata: completion.providerMetadata
-            }
+            response: toResponseSnapshot(completion)
           } satisfies TurnDebugSnapshot);
 
           for (const message of completion.messages) {

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { DebugMessage, TurnDebugSnapshot } from './useTurnDebugSnapshot.js';
 import { MessageCard } from './DebugMessageCard.js';
+import { DebugTimeline } from './DebugTimeline.js';
 import { MetadataCard, ToolsList } from './DebugPanelSections.js';
 
 function StatTile({
@@ -85,6 +86,8 @@ export function DebugPanelContent({
         <StatTile kind="output" label="Output" value={usage.outputTokens} />
         <StatTile kind="output" label="Reasoning" value={usage.reasoningTokens} />
       </div>
+
+      <DebugTimeline timings={snapshot.response.timings} />
 
       {children}
 

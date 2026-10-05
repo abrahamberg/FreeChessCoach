@@ -451,6 +451,8 @@ describe('buildCoachTools', () => {
       );
 
       expect(result).toMatchObject({ applied: true, focusArea: { status: 'graduated' } });
+      // A Date in the result (graduatedAt) makes the next model step's prompt invalid.
+      expect(JSON.parse(JSON.stringify(result))).toEqual(result);
     });
 
     test('a diagnosisCode with no existing focus area is a no-op (applied: false) — the LLM cannot create one', async () => {
