@@ -4,6 +4,8 @@ import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { Database } from '../db/schema.js';
 import type { ChatMessage, SystemChatMessage } from '../llm/messages.js';
 import { toolJsonSchema, type ToolSet } from '../llm/tools.js';
+import type { CoachTurnCompletion } from '../llm/chat.js';
+import type { TurnTimings } from '../llm/turn-timings.js';
 import type { TurnUsage } from '../llm/usage.js';
 
 /** Literal request/response snapshot for the coach debug popup — deliberately
@@ -32,6 +34,19 @@ export interface TurnDebugSnapshot {
     finishReason: string;
     usage: TurnUsage;
     providerMetadata: unknown;
+    /** How long each model call and tool of the turn took. */
+    timings: TurnTimings;
+  };
+}
+
+/** The response half of the snapshot, as one finished turn produced it. */
+export function toResponseSnapshot(completion: CoachTurnCompletion): TurnDebugSnapshot['response'] {
+  return {
+    messages: completion.messages,
+    finishReason: completion.finishReason,
+    usage: completion.usage,
+    providerMetadata: completion.providerMetadata,
+    timings: completion.timings
   };
 }
 

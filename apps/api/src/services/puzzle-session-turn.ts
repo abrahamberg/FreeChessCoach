@@ -16,7 +16,7 @@ import type { GatewayConfig, ModelResolution, Tier } from '../llm/gateway.js';
 import { getModelForUser, streamTimeoutsFor } from '../llm/gateway.js';
 import { cachedSystemMessage, systemMessage, type ChatMessage } from '../llm/messages.js';
 import { classifyLlmError } from '../llm/provider-error.js';
-import { serializeTools, type TurnDebugSnapshot } from './coach-agent-debug.js';
+import { serializeTools, toResponseSnapshot, type TurnDebugSnapshot } from './coach-agent-debug.js';
 import { replyInProgress } from './coach-tool-guards.js';
 import { currentPuzzleFen } from './puzzle-session.js';
 import { buildPuzzleSessionTools } from './puzzle-session-tools.js';
@@ -190,12 +190,7 @@ export async function startPuzzleTurn(
                 reasoning: resolution.callOptions.reasoning,
                 providerOptions: resolution.callOptions.providerOptions ?? null
               },
-              response: {
-                messages: completion.messages,
-                finishReason: completion.finishReason,
-                usage: completion.usage,
-                providerMetadata: completion.providerMetadata
-              }
+              response: toResponseSnapshot(completion)
             } satisfies TurnDebugSnapshot);
           } catch (snapshotError) {
             console.error(`puzzle-session-turn debug snapshot failed for session ${session.id}:`, snapshotError);

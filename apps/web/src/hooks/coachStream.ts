@@ -23,6 +23,8 @@ export interface CoachStreamHandlers {
    * with no client round-trip — this is how the frontend hears the result.
    * Optional: analyze mode never emits this chunk type. */
   onToolOutput?: (output: StreamedToolOutput) => void;
+  /** A server tool that failed (its `execute` threw). Optional like onToolOutput. */
+  onToolError?: (error: { toolCallId: string; toolName: string; message: string }) => void;
   onError: (message: string) => void;
 }
 
@@ -85,6 +87,15 @@ async function dispatchChunk(
       toolCallId,
       toolName: toolNamesByCallId.get(toolCallId) ?? '',
       output: chunk.output
+    });
+    return;
+  }
+  if (chunk.type === 'tool-output-error') {
+    const toolCallId = String(chunk.toolCallId);
+    handlers.onToolError?.({
+      toolCallId,
+      toolName: toolNamesByCallId.get(toolCallId) ?? '',
+      message: String(chunk.errorText ?? 'The tool failed.')
     });
     return;
   }

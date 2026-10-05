@@ -5,6 +5,7 @@ import type { Database } from '../../db/schema.js';
 import type { ModelResolution } from '../../llm/gateway.js';
 import { cachedHeadUserMessage, cachedSystemMessage } from '../../llm/messages.js';
 import { generateStructured } from '../../llm/text.js';
+import { singleCallTimings } from '../../llm/turn-timings.js';
 import type { TurnUsage } from '../../llm/usage.js';
 import type { TurnDebugSnapshot } from '../coach-agent-debug.js';
 import type { CourseMessages } from '@freechesscoach/prompts';
@@ -47,12 +48,21 @@ export function loggedCourseCall({ db, courseId, resolve, now = Date.now }: Logg
       // episode calls the head of their user message: both are cached.
       const result = await generateStructured({ resolution, system: messages.system, prompt: messages.user, schema, cached: { head: messages.shared, tail: messages.retry } });
       const answer = { role: 'assistant', content: JSON.stringify(result.object, null, 2) };
-      const entry = record({ messages: [answer], finishReason: result.finishReason, usage: result.usage, providerMetadata: result.providerMetadata }, null);
+      const entry = record(
+        {
+          messages: [answer],
+          finishReason: result.finishReason,
+          usage: result.usage,
+          providerMetadata: result.providerMetadata,
+          timings: singleCallTimings(now() - started, result.finishReason, result.usage.outputTokens)
+        },
+        null
+      );
       unchecked.set(key(label), { id: await courseAiCallsRepo.insert(db, courseId, entry), entry });
       return result.object;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      await courseAiCallsRepo.insert(db, courseId, record({ messages: [], finishReason: 'error', usage: NO_USAGE, providerMetadata: null }, message));
+      await courseAiCallsRepo.insert(db, courseId, record({ messages: [], finishReason: 'error', usage: NO_USAGE, providerMetadata: null, timings: singleCallTimings(now() - started, 'error', 0) }, message));
       throw error;
     }
   }) as CourseModelCall;

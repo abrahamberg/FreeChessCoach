@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useCoachActivity } from './coach-activity-context.js';
 
 export interface ToolActivityProps {
   toolName: string | null;
@@ -12,7 +13,9 @@ const VISIBLE_TOOL_MESSAGES: Record<string, string> = {
 };
 
 export function ToolActivity({ toolName }: ToolActivityProps): ReactNode {
-  if (!toolName) return null;
+  // A page that lists the coach's steps (CoachActivityFeed) already shows this.
+  const hasFeed = useCoachActivity().length > 0;
+  if (!toolName || hasFeed) return null;
   const message = VISIBLE_TOOL_MESSAGES[toolName];
   if (!message) return null;
   return (

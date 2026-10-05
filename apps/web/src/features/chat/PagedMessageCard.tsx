@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { CoachAvatar } from '../../components/CoachAvatar.js';
 import { CoachCard } from '../../components/CoachCard.js';
 import { UserAvatar } from '../../components/UserAvatar.js';
+import { CoachActivityFeed } from './CoachActivityFeed.js';
 import { MessageNavPills } from './MessageNavPills.js';
 import { renderMessageItem, type HoverMove, type MessageRenderContext } from './MessageList.js';
 import { ThinkingIndicator } from './ThinkingIndicator.js';
@@ -82,6 +83,7 @@ export function PagedMessageCard({
   if (!message) {
     return (
       <CoachCard avatar={<CoachAvatar persona={coachPersona} size="chat" />} className="paged-message-card">
+        <CoachActivityFeed />
         <ThinkingIndicator visible={isThinking} label={thinkingLabel} />
         <ToolActivity toolName={activeToolName} />
         {!isThinking && !activeToolName && <p className="paged-message-card__empty-text">No messages yet.</p>}
@@ -114,6 +116,7 @@ export function PagedMessageCard({
       expanded={expanded}
       onToggleExpand={() => setExpanded((value) => !value)}
     >
+      <CoachActivityFeed />
       <ThinkingIndicator visible={isThinking} label={thinkingLabel} />
       <ToolActivity toolName={activeToolName} />
       {/* Same live-region contract MessageList's own transcript container

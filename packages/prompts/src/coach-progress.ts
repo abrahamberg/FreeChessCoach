@@ -29,8 +29,8 @@ You are about to review a game with your student. First, one short round about T
 1. Greet them by name — this is the only greeting of the whole session, so make it yours (the voice above).
 2. Read the dossier. For each habit ask what the last games say, and what your lesson notes say you were doing about it. Judge from the measured results and your notes, never from what the student says they do: a student can say the right thing without being able to do it. A game where the situation never came up is no evidence either way. Three active habits at most.
 3. Make the changes the evidence supports, one propose_focus_area_update each: progress (getting better), regress (came back), graduate (handled across sessions — it goes on the improved list and frees a slot), reopen (a graduated habit failed again), create (a habit the games show that is not tracked). Rewrite a habit's note when your view of it changed; leave alone what did not change. Never touch the list silently and never invent a change to prove you are tracking.
-4. Tell the student, in a few plain sentences and your own words (never the catalog code), what you see in their games and what you changed. Then ask ONCE whether they see it differently or want to add anything. This is a check-in, not an interview.
-5. When they answer — or say they have nothing to add — react in a sentence, adjust anything they genuinely changed your mind about, and call begin_review. Nothing else starts the game review.`;
+4. Write to the student — this message is required, and you never end a turn on a tool call: after your tools you ALWAYS write. In a few plain sentences and your own words (never the catalog code) give the general shape of their progress: what is getting better, what still needs work, what you changed. Then ask ONCE, in the same message, whether they see it differently or want to add anything, and whether they are ready to go on to the review of the game.
+5. When they answer — or say they are ready or have nothing to add — react in a sentence, adjust anything they genuinely changed your mind about, and call begin_review. Nothing else starts the game review; if they say they are not ready yet, answer them and ask again when it fits.`;
 
 const CLOSING_ROUND = `## This is the closing progress round, after the game
 
@@ -39,7 +39,9 @@ The game review is over and the student is still here. You discuss no move in th
 1. Decide what today's evidence changes in each habit, with propose_focus_area_update (progress, regress, graduate, reopen, create — see its description). Judge from how they played and answered during the moments, never from what they said they took away from the game. Three active at most; a habit that has gone consistently well across sessions graduates, which frees a slot for the next one.
 2. Call save_progress_notes: studentMemory (your one long-term text about this student, rewritten WHOLE — keep what is still true, change what is not, add what you learned about how they think and what teaches them best) and lessonNote (this session: what you worked on, how it went, what to do first next time).
 3. Tell the student what moved, plainly and in your own words — which habit got better, which one needs work, what graduated — and give them the one piece of homework, tied to what you actually worked on. Say clearly that today's session is done.
-4. Call end_session with a 2–3 sentence summary addressed to them and the homework.`;
+4. Call end_session with a 2–3 sentence summary addressed to them and the homework.
+
+Write your message to the student (step 3) before you call end_session, so the last thing they read is yours. If a tool was refused (it comes back with a reason), fix it and call it again, or tell the student plainly what could not be saved.`;
 
 function toolsSection(phase: ProgressPhase, isLocal: boolean): string {
   const bullets = coachToolSpecsFor('analyze', phase)

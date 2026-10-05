@@ -4,6 +4,15 @@ import { readCoachStream, readProblemDetailTitle } from './coachStream.js';
 import { encodeDivergedLineStart } from '../features/chat/divergedLine.js';
 import { encodeAnnotationNote, encodePositionDivider, sanForPly, type AnnotationNoteState } from '../features/chat/positionDivider.js';
 import { noteRateLimit } from '../api/rate-limit-notice.js';
+import { activityOutcome, finishStep, isHiddenFromActivity, startStep, type ActivityStep } from '../features/chat/coachActivity.js';
+
+/** The wait after the coach moves the session on is a long one (the game's
+ * coaching plan, or the closing round's notes), so it gets its own label. */
+const PHASE_TURN_LABELS: Record<string, string> = {
+  begin_review: 'Studying your game…',
+  begin_wrap_up: 'Looking back over the session…'
+};
+const DEFAULT_KICKOFF_LABEL = 'Studying your game…';
 
 export interface CoachMessage {
   id: string;
@@ -47,6 +56,13 @@ export interface UseCoachChatOptions {
    * onUnlockRequired: this should send the student to Settings to create a
    * setup, not prompt them for a phrase they were never asked to choose. */
   onSetupRequired?: () => void;
+  /** The thinking label of the session's first turn. Defaults to "Studying
+   * your game…"; a coaching session opens with a progress check-in instead. */
+  kickoffLabel?: string;
+  /** Shown as the coach's message when a turn ends with the coach having used
+   * tools but written nothing, so the student is never left with a blank chat
+   * and a loader that just stopped. Omitted: the turn just ends. */
+  emptyReplyNote?: string;
 }
 
 type PostTurnBody = { content?: string } | { clientToolResult: { toolCallId: string; toolName: string; result: unknown } };
@@ -67,6 +83,8 @@ export interface UseCoachChatResult {
    * before the turn's own streaming even starts), so the UI shows this
    * instead of the generic thinking dots. Null for every other turn. */
   thinkingLabel: string | null;
+  /** What the coach did this turn, in order, with when each step finished. */
+  activity: ActivityStep[];
   sendMessage: (content: string) => Promise<void>;
   /** Resumes a turn on whatever's already pending in history (the
    * [session_start] marker) without adding a new user-role message — how the
@@ -91,7 +109,8 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
   const [messages, setMessages] = useState<CoachMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [activeToolName, setActiveToolName] = useState<string | null>(null);
-  const [isKickoffTurn, setIsKickoffTurn] = useState(false);
+  const [turnLabel, setTurnLabel] = useState<string | null>(null);
+  const [activity, setActivity] = useState<ActivityStep[]>([]);
 
   // The session/game fetch (SessionPage) resolves after this hook's first
   // render, so initialMessages arrives on a later render, not at mount —
@@ -121,9 +140,16 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
   // replays its moves from the wrong position and comes back illegal.
   const onToolCallRef = useRef(options.onToolCall);
   onToolCallRef.current = options.onToolCall;
+  // Same for the note: the round the session is in changes mid-turn, when the
+  // coach calls begin_review, and the turn that follows is the next round's.
+  const emptyReplyNoteRef = useRef(options.emptyReplyNote);
+  emptyReplyNoteRef.current = options.emptyReplyNote;
+  const kickoffLabelRef = useRef(options.kickoffLabel);
+  kickoffLabelRef.current = options.kickoffLabel;
 
   const postTurn = useCallback(
-    async (body: PostTurnBody) => {
+    async (body: PostTurnBody, label: string | null = null) => {
+      setTurnLabel(label);
       // Pushed before the request goes out, not after it resolves: on a
       // fresh game's first turn, the server blocks on a coaching-plan LLM
       // call before it ever sends response headers (see coaching-plan.ts's
@@ -133,7 +159,19 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
       // until this placeholder exists.
       seededRef.current = true;
       const assistantId = crypto.randomUUID();
-      let assistantText = '';
+      // The reply is written in segments: text after a tool ran goes in a new
+      // bubble below the tool's activity, not back into the one above it.
+      let segmentId = assistantId;
+      let segmentText = '';
+      let endedOnClientTool = false;
+      let hadError = false;
+      const startSegment = (): void => {
+        if (segmentText === '') return;
+        const id = crypto.randomUUID();
+        segmentId = id;
+        segmentText = '';
+        setMessages((prev) => [...prev, { id, role: 'assistant', text: '' }]);
+      };
       setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', text: '' }]);
 
       const response = await fetch(`/api/sessions/${sessionId}/messages`, {
@@ -186,12 +224,13 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
         await readCoachStream(response.body, {
           onTextDelta: (delta) => {
             setActiveToolName(null);
-            assistantText += delta;
-            setMessages((prev) =>
-              prev.map((message) => (message.id === assistantId ? { ...message, text: assistantText } : message))
-            );
+            segmentText += delta;
+            const id = segmentId;
+            const text = segmentText;
+            setMessages((prev) => prev.map((message) => (message.id === id ? { ...message, text } : message)));
           },
           onError: (message) => {
+            hadError = true;
             console.error('coach stream error:', message);
             // A mid-stream provider error skips onFinish server-side (see
             // coach-agent-turn.ts's onError), so nothing gets persisted for
@@ -201,17 +240,26 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
             // `message` is already the student-facing text the server chose
             // (see llm/provider-error.ts) — e.g. naming a hit spend limit or
             // a rejected API key instead of a generic failure.
+            const id = segmentId;
             setMessages((prev) =>
-              prev.map((current) => (current.id === assistantId && current.text === '' ? { ...current, text: message } : current))
+              prev.map((current) => (current.id === id && current.text === '' ? { ...current, text: message } : current))
             );
           },
           onToolOutput: (toolOutput) => {
+            setActivity((prev) => finishStep(prev, toolOutput.toolCallId, activityOutcome(toolOutput.output), Date.now()));
             if (isServerToolResultName(toolOutput.toolName)) {
               onServerToolResultRef.current?.(toolOutput.toolName, toolOutput.output);
             }
           },
+          onToolError: (toolError) => {
+            setActivity((prev) => finishStep(prev, toolError.toolCallId, { ok: false, detail: toolError.message }, Date.now()));
+          },
           onToolCall: async (toolCall) => {
             setActiveToolName(toolCall.toolName);
+            startSegment();
+            if (!isHiddenFromActivity(toolCall.toolName)) {
+              setActivity((prev) => [...prev, startStep(toolCall.toolCallId, toolCall.toolName, toolCall.input, Date.now())]);
+            }
             if (toolCall.toolName === 'show_position') {
               const { moveNumber, color } = toolCall.input as { moveNumber: number; color: 'white' | 'black' | null };
               const ply = moveRefToPly(moveNumber, color);
@@ -251,14 +299,27 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
               }
             }
             if (result !== undefined) {
-              await postTurn({
-                clientToolResult: { toolCallId: toolCall.toolCallId, toolName: toolCall.toolName, result }
-              });
+              endedOnClientTool = true;
+              setActivity((prev) => finishStep(prev, toolCall.toolCallId, { ok: true, detail: null }, Date.now()));
+              await postTurn(
+                { clientToolResult: { toolCallId: toolCall.toolCallId, toolName: toolCall.toolName, result } },
+                PHASE_TURN_LABELS[toolCall.toolName] ?? null
+              );
             }
           }
         });
+        // The coach used its tools and then stopped without a word: say so
+        // instead of leaving a blank bubble behind a loader that went away.
+        const note = emptyReplyNoteRef.current;
+        if (segmentText === '' && !endedOnClientTool && !hadError && note) {
+          const id = segmentId;
+          setMessages((prev) => prev.map((message) => (message.id === id ? { ...message, text: note } : message)));
+        }
       } finally {
         setActiveToolName(null);
+        // A tool with nothing to answer it (a step the page handles itself)
+        // must not stay "running" once the turn is over.
+        setActivity((prev) => prev.map((step) => (step.status === 'running' ? { ...step, status: 'done', endedAt: Date.now() } : step)));
       }
     },
     [sessionId, options]
@@ -267,6 +328,7 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
   const sendMessage = useCallback(
     async (content: string) => {
       setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'user', text: content }]);
+      setActivity([]);
       setIsStreaming(true);
       try {
         await postTurn({ content });
@@ -278,18 +340,17 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
   );
 
   const kickoff = useCallback(async () => {
+    setActivity([]);
     setIsStreaming(true);
-    setIsKickoffTurn(true);
     try {
-      await postTurn({});
+      await postTurn({}, kickoffLabelRef.current ?? DEFAULT_KICKOFF_LABEL);
     } finally {
       setIsStreaming(false);
-      setIsKickoffTurn(false);
     }
   }, [postTurn]);
 
   const isThinking = isStreaming && messages.at(-1)?.text === '';
-  const thinkingLabel = isThinking && isKickoffTurn ? 'Studying your game…' : null;
+  const thinkingLabel = isThinking ? turnLabel : null;
 
-  return { messages, isStreaming, activeToolName, isThinking, thinkingLabel, sendMessage, kickoff };
+  return { messages, isStreaming, activeToolName, isThinking, thinkingLabel, activity, sendMessage, kickoff };
 }
