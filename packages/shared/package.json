@@ -10,6 +10,7 @@
   "types": "./src/index.ts",
   "scripts": {
     "test": "vitest run --reporter=../../fail-only-reporter.ts",
+    "test:slow": "RUN_SLOW_TESTS=true vitest run slow",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit"
   },

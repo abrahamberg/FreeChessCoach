@@ -45,7 +45,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./test/setup.ts'],
-    exclude: [...configDefaults.exclude, '**/dist/**'],
+    exclude: [...configDefaults.exclude, '**/dist/**', ...(process.env.RUN_SLOW_TESTS === 'true' ? [] : ['**/*.slow.*'])],
     globals: false,
     cache: false,
   }

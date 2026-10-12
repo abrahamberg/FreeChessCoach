@@ -59,6 +59,7 @@ into a course (a lesson on the board, a YouTube video and a reel).
 - `npm run test:changed` / `lint:changed` / `typecheck:changed`: the parts of `verify:changed`. `test:changed` runs the tests affected by files changed since `HEAD~1` (vitest `--changed`, through the root projects); `npm run test:changed -- --package api` runs one package's whole suite.
 - `npm run test:corpus`: tactic precision ceilings and recall floors (opt-in tier).
 - `npm run test:golden`: the course facts snapshot, no engine needed (opt-in tier; added in Phase 110). `GOLDEN_UPDATE=1` re-records it — only when a task allows it.
+- `npm run test:slow`: files named `*.slow.*` (engine-driven or several seconds each). Skipped by `npm test` and CI; run them when you touch what they cover. A new test that takes more than ~2s, runs Stockfish, or calls a real model goes there or is not written. Keep the default suite small: a few tests that catch a silent break, not one per behaviour; delete a development-driving test once its feature is done.
 - `npm run course:golden -w apps/api -- --facts [--only <kind|name>]`: print the facts the course prompts get (needs the engine).
 - `npm run review:audit -w apps/api -- <command>`: the review audit (`apps/api/scripts/review-audit/cli.ts` lists the commands: `corpus`, `run`, `recheck`, `report`, `failures`, `batch`, `ingest`, `calibrate`, `probe`, `show`, `seed`). Needs the engine; its workspace `apps/api/.review-audit/` is not in git.
 - `npm run docs:prompts`: regenerate `docs/prompts.md` after any change in `packages/prompts/src/`.

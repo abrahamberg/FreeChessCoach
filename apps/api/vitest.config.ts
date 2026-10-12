@@ -1,6 +1,7 @@
 import { configDefaults, defineConfig } from 'vitest/config';
+import { slowExclude } from '../../vitest.slow';
 
-const exclude = [...configDefaults.exclude, '**/dist/**'];
+const exclude = [...configDefaults.exclude, '**/dist/**', ...slowExclude];
 
 /**
  * Two tiers. `unit` needs nothing running. `db` talks to Postgres (a
