@@ -45,9 +45,12 @@ function outline(withSafety = true): CourseOutline {
   return { title: 'The Englund trap', promise: 'After this you can spring it.', hookOptions: ['a', 'b', 'c'], takeaways: ['a', 'b', 'c'], video: null, reel: null, chapters: [{ title: 'The trap', lineId: 'l1', episodes }] };
 }
 
+/** The bait's video line is the heart of the trap: the verifier wants it long. */
+const BAIT_SAY = 'White has just pushed a pawn to attack the centre, and the pawn on offer looks free to take. Any player would grab it, because it wins material and seems to cost nothing at all, and that is exactly how the trap is baited.';
+
 const script = (episodeId: string, nodeId: string, text = `In ${episodeId}, the words.`): EpisodeScript => ({
   episodeId,
-  plies: [{ nodeId, text, say: `So, ${episodeId}.`, caption: 'Look', arrows: [], tempting: [], course: true, video: true }],
+  plies: [{ nodeId, text, say: episodeId === 'e3' ? BAIT_SAY : `So, ${episodeId}.`, caption: 'Look', arrows: [], tempting: [], course: true, video: true }],
   quiz: null
 });
 
