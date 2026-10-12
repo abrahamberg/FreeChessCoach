@@ -24,6 +24,7 @@ export interface MoveNavStripProps {
   onStepForward?: () => void;
   start?: MoveListStart;
   dimmedThroughPly?: number;
+  variationFromIndex?: number | null;
 }
 
 /** The mobile Review layout used to stack MoveNavPills' first/prev/"N of
@@ -36,7 +37,7 @@ export interface MoveNavStripProps {
  * specific chip. The "N of M" readout and first/last skips are dropped
  * rather than folded in — the chip list already shows exactly where you are
  * and lets you jump anywhere directly. */
-export function MoveNavStrip({ sanMoves, classifiedMoves, positions, ply, onSelect, onStepBack, onStepForward, start, dimmedThroughPly }: MoveNavStripProps): ReactNode {
+export function MoveNavStrip({ sanMoves, classifiedMoves, positions, ply, onSelect, onStepBack, onStepForward, start, dimmedThroughPly, variationFromIndex }: MoveNavStripProps): ReactNode {
   const totalPlies = sanMoves.length;
 
   function goTo(next: number): void {
@@ -62,6 +63,7 @@ export function MoveNavStrip({ sanMoves, classifiedMoves, positions, ply, onSele
         momentPlies={[]}
         start={start}
         dimmedThroughPly={dimmedThroughPly}
+        variationFromIndex={variationFromIndex}
         onSelect={(index) => onSelect(moveStripIndexToPly(index))}
       />
       <button

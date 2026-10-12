@@ -8,12 +8,12 @@ import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { useShowStatusBar } from '../../hooks/useShowStatusBar.js';
 import { GameReportSummary } from '../board/GameReportSummary.js';
-import { MoveExplorer } from '../board/MoveExplorer.js';
 import { useExploreFeedback } from '../board/useExploreFeedback.js';
 import { SessionSummaryCard } from '../chat/SessionSummaryCard.js';
 import { BotStatusPanel } from './BotStatusPanel.js';
 import { GameOverDialog } from './GameOverDialog.js';
 import { SessionBoardColumn } from './SessionBoardColumn.js';
+import { SessionMoveExplorer } from './SessionMoveExplorer.js';
 import { SessionHeader } from './SessionHeader.js';
 import { StackedSessionBody } from './StackedSessionBody.js';
 import { useBotSessionPageData } from './useBotSessionPageData.js';
@@ -68,8 +68,6 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
     divergedLine,
     currentRealPosition,
     peekAt,
-    autoplayIntervalMs,
-    setAutoplayIntervalMs,
     handleBotMoveCommitted,
     handleGameOver,
     gameOverInfo,
@@ -169,8 +167,6 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
       positions={positions}
       classifiedMoves={shownMoves}
       isDesktop={isDesktop}
-      autoplayIntervalMs={autoplayIntervalMs}
-      onChangeAutoplayInterval={setAutoplayIntervalMs}
       sendMessage={() => undefined}
       onArrowsChange={() => undefined}
       sessionMode="play_bot"
@@ -243,7 +239,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
         <div className="session-body desktop">
           {isDesktop && (
             <div className="session-move-explorer-column">
-              <MoveExplorer sanMoves={sanMoves} classifiedMoves={shownMoves ?? []} positions={positions} currentPly={boardState.ply} onSelect={peekAt} />
+              <SessionMoveExplorer divergedLine={divergedLine} classifiedMoves={shownMoves ?? []} currentPly={boardState.ply} onSelectPly={peekAt} />
               {gameQuery.data?.gameReport && <GameReportSummary report={gameQuery.data.gameReport} userColor={orientation} />}
             </div>
           )}

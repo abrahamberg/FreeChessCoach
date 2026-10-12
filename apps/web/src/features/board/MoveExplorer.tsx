@@ -1,117 +1,142 @@
 import { useState, type ReactNode } from 'react';
+import { childrenOf, gameLine, pathTo, type PgnTree, type PgnTreeNode } from '@freechesscoach/chess-analysis';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { ChevronLeftIcon, ChevronRightIcon, SkipBackIcon, SkipForwardIcon } from '../../components/Icon.js';
+import { ExplorerAutoplay } from './ExplorerAutoplay.js';
+import { ExplorerVariation } from './ExplorerVariation.js';
 import { MoveAnalysisModal } from './MoveAnalysisModal.js';
 import { AlternativesPanel, MoveNote, OpeningLabel } from './MoveNoteContent.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 import { TacticMotifBadge } from './TacticMotifBadge.js';
-import { GAME_START, type MoveListStart } from './moveListStart.js';
-import { pairMoves } from './pair-moves.js';
+import type { ExplorerNodeExtra, ExplorerNodeExtras } from './explorer-extras.js';
+import { explorerRows } from './explorer-rows.js';
+import { stripPath } from './variation-path.js';
 import './MoveExplorer.css';
 
 export interface MoveExplorerProps {
-  sanMoves: string[];
-  classifiedMoves: ClassifiedMoveDto[];
-  /** ply-indexed positions (ply 0 = game start) — only `.ply`/`.fen` are
-   * read, used to look up the fen for the move analysis inspector modal. */
-  positions: { ply: number; fen: string }[];
-  currentPly: number;
-  onSelect: (ply: number) => void;
+  /** The moves to show: the main line in numbered rows, every variation as a
+   * block under the move it replaces. */
+  tree: PgnTree;
+  /** The node shown on the board; null is the start position. */
+  currentNodeId: string | null;
+  onSelect: (nodeId: string | null) => void;
+  /** The classified move of each node, by node id. */
+  qualities: Record<string, ClassifiedMoveDto>;
   /** The coaching session's desktop layout has nowhere else to show a
    * move's note, so this stays the one place it lives there. The Game
    * Review page's desktop layout has its own dedicated MoveNoteCard column
    * (the same note, shown large) — repeating it here too would just be the
    * same text twice, so that caller passes false. */
   showNotes?: boolean;
-  /** Where the moves start (`moveListStart.ts`); a game's 1. by default. */
-  start?: MoveListStart;
-  /** Plies up to this one are shown faded: a course episode's lead-in. */
+  /** This many main-line moves are shown faded: a course episode's lead-in. */
   dimmedThroughPly?: number;
   /** A list to read, not to step through (a course drill's moves so far):
    * no nav pills. */
   hideNav?: boolean;
+  /** Removes a variation made in the explorer (the id of its first move). */
+  onRemoveBranch?: (nodeId: string) => void;
+  /** Badges, a comment tooltip or a fade for moves, by node id. */
+  nodeExtras?: ExplorerNodeExtras;
 }
 
 /** design.md-adjacent move explorer (not yet in design.md — Daniel requested
- * a chess.com/lichess-style panel): paired move list, NAG symbols and
- * quality color-coding from the persisted classification, nav pills, and a
- * plain-language note for the current move. The note lives in a native
- * <details>, open by default — no separate show/hide button, just click the
- * "Notes" summary to collapse it. Sidelines/PGN comments are out of scope
- * here — parsePgn only produces a mainline. */
+ * a chess.com/lichess-style panel): the move tree as paired rows with
+ * variation blocks, NAG symbols and quality color-coding from the persisted
+ * classification, nav pills, and a plain-language note for the current move.
+ * The note lives in a native <details>, open by default — no separate
+ * show/hide button, just click the "Notes" summary to collapse it. */
 export function MoveExplorer({
-  sanMoves,
-  classifiedMoves,
-  positions,
-  currentPly,
+  tree,
+  currentNodeId,
   onSelect,
+  qualities,
   showNotes = true,
-  start = GAME_START,
   dimmedThroughPly = 0,
-  hideNav = false
+  hideNav = false,
+  onRemoveBranch,
+  nodeExtras
 }: MoveExplorerProps): ReactNode {
   const [inspecting, setInspecting] = useState<{ fen: string; label: string } | null>(null);
-  const qualityByPly = new Map(classifiedMoves.map((move) => [move.ply, move]));
-  const fenByPly = new Map(positions.map((position) => [position.ply, position.fen]));
-  const pairs = pairMoves(sanMoves, start);
-  const totalPlies = sanMoves.length;
-  const currentMove = qualityByPly.get(currentPly);
+  const rows = explorerRows(tree);
+  const nodeById = new Map(tree.nodes.map((node) => [node.id, node]));
+  const game = gameLine(tree);
+  const gameIds = new Set(game.map((node) => node.id));
+  const dimmedIds = new Set(game.slice(0, dimmedThroughPly).map((node) => node.id));
+  const currentMove = currentNodeId === null ? undefined : qualities[currentNodeId];
+  const current = currentNodeId === null ? undefined : nodeById.get(currentNodeId);
+  const end = lineEnd(tree, current);
+  const inVariation = stripPath(tree, currentNodeId).variationFromIndex !== null && currentNodeId !== null && !gameIds.has(currentNodeId);
 
-  function goTo(ply: number): void {
-    onSelect(Math.min(Math.max(ply, 0), totalPlies));
+  function inspect(nodeId: string, label: string): void {
+    const node = nodeById.get(nodeId);
+    if (node) setInspecting({ fen: node.fenAfter, label });
   }
 
   return (
     <div className="move-explorer">
       {!hideNav && (
         <div className="move-explorer__nav">
-          <button type="button" aria-label="first move" onClick={() => goTo(0)}>
+          <button type="button" aria-label="first move" onClick={() => onSelect(null)}>
             <SkipBackIcon width={15} height={15} />
           </button>
-          <button type="button" aria-label="previous move" onClick={() => goTo(currentPly - 1)}>
+          <button type="button" aria-label="previous move" onClick={() => current && onSelect(current.parentId)}>
             <ChevronLeftIcon width={16} height={16} />
           </button>
           <span className="move-explorer__position">
-            move {currentPly} of {totalPlies}
+            move {pathTo(tree, currentNodeId ?? '').length} of {pathTo(tree, end?.id ?? '').length}
           </span>
-          <button type="button" aria-label="next move" onClick={() => goTo(currentPly + 1)}>
+          <button type="button" aria-label="next move" onClick={() => { const next = childrenOf(tree, currentNodeId)[0]; if (next) onSelect(next.id); }}>
             <ChevronRightIcon width={16} height={16} />
           </button>
-          <button type="button" aria-label="last move" onClick={() => goTo(totalPlies)}>
+          <button type="button" aria-label="last move" onClick={() => end && onSelect(end.id)}>
             <SkipForwardIcon width={15} height={15} />
           </button>
         </div>
       )}
+      {!hideNav && inVariation && <ExplorerAutoplay tree={tree} currentNodeId={currentNodeId} onSelect={onSelect} />}
       <ol className="move-explorer__list">
-        {pairs.map((pair) => {
-          const { moveNumber, white, black } = pair;
-          const whiteFen = white ? fenByPly.get(white.ply) : undefined;
-          const blackFen = black ? fenByPly.get(black.ply) : undefined;
+        {rows.map((row, index) => {
+          if (row.kind === 'variation') {
+            return (
+              <ExplorerVariation
+                key={index}
+                row={row}
+                qualities={qualities}
+                nodeExtras={nodeExtras}
+                currentNodeId={currentNodeId}
+                onSelect={onSelect}
+                onRemove={onRemoveBranch}
+              />
+            );
+          }
+          const { moveNumber, white, black } = row;
           return (
-            <li key={moveNumber}>
+            <li key={index}>
               <span className="move-explorer__number">{moveNumber}.</span>
               {white ? (
                 <MoveCell
-                  ply={white.ply}
+                  nodeId={white.nodeId}
                   san={white.san}
-                  move={qualityByPly.get(white.ply)}
-                  isCurrent={currentPly === white.ply}
-                  dimmed={white.ply <= dimmedThroughPly}
+                  move={qualities[white.nodeId]}
+                  isCurrent={currentNodeId === white.nodeId}
+                  dimmed={dimmedIds.has(white.nodeId) || nodeExtras?.[white.nodeId]?.dimmed === true}
+                  extra={nodeExtras?.[white.nodeId]}
                   onSelect={onSelect}
-                  onInspect={whiteFen ? () => setInspecting({ fen: whiteFen, label: `${moveNumber}. ${white.san}` }) : undefined}
+                  onInspect={() => inspect(white.nodeId, `${moveNumber}. ${white.san}`)}
                 />
               ) : (
                 <span className="move-explorer__gap">…</span>
               )}
               {black && (
                 <MoveCell
-                  ply={black.ply}
+                  nodeId={black.nodeId}
                   san={black.san}
-                  move={qualityByPly.get(black.ply)}
-                  isCurrent={currentPly === black.ply}
-                  dimmed={black.ply <= dimmedThroughPly}
+                  move={qualities[black.nodeId]}
+                  isCurrent={currentNodeId === black.nodeId}
+                  dimmed={dimmedIds.has(black.nodeId) || nodeExtras?.[black.nodeId]?.dimmed === true}
+                  extra={nodeExtras?.[black.nodeId]}
                   onSelect={onSelect}
-                  onInspect={blackFen ? () => setInspecting({ fen: blackFen, label: `${moveNumber}... ${black.san}` }) : undefined}
+                  onInspect={() => inspect(black.nodeId, `${moveNumber}... ${black.san}`)}
                 />
               )}
             </li>
@@ -141,21 +166,27 @@ export function MoveExplorer({
   );
 }
 
+/** Follows the first move from the node (or the start) to the end of its line. */
+function lineEnd(tree: PgnTree, from: PgnTreeNode | undefined): PgnTreeNode | undefined {
+  let node = from ?? childrenOf(tree, null)[0];
+  for (let next = node && childrenOf(tree, node.id)[0]; next; next = childrenOf(tree, next.id)[0]) node = next;
+  return node;
+}
+
 interface MoveCellProps {
-  ply: number;
+  nodeId: string;
   san: string;
   move: ClassifiedMoveDto | undefined;
   isCurrent: boolean;
   /** A course episode's lead-in: shown, but not the episode's own moves. */
   dimmed?: boolean;
-  onSelect: (ply: number) => void;
-  /** Opens the move-analysis inspector for this move's position; undefined
-   * when the fen isn't known yet (shouldn't happen once positions load, but
-   * keeps the right-click a no-op instead of throwing). */
-  onInspect: (() => void) | undefined;
+  extra?: ExplorerNodeExtra;
+  onSelect: (nodeId: string) => void;
+  /** Opens the move-analysis inspector for this move's position. */
+  onInspect: () => void;
 }
 
-function MoveCell({ ply, san, move, isCurrent, dimmed = false, onSelect, onInspect }: MoveCellProps): ReactNode {
+function MoveCell({ nodeId, san, move, isCurrent, dimmed = false, extra, onSelect, onInspect }: MoveCellProps): ReactNode {
   const quality = move?.quality;
   const className = [quality ? `move-quality-${quality}` : null, dimmed ? 'move-explorer__move--dimmed' : null].filter(Boolean).join(' ');
   return (
@@ -163,15 +194,20 @@ function MoveCell({ ply, san, move, isCurrent, dimmed = false, onSelect, onInspe
       type="button"
       className={className || undefined}
       aria-current={isCurrent ? 'true' : undefined}
-      onClick={() => onSelect(ply)}
+      title={extra?.comment ?? undefined}
+      onClick={() => onSelect(nodeId)}
       onContextMenu={(event) => {
-        if (!onInspect) return;
         event.preventDefault();
         onInspect();
       }}
     >
       <MoveQualityBadge quality={quality} size="md" />
       {san}
+      {extra?.badges?.map((badge) => (
+        <span key={badge} className="move-explorer__badge">
+          {badge}
+        </span>
+      ))}
       {move && <TacticMotifBadge move={move} />}
     </button>
   );

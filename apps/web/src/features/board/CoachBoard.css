@@ -37,3 +37,22 @@
 .coach-board-frame--pending {
   cursor: wait;
 }
+
+/* `mateEffect`: the mated king's square breathes once a second, as in a
+ * course's film, so the eye finds it. */
+@keyframes coach-board-mate-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-board-frame [data-square] {
+    animation: none !important;
+  }
+}

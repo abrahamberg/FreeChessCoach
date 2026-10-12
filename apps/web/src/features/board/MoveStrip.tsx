@@ -33,6 +33,8 @@ export interface MoveStripProps {
   start?: MoveListStart;
   /** 1-based plies up to this one are faded: a course episode's lead-in. */
   dimmedThroughPly?: number;
+  /** 0-based index of the first move that belongs to a variation, drawn apart from the game. */
+  variationFromIndex?: number | null;
 }
 
 /** design.md §5.5: horizontal move-number chip list, peek-mode navigation.
@@ -45,7 +47,7 @@ export interface MoveStripProps {
  * raw 0-based local `ply` — so a future caller wiring up `momentPlies` with
  * real 1-based ply data will find the moment dot one chip off from the
  * badge it should line up with. */
-export function MoveStrip({ sanMoves, classifiedMoves, positions, currentPly, momentPlies, onSelect, start = GAME_START, dimmedThroughPly = 0 }: MoveStripProps): ReactNode {
+export function MoveStrip({ sanMoves, classifiedMoves, positions, currentPly, momentPlies, onSelect, start = GAME_START, dimmedThroughPly = 0, variationFromIndex = null }: MoveStripProps): ReactNode {
   const [inspecting, setInspecting] = useState<{ fen: string; label: string } | null>(null);
   const stripRef = useRef<HTMLDivElement>(null);
 
@@ -75,7 +77,7 @@ export function MoveStrip({ sanMoves, classifiedMoves, positions, currentPly, mo
         const isCurrent = ply === currentPly;
         const isMoment = momentSet.has(ply);
         const quality = qualityByPly.get(ply + 1);
-        const className = [isMoment ? 'moment' : null, quality ? `move-quality-${quality}` : null, ply + 1 <= dimmedThroughPly ? 'move-strip__chip--dimmed' : null]
+        const className = [isMoment ? 'moment' : null, quality ? `move-quality-${quality}` : null, ply + 1 <= dimmedThroughPly ? 'move-strip__chip--dimmed' : null, variationFromIndex !== null && ply >= variationFromIndex ? 'move-strip__chip--variation' : null]
           .filter(Boolean)
           .join(' ');
         const children = [];

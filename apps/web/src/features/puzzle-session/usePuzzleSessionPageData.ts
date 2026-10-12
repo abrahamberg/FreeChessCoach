@@ -12,6 +12,7 @@ import { apiGet, apiPost } from '../../api/client.js';
 import type { CoachToolCall } from '../../hooks/useCoachChat.js';
 import { useUnlockPrompt } from '../../hooks/useUnlockPrompt.js';
 import { useAnnotationLayer, type AnnotationState } from '../board/AnnotationLayer.js';
+import { useGameLineTree } from '../board/line-tree.js';
 import { useDivergedLine } from '../session/useDivergedLine.js';
 import { toPuzzleCoachMessages } from './puzzleSessionMessages.js';
 import { usePuzzleCoachChat } from './usePuzzleCoachChat.js';
@@ -91,7 +92,6 @@ export function usePuzzleSessionPageData(assignmentId: string, onSessionReset: (
     queryFn: ({ signal }) => apiGet('/api/users/me', UserProfileSchema, signal)
   });
 
-  const divergedLine = useDivergedLine();
   const annotations = useAnnotationLayer();
   const data = detailQuery.data;
   const currentItem = data ? (data.assignment.items[data.currentItemIndex] ?? null) : null;
@@ -104,6 +104,9 @@ export function usePuzzleSessionPageData(assignmentId: string, onSessionReset: (
 
   const committedLine =
     currentItem && data ? applyUciSequence(currentItem.fen, currentItem.moves.slice(0, data.currentPly)) : null;
+  const sanMoves = committedLine?.moves.map((move) => move.san) ?? [];
+  // The item's played-out line is the game the student's tries branch from.
+  const divergedLine = useDivergedLine(useGameLineTree(currentItem?.fen, sanMoves));
   const historyPositions: PuzzleHistoryPosition[] = [
     { ply: 0, fen: currentItem?.fen ?? '' },
     ...(committedLine?.moves.map((move, index) => ({ ply: index + 1, fen: move.fen })) ?? [])
@@ -157,7 +160,7 @@ export function usePuzzleSessionPageData(assignmentId: string, onSessionReset: (
       return { ok: true, fen: data?.currentFen ?? null };
     }
     if (!data || !currentItem) return undefined;
-    return divergedLine.handleToolCall(toolCall, { ply: data.currentItemIndex, fen: data.currentFen });
+    return divergedLine.handleToolCall(toolCall, { ply: data.currentPly, fen: data.currentFen });
   }
 
   function handleServerToolResult(toolName: string): void {
@@ -243,8 +246,7 @@ export function usePuzzleSessionPageData(assignmentId: string, onSessionReset: (
     chat,
     boardFen,
     orientation,
-    sanMoves: committedLine?.moves.map((move) => move.san) ?? [],
-    historyPositions,
+    sanMoves,
     currentPly: data?.currentPly ?? 0,
     viewedPly,
     selectHistoryPly,

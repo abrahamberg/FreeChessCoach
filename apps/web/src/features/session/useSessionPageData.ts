@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiGet, apiPost } from '../../api/client.js';
-import { DEFAULT_AUTOPLAY_INTERVAL_MS } from '../board/useLineAutoplay.js';
+import { useGameLineTree } from '../board/line-tree.js';
 import { useCoachChat, type CoachToolCall } from '../../hooks/useCoachChat.js';
 import { useUnlockPrompt } from '../../hooks/useUnlockPrompt.js';
 import { toClassifiedMoves } from './liveMoveQualities.js';
@@ -160,12 +160,11 @@ export function useSessionPageData(sessionId: string) {
   const isSessionFresh = sessionQuery.isFetchedAfterMount;
   const initialPly = isSessionFresh ? sessionQuery.data?.subjectPly : undefined;
   const boardState = useSessionBoardState(positions, initialPly);
-  const divergedLine = useDivergedLine();
+  const divergedLine = useDivergedLine(useGameLineTree(positions[0]?.fen, sanMoves));
   // The round the conversation is in: what the server says on load, then what
   // the coach's begin_review / begin_wrap_up calls move it to as they happen.
   const [livePhase, setLivePhase] = useState<CoachPhase | null>(null);
   const phase = livePhase ?? sessionQuery.data?.phase ?? 'review';
-  const [autoplayIntervalMs, setAutoplayIntervalMs] = useState(DEFAULT_AUTOPLAY_INTERVAL_MS);
   const currentRealPosition =
     positions.find((position) => position.ply === boardState.ply) ?? positions[0] ?? FALLBACK_POSITION;
   const initialMessages =
@@ -333,8 +332,6 @@ export function useSessionPageData(sessionId: string) {
     divergedLine,
     currentRealPosition,
     peekAt,
-    autoplayIntervalMs,
-    setAutoplayIntervalMs,
     chat,
     unlockModal,
     setupRequiredModal,

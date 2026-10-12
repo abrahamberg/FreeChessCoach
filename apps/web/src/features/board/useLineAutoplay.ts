@@ -10,7 +10,7 @@ export interface UseLineAutoplayResult {
 /**
  * Steps a controlled `currentStep` forward one at a time while playing,
  * pausing once it reaches `stepCount`. `currentStep` is owned by the
- * caller (DivergedLinePanel's stepIndex) — this hook only ever proposes the
+ * caller (ExplorerAutoplay's step along the variation) — this hook only ever proposes the
  * next step via `onStep`, mirroring how react-chessboard's controlled
  * position works (CoachBoard.tsx).
  */

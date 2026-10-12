@@ -1,18 +1,19 @@
-import { applySanSequence, moveRefToPly } from "@freechesscoach/chess-analysis";
-import { useCallback, useState } from "react";
+import { addMove, applySanSequence, childrenOf, moveRefToPly, type EditableTree } from "@freechesscoach/chess-analysis";
+import { useCallback, useRef, useState } from "react";
 import type { CoachToolCall } from "../../hooks/useCoachChat.js";
+import {
+  anchorPly,
+  back,
+  initialMoveTree,
+  isMainNode,
+  mainNodeAtPly,
+  remove,
+  select,
+  type MoveTreeState,
+} from "../board/move-tree-state.js";
+import { divergedLineOf, type DivergedLineState } from "./diverged-line-tree.js";
 
-export interface DivergedMove {
-  san: string;
-  fen: string;
-  uci: string;
-}
-
-export interface DivergedLineState {
-  basePly: number;
-  baseFen: string;
-  moves: DivergedMove[];
-}
+export type { DivergedLineState, DivergedMove } from "./diverged-line-tree.js";
 
 /** The board's actual real-game position at the moment a diverged-line
  * action happens — the hook has no notion of the real game itself (that's
@@ -40,28 +41,39 @@ export interface ProposeDivergedLineToolResult {
 }
 
 export interface UseDivergedLineResult {
+  /** The game's move tree with every variation the student and the coach
+   * made; the explorer draws it. */
+  tree: EditableTree;
+  /** The variation move on the board, or null while the board shows the game. */
+  currentId: string | null;
+  /** The variation the board is in, as the coach is told about it; null on
+   * the game's own line. */
   line: DivergedLineState | null;
-  /** moves[stepIndex-1].fen, or baseFen at stepIndex 0, or null if inactive —
-   * callers compose as `divergedLine.fen ?? boardState.fen`. */
+  /** The variation move's position, or null — callers compose as
+   * `divergedLine.fen ?? boardState.fen`. */
   fen: string | null;
-  stepIndex: number;
   /** Armed by the expect_move client tool; one-shot — cleared via
    * consumeExpectingMove once the next move has been handled either way
    * (sent as [board_move] or folded into an active line). */
   expectingMove: boolean;
-  /** Starts a line at `real` if none is active yet; truncates any moves
-   * past the current step before appending if the student stepped back via
-   * the sidebar and then played a different continuation. Returns the
-   * resulting line synchronously (not just via the next render) so a caller
-   * that needs to encode/send it immediately doesn't have to wait a tick. */
-  appendMove: (move: DivergedMove, real: RealPosition) => DivergedLineState;
-  previewStep: (index: number) => void;
-  /** Pops the last move off the line (the undo pill's "↩︎ undo" for a
-   * hypothetical move) — exits entirely if that was the only move. */
+  /** Plays a move from the variation on the board, or from `real` when the
+   * board shows the game: a new move is a variation, a move already there is
+   * followed. Returns the resulting line synchronously (not just via the
+   * next render) so a caller that needs to encode/send it immediately
+   * doesn't have to wait a tick. */
+  appendMove: (move: { san: string }, real: RealPosition) => DivergedLineState | null;
+  /** Shows a variation move (or, for a game node, leaves the variation). */
+  select: (nodeId: string | null) => void;
+  /** Removes the last move of the variation on the board (the undo pill),
+   * and the whole variation if that was its only move. */
   undoLastMove: () => void;
+  /** Removes a variation the student or the coach made. */
+  removeBranch: (nodeId: string) => void;
+  /** Leaves the variation for the game's move it branches from; the
+   * variation stays in the explorer. */
   exit: () => void;
   consumeExpectingMove: () => void;
-  /** Owns expect_move + hypothetical_line; a real show_position exits any
+  /** Owns expect_move + hypothetical_line; a real show_position leaves any
    * open hypothetical (never trusted to keep showing a stale line once the
    * coach has moved the board back to the real game). Every other tool name
    * is left alone — annotate_board etc. must not silently close the line.
@@ -98,42 +110,89 @@ function resolveHypotheticalBase(
   return positions.find((position) => position.ply === ply) ?? fallback;
 }
 
-export function useDivergedLine(): UseDivergedLineResult {
-  const [line, setLine] = useState<DivergedLineState | null>(null);
-  const [stepIndex, setStepIndex] = useState(0);
+const EMPTY_TREE: EditableTree = { startFen: "", nodes: [], errors: [] };
+
+/** The end of the first-move chain after a node: where a continued line goes on. */
+function chainEnd(tree: EditableTree, nodeId: string): string {
+  let id = nodeId;
+  for (let next = childrenOf(tree, id)[0]; next; next = childrenOf(tree, id)[0]) id = next.id;
+  return id;
+}
+
+/**
+ * The lines explored off a game — by the student's moves on the board or the
+ * coach's hypothetical_line — kept as variations in the game's move tree
+ * (`base`, whose nodes are the game's plies `n1`, `n2` …). A different `base`
+ * (the game grew, another puzzle) starts over.
+ */
+export function useDivergedLine(base: EditableTree | null): UseDivergedLineResult {
+  const initial = (): { base: EditableTree | null; state: MoveTreeState } => ({ base, state: initialMoveTree(base ?? EMPTY_TREE) });
+  const [held, setHeld] = useState(initial);
+  // Read synchronously by appendMove/handleToolCall, which return what they
+  // just did before the next render.
+  const heldRef = useRef(held);
+  if (heldRef.current.base !== base) {
+    const fresh = initial();
+    heldRef.current = fresh;
+    setHeld(fresh);
+  }
   const [expectingMove, setExpectingMove] = useState(false);
 
+  const commit = useCallback((state: MoveTreeState): void => {
+    heldRef.current = { base: heldRef.current.base, state };
+    setHeld(heldRef.current);
+  }, []);
+
+  const { tree, currentId } = heldRef.current.state;
+  const inVariation = currentId !== null && !isMainNode(tree, currentId);
+  const current = inVariation ? tree.nodes.find((node) => node.id === currentId) : undefined;
+  const divergence = divergedLineOf(tree, currentId);
+
+  /** Plays the moves one after another; the node each one landed on. */
+  const playFrom = useCallback((fromId: string | null, sans: string[]): string | null => {
+    let state = heldRef.current.state;
+    let parentId = fromId;
+    for (const san of sans) {
+      const result = addMove(state.tree, parentId, san);
+      if (!result.ok) break;
+      state = { tree: result.tree, currentId: result.nodeId };
+      parentId = result.nodeId;
+    }
+    commit(state);
+    return state.currentId;
+  }, [commit]);
+
   const appendMove = useCallback(
-    (move: DivergedMove, real: RealPosition): DivergedLineState => {
-      const base = line ?? { basePly: real.ply, baseFen: real.fen, moves: [] };
-      const truncatedMoves = base.moves.slice(0, stepIndex);
-      const nextMoves = [...truncatedMoves, move];
-      const nextLine: DivergedLineState = { ...base, moves: nextMoves };
-      setLine(nextLine);
-      setStepIndex(nextMoves.length);
-      return nextLine;
+    (move: { san: string }, real: RealPosition): DivergedLineState | null => {
+      const state = heldRef.current.state;
+      const active = state.currentId !== null && !isMainNode(state.tree, state.currentId);
+      const from = active ? state.currentId : mainNodeAtPly(state.tree, real.ply);
+      playFrom(from, [move.san]);
+      const after = heldRef.current.state;
+      return divergedLineOf(after.tree, after.currentId)?.line ?? null;
     },
-    [line, stepIndex],
+    [playFrom],
   );
 
-  const previewStep = useCallback((index: number) => {
-    setStepIndex(index);
-  }, []);
-
-  const undoLastMove = useCallback(() => {
-    setLine((current) => {
-      if (!current || current.moves.length === 0) return current;
-      const nextMoves = current.moves.slice(0, -1);
-      return nextMoves.length === 0 ? null : { ...current, moves: nextMoves };
-    });
-    setStepIndex((current) => Math.max(0, current - 1));
-  }, []);
+  const selectNode = useCallback((nodeId: string | null) => {
+    const state = heldRef.current.state;
+    commit(select(state, nodeId));
+  }, [commit]);
 
   const exit = useCallback(() => {
-    setLine(null);
-    setStepIndex(0);
+    commit(back(heldRef.current.state));
     setExpectingMove(false);
-  }, []);
+  }, [commit]);
+
+  const removeBranch = useCallback((nodeId: string) => {
+    commit(remove(heldRef.current.state, nodeId));
+  }, [commit]);
+
+  const undoLastMove = useCallback(() => {
+    const state = heldRef.current.state;
+    if (state.currentId === null || isMainNode(state.tree, state.currentId)) return;
+    commit(remove(state, chainEnd(state.tree, state.currentId)));
+  }, [commit]);
 
   const consumeExpectingMove = useCallback(() => {
     setExpectingMove(false);
@@ -152,37 +211,26 @@ export function useDivergedLine(): UseDivergedLineResult {
       if (toolCall.toolName === "hypothetical_line") {
         const {
           moves: sanMoves,
-          base,
+          base: baseAddress,
           newLine,
         } = toolCall.input as {
           moves: string[];
           base?: HypotheticalBaseAddress;
           newLine?: boolean;
         };
+        const state = heldRef.current.state;
+        const open = state.currentId !== null && !isMainNode(state.tree, state.currentId);
         // An open line is extended unless the coach asks for a separate one —
         // explicitly, or implicitly by naming a base (meaningless for an
         // extension, which continues from the line's own last move).
-        const continuing = line !== null && !newLine && !base;
-        const effectiveReal = continuing
-          ? real
-          : resolveHypotheticalBase(base, positions, real);
-        const startFen = continuing
-          ? (line.moves.at(-1)?.fen ?? line.baseFen)
-          : effectiveReal.fen;
+        const continuing = open && !newLine && !baseAddress;
+        const effectiveReal = continuing ? real : resolveHypotheticalBase(baseAddress, positions, real);
+        const fromId = continuing && state.currentId ? chainEnd(state.tree, state.currentId) : mainNodeAtPly(state.tree, effectiveReal.ply);
+        const startNode = fromId === null ? undefined : state.tree.nodes.find((node) => node.id === fromId);
+        const startFen = startNode?.fenAfter ?? state.tree.startFen;
         const applied = applySanSequence(startFen, sanMoves);
-        const basePly = continuing ? line.basePly : effectiveReal.ply;
-        if (applied.moves.length > 0) {
-          const lineBase = continuing
-            ? line
-            : {
-                basePly: effectiveReal.ply,
-                baseFen: effectiveReal.fen,
-                moves: [],
-              };
-          const nextMoves = [...lineBase.moves, ...applied.moves];
-          setLine({ ...lineBase, moves: nextMoves });
-          setStepIndex(nextMoves.length);
-        }
+        const basePly = continuing && state.currentId ? anchorPly(state.tree, state.currentId) : effectiveReal.ply;
+        if (applied.moves.length > 0) playFrom(fromId, applied.moves.map((move) => move.san));
         const moves = applied.moves.map((m) => ({ san: m.san }));
         const resultFen = applied.moves.at(-1)?.fen;
         // A failed extension is the case a model gets stuck on: it meant a
@@ -210,23 +258,19 @@ export function useDivergedLine(): UseDivergedLineResult {
       }
       return undefined;
     },
-    [line, exit],
+    [playFrom, exit],
   );
 
-  const fen = line
-    ? stepIndex === 0
-      ? line.baseFen
-      : (line.moves[stepIndex - 1]?.fen ?? null)
-    : null;
-
   return {
-    line,
-    fen,
-    stepIndex,
+    tree,
+    currentId: inVariation ? currentId : null,
+    line: divergence?.line ?? null,
+    fen: current?.fenAfter ?? null,
     expectingMove,
     appendMove,
-    previewStep,
+    select: selectNode,
     undoLastMove,
+    removeBranch,
     exit,
     consumeExpectingMove,
     handleToolCall,

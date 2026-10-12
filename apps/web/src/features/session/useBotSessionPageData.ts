@@ -4,7 +4,7 @@ import { BotThinkingLogEnabledResponseSchema } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost } from '../../api/client.js';
-import { DEFAULT_AUTOPLAY_INTERVAL_MS } from '../board/useLineAutoplay.js';
+import { useGameLineTree } from '../board/line-tree.js';
 import type { BotGameOverInfo } from './botGameOver.js';
 import { toClassifiedMoves } from './liveMoveQualities.js';
 import {
@@ -74,8 +74,7 @@ export function useBotSessionPageData(sessionId: string) {
 
   const initialPly = sessionQuery.isFetchedAfterMount ? sessionQuery.data?.subjectPly : undefined;
   const boardState = useSessionBoardState(positions, initialPly);
-  const divergedLine = useDivergedLine();
-  const [autoplayIntervalMs, setAutoplayIntervalMs] = useState(DEFAULT_AUTOPLAY_INTERVAL_MS);
+  const divergedLine = useDivergedLine(useGameLineTree(positions[0]?.fen, sanMoves));
   // boardState.coachPly, not boardState.ply: peekAt (move-list/Explore
   // navigation) reassigns `ply` for local-only display, but the failover
   // poll below needs to know where the game *actually* is regardless of
@@ -230,8 +229,6 @@ export function useBotSessionPageData(sessionId: string) {
     divergedLine,
     currentRealPosition,
     peekAt,
-    autoplayIntervalMs,
-    setAutoplayIntervalMs,
     handleBotMoveCommitted,
     handleGameOver,
     gameOverInfo,

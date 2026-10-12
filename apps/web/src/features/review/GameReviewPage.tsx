@@ -1,17 +1,18 @@
 import { isTopReviewTier } from '@freechesscoach/shared';
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { useMoveStepSounds } from '../../sounds/useMoveStepSounds.js';
-import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
 import { ExploreNoteCard } from '../board/ExploreNoteCard.js';
 import { GameReportSummary } from '../board/GameReportSummary.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
 import { MoveNavStrip } from '../board/MoveNavStrip.js';
+import { stripPath } from '../board/variation-path.js';
 import { SessionHeader } from '../session/SessionHeader.js';
 import { GameReviewBoardColumn } from './GameReviewBoardColumn.js';
 import { MoveNoteCard } from './MoveNoteCard.js';
+import { useBranchStepSounds } from './useBranchStepSounds.js';
 import { useGameReviewExplore } from './useGameReviewExplore.js';
 import { useGameReviewPageData } from './useGameReviewPageData.js';
 import '../../styles/board-bottom-bar.css';
@@ -59,14 +60,16 @@ export function GameReviewPage(): ReactNode {
   const engineActivity = useEngineActivityIndicator();
   const {
     gameQuery,
-    positions,
     sanMoves,
     classifiedMoves,
     currentMove,
     ply,
     setPly,
     fen,
-    currentRealPosition,
+    moveTree,
+    currentNode,
+    inVariation,
+    qualities,
     highlights,
     arrows,
     moveQualityBadge,
@@ -78,48 +81,55 @@ export function GameReviewPage(): ReactNode {
     continueWithCoachError
   } = useGameReviewPageData(gameId ?? '');
 
-  const explore = useGameReviewExplore(currentRealPosition);
-  // While exploring, the board shows the sandbox's own position (the real
-  // game's line prefixed with whatever the student has played locally) —
-  // useGameReviewExplore closes the sandbox itself the moment `ply` moves
-  // out from under it (MoveExplorer/MoveNavStrip), so `fen` alone is always
-  // correct once that happens.
-  const displayFen = explore.divergedLine.fen ?? fen;
+  const explore = useGameReviewExplore(moveTree, currentNode, inVariation, fen);
+  // Stepping the game (or picking a variation move) ends an Explore the
+  // student had open; the variations they made stay in the move list.
+  const stepTo = (next: number): void => {
+    setPly(next);
+    explore.stop();
+  };
+  const selectNode = (nodeId: string | null): void => {
+    moveTree.select(nodeId);
+    explore.stop();
+  };
+  const allQualities = useMemo(() => ({ ...qualities, ...explore.scored }), [qualities, explore.scored]);
+  const showFeedback = explore.isExploring || inVariation;
   // Board sounds (docs/plan.md Phase 88): an analyzed game, so bad and great
   // for either side; stepping one move forward only.
-  useMoveStepSounds({ ply, sanMoves, learnerSide: gameQuery.data?.userColor ?? 'white', classifiedMoves, disabled: explore.isExploring });
+  useMoveStepSounds({ ply, sanMoves, learnerSide: gameQuery.data?.userColor ?? 'white', classifiedMoves, disabled: showFeedback });
+  // The variation's own moves, and the main-line move after leaving one.
+  useBranchStepSounds(moveTree.tree, moveTree.currentId, gameQuery.data?.userColor ?? 'white');
 
   if (gameQuery.isLoading) return <p>Loading…</p>;
   if (gameQuery.isError || !gameQuery.data) return <p>Could not load this game.</p>;
 
   const game = gameQuery.data;
   const orientation = game.userColor;
+  const strip = stripPath(moveTree.tree, moveTree.currentId);
   const canContinueWithCoach = !isTopReviewTier(game.reviewTier) && game.analysisStatus === 'ready';
   const board = (
     <GameReviewBoardColumn
-      fen={displayFen}
+      fen={fen}
       orientation={orientation}
       highlights={highlights}
       arrows={arrows}
       moveQualityBadge={moveQualityBadge}
       classifiedMoves={classifiedMoves}
       ply={ply}
-      onSelect={setPly}
+      onSelect={stepTo}
       isDesktop={isDesktop}
       explore={{
         isExploring: explore.isExploring,
+        inVariation,
         open: explore.open,
         close: explore.close,
-        divergedLine: explore.divergedLine,
         exploreFeedback: explore.exploreFeedback,
-        onLocalMove: explore.handleLocalMove,
-        autoplayIntervalMs: explore.autoplayIntervalMs,
-        onChangeAutoplayInterval: explore.setAutoplayIntervalMs
+        onLocalMove: explore.handleLocalMove
       }}
     />
   );
 
-  const noteCard = explore.isExploring ? (
+  const noteCard = showFeedback ? (
     <ExploreNoteCard status={explore.exploreFeedback.status} evaluation={explore.exploreFeedback.evaluation} note={explore.exploreFeedback.note} />
   ) : (
     <MoveNoteCard
@@ -131,6 +141,7 @@ export function GameReviewPage(): ReactNode {
       isContinuingWithCoach={isContinuingWithCoach}
       tacticSelection={tacticSelection}
       onToggleTacticSelection={onToggleTacticSelection}
+      pgnComment={currentNode?.comment ?? null}
     />
   );
 
@@ -156,28 +167,15 @@ export function GameReviewPage(): ReactNode {
               sit; the note card takes the right column a chat pane would
               occupy in a coaching session, rather than displacing either. */}
           <div className="game-review-explorer-column">
-            {explore.divergedLine.line ? (
-              <DivergedLinePanel
-                line={explore.divergedLine.line}
-                stepIndex={explore.divergedLine.stepIndex}
-                onSelectStep={explore.divergedLine.previewStep}
-                onExit={explore.close}
-                autoplayIntervalMs={explore.autoplayIntervalMs}
-                onChangeAutoplayInterval={explore.setAutoplayIntervalMs}
-              />
-            ) : (
-              <>
-                <MoveExplorer
-                  sanMoves={sanMoves}
-                  classifiedMoves={classifiedMoves}
-                  positions={positions}
-                  currentPly={ply}
-                  onSelect={setPly}
-                  showNotes={false}
-                />
-                {game.gameReport && <GameReportSummary report={game.gameReport} userColor={orientation} tacticBaseline={game.tacticBaseline} />}
-              </>
-            )}
+            <MoveExplorer
+              tree={moveTree.tree}
+              currentNodeId={moveTree.currentId}
+              onSelect={selectNode}
+              qualities={allQualities}
+              showNotes={false}
+              onRemoveBranch={moveTree.remove}
+            />
+            {game.gameReport && <GameReportSummary report={game.gameReport} userColor={orientation} tacticBaseline={game.tacticBaseline} />}
           </div>
           {board}
           <div className="game-review-notes-column">{noteCard}</div>
@@ -187,7 +185,14 @@ export function GameReviewPage(): ReactNode {
           <div className={game.gameReport ? 'game-review-body mobile has-report-sheet' : 'game-review-body mobile'}>
             {noteCard}
             {board}
-            <MoveNavStrip sanMoves={sanMoves} classifiedMoves={classifiedMoves} positions={positions} ply={ply} onSelect={setPly} />
+            <MoveNavStrip
+              sanMoves={strip.sanMoves}
+              classifiedMoves={classifiedMoves}
+              positions={strip.positions}
+              ply={strip.ply}
+              variationFromIndex={strip.variationFromIndex}
+              onSelect={(stripPly) => selectNode(strip.nodeIds[stripPly - 1] ?? null)}
+            />
           </div>
           {game.gameReport && (
             <div className="board-bottom-bar board-bottom-bar--report">

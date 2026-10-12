@@ -10,6 +10,7 @@ import {
   type PieceHandlerArgs,
   type SquareHandlerArgs
 } from 'react-chessboard';
+import { checkedKing } from './checked-king.js';
 import { MoveQualityBadgeOverlay } from './MoveQualityBadgeOverlay.js';
 import { PromotionPicker, type PromotionPiece } from './PromotionPicker.js';
 import { useTapArrows } from './useTapArrows.js';
@@ -27,6 +28,22 @@ const CAPTURE_RING_STYLE: CSSProperties = { boxShadow: 'inset 0 0 0 4px rgba(20,
 // hint highlight sharing its square.
 const KING_IN_CHECK_STYLE: CSSProperties = {
   boxShadow: 'inset 0 0 0 3px rgba(214, 40, 40, 0.9), inset 0 0 16px 6px rgba(214, 40, 40, 0.55)'
+};
+// `mateEffect`, as a course's film draws it: the mated king's square filled
+// and pulsing (CoachBoard.css), and each square he cannot run to tinted and
+// crossed out, so the mate reads without a word.
+const MATED_KING_STYLE: CSSProperties = {
+  backgroundColor: 'rgba(214, 40, 40, 0.6)',
+  boxShadow: 'inset 0 0 0 4px rgba(214, 40, 40, 0.95), inset 0 0 18px 8px rgba(214, 40, 40, 0.6)',
+  animation: 'coach-board-mate-pulse 1s ease-in-out infinite'
+};
+const CROSS = 'transparent 44%, rgba(214, 40, 40, 0.85) 44%, rgba(214, 40, 40, 0.85) 56%, transparent 56%';
+const SHUT_SQUARE_STYLE: CSSProperties = {
+  backgroundColor: 'rgba(214, 40, 40, 0.25)',
+  backgroundImage: `linear-gradient(45deg, ${CROSS}), linear-gradient(-45deg, ${CROSS})`,
+  backgroundSize: '36% 36%',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat'
 };
 
 function mergeSquareStyles(...maps: Record<string, CSSProperties>[]): Record<string, CSSProperties> {
@@ -154,6 +171,10 @@ export interface CoachBoardProps {
    * anything together — see useGameReviewPageData's own
    * moveQualityBadgeFor. */
   moveQualityBadge?: { square: string; quality: MoveQuality };
+  /** A course's board: on checkmate the mated king is filled and pulses,
+   * and the squares he cannot run to are crossed out, as in the course's
+   * film. Off elsewhere, where a king in check gets the plain glow. */
+  mateEffect?: boolean;
   /** Tap one square, then another, to draw an arrow — how a phone draws
    * arrows (useTapArrows). Only for a board whose taps would otherwise do
    * nothing: it replaces tap-to-move. */
@@ -182,6 +203,7 @@ export function CoachBoard({
   showLegalMoveDots = true,
   disabled = false,
   moveQualityBadge,
+  mateEffect = false,
   tapToDrawArrows = false
 }: CoachBoardProps): ReactNode {
   const justDroppedRef = useRef(false);
@@ -224,6 +246,7 @@ export function CoachBoard({
   // findPiece returns every match; a legal position has exactly one king per
   // color, so the first (only) result is the one that matters.
   const checkedKingSquare = chess.inCheck() ? chess.findPiece({ type: 'k', color: chess.turn() })[0] : undefined;
+  const mated = mateEffect && chess.isCheckmate() ? checkedKing(chess.fen()).king : undefined;
 
   /** Commits a move against `sourceFen` specifically — NOT necessarily the
    * live `fen` prop. handlePromotionSelect needs that distinction: by the
@@ -347,7 +370,8 @@ export function CoachBoard({
     arrows: [...arrows, ...tapArrows.arrows].map((arrow) => ({ startSquare: arrow.from, endSquare: arrow.to, color: arrow.color })),
     squareStyles: mergeSquareStyles(
       Object.fromEntries(highlights.map((highlight) => [highlight.square, { backgroundColor: highlight.color }])),
-      checkedKingSquare ? { [checkedKingSquare]: KING_IN_CHECK_STYLE } : {},
+      checkedKingSquare ? { [checkedKingSquare]: mated ? MATED_KING_STYLE : KING_IN_CHECK_STYLE } : {},
+      Object.fromEntries((mated?.shut ?? []).map((square) => [square, SHUT_SQUARE_STYLE])),
       selectedSquare ? { [selectedSquare]: SELECTED_SQUARE_STYLE } : {},
       tapArrows.startSquare ? { [tapArrows.startSquare]: SELECTED_SQUARE_STYLE } : {},
       legalMoveSquareStyles

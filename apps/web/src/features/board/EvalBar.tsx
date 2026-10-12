@@ -44,7 +44,8 @@ export function EvalBar({ ply, classifiedMoves, orientation, cpOverride }: EvalB
   );
 }
 
-function formatEval(cp: number): string {
+/** "+1.3", "-0.4": the evaluation in pawns, White's side. */
+export function formatEval(cp: number): string {
   const pawns = cp / 100;
   return pawns > 0 ? `+${pawns.toFixed(1)}` : pawns.toFixed(1);
 }

@@ -231,3 +231,87 @@
 .move-explorer__list button[aria-current='true'].move-quality-forced {
   color: var(--color-on-primary);
 }
+
+/* A variation block: running text under the row of the move it replaces. */
+.move-explorer__list li.move-explorer__variation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 3px;
+  margin: 2px 0 4px 12px;
+  padding: 2px 0 2px 8px;
+  border-left: 2px solid var(--color-border);
+}
+
+.move-explorer__variation-move {
+  display: inline-flex;
+  align-items: center;
+}
+
+.move-explorer__variation .move-explorer__number,
+.move-explorer__bracket {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.move-explorer__variation .move-explorer__variation-move button {
+  padding: 2px 5px;
+  font-size: 13px;
+}
+
+.move-explorer__list .move-explorer__remove {
+  margin-left: auto;
+  padding: 0 6px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.move-explorer__list .move-explorer__remove:hover {
+  background: var(--color-surface-strong);
+  color: var(--color-text);
+}
+
+/* Autoplay of the variation on the board, under the nav pills. */
+.move-explorer__autoplay {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.move-explorer__autoplay button {
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  padding: 4px 8px;
+}
+
+.move-explorer__autoplay input {
+  width: 64px;
+  margin-left: 4px;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  padding: 2px 4px;
+}
+
+/* The creator's glyph and marks on a move (the studio's intake form and editor). */
+.move-explorer__badge {
+  margin-left: 3px;
+  padding: 0 4px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-strong);
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.move-explorer__list button[aria-current='true'] .move-explorer__badge {
+  background: transparent;
+  color: var(--color-on-primary);
+}

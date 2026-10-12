@@ -1,15 +1,13 @@
 import type { ReactNode } from 'react';
 import type { ClassifiedMoveDto, MoveQuality } from '@freechesscoach/shared';
-import { ChevronLeftIcon, UndoIcon } from '../../components/Icon.js';
+import { ChevronLeftIcon } from '../../components/Icon.js';
 import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
 import { CoachBoard, type BoardArrow, type BoardHighlight, type LocalMoveInfo } from '../board/CoachBoard.js';
-import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
 import { EvalBar } from '../board/EvalBar.js';
 import { ExploreNoteCard } from '../board/ExploreNoteCard.js';
 import { ExplorePanel } from '../board/ExplorePanel.js';
 import { GameEvalChart } from '../board/GameEvalChart.js';
 import type { UseExploreFeedbackResult } from '../board/useExploreFeedback.js';
-import type { UseDivergedLineResult } from '../session/useDivergedLine.js';
 // session-board-column/-row, peek-pill and undo-pill all live here; without
 // this import they were only styled if a session page had loaded it first
 // in the same tab (the unstyled "back to game" button was invisible in dark mode).
@@ -45,13 +43,13 @@ export interface GameReviewBoardColumnProps {
    * that never touches the stored game. */
   explore: {
     isExploring: boolean;
+    /** The board shows a variation move: its engine feedback replaces the game's arrows. */
+    inVariation: boolean;
     open: () => void;
+    /** Back to the game; the variations stay in the move list. */
     close: () => void;
-    divergedLine: UseDivergedLineResult;
     exploreFeedback: UseExploreFeedbackResult;
     onLocalMove: (fen: string, move: LocalMoveInfo) => void;
-    autoplayIntervalMs: number;
-    onChangeAutoplayInterval: (ms: number) => void;
   };
 }
 
@@ -62,7 +60,7 @@ export interface GameReviewBoardColumnProps {
  * session's SessionBoardColumn uses): legal-move dots return (respecting
  * Settings > Board), `disabled` drops, and every dropped move is scored by
  * the real engine pipeline (useGameReviewExplore/useExploreFeedback) and can
- * build out into a whole alternative line (DivergedLinePanel), all without
+ * land in the move list as variations, all without
  * ever mutating the stored game — closing the sandbox (the "back to game"
  * pill, or navigating the real move list) always restores the actual
  * position exactly as it was. */
@@ -79,63 +77,40 @@ export function GameReviewBoardColumn({
   explore
 }: GameReviewBoardColumnProps): ReactNode {
   const [showLegalMoveDots] = useShowLegalMoveDots();
-  const { isExploring, divergedLine, exploreFeedback } = explore;
+  const { isExploring, inVariation, exploreFeedback } = explore;
+  const showFeedback = isExploring || inVariation;
 
   const exploreMoveQualityBadge =
-    isExploring && exploreFeedback.note?.uci ? { square: exploreFeedback.note.uci.slice(2, 4), quality: exploreFeedback.note.quality } : undefined;
+    showFeedback && exploreFeedback.note?.uci ? { square: exploreFeedback.note.uci.slice(2, 4), quality: exploreFeedback.note.quality } : undefined;
 
   return (
     <div className="session-board-column">
       <div className="session-board-row">
-        <EvalBar ply={ply} classifiedMoves={classifiedMoves} orientation={orientation} cpOverride={isExploring ? (exploreFeedback.evalCp ?? undefined) : undefined} />
+        <EvalBar ply={ply} classifiedMoves={classifiedMoves} orientation={orientation} cpOverride={showFeedback ? (exploreFeedback.evalCp ?? undefined) : undefined} />
         <CoachBoard
           fen={fen}
           orientation={orientation}
           mode="peek"
           isExploring={isExploring}
-          arrows={isExploring ? [...arrows, ...exploreFeedback.arrows] : arrows}
-          highlights={isExploring ? [...highlights, ...exploreFeedback.highlights] : highlights}
+          arrows={showFeedback ? [...arrows, ...exploreFeedback.arrows] : arrows}
+          highlights={showFeedback ? [...highlights, ...exploreFeedback.highlights] : highlights}
           onLocalMove={explore.onLocalMove}
-          moveQualityBadge={isExploring ? exploreMoveQualityBadge : moveQualityBadge}
+          moveQualityBadge={showFeedback ? exploreMoveQualityBadge : moveQualityBadge}
           showLegalMoveDots={isExploring && showLegalMoveDots}
           disabled={!isExploring}
         />
       </div>
-      {divergedLine.line && (
-        <p className="undo-pill">
-          <button type="button" onClick={divergedLine.undoLastMove}>
-            <UndoIcon width={13} height={13} />
-            undo last move
-          </button>
-        </p>
-      )}
-      {isExploring && (
+      {showFeedback && (
         <p className="peek-pill">
-          exploring —{' '}
+          {isExploring ? 'exploring' : 'in a variation'} —{' '}
           <button type="button" onClick={explore.close}>
             <ChevronLeftIcon width={13} height={13} />
             back to game
           </button>
         </p>
       )}
-      {/* Desktop always shows the toggle/pill here (its diverged-line view
-          lives in the page's sidebar explorer column instead, replacing
-          MoveExplorer — GameReviewPage.tsx); mobile has no sidebar, so this
-          slot swaps to DivergedLinePanel itself once a line exists, same
-          split SessionBoardColumn already makes. */}
-      {!isDesktop && divergedLine.line ? (
-        <DivergedLinePanel
-          line={divergedLine.line}
-          stepIndex={divergedLine.stepIndex}
-          onSelectStep={divergedLine.previewStep}
-          onExit={explore.close}
-          autoplayIntervalMs={explore.autoplayIntervalMs}
-          onChangeAutoplayInterval={explore.onChangeAutoplayInterval}
-        />
-      ) : (
-        <ExplorePanel isOpen={isExploring} onOpen={explore.open} onClose={explore.close} status={exploreFeedback.status} evaluation={exploreFeedback.evaluation} />
-      )}
-      {isDesktop && isExploring && <ExploreNoteCard status={exploreFeedback.status} evaluation={exploreFeedback.evaluation} note={exploreFeedback.note} />}
+      <ExplorePanel isOpen={isExploring} onOpen={explore.open} onClose={explore.close} status={exploreFeedback.status} evaluation={exploreFeedback.evaluation} />
+      {isDesktop && showFeedback && <ExploreNoteCard status={exploreFeedback.status} evaluation={exploreFeedback.evaluation} note={exploreFeedback.note} />}
       {isDesktop && classifiedMoves.length > 0 && <GameEvalChart classifiedMoves={classifiedMoves} currentPly={ply} onSelect={onSelect} />}
     </div>
   );

@@ -12,9 +12,6 @@ import { isOpenAiVoiceAvailable } from '../../tts/openai-voice-available.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { CoachBoard } from '../board/CoachBoard.js';
 import { useMoveStepSounds } from '../../sounds/useMoveStepSounds.js';
-import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
-import { MoveExplorer } from '../board/MoveExplorer.js';
-import { DEFAULT_AUTOPLAY_INTERVAL_MS } from '../board/useLineAutoplay.js';
 import { ChatPane } from '../chat/ChatPane.js';
 import { DebugPanel } from '../chat/DebugPanel.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
@@ -25,6 +22,7 @@ import { UnlockPhraseModal } from '../settings/UnlockPhraseModal.js';
 import '../session/SessionPage.css';
 import { PuzzlePlanStrip } from './PuzzlePlanStrip.js';
 import { buildPuzzleKickoffFacts } from './puzzle-kickoff-facts.js';
+import { SessionMoveExplorer } from '../session/SessionMoveExplorer.js';
 import { usePuzzleSessionPageData } from './usePuzzleSessionPageData.js';
 import './PuzzleSessionPage.css';
 
@@ -35,7 +33,7 @@ import './PuzzleSessionPage.css';
  * each move on the board once the student has established it. Same three-column desktop
  * layout as session/SessionPage.tsx (move list | board | chat, same
  * SessionPage.css classes) and the same CoachBoard/ChatPane/
- * DivergedLinePanel/MoveExplorer components — this used to be a bespoke,
+ * the MoveExplorer component — this used to be a bespoke,
  * puzzle-solving-flavored page; it's now the same coached-session shape as
  * a real game, just against a known line instead of a played-out one (see
  * usePuzzleSessionPageData.ts for the move-attempt/peek mechanics).
@@ -51,7 +49,6 @@ function PuzzleSessionBody({ onSessionReset }: { onSessionReset: () => void }): 
   const navigate = useNavigate();
   const isSideBySide = useIsBoardSideBySide();
   const engineActivity = useEngineActivityIndicator();
-  const [autoplayIntervalMs, setAutoplayIntervalMs] = useState(DEFAULT_AUTOPLAY_INTERVAL_MS);
 
   const {
     createQuery,
@@ -64,7 +61,6 @@ function PuzzleSessionBody({ onSessionReset }: { onSessionReset: () => void }): 
     boardFen,
     orientation,
     sanMoves,
-    historyPositions,
     currentPly,
     viewedPly,
     selectHistoryPly,
@@ -264,28 +260,20 @@ function PuzzleSessionBody({ onSessionReset }: { onSessionReset: () => void }): 
           onAdvance={advanceToNextItem}
         />
         <div className={isSideBySide ? 'session-body desktop' : 'session-body'}>
-          {isSideBySide &&
-            (divergedLine.line ? (
-              <DivergedLinePanel
-                line={divergedLine.line}
-                stepIndex={divergedLine.stepIndex}
-                onSelectStep={divergedLine.previewStep}
-                onExit={divergedLine.exit}
-                autoplayIntervalMs={autoplayIntervalMs}
-                onChangeAutoplayInterval={setAutoplayIntervalMs}
+          {isSideBySide && (
+            <div className="session-move-explorer-column">
+              <SessionMoveExplorer
+                divergedLine={divergedLine}
+                classifiedMoves={[]}
+                currentPly={viewedPly ?? currentPly}
+                onSelectPly={(ply) => {
+                  divergedLine.exit();
+                  selectHistoryPly(ply);
+                }}
+                showNotes={false}
               />
-            ) : (
-              <div className="session-move-explorer-column">
-                <MoveExplorer
-                  sanMoves={sanMoves}
-                  classifiedMoves={[]}
-                  positions={historyPositions}
-                  currentPly={viewedPly ?? currentPly}
-                  onSelect={selectHistoryPly}
-                  showNotes={false}
-                />
-              </div>
-            ))}
+            </div>
+          )}
           {board}
           {chatPanel}
         </div>

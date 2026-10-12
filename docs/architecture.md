@@ -485,6 +485,19 @@ tactics, puzzle, master game.
   `/api/public/courses/*` (skip-auth at the proxy): the published course with
   note audio URLs and per-move evaluations, the audio files, and the
   catalogue of `public` courses.
+- **The move tree**: the move explorer draws a tree, not a line. The pure
+  tree code is `packages/chess-analysis/src/pgn-tree/` (`parsePgnTree` reads
+  a PGN with variations, the creator's sections and marks; `edit.ts` adds and
+  removes moves; a node made in the explorer has an `x` id and is never part
+  of the game, `gameLine`). The web side is `features/board/`: `explorerRows`
+  turns a tree into rows, `MoveExplorer` draws them, `move-tree-state.ts` and
+  `useMoveTree` hold a tree and the move on the board. Game Review keeps the
+  moves the student explores as variations in that tree (the game's own PGN
+  variations are in it too when its main line is the analysed game); the
+  coach and practice sessions do the same through `useDivergedLine`, which
+  also records the coach's `hypothetical_line`. Explored variations live as
+  long as the page; they are not saved. The studio's intake form and editor
+  show the course's tree with the same explorer.
 - **Learning**: the player (`features/courses/player/`) is a board view on
   Game Review's layout (explorer, board with eval bar and graph, coach
   pane; a phone stack with a bottom bar) through four stages: play through,

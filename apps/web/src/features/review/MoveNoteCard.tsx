@@ -32,6 +32,8 @@ export interface MoveNoteCardProps {
    * arrows land on is this card's sibling, not its descendant. */
   tacticSelection: TacticSelectionKey;
   onToggleTacticSelection: (key: Exclude<TacticSelectionKey, null>) => void;
+  /** The comment the PGN gave this move (a game imported with annotations). */
+  pgnComment?: string | null;
 }
 
 /** 'good'/'excellent' still get a badge and a border accent color (see
@@ -86,7 +88,8 @@ export function MoveNoteCard({
   onContinueWithCoach,
   isContinuingWithCoach,
   tacticSelection,
-  onToggleTacticSelection
+  onToggleTacticSelection,
+  pgnComment
 }: MoveNoteCardProps): ReactNode {
   const [expanded, setExpanded] = useState(false);
   const avatar = <CoachAvatar persona={coachPersona} size="chat" />;
@@ -133,6 +136,11 @@ export function MoveNoteCard({
           </>
         ) : (
           <p className="move-note-card__empty-text">No analysis for this move.</p>
+        )}
+        {pgnComment && (
+          <p className="move-note-card__pgn-comment">
+            <span className="move-note-card__pgn-label">From the PGN</span> {pgnComment}
+          </p>
         )}
       </div>
     </CoachCard>

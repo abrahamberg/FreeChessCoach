@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
-import { applySanSequence } from '@freechesscoach/chess-analysis';
 import { ChevronLeftIcon, UndoIcon } from '../../components/Icon.js';
 import type { HoverMove } from '../chat/MessageList.js';
 import { BoardActionBar } from '../board/BoardActionBar.js';
 import { CoachBoard, type BoardArrow, type BoardHighlight, type LocalMoveInfo } from '../board/CoachBoard.js';
-import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
 import { EvalBar } from '../board/EvalBar.js';
 import { ExploreNoteCard } from '../board/ExploreNoteCard.js';
 import { GameEvalChart } from '../board/GameEvalChart.js';
 import { MoveNavStrip } from '../board/MoveNavStrip.js';
+import { stripPath } from '../board/variation-path.js';
 import type { UseExploreFeedbackResult } from '../board/useExploreFeedback.js';
 import { useHintMoves } from '../board/useHintMoves.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
@@ -18,6 +17,7 @@ import type { BotGameOverInfo } from './botGameOver.js';
 import type { CommittedMoveRef } from './usePlayMoveSubmit.js';
 import { usePlayMoveSubmit } from './usePlayMoveSubmit.js';
 import { usePlayBotMoveSubmit } from './usePlayBotMoveSubmit.js';
+import { selectDivergedNode } from './selectDivergedNode.js';
 import type { useDivergedLine } from './useDivergedLine.js';
 import type { useSessionBoardState } from './useSessionBoardState.js';
 import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
@@ -36,8 +36,6 @@ export interface SessionBoardColumnProps {
   positions: { ply: number; fen: string }[];
   classifiedMoves: ClassifiedMoveDto[] | null | undefined;
   isDesktop: boolean;
-  autoplayIntervalMs: number;
-  onChangeAutoplayInterval: (ms: number) => void;
   sendMessage: (content: string) => void;
   onArrowsChange: (arrows: ArrowRef[]) => void;
   /** The move currently hovered/focused in the chat transcript (design.md
@@ -140,8 +138,6 @@ export function SessionBoardColumn({
   positions,
   classifiedMoves,
   isDesktop,
-  autoplayIntervalMs,
-  onChangeAutoplayInterval,
   sendMessage,
   onArrowsChange,
   hoverMove,
@@ -212,15 +208,14 @@ export function SessionBoardColumn({
       setPendingMove({ san, fen: moveFen });
       pendingTimeoutRef.current = setTimeout(() => {
         divergedLine.consumeExpectingMove();
-        const message = divergedLine.line
-          ? encodeDivergedLine(divergedLine.appendMove({ san, fen: moveFen, uci }, currentRealPosition), '')
-          : `[board_move] I played ${san} (position now: ${moveFen})`;
+        const extended = divergedLine.line ? divergedLine.appendMove({ san }, currentRealPosition) : null;
+        const message = extended ? encodeDivergedLine(extended, '') : `[board_move] I played ${san} (position now: ${moveFen})`;
         sendMessage(message);
         setPendingMove(null);
       }, UNDO_PILL_MS);
       return;
     }
-    divergedLine.appendMove({ san, fen: moveFen, uci }, currentRealPosition);
+    divergedLine.appendMove({ san }, currentRealPosition);
   }
 
   function handleUndoMove(): void {
@@ -241,16 +236,11 @@ export function SessionBoardColumn({
    * Send is pressed and only a single-move [position_context] naming the
    * real game's own move survives. Harmless in play_bot, which has no chat
    * to send it to — it's just the sandbox's own scratch line there, stepped
-   * through via the same undo-last-move pill every other mode gets.
-   * applySanSequence recomputes the uci here since onLocalMove's
-   * LocalMoveInfo carries none (CoachBoard's onUserMove is the only caller
-   * that already has it, from the chess.js move object itself). */
+   * through via the same undo-last-move pill every other mode gets. */
   function handleLocalMove(moveFen: string, move: LocalMoveInfo): void {
     boardState.previewMove(moveFen, move);
     if (boardState.mode !== 'peek') return;
-    const applied = applySanSequence(move.fenBefore, [move.san]).moves[0];
-    if (!applied) return;
-    divergedLine.appendMove({ san: move.san, fen: moveFen, uci: applied.uci }, currentRealPosition);
+    divergedLine.appendMove({ san: move.san }, currentRealPosition);
   }
 
   function peekAt(ply: number): void {
@@ -263,6 +253,8 @@ export function SessionBoardColumn({
   // "exploring" pill and its border tint don't linger once you're caught
   // back up to the actual game.
   const maxPly = sanMoves.length;
+  // On a variation the phone's strip follows it instead of the game.
+  const strip = divergedLine.currentId ? stripPath(divergedLine.tree, divergedLine.currentId) : null;
   function handleStepBack(): void {
     if (boardState.ply > 0) peekAt(boardState.ply - 1);
   }
@@ -368,23 +360,22 @@ export function SessionBoardColumn({
           (the sidebar's MoveExplorer has its own separate nav pills). */}
       {!isDesktop && (
         <MoveNavStrip
-          sanMoves={sanMoves}
+          sanMoves={strip?.sanMoves ?? sanMoves}
           classifiedMoves={classifiedMoves ?? []}
-          positions={positions}
-          ply={boardState.ply}
-          onSelect={peekAt}
-          onStepBack={handleStepBack}
-          onStepForward={handleStepForward}
+          positions={strip?.positions ?? positions}
+          ply={strip?.ply ?? boardState.ply}
+          variationFromIndex={strip?.variationFromIndex}
+          onSelect={strip ? (stripPly) => selectDivergedNode(divergedLine, peekAt, strip.nodeIds[stripPly - 1] ?? null) : peekAt}
+          onStepBack={strip ? undefined : handleStepBack}
+          onStepForward={strip ? undefined : handleStepForward}
         />
       )}
       {/* One shared bar (Explore toggle, Undo, Hint) for every live-position
           board — see BoardActionBar's own doc comment for why the old
           per-mode toolbars (bot-move-toolbar's `< >` included — that step
           navigation already lives in MoveExplorer/MoveNavStrip above) were
-          replaced with this single component. Mobile without an active
-          diverged line, or desktop unconditionally (its own DivergedLinePanel
-          lives in the sidebar, owned by the page, not this column). */}
-      {(isDesktop || !divergedLine.line) && !restricted && (
+          replaced with this single component. */}
+      {!restricted && (
         <BoardActionBar
           isExploring={isExploring}
           onOpenExplore={() => onOpenExplore?.()}
@@ -394,16 +385,6 @@ export function SessionBoardColumn({
           onUndo={onUndoMove}
           undoDisabled={undoDisabled}
           hint={showHint ? hintMoves : undefined}
-        />
-      )}
-      {!isDesktop && divergedLine.line && (
-        <DivergedLinePanel
-          line={divergedLine.line}
-          stepIndex={divergedLine.stepIndex}
-          onSelectStep={divergedLine.previewStep}
-          onExit={divergedLine.exit}
-          autoplayIntervalMs={autoplayIntervalMs}
-          onChangeAutoplayInterval={onChangeAutoplayInterval}
         />
       )}
       {/* Mobile gets the same note through MobileCoachSessionBody's own

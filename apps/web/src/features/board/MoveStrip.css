@@ -86,3 +86,13 @@
 .move-strip button[aria-current='true'].move-quality-forced {
   color: var(--color-on-primary);
 }
+
+/* Moves of a variation: italic, with a rule where the variation leaves the game. */
+.move-strip button.move-strip__chip--variation {
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
+.move-strip button.move-strip__chip--variation:not([aria-current='true']) {
+  border-bottom: 2px solid var(--color-border);
+}

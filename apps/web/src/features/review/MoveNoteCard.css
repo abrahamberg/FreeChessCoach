@@ -144,3 +144,18 @@
   font-size: var(--font-size-md);
   color: var(--color-text);
 }
+
+.move-note-card__pgn-comment {
+  margin: 8px 0 0;
+  padding-top: 6px;
+  border-top: 1px solid var(--color-border);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.move-note-card__pgn-label {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.03em;
+}

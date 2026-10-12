@@ -9,9 +9,7 @@ import { isOpenAiVoiceAvailable } from '../../tts/openai-voice-available.js';
 import { useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
-import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
 import { GameReportSummary } from '../board/GameReportSummary.js';
-import { MoveExplorer } from '../board/MoveExplorer.js';
 import { useExploreFeedback } from '../board/useExploreFeedback.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
 import { ChatPane } from '../chat/ChatPane.js';
@@ -28,6 +26,7 @@ import { UnlockPhraseModal } from '../settings/UnlockPhraseModal.js';
 import { buildKickoffFacts } from './kickoff-facts.js';
 import { MobileCoachSessionBody } from './MobileCoachSessionBody.js';
 import { SessionBoardColumn } from './SessionBoardColumn.js';
+import { SessionMoveExplorer } from './SessionMoveExplorer.js';
 import { ProgressPhaseBanner } from './ProgressPhaseBanner.js';
 import { SessionHeader } from './SessionHeader.js';
 import { useSessionPageData } from './useSessionPageData.js';
@@ -62,8 +61,6 @@ export function SessionPage(): ReactNode {
     divergedLine,
     currentRealPosition,
     peekAt,
-    autoplayIntervalMs,
-    setAutoplayIntervalMs,
     chat,
     unlockModal,
     setupRequiredModal,
@@ -187,8 +184,6 @@ export function SessionPage(): ReactNode {
       positions={positions}
       classifiedMoves={gameQuery.data?.classifiedMoves}
       isDesktop={isDesktop}
-      autoplayIntervalMs={autoplayIntervalMs}
-      onChangeAutoplayInterval={setAutoplayIntervalMs}
       sendMessage={(content) => void chat.sendMessage(content)}
       onArrowsChange={setBoardArrows}
       hoverMove={hoverMove}
@@ -304,28 +299,17 @@ export function SessionPage(): ReactNode {
       <ProgressPhaseBanner phase={phase} />
       {isSideBySide ? (
         <div className="session-body desktop">
-          {isDesktop &&
-            (divergedLine.line ? (
-              <DivergedLinePanel
-                line={divergedLine.line}
-                stepIndex={divergedLine.stepIndex}
-                onSelectStep={divergedLine.previewStep}
-                onExit={divergedLine.exit}
-                autoplayIntervalMs={autoplayIntervalMs}
-                onChangeAutoplayInterval={setAutoplayIntervalMs}
+          {isDesktop && (
+            <div className="session-move-explorer-column">
+              <SessionMoveExplorer
+                divergedLine={divergedLine}
+                classifiedMoves={gameQuery.data?.classifiedMoves ?? []}
+                currentPly={boardState.ply}
+                onSelectPly={peekAt}
               />
-            ) : (
-              <div className="session-move-explorer-column">
-                <MoveExplorer
-                  sanMoves={sanMoves}
-                  classifiedMoves={gameQuery.data?.classifiedMoves ?? []}
-                  positions={positions}
-                  currentPly={boardState.ply}
-                  onSelect={peekAt}
-                />
-                {gameQuery.data?.gameReport && <GameReportSummary report={gameQuery.data.gameReport} userColor={orientation} />}
-              </div>
-            ))}
+              {gameQuery.data?.gameReport && <GameReportSummary report={gameQuery.data.gameReport} userColor={orientation} />}
+            </div>
+          )}
           {board}
           {chatPanel}
         </div>
