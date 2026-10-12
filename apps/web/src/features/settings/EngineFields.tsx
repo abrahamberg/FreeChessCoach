@@ -1,6 +1,7 @@
 import type { UserProfile } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
 import { useUpdateProfile } from '../../hooks/useProfile.js';
+import { BrowserEngineDepthSelect } from './BrowserEngineDepthSelect.js';
 import { EngineModeSelect } from './EngineModeSelect.js';
 import { EnginePingTest } from './EnginePingTest.js';
 
@@ -14,6 +15,7 @@ export function EngineFields({ profile }: { profile: UserProfile }): ReactNode {
         onChange={(engineMode) => update.mutate({ engineMode })}
         chessApiPausedUntil={profile.chessApiPausedUntil}
       />
+      {profile.engineMode === 'browser' && <BrowserEngineDepthSelect />}
       <EnginePingTest engineMode={profile.engineMode} />
     </>
   );

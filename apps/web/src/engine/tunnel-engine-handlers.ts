@@ -2,16 +2,27 @@ import { computePositionFeatures } from '@freechesscoach/chess-analysis';
 import type { EngineTunnelPayload, FetchTunnelPayload } from '@freechesscoach/shared';
 import { Chess } from 'chess.js';
 import { getSharedEngineWorker, getSharedLiteEngineWorker } from './shared-engine-worker-instance.js';
+import { getBrowserEngineDepth } from './browser-engine-depth.js';
 import type { RawEngineLine, SharedEngineWorker } from './shared-engine-worker.js';
 
 /** Answers the server's `engine` tunnel requests with the same
  * SharedEngineWorker the Explore panel uses: `lite` for the lite supplement
  * (every engine mode), `main` for Browser mode's own engine. */
 export function runEngineRequest(payload: EngineTunnelPayload): Promise<unknown> {
+  const depth = effectiveDepth(payload);
   if (payload.subKind === 'analyze-game') {
-    return analyzeGameForTunnel(payload.fens, payload.depth, payload.multiPv, payload.engine);
+    return analyzeGameForTunnel(payload.fens, depth, payload.multiPv, payload.engine);
   }
-  return analyzePositionForTunnel(payload.fen, payload.depth, payload.multiPv, payload.engine, payload.movetimeMs);
+  return analyzePositionForTunnel(payload.fen, depth, payload.multiPv, payload.engine, payload.movetimeMs);
+}
+
+/** The user's per-device depth for the full-net engine overrides the
+ * server's. Lite requests (fixed hint depths) and time-capped requests (a
+ * live bot move someone is waiting on) are left alone. */
+function effectiveDepth(payload: EngineTunnelPayload): number {
+  const isMain = payload.engine !== 'lite';
+  const timeCapped = payload.subKind === 'analyze-position' && payload.movetimeMs !== undefined;
+  return (isMain && !timeCapped && getBrowserEngineDepth()) || payload.depth;
 }
 
 /** Answers a `fetch` tunnel request (chess-api.com in chess_api mode). */
