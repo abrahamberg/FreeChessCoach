@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
-import { resolveTestStockfishPath } from '../test/helpers/stockfish-path.js';
+import { fakeStockfish } from '../test/helpers/fake-stockfish.js';
 import { EnginePool } from './engine-pool.js';
 import { UciEngine } from './uci.js';
 
-const STOCKFISH_PATH = resolveTestStockfishPath();
+const STOCKFISH_PATH = fakeStockfish();
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 describe('EnginePool', () => {

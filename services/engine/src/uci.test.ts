@@ -2,10 +2,10 @@ import { chmodSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
-import { resolveTestStockfishPath } from '../test/helpers/stockfish-path.js';
+import { fakeStockfish } from '../test/helpers/fake-stockfish.js';
 import { pvUciToSan, UciEngine } from './uci.js';
 
-const STOCKFISH_PATH = resolveTestStockfishPath();
+const STOCKFISH_PATH = fakeStockfish();
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const MATE_IN_ONE_FEN = 'k7/8/1K6/8/8/8/8/7R w - - 0 1';
 
