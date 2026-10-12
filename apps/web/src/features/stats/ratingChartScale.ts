@@ -77,3 +77,27 @@ export function xTickTimes(minTime: number, maxTime: number, maxTicks = 6): numb
   const step = (maxTime - minTime) / (maxTicks - 1);
   return Array.from({ length: maxTicks }, (_, tick) => (tick === maxTicks - 1 ? maxTime : minTime + tick * step));
 }
+
+/** From this span on the chart drops the per-game dots and shows only the daily trend. */
+export const DOTS_MAX_SPAN_MS = 31 * 24 * 60 * 60 * 1000;
+
+export interface DailyAverage {
+  /** Mean time of that day's games, so it never falls outside the span the chart is drawn over. */
+  time: number;
+  rating: number;
+}
+
+/** One point per calendar day: the mean estimate of that day's games, oldest first. */
+export function dailyAverages(points: { playedAt: string; estimatedRating: number }[]): DailyAverage[] {
+  const days = new Map<string, { time: number; sum: number; count: number }>();
+  for (const point of points) {
+    const date = new Date(point.playedAt);
+    const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    const day = days.get(key) ?? { time: 0, sum: 0, count: 0 };
+    day.time += date.getTime();
+    day.sum += point.estimatedRating;
+    day.count += 1;
+    days.set(key, day);
+  }
+  return [...days.values()].map((day) => ({ time: day.time / day.count, rating: day.sum / day.count })).sort((a, b) => a.time - b.time);
+}

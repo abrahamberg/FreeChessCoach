@@ -4,6 +4,8 @@ import {
   CHART_HEIGHT,
   CHART_MARGIN,
   CHART_WIDTH,
+  DOTS_MAX_SPAN_MS,
+  dailyAverages,
   PLOT_HEIGHT,
   plotWidthFor,
   ratingDomain,
@@ -29,17 +31,12 @@ function formatTick(time: number, spanMs: number): string {
   return new Date(time).toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
 }
 
-/** Thousands of points at full size smear into a solid band. */
-function pointRadius(pointCount: number): number {
-  return pointCount > 300 ? 1.6 : 3;
-}
-
-/** docs/algorith.md §8's estimated-rating trend: one point per game, placed
- * on the date it was actually played and connected into a line — deliberately
- * not a day/period average (a day with several games gets several points). The
- * Stats page's existing range/speed toggles already decide which games feed
- * this, so there's no filter state here. Presentational only; axis/scale
- * math lives in ratingChartScale.ts. */
+/** docs/algorith.md §8's estimated-rating trend. Under 31 days it shows one dot
+ * per game, placed on the date it was played, plus a line through each day's
+ * average. Over a longer span the dots would smear into a band, so only the
+ * daily-average line is drawn. The Stats page's existing range/speed toggles
+ * already decide which games feed this, so there's no filter state here.
+ * Presentational only; axis/scale math lives in ratingChartScale.ts. */
 export function RatingStatsSection({ stats }: RatingStatsSectionProps): ReactNode {
   const { points } = stats;
 
@@ -83,7 +80,9 @@ function useElementWidth<T extends HTMLElement>(): [RefObject<T | null>, number]
 function RatingChart({ points }: { points: RatingStats['points'] }): ReactNode {
   const [containerRef, chartWidth] = useElementWidth<HTMLDivElement>();
   const plotWidth = plotWidthFor(chartWidth);
-  const [domainMin, domainMax] = ratingDomain(points.map((point) => point.estimatedRating));
+  const averages = dailyAverages(points);
+  const showDots = Date.parse(points.at(-1)!.playedAt) - Date.parse(points[0]!.playedAt) < DOTS_MAX_SPAN_MS;
+  const [domainMin, domainMax] = ratingDomain(showDots ? points.map((point) => point.estimatedRating) : averages.map((day) => day.rating));
   const yTicks = ratingTicks(domainMin, domainMax);
   const plotDomainMin = yTicks[0]!;
   const plotDomainMax = yTicks.at(-1)!;
@@ -92,7 +91,7 @@ function RatingChart({ points }: { points: RatingStats['points'] }): ReactNode {
   const minTime = Math.min(...times);
   const maxTime = Math.max(...times);
   const xFor = (time: number) => xForTime(time, minTime, maxTime, plotWidth);
-  const linePoints = points.map((point, index) => `${xFor(times[index]!)},${yFor(point.estimatedRating)}`).join(' ');
+  const linePoints = averages.map((day) => `${xFor(day.time)},${yFor(day.rating)}`).join(' ');
 
   return (
     <div ref={containerRef} className="rating-chart-container">
@@ -121,19 +120,20 @@ function RatingChart({ points }: { points: RatingStats['points'] }): ReactNode {
 
         <rect className="rating-chart__border" x={CHART_MARGIN.left} y={CHART_MARGIN.top} width={plotWidth} height={PLOT_HEIGHT} fill="none" />
 
-        {points.length > 1 && <polyline className="rating-chart__line" fill="none" points={linePoints} />}
+        {averages.length > 1 && <polyline className="rating-chart__line" fill="none" points={linePoints} />}
 
-        {points.map((point, index) => (
-          <circle
-            key={`${point.playedAt}-${index}`}
-            className="rating-chart__point"
-            cx={xFor(times[index]!)}
-            cy={yFor(point.estimatedRating)}
-            r={pointRadius(points.length)}
-          >
-            <title>{`${formatDate(point.playedAt)}: ${point.estimatedRating}`}</title>
-          </circle>
-        ))}
+        {showDots &&
+          points.map((point, index) => (
+            <circle
+              key={`${point.playedAt}-${index}`}
+              className="rating-chart__point"
+              cx={xFor(times[index]!)}
+              cy={yFor(point.estimatedRating)}
+              r={3}
+            >
+              <title>{`${formatDate(point.playedAt)}: ${point.estimatedRating}`}</title>
+            </circle>
+          ))}
 
         {xTickTimes(minTime, maxTime).map((time) => (
           <text

@@ -204,7 +204,7 @@
 }
 
 .rating-chart__line {
-  stroke: var(--color-primary);
+  stroke: var(--color-warning);
   stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;

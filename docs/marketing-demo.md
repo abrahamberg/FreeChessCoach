@@ -150,3 +150,5 @@ The Stats rating chart places points by the date each game was played
 (`ratingChartScale.ts`'s `xForTime`), not by their position in the list. Once the
 library cap archives old games into one point per week, an evenly spaced axis
 squeezed a whole year of climbing into the first few percent of the chart.
+Under 31 days it draws a dot per game and a line through each day's
+average; from 31 days on it draws only the daily-average line (`dailyAverages`).
