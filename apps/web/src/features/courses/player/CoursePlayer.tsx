@@ -5,6 +5,7 @@ import type { OverflowMenuItem } from '../../../components/OverflowMenu.js';
 import { useConfirmDialog } from '../../../hooks/useConfirmDialog.js';
 import { useIsDesktop } from '../../../hooks/useIsDesktop.js';
 import { CourseDrill } from './CourseDrill.js';
+import { placeLabel } from './drill-line.js';
 import { CourseHeader } from './CourseHeader.js';
 import type { CourseProgressStore } from './course-progress.js';
 import type { CourseEvals } from './course-move-list.js';
@@ -36,7 +37,7 @@ export interface CoursePlayerProps {
 
 const NO_EVALS: CourseEvals = {};
 
-const START: CourseEnrollmentPlace = { episode: 0, step: 0, practice: {} };
+const START: CourseEnrollmentPlace = { episode: 0, step: 0, practice: {}, run: null, where: null };
 
 /** docs/courses.md §9, §11: play through (the clip when linked, then each
  * episode on the board, move by move with the coach's notes, arrows and
@@ -80,6 +81,7 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
   const open = (next: CourseStage): void => {
     touch();
     audio.stop();
+    setPlace((prev) => (prev.run ? { ...prev, run: null } : prev));
     setStage(next);
   };
   const finish = (finished: CourseStage): void => {
@@ -140,7 +142,9 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
           start={place}
           onPlace={(episode, step) => {
             touch();
-            setPlace((prev) => (prev.episode === episode && prev.step === step ? prev : { ...prev, episode, step }));
+            setPlace((prev) =>
+              prev.episode === episode && prev.step === step ? prev : { ...prev, episode, step, where: placeLabel(document, document.episodes[episode]?.id, step) ?? prev.where }
+            );
           }}
           onFinished={() => {
             finish('play_through');
@@ -159,6 +163,16 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
             onKnownMoves={(practice) => {
               touch();
               setPlace((prev) => ({ ...prev, practice }));
+            }}
+            startRun={place.run}
+            onRun={(run) => {
+              // Before the saved place has loaded, the run's first report must not stand in for it.
+              if (!appliedRef.current) return;
+              touch();
+              setPlace((prev) => {
+                const where = run ? placeLabel(document, run.episode, run.step) : prev.where;
+                return prev.run?.episode === run?.episode && prev.run?.step === run?.step ? prev : { ...prev, run, where };
+              });
             }}
             onStageDone={finish}
             onNextStage={openNext}

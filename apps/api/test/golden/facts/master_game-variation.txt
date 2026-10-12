@@ -1,0 +1,137 @@
+Learner side: White
+
+Lines:
+l1 "Line A" | opening: Philidor Defense | leaves book at n6
+    end position: the e-file is half-open for black; the f-file is half-open for black; white has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e7
+l2 "A quieter defence" | opening: Philidor Defense | leaves book at n6
+    end position: the d-file is half-open for black; the e-file is half-open for white; white has doubled pawns on the d-file; white has a queenside pawn majority; black has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
+
+Moves:
+n1 1.e4 (White, Line A) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e2 to e4
+    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…e5 (Black, Line A) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e7 to e5
+    alternatives: c5: The position is roughly equal; c6: The position is roughly equal
+n3 2.Nf3 (White, Line A) | book
+    book: in book (King's Knight Opening)
+    board: moves the knight from g1 to f3
+    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+n4 2…d6 (Black, Line A) | book
+    book: in book (Philidor Defense)
+    board: moves the pawn from d7 to d6
+    alternatives: Nc6: The position is roughly equal; Nf6: The position is roughly equal
+n5 3.Bc4 (White, Line A) | book
+    book: in book (Philidor Defense)
+    board: moves the bishop from f1 to c4
+    alternatives: d4: White is slightly better; a4: The position is roughly equal
+n6 3…Bg4 (Black, Line A) | inaccuracy | before: The position is roughly equal → after: White is slightly better
+    best instead: Nf6; after Nf6 Nc3 Be7 d4 exd4 Nxd4, material is level
+    why Nf6 is better: moves the knight from g8 to f6
+    board: moves the bishop from c8 to g4 | attacks the knight on f3, which is pinned to the queen on d1 by the bishop on g4
+    alternatives: Nf6: The position is roughly equal; Be7: The position is roughly equal; Nc6: The position is roughly equal
+n7 4.Nc3 (White, Line A) | inaccuracy | before: White is slightly better → after: The position is roughly equal
+    best instead: d4; after d4 exd4 c3 Qe7 O-O, Black is a pawn up
+    why d4 is better: moves the pawn from d2 to d4
+    board: moves the knight from b1 to c3
+    alternatives: d4: White is slightly better; h3: White is slightly better; O-O: White is slightly better
+    flags: critical
+n8 4…g6 (Black, Line A) | inaccuracy | before: The position is roughly equal → after: White is slightly better
+    best instead: c5; after c5 h3 Be6 Nd5 Nf6 d3, material is level
+    why c5 is better: moves the pawn from c7 to c5
+    board: moves the pawn from g7 to g6
+    alternatives: c5: The position is roughly equal; Nf6: The position is roughly equal; Nc6: White is slightly better
+n9 5.Nxe5 (White, Line A) | brilliant | before: White is slightly better → after: White is better
+    board: moves the knight from f3 to e5 | captures the pawn on e5 | attacks the bishop on g4 | leaves the white knight on e5 hanging
+    alternatives: d4: White is slightly better; h3: White is slightly better; d3: White is slightly better
+    flags: critical
+n10 5…Bxd1 (Black, Line A) | blunder | before: White is better → after: White has a forced mate in 2
+    best instead: dxe5; after dxe5 Qxg4 Nc6 Qf3 Qd7 a4, White has a bishop and a pawn for a knight
+    why dxe5 is better: moves the pawn from d6 to e5 | captures the knight on e5 | leaves the black bishop on g4 hanging
+    board: moves the bishop from g4 to d1 | captures the queen on d1
+    tactics: They let you force mate through a mating net two moves away with Bxf7+ — closes the net — every answer runs into mate.
+    alternatives: dxe5: White is better; Be6: White is better; d5: White is better
+    tempting threat: Bh5? Black's Bh5 moves the bishop from g4 to h5 | attacks the queen on d1, which is trapped: every square it can reach loses it. White answers Bxf7+: moves the bishop from c4 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke7 | attacks the knight on g8. Then Ke7 Nd5#. Over the line White takes a pawn; at the end White is two pawns up (White has a forced mate in 2).
+    tempting threat: Bf3? Black's Bf3 moves the bishop from g4 to f3 | attacks the queen on d1 | leaves the black bishop on f3 hanging. White answers Bxf7+: moves the bishop from c4 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke7 | attacks the knight on g8. Then Ke7 Nd5#. Over the line White takes a pawn; at the end White is two pawns up (White has a forced mate in 2).
+    tempting threat: Be2? Black's Be2 moves the bishop from g4 to e2 | attacks the bishop on c4 | attacks the queen on d1 | leaves the black bishop on e2 hanging. White answers Bxf7+: moves the bishop from c4 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke7 | attacks the knight on g8. Then Ke7 Nd5#. Over the line White takes a pawn; at the end White is two pawns up (White has a forced mate in 2).
+    flags: critical
+n11 6.Bxf7+ (White, Line A) | great | before: White has a forced mate in 2 → after: White has a forced mate in 1
+    board: moves the bishop from c4 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke7 | attacks the knight on g8
+    tactics: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
+    alternatives: Nxf7: Black is better; Nxd1: Black is much better
+    tempting check: Bb5+? White's Bb5+ moves the bishop from c4 to b5 | gives check | the check can be answered: block with Nd7, Nc6, Qd7, c6; the checking piece cannot be taken; move the king with Ke7. Black answers c6: moves the pawn from c7 to c6 | blocks the check from the bishop on b5 | attacks the bishop on b5 | leaves the black bishop on d1 hanging. Then Bc4 dxe5 Nxd1. Over the line White takes a bishop; Black takes a knight; at the end White has a bishop and a pawn for a queen and a knight (Black is much better).
+    tempting capture: Kxd1? White's Kxd1 moves the king from e1 to d1 | captures the bishop on d1 | leaves the white knight on e5 hanging. Black answers dxe5: moves the pawn from d6 to e5 | captures the knight on e5. Then d3 Bg7 a4. Over the line White takes a bishop; Black takes a knight; at the end White has a bishop and a pawn for a queen and a knight (Black is much better).
+    flags: quiz-eligible, critical
+n12 6…Ke7 (Black, Line A) | forced | before: White has a forced mate in 1 → after: White has a forced mate in 1
+    board: moves the king from e8 to e7 | attacks the bishop on f7 | leaves the black bishop on d1 hanging
+n13 7.Nd5# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
+    board: moves the knight from c3 to d5 | gives checkmate | why it is mate: the king on e7 is checked by the knight on d5; d6, d8, f8 hold its own pieces; d7 is covered by the knight on e5; e6 and e8 are covered by the bishop on f7; f6 is covered by the knight on d5; the bishop on f7 is guarded by the knight on e5
+    tactics: You forced mate.
+    alternatives: d4: Black is much better; Nxd1: Black is much better
+    flags: quiz-eligible, critical
+n14 4…Nf6 (Black, A quieter defence) | good | before: The position is roughly equal → after: White is slightly better
+    board: moves the knight from g8 to f6
+    alternatives: c5: The position is roughly equal; Nc6: White is slightly better
+n15 5.Ng5 (White, A quieter defence) | blunder | before: White is slightly better → after: Black is much better
+    best instead: h3; after h3 Be6 Bxe6 fxe6 d4, material is level
+    why h3 is better: moves the pawn from h2 to h3 | attacks the bishop on g4
+    board: moves the knight from f3 to g5
+    tactics: You let them win a queen through a free piece with Bxd1 — captures the queen on d1.
+    alternatives: h3: White is slightly better; d4: The position is roughly equal; d3: The position is roughly equal
+    flags: critical
+n16 5…d5 (Black, A quieter defence) | miss | before: Black is much better → after: The position is roughly equal
+    best instead: Bxd1; after Bxd1 Nxf7 Qe7 Kxd1 d5, White has a bishop and a pawn for a queen
+    why Bxd1 is better: moves the bishop from g4 to d1 | captures the queen on d1
+    board: moves the pawn from d6 to d5 | attacks the bishop on c4
+    tactics: They missed a chance to win a queen through a free piece with Bxd1 — captures the queen on d1.
+    alternatives: Bxd1: Black is much better; Bh5: The position is roughly equal
+    tempting capture: Nxe4? Black's Nxe4 moves the knight from f6 to e4 | captures the pawn on e4 | attacks the knight on g5 | attacks the knight on c3 | leaves the black knight on e4 hanging | leaves the black bishop on g4 hanging. White answers Bxf7+: moves the bishop from c4 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke7, Kd7. Then Ke7 Nd5+ Kd7. Over the line Black takes a pawn; White takes a pawn; at the end material is level (White is winning).
+    tempting threat: b5? Black's b5 moves the pawn from b7 to b5 | attacks the bishop on c4 | leaves the black pawn on b5 hanging. White answers Bxf7+: moves the bishop from c4 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke7, Kd7. Then Kd7 f3 h6. Over the line White takes a pawn; at the end White is a pawn up (White is better).
+    tempting threat: h6? Black's h6 moves the pawn from h7 to h6 | attacks the knight on g5. White answers Bxf7+: moves the bishop from c4 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke7, Kd7. Then Ke7 Nd5+. Over the line White takes a pawn; at the end White is a pawn up (White is slightly better).
+    flags: critical
+n17 6.exd5 (White, A quieter defence) | blunder | before: The position is roughly equal → after: Black is much better
+    best instead: Bb5+; after Bb5+ Nc6 f3 Bh5 exd5, White is a pawn up
+    why Bb5+ is better: moves the bishop from c4 to b5 | gives check | the check can be answered: block with Nbd7, Nc6, Qd7, c6, Nfd7, Bd7; the checking piece cannot be taken; move the king with Ke7
+    board: moves the pawn from e4 to d5 | captures the pawn on d5
+    tactics: You let them win a queen through a free piece with Bxd1 — captures the queen on d1.
+    alternatives: Bb5+: The position is roughly equal; Be2: Black is slightly better; f3: Black is slightly better
+    flags: critical
+
+REEL CANDIDATES
+  r1 mate n7–n13, climax n13 [highlight, puzzle, promo]
+  r2 brilliant n3–n13, climax n9 [highlight, promo]
+  r3 brilliant n5–n13, climax n11 [highlight, puzzle, promo]
+  r4 swing n3–n17, climax n15 [highlight, promo]
+  r5 swing n4–n13, climax n10 [highlight, promo]
+
+PLAN
+  e1 intro n1–n1
+  e2 moves n1–n13
+  e3 moment n7–n7
+  e4 moment n9–n9
+  e5 moment n10–n10
+  e6 moment n11–n11 answer=n11
+  e7 moment n13–n13 answer=n13
+  e8 variation n14–n17
+
+REVIEW NOTES
+  l1
+    n1 1.e4: Theory — Philidor Defense (C41)
+    n2 1…e5: Theory — Philidor Defense (C41)
+    n3 2.Nf3: Theory — Philidor Defense (C41)
+    n4 2…d6: Theory — Philidor Defense (C41)
+    n5 3.Bc4: Theory — Philidor Defense (C41)
+    n10 5…Bxd1: Missed dxe5, winning material on e5; They let you force mate through a mating net two moves away with Bxf7+ — closes the net — every answer runs into mate.; Won a queen, but it allowed mate.
+    n11 6.Bxf7+: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
+    n13 7.Nd5#: You forced mate.
+  l2
+    n1 1.e4: Theory — Philidor Defense (C41)
+    n2 1…e5: Theory — Philidor Defense (C41)
+    n3 2.Nf3: Theory — Philidor Defense (C41)
+    n4 2…d6: Theory — Philidor Defense (C41)
+    n5 3.Bc4: Theory — Philidor Defense (C41)
+    n15 5.Ng5: Leaves the queen on d1 where it can be won; You let them win a queen through a free piece with Bxd1 — captures the queen on d1.; Won a pawn and a pawn, but it cost the queen.
+    n16 5…d5: Missed Bxd1, winning material on d1; Leaves the pawn on d5 where it can be won; They missed a chance to win a queen through a free piece with Bxd1 — captures the queen on d1.; Would have won the queen, giving back a pawn, a pawn and a knight.
+    n17 6.exd5: You let them win a queen through a free piece with Bxd1 — captures the queen on d1.; Won a pawn and a pawn, but it cost the queen.

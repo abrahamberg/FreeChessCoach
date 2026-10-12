@@ -4,7 +4,7 @@ import { VolumeOffIcon, VolumeOnIcon } from '../../../components/Icon.js';
 import { Modal } from '../../../components/Modal.js';
 import { personaPlaybackRate } from '../../../tts/persona-voices.js';
 import { audioLengths, ClipPlayer } from './clip-player.js';
-import { loadClipAssets, type ClipAssets } from './draw-frame.js';
+import { loadClipAssets, SITE_NAME, type ClipAssets } from './draw-frame.js';
 import { recordClip, type RecordedClip } from './record-clip.js';
 import { clipSoundBuffers, type ClipSound } from './clip-sounds.js';
 import { buildReelTimeline } from './reel-timeline.js';
@@ -116,6 +116,7 @@ export function ClipPreview({ document, slug, evals, onClose }: ClipPreviewProps
             assets={assets}
             playbackRate={personaPlaybackRate(document.coachPersona, backend)}
             sounds={sounds}
+            evals={evals}
           />
         )}
       </div>
@@ -132,8 +133,9 @@ function ClipStage(props: {
   assets: ClipAssets;
   playbackRate: number;
   sounds: { evals: CourseEvals; buffers: Record<ClipSound, AudioBuffer> } | null;
+  evals: CourseEvals;
 }): ReactNode {
-  const { document, product, context, buffers, assets, playbackRate, sounds } = props;
+  const { document, product, context, buffers, assets, playbackRate, sounds, evals } = props;
   const format = PRODUCT_FORMAT[product];
   const canvas = useRef<HTMLCanvasElement>(null);
   const player = useRef<ClipPlayer | null>(null);
@@ -145,9 +147,9 @@ function ClipStage(props: {
   const [error, setError] = useState<string | null>(null);
   const timeline = useMemo(() => {
     const lengths = audioLengths(buffers, playbackRate);
-    const options = { document, audioMs: (key: string) => lengths.get(key), sounds: sounds && { evals: sounds.evals } };
+    const options = { document, audioMs: (key: string) => lengths.get(key), sounds: sounds && { evals: sounds.evals }, evals };
     return product === 'reel' ? buildReelTimeline(options) : buildVideoTimeline(options);
-  }, [document, product, buffers, playbackRate, sounds]);
+  }, [document, product, buffers, playbackRate, sounds, evals]);
   const size = CLIP_SIZES[format];
 
   useEffect(() => {
@@ -164,7 +166,7 @@ function ClipStage(props: {
         persona: document.coachPersona,
         coachName: COACH_PERSONA_INFO[document.coachPersona].label,
         orientation: document.learnerSide,
-        link: `${window.location.host}/learn/${props.slug}`,
+        link: `${SITE_NAME}/learn/${props.slug}`,
         assets
       },
       onTime: setMs,

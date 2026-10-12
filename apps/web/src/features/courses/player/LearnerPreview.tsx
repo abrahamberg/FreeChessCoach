@@ -4,6 +4,7 @@ import { personaPlaybackRate } from '../../../tts/persona-voices.js';
 import { noteAudioFile } from '../clip/note-audio-file.js';
 import { openCourseAudioCache, prepareCourseAudio } from '../clip/prepare-audio.js';
 import { COURSE_VOICE_LABELS, useCourseVoice, type CourseVoice } from '../clip/useCourseVoice.js';
+import type { CourseEvals } from './course-move-list.js';
 import { CoursePlayer } from './CoursePlayer.js';
 
 const cache = openCourseAudioCache();
@@ -11,8 +12,9 @@ const cache = openCourseAudioCache();
 /** Task 82.2, "Preview as learner": the public player on the draft, unsaved
  * edits included, nothing published. Each note is voiced when first played,
  * from the browser's cache (81.1) when it already has it, with the coach's
- * playback rate as the published file will have. */
-export function LearnerPreview({ document, onClose }: { document: CourseDocument; onClose: () => void }): ReactNode {
+ * playback rate as the published file will have. `evals`: the engine's
+ * evaluations, so the preview has the bar and the badges the learner gets. */
+export function LearnerPreview({ document, evals, onClose }: { document: CourseDocument; evals: CourseEvals; onClose: () => void }): ReactNode {
   const { voice, setVoice, voices } = useCourseVoice();
   const urls = useRef(new Map<string, string>());
 
@@ -70,6 +72,7 @@ export function LearnerPreview({ document, onClose }: { document: CourseDocument
       <CoursePlayer
         document={document}
         noteAudio={source}
+        evals={evals}
         notice={<p className="course-player__notice">This is the draft as learners will see it once published. Notes are voiced the first time they play.</p>}
       />
     </div>

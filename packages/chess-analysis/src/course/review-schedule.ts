@@ -81,8 +81,36 @@ export interface CourseDrill {
   episodes: CourseDrillEpisode[];
 }
 
+type DrillSpan = Pick<CourseDocument['episodes'][number], 'id' | 'role' | 'startNodeId' | 'endNodeId' | 'drillNodeIds'>;
+
 /**
- * The drill for a course: each episode with drill moves, walked from its
+ * A line's episodes as one run, from the first one's first move to the last
+ * one's last: a trap's setup, its one answer and its punishment are one
+ * sequence to the learner, and played as three they were nine loops of
+ * practice, three of them a single knight move (the owner, 2026-10-12).
+ * Episodes join while they are in the same chapter and each goes further
+ * down the same line; a sideline, or a line that goes back (a trap's safety
+ * episode), starts a run of its own. The run keeps the first episode's id.
+ */
+function lineRuns(document: CourseDocument): DrillSpan[] {
+  const chapterOf = (id: string): string | null => document.chapters.find((chapter) => chapter.episodeIds.includes(id))?.id ?? null;
+  const runs: (DrillSpan & { chapter: string | null })[] = [];
+  for (const episode of document.episodes.filter((each) => each.drillNodeIds.length > 0)) {
+    const chapter = chapterOf(episode.id);
+    const last = runs[runs.length - 1];
+    const joined = last && chapter !== null && last.chapter === chapter ? courseNodePath(document.nodes, last.startNodeId, episode.endNodeId) : null;
+    // Further down the same line: the episode starts after the run's end.
+    if (last && joined?.includes(last.endNodeId) && joined.indexOf(episode.startNodeId) > joined.indexOf(last.endNodeId)) {
+      last.endNodeId = episode.endNodeId;
+      last.drillNodeIds = [...last.drillNodeIds, ...episode.drillNodeIds];
+    } else runs.push({ id: episode.id, role: episode.role, startNodeId: episode.startNodeId, endNodeId: episode.endNodeId, drillNodeIds: [...episode.drillNodeIds], chapter });
+  }
+  return runs;
+}
+
+/**
+ * The drill for a course: each line's episodes with drill moves as one run
+ * (`lineRuns`; tactics and a master game keep one run an episode), walked from its
  * first move. With `sides: 'learner'` the episode's drill moves on the
  * learner's side are asked (for tactics, each example's move whichever side
  * plays it); with `'both'` every move is. The rest are played automatically. A
@@ -106,7 +134,7 @@ export function buildCourseDrill(
     return state !== undefined && (state.step === 0 || isCourseReviewDue(state, today));
   };
 
-  const drilled = document.episodes
+  const drilled = (mode === 'learner_side' ? lineRuns(document) : document.episodes)
     .filter((episode) => episode.drillNodeIds.length > 0)
     .map((episode) => {
       const drillIds = new Set(episode.drillNodeIds);

@@ -41,6 +41,12 @@ export async function insert(db: Kysely<Database>, values: NewCourse): Promise<C
     .executeTakeFirstOrThrow();
 }
 
+/** Every slug that starts with `base`, any owner and status: a new course's slug must miss them all. */
+export async function slugsStartingWith(db: Kysely<Database>, base: string): Promise<string[]> {
+  const rows = await db.selectFrom('courses').select('slug').where('slug', 'like', `${base}%`).execute();
+  return rows.map((row) => row.slug);
+}
+
 export function findByIdForOwner(db: Kysely<Database>, id: string, ownerId: string): Promise<CourseRow | undefined> {
   return db.selectFrom('courses').selectAll().where('id', '=', id).where('ownerId', '=', ownerId).executeTakeFirst();
 }

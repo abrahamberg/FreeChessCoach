@@ -71,6 +71,7 @@ export function withProducts(inputs: GenerationInputs, outline: CourseOutline): 
  * move silent. */
 export function withKeyMoves(inputs: GenerationInputs, outline: CourseOutline): CourseOutline {
   const sans = new Map(inputs.document.nodes.map((node) => [node.id, node.san]));
+  const creator = new Map(inputs.dossier.nodes.map((node) => [node.nodeId, node]));
   const video = courseVideos(inputs.document).video;
   return {
     ...outline,
@@ -78,7 +79,7 @@ export function withKeyMoves(inputs: GenerationInputs, outline: CourseOutline): 
       ...chapter,
       episodes: chapter.episodes.map((episode) => {
         const path = courseNodePath(inputs.document.nodes, episode.startNodeId, episode.endNodeId) ?? [];
-        const keys = episodeKeyMoves({ role: episode.role, path, answerNodeId: episode.answerNodeId, sans, skeleton: inputs.skeleton });
+        const keys = episodeKeyMoves({ role: episode.role, path, answerNodeId: episode.answerNodeId, sans, skeleton: inputs.skeleton, creator });
         const least = episode.role === 'hook' ? 1 : 0;
         return {
           ...episode,

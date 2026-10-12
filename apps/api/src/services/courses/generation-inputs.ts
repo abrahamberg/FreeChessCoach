@@ -34,7 +34,8 @@ export interface GenerationInputs {
   context: CoursePromptContext;
 }
 
-/** The dossier is built once and kept on the course (0014_course_dossier.ts). */
+/** The dossier is built once and kept on the course (0014_course_dossier.ts);
+ * one from before a fact the film needs was kept is built again. */
 export async function loadGenerationInputs(
   db: Kysely<Database>,
   row: coursesRepo.CourseRow,
@@ -42,16 +43,25 @@ export async function loadGenerationInputs(
   buildDossier: CourseDossierBuilder | undefined
 ): Promise<GenerationInputs> {
   let dossier = row.dossier;
-  if (!dossier) {
+  if (!dossier || isStaleDossier(dossier)) {
     if (!buildDossier) throw new Error('No engine is configured');
+    const first = !dossier;
     dossier = (await buildDossier(courseTreeOf(document), document.learnerSide, row.ownerId, document.kind)).dossier;
     await coursesRepo.setDossier(db, row.id, dossier);
-    // The codes follow the dossier; the creator's later edits are kept, as
-    // the dossier is built only once.
-    document = { ...document, diagnosisCodes: courseDiagnosisCodes(courseTreeOf(document), dossier) };
-    await coursesRepo.setDiagnosisCodes(db, row.id, document.diagnosisCodes);
+    if (first) {
+      // The codes follow the dossier; the creator's later edits are kept, as
+      // they are set only with the first dossier.
+      document = { ...document, diagnosisCodes: courseDiagnosisCodes(courseTreeOf(document), dossier) };
+      await coursesRepo.setDiagnosisCodes(db, row.id, document.diagnosisCodes);
+    }
   }
   return generationInputs({ document, dossier, direction: row.direction, sourcePgn: row.sourcePgn });
+}
+
+/** A stored dossier whose tempting moves have no evaluation: the video
+ * plays them out with the evaluation bar and the quality badge. */
+export function isStaleDossier(dossier: CourseDossier): boolean {
+  return dossier.nodes.some((node) => (node.tempting ?? []).some((tempting) => typeof tempting.evalAfterCp !== 'number'));
 }
 
 /** The draft's fixed tree, as chess-analysis reads it. */

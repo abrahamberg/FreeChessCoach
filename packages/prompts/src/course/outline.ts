@@ -3,6 +3,7 @@ import { capitalise, COURSE_ROLES } from '@freechesscoach/shared';
 import { CALIBRATION } from '../calibration.js';
 import { courseBudget, type CourseBudget } from './budget.js';
 import { buildCourseSystemPrompt, lineMovetext, nodeLabel, promptVideos, type CourseMessages, type CoursePromptContext } from './context.js';
+import { courseCoachName } from './course-voice.js';
 import { episodeRange } from './playbooks.js';
 
 export const COURSE_OUTLINE_JSON_SCHEMA = `{
@@ -32,11 +33,14 @@ export function buildCourseOutlineMessages(context: CoursePromptContext, retry: 
   const calibration = CALIBRATION[context.levelBand];
   const user = `COURSE REQUEST
 Kind: ${context.kind}
-Direction (from the creator): "${context.direction}"
+Creator's brief (what to teach; it may be long, and it is the lesson's main source):
+"""
+${context.direction}
+"""
 Learner side: ${capitalise(context.learnerSide)}
 Learner level: ${calibration.label} — ${calibration.description}
 Budgets: ${episodeRange(context)} episodes; the YouTube video ${videoLength(budget)}, at most ${budget.words} spoken words in total.
-The length is a guide, not a target: speak every point the dossier supports, add nothing to fill time, and a short course makes a short video.
+The length is a guide, not a target: speak every point the dossier supports and the principle each stage shows, add nothing to fill time, and a short course makes a short video.
 ${speakingBudgets(context, budget.narratedMax)}
 Episode roles: ${COURSE_ROLES[context.kind].join(', ')}.
 
@@ -75,9 +79,20 @@ function renderProducts(context: CoursePromptContext): string {
     ? `YOUTUBE VIDEO (write "video")
 - title: at most 55 characters, curiosity and clarity ("How a greedy queen gets mated in 8").
 - thumbnailText: at most 4 words, big on the thumbnail.
-- hook: the first 15 seconds. Jump straight to the premise or the climax ("On move 8, Black's
-  queen lands on c1 and it is over"). Never "hey guys", "welcome back" or "today we".
-- outro: a question the viewer answers in the comments, then what comes next in the series.`
+- hook: the first 15 seconds, in plain words with no move in notation. Jump straight to the
+  premise or the climax, told as a story anyone can follow ("You give up your queen, the
+  biggest piece you have, and White's king is mated for taking her"), then the question the
+  video answers. Never "hey guys", "welcome back" or "today we".
+- outro: spoken by the coach over the closing card, four short beats in this order, all in
+  the coach's own voice and words:
+  1. a question the viewer answers in the comments (the card shows this sentence);
+  2. who is speaking and where the lesson lives: ${signOff(context)}, one of the AI
+     coaches at freechesscoach.org, where this whole lesson is a free course the viewer can
+     play move by move, and the coach coaches there for free. Say the address as
+     "freechesscoach dot org";
+  3. one ask with its reason: like and subscribe, because that is what lets these lessons
+     keep coming. One ask, said once, never begged;
+  4. what comes next in the series.`
     : 'YOUTUBE VIDEO: none this time, so give "video" no value.';
   const candidates = context.reelCandidates ?? [];
   const reel = !videos.reel
@@ -89,9 +104,16 @@ The reel is one idea: pick the moment a viewer would stop scrolling for. "puzzle
 viewer to find the move; "highlight" plays it; "promo" stops before the climax and sends
 viewers to the YouTube video. An "idea" candidate is the one clear move with a threat in it
 (a fork, a pin, a check), not a win: never call it winning. A "technique" candidate is the
-point an endgame's technique builds to, where other moves win too: play it, never ask it.`
+point an endgame's technique builds to, where other moves win too: play it, never ask it.
+A "creator" candidate is the creator's own pick: choose it.`
       : 'REEL: code found no moment for one, so give "reel" no value.';
   return `${video}\n\n${reel}\n`;
+}
+
+/** "I'm The Gambler", or the neutral coach's "your coach". */
+function signOff(context: CoursePromptContext): string {
+  const name = courseCoachName(context.persona);
+  return name ? `the coach's name (${name})` : 'the coach ("your coach here")';
 }
 
 /** The episodes code would build, so a small model fills in words rather
@@ -132,7 +154,9 @@ function renderCandidates(context: CoursePromptContext, skeleton: CourseSkeleton
         `answer: ${skeleton.answerNodeId ? label(skeleton.answerNodeId) : 'none'}`,
         `punish: ${list(skeleton.punishNodeIds)}`,
         `victim's safe move at the bait: ${skeleton.safeMoveSan ?? 'none found'}`,
-        `trapper's risky setup moves: ${list(skeleton.trapperRiskNodeIds)}`
+        ...(skeleton.laterExitNodeId ? [`victim's later way out: at ${label(skeleton.laterExitNodeId)} (the safety episode runs on to it)`] : []),
+        `trapper's risky setup moves: ${list(skeleton.trapperRiskNodeIds)}`,
+        ...skeleton.sidelines.map((sideline) => `${sideline.by === 'victim' ? 'defence' : 'alternative'} ${sideline.lineId}${sideline.atBait ? ' (instead of the bait)' : ''}: ${list(sideline.nodeIds)}`)
       ].join('\n');
     case 'opening':
       return [

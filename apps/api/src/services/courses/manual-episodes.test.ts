@@ -54,6 +54,11 @@ describe('buildManualEpisodes', () => {
     expect(episodes[2]?.drillNodeIds).toEqual(['n15', 'n17']);
   });
 
+  test('the creator\'s section notes become the focus of the line and its sidelines', async () => {
+    const { episodes } = await manual('Exchange:\n# why the pawn is given\n1. e4 c6 2. d4 d5\n---\nAdvance:\n# the plan against 2...d6\n2... d6 3. Nc3', 'opening', 'black');
+    expect(episodes.map((episode) => episode.focus)).toEqual(['line: why the pawn is given', 'deviation: the plan against 2...d6', expect.stringContaining('recap')]);
+  });
+
   test('opening course: the idea, a chapter per sideline from where it branches, then recap', async () => {
     const { chapters, episodes } = await manual('{Main} 1. e4 c6 2. d4 d5 3. e5 ({Exchange} 3. exd5 cxd5 4. Bd3 Nc6 5. c3) 3... Bf5 *', 'opening', 'black');
 
@@ -92,6 +97,26 @@ describe('buildManualEpisodes', () => {
     expect(reelOnly.episodes.flatMap((episode) => episode.plies).some((ply) => ply.course)).toBe(true);
   });
 
+  test('a move the creator marked @quiz ends an episode of its own, with its quiz, even where the engine ranks none best', async () => {
+    const { episodes } = await manual('1. e4 e5 2. Nf3 @quiz Nc6 3. Bb5 a6 4. Ba4 @quiz Nf6 5. O-O *', 'opening', 'white');
+    const line = episodes.filter((episode) => episode.role === 'line');
+
+    expect(line.map((episode) => [episode.startNodeId, episode.endNodeId, episode.quiz?.answerNodeId ?? null])).toEqual([
+      ['n1', 'n3', 'n3'],
+      ['n4', 'n7', 'n7'],
+      ['n8', 'n9', null]
+    ]);
+    // Every move is still in exactly one episode.
+    expect(line.map((episode) => episode.endNodeId)).toEqual(['n3', 'n7', 'n9']);
+  });
+
+  test('a move the creator marked @fast says nothing, in the course or the video', async () => {
+    const { episodes } = await manual('1. e4 e5 2. Nf3 @fast Nc6 3. Bb5 a6 *', 'opening', 'white');
+    const line = episodes.find((episode) => episode.role === 'line');
+
+    expect(line?.plies.map((ply) => ply.nodeId)).toEqual(['n1', 'n5']);
+  });
+
   test('puzzle: the question, a solve episode per learner move with its defence, then the recap', async () => {
     const { chapters, episodes } = await manual('[SetUp "1"]\n[FEN "r6k/6pp/7N/8/8/1Q6/6PP/6K1 w - - 0 1"]\n\n1. Qg8+ Rxg8 2. Nf7# *', 'puzzle', 'white');
 
@@ -106,7 +131,7 @@ describe('buildManualEpisodes', () => {
 
 describe('temptingNote (§13.5)', () => {
   test('the engine answer and what it does, for the creator to write over', () => {
-    const facts = { san: 'Qxc3+', kind: 'capture' as const, does: [{ kind: 'captures' as const, piece: 'b' as const, square: 'c3' as const, enPassant: false }], refutation: ['Nxc3', 'Bb4'], captures: 'Black takes a bishop; White takes the queen', after: [{ kind: 'moved' as const, piece: 'n' as const, from: 'b1' as const, to: 'c3' as const }, { kind: 'captures' as const, piece: 'q' as const, square: 'c3' as const, enPassant: false }], verdict: 'White is winning', balance: 'White is a queen up', notTheAnswer: null };
+    const facts = { san: 'Qxc3+', kind: 'capture' as const, does: [{ kind: 'captures' as const, piece: 'b' as const, square: 'c3' as const, enPassant: false }], refutation: ['Nxc3', 'Bb4'], captures: 'Black takes a bishop; White takes the queen', after: [{ kind: 'moved' as const, piece: 'n' as const, from: 'b1' as const, to: 'c3' as const }, { kind: 'captures' as const, piece: 'q' as const, square: 'c3' as const, enPassant: false }], verdict: 'White is winning', balance: 'White is a queen up', notTheAnswer: null, evalAfterCp: 900, quality: 'blunder' as const };
     expect(temptingNote(facts)).toEqual({ san: 'Qxc3+', why: 'Nxc3 captures the queen on c3.', refutation: ['Nxc3', 'Bb4'] });
     expect(temptingNote({ ...facts, after: [...facts.after, { kind: 'attacks' as const, piece: { piece: 'b' as const, square: 'f8' as const } }] }).why).toBe('Nxc3 captures the queen on c3 and attacks the bishop on f8.');
     expect(temptingNote({ ...facts, refutation: [] }).why).toBe('White is winning');

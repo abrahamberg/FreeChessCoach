@@ -17,7 +17,7 @@ describe('course prompts', () => {
   });
 
   test('every tempting move the dossier lists at a solving move reaches the solve prompt', () => {
-    const check: CourseTemptingFacts = { san: 'Qxc3+', kind: 'check', does: [], refutation: ['Nxc3'], after: [], captures: '', verdict: '', balance: '', notTheAnswer: null };
+    const check: CourseTemptingFacts = { san: 'Qxc3+', kind: 'check', does: [], refutation: ['Nxc3'], after: [], captures: '', verdict: '', balance: '', notTheAnswer: null, evalAfterCp: 150, quality: 'blunder' };
     const context = englundCourseContext('puzzle', null);
     const nodes = context.dossier.nodes.map((node) => (node.nodeId === 'n12' ? { ...node, tempting: [check] } : node));
     const { user } = buildCourseOutlineMessages({ ...context, dossier: { ...context.dossier, nodes } });

@@ -1,4 +1,4 @@
-import { verifyCourseFrame, type CourseSkeleton, type ReelCandidate } from '@freechesscoach/chess-analysis';
+import { verifyCourseFrame, type CourseDossier, type CourseSkeleton, type ReelCandidate } from '@freechesscoach/chess-analysis';
 import { courseVideos, REEL_WARNINGS, type CourseDebugResponse, type CourseDocument, type CourseReel, type CourseEpisode, type CourseGeneration, type CourseOutline, type CourseResponse, type CourseWarning } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as coursesRepo from '../../db/repositories/courses.js';
@@ -100,7 +100,7 @@ export async function runCourseGeneration(deps: CourseGenerateDeps, courseId: st
       await saveDocument(deps.db, row, document);
       await save({ finishedEpisodeIds: [...state.finishedEpisodeIds, REEL_WARNINGS], warnings: withWarnings(state.warnings, REEL_WARNINGS, written.warnings) });
     }
-    await save({ status: 'succeeded', step: null, done: total, total, warnings: withCourseWarnings(state.warnings, courseWarnings(document, inputs.skeleton)) });
+    await save({ status: 'succeeded', step: null, done: total, total, warnings: withCourseWarnings(state.warnings, courseWarnings(document, inputs.skeleton, inputs.dossier)) });
   } catch (error) {
     await save({ status: 'failed', step: null, error: error instanceof Error ? error.message : String(error) });
     if (!(error instanceof ValidationError)) throw error;
@@ -187,7 +187,7 @@ function withEpisode(document: CourseDocument, episode: CourseEpisode): CourseDo
 
 /** §13.9's whole-course checks (the video's packaging, the voice across
  * episodes) and a puzzle's second solutions, recomputed at the end of a run. */
-function courseWarnings(document: CourseDocument, skeleton: CourseSkeleton | null): CourseWarning[] {
+function courseWarnings(document: CourseDocument, skeleton: CourseSkeleton | null, dossier: CourseDossier): CourseWarning[] {
   const frame = verifyCourseFrame(document).map((problem) => ({ episodeId: null, ...problem }));
   const unsound = skeleton?.kind === 'puzzle' ? skeleton.unsoundNodeIds : [];
   const puzzle = unsound.map((nodeId) => ({ episodeId: null, code: 'puzzle', nodeId, message: `The engine finds another good move at ${nodeId}: the puzzle has two answers there` }));
@@ -196,7 +196,11 @@ function courseWarnings(document: CourseDocument, skeleton: CourseSkeleton | nul
   const errors = wrong.map((nodeId) => ({ episodeId: null, code: 'puzzle', nodeId, message: `The engine calls the course's move at ${nodeId} an error: check the solution there` }));
   // A "perpetual" the defender escapes: the solution does not do what it says.
   const noGoal = skeleton?.kind === 'puzzle' && skeleton.goal === 'none' ? [{ episodeId: null, code: 'puzzle', nodeId: null, message: "The engine does not rate the end of the puzzle's line a win or a draw for the solver: check the solution" }] : [];
-  return [...frame, ...puzzle, ...errors, ...noGoal];
+  // The creator's @quiz is asked whatever the engine says; where it finds a second good move, the player accepts both (M6).
+  const creatorQuiz = dossier.nodes
+    .filter((node) => node.creatorMarks.includes('quiz') && !node.quizEligible)
+    .map((node) => ({ episodeId: null, code: 'quiz', nodeId: node.nodeId, message: `The engine finds another good move at ${node.nodeId}: your @quiz there accepts both` }));
+  return [...frame, ...puzzle, ...errors, ...noGoal, ...creatorQuiz];
 }
 
 /** The outline's warnings stay; the whole-course ones are replaced. */

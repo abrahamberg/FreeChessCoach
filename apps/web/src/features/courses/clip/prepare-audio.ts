@@ -5,7 +5,7 @@ import type { TtsClient } from '../../../tts/tts-client.js';
 
 /** One sentence group the coach says: a clip beat or a course note. */
 export interface CourseSpeech {
-  /** `beat:<episodeId>:<index>`, `quiz:<episodeId>` (the clip's quiz
+  /** `beat:<episodeId>:<index>`, `quiz-scene:<episodeId>`, `quiz:<episodeId>` (the clip's quiz
    * prompt) or `note:<episodeId>:<nodeId>`. */
   key: string;
   text: string;
@@ -51,6 +51,7 @@ export function courseSpeeches(document: CourseDocument): CourseSpeech[] {
           ]
         : []
     ),
+    ...(episode.quiz?.scene.trim() ? [{ key: `quiz-scene:${episode.id}`, text: episode.quiz.scene }] : []),
     ...(episode.quiz?.prompt.trim() ? [{ key: `quiz:${episode.id}`, text: episode.quiz.prompt }] : []),
     ...episode.plies.flatMap((ply) => (ply.course && ply.text.trim() ? [{ key: `note:${episode.id}:${ply.nodeId}`, text: ply.text }] : []))
   ]), ...said('video:outro', document.video?.outro), ...(reel ? [
@@ -100,19 +101,20 @@ export async function prepareCourseAudio(options: {
 }
 
 /** The cache key: the voice (backend + coach) and the exact text, so an
- * edit only re-synthesises the sentences that changed. */
+ * edit only re-synthesises the sentences that changed. `studio` marks the
+ * course recordings, so audio kept from before them is made again. */
 export function audioCacheKey(backend: CourseVoice, persona: CoachPersona, text: string): string {
-  return `${backend}|${persona}|${text}`;
+  return `${backend}|studio|${persona}|${text}`;
 }
 
 async function synthesise(client: TtsClient, persona: CoachPersona, text: string): Promise<SpokenAudio> {
   const chunks: ArrayBuffer[] = [];
-  await client.speak({ text: translateChessNotationForSpeech(text), persona }, (index, audio) => {
+  await client.speak({ text: translateChessNotationForSpeech(text), persona, studio: true }, (index, audio) => {
     chunks[index] = audio;
   });
   const present = chunks.filter(Boolean);
   if (!present.length) throw new Error(`No audio came back for "${text.slice(0, 40)}"`);
-  return { mimeType: client.mimeType, chunks: present };
+  return { mimeType: client.studioMimeType ?? client.mimeType, chunks: present };
 }
 
 const DB_NAME = 'course-audio';

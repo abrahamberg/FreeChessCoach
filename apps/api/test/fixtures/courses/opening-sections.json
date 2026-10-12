@@ -1,0 +1,8 @@
+{
+  "kind": "opening",
+  "levelBand": "improving",
+  "coachPersona": "general_female",
+  "learnerSide": "white",
+  "direction": "The Scotch Game for White: the Classical line against ...Bc5, the Schmidt line with ...Nf6, and the Scotch Gambit.",
+  "pgn": "[Event \"Scotch Game\"]\n\nClassical Scotch:\n# Black puts the bishop on c5 at once and White keeps the centre\n1. e4 e5 2. Nf3 Nc6 3. d4 exd4 4. Nxd4 Bc5 5. Be3 Qf6 6. c3 Nge7 7. Bc4 Ne5 8. Be2 Qg6\n---\nSchmidt variation:\n# Black strikes back at the knight and White's centre\n4. - Nf6 5. Nxc6 bxc6 6. e5 Qe7 7. Qe2 Nd5 8. c4 Ba6\n---\nScotch Gambit:\n# White gives the d-pawn back for quick development\n4. Bc4 Bc5 5. O-O d6 6. c3 Nf6"
+}

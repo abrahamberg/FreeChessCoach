@@ -1,0 +1,116 @@
+Learner side: Black
+
+Lines:
+l1 "Line A" | opening: Englund Gambit: Main Line | leaves book at n7
+    end position: the b-file is half-open for white; the d-file is half-open for white; the e-file is half-open for black; white has an isolated pawn on a2; white has an isolated pawn on c2; white has doubled pawns on the e-file; black has a queenside pawn majority; white has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
+
+Moves:
+n1 1.d4 (White, Line A) | book
+    book: in book (Queen's Pawn Game)
+    board: moves the pawn from d2 to d4
+    alternatives: e4: The position is roughly equal; Nf3: The position is roughly equal
+    flags: creator-fast
+n2 1…e5 (Black, Line A) | book
+    book: in book (Englund Gambit)
+    board: moves the pawn from e7 to e5 | leaves the black pawn on e5 hanging
+    alternatives: d5: The position is roughly equal; Nf6: The position is roughly equal; e6: The position is roughly equal
+    flags: creator-fast
+n3 2.dxe5 (White, Line A) | book
+    book: in book (Englund Gambit)
+    board: moves the pawn from d4 to e5 | captures the pawn on e5
+    alternatives: Nc3: The position is roughly equal; e3: The position is roughly equal
+    flags: creator-fast
+n4 2…Nc6 (Black, Line A) | book
+    book: in book (Englund Gambit)
+    board: moves the knight from b8 to c6
+    alternatives: d6: White is slightly better; h6: White is slightly better
+    flags: creator-fast
+n5 3.Nf3 (White, Line A) | book
+    book: in book (Englund Gambit)
+    board: moves the knight from g1 to f3
+    alternatives: Bf4: White is slightly better; e4: White is slightly better
+    flags: creator-fast
+n6 3…Qe7 (Black, Line A) | book
+    book: in book (Englund Gambit: Main Line)
+    board: moves the queen from d8 to e7
+    alternatives: f6: White is slightly better; d5: White is slightly better; h6: White is slightly better
+    flags: creator-fast
+n7 4.Bf4 (White, Line A) | excellent | before: White is slightly better → after: White is slightly better
+    board: moves the bishop from c1 to f4
+    alternatives: Nc3: White is slightly better; Bg5: White is slightly better
+n8 4…Qb4+ (Black, Line A) | best | before: White is slightly better → after: White is slightly better
+    board: moves the queen from e7 to b4 | gives check | the check can be answered: block with Bd2, Nfd2, c3, Nc3, Nbd2, Qd2; the checking piece cannot be taken; the king cannot move | attacks the bishop on f4 | the queen on b4 forks the bishop on f4 and the king on e1
+    alternatives: d6: White is slightly better; f6: White is slightly better
+n9 5.Bd2 (White, Line A) | best | before: White is slightly better → after: White is slightly better
+    board: moves the bishop from f4 to d2 | blocks the check from the queen on b4 | attacks the queen on b4 | leaves the white pawn on b2 hanging
+    alternatives: Nc3: The position is roughly equal; Nbd2: Black is better
+n10 5…Qxb2 (Black, Line A) | inaccuracy | before: White is slightly better → after: White is better
+    best instead: Qe7; after Qe7 Nc3 Nxe5 e4 d6 Nd5, material is level
+    why Qe7 is better: moves the queen from b4 to e7
+    board: moves the queen from b4 to b2 | captures the pawn on b2 | attacks the rook on a1 | attacks the knight on b1 | the queen on b2 forks the rook on a1 and the knight on b1
+    alternatives: Qe7: White is slightly better; Qc5: White is slightly better
+    flags: critical
+n11 6.Bc3 (White, Line A) | blunder | before: White is better → after: Black is much better
+    best instead: Nc3; after Nc3 Bb4 Rb1 Qa3 Nd5, material is level
+    why Nc3 is better: moves the knight from b1 to c3
+    board: moves the bishop from d2 to c3 | attacks the queen on b2
+    tactics: They let you win a bishop through an eventual pin with Bb4 — the bishop on c3 is stuck in front of the king.
+    alternatives: Nc3: White is better; e3: Black is better; e4: Black is better
+    creator glyph: ??
+    flags: critical, creator-key
+n12 6…Bb4 (Black, Line A) | great | before: Black is much better → after: Black is better
+    board: moves the bishop from f8 to b4 | attacks the bishop on c3, which is pinned to the king by the bishop on b4
+    tactics: You won a bishop through an eventual pin — the bishop on c3 is stuck in front of the king.
+    alternatives: Qb6: The position is roughly equal; Qb5: White is slightly better
+    flags: quiz-eligible, critical, creator-quiz, creator-slow
+n13 7.Qd2 (White, Line A) | inaccuracy | before: Black is better → after: Black is much better
+    best instead: Bd2; after Bd2 Qxa1 c3 Bf8 Qc2 Ba3, Black is a rook up
+    why Bd2 is better: moves the bishop from c3 to d2 | attacks the bishop on b4 | leaves the white rook on a1 hanging
+    board: moves the queen from d1 to d2
+    alternatives: Bd2: Black is better; Bxb4: Black is much better; Kd2: Black is much better
+n14 7…Bxc3 (Black, Line A) | best | before: Black is much better → after: Black is much better
+    board: moves the bishop from b4 to c3 | captures the bishop on c3 | attacks the queen on d2, which is pinned to the king by the bishop on c3
+    tactics: You saved a hanging piece — saves the queen on b2.
+    alternatives: Qxa1: Black is better; Ba3: White is much better
+    flags: quiz-eligible
+n15 8.Qxc3 (White, Line A) | mistake | before: Black is much better → after: Black has a forced mate in 1
+    best instead: Nxc3; after Nxc3 Qxa1+ Nd1 Qxa2 e3 Nge7, Black is a rook and a pawn up
+    why Nxc3 is better: moves the knight from b1 to c3 | captures the bishop on c3 | leaves the white rook on a1 hanging
+    board: moves the queen from d2 to c3 | captures the bishop on c3 | attacks the knight on c6 | attacks the queen on b2 | the queen stops guarding c1, where Qc1# follows
+    tactics: They let you force mate with Qc1#.
+    alternatives: Nxc3: Black is much better; e3: Black is much better; Kd1: Black is winning
+n16 8…Qc1# (Black, Line A) | great | before: Black has a forced mate in 1 → after: checkmate
+    board: moves the queen from b2 to c1 | gives checkmate | a back-rank mate | why it is mate: the king on e1 is checked by the queen on c1; e2, f1, f2 hold its own pieces; d1 and d2 are covered by the queen on c1
+    tactics: You forced mate.
+    alternatives: Qxc3+: The position is roughly equal; Qb4: The position is roughly equal
+    flags: quiz-eligible, critical, creator-reel
+
+REEL CANDIDATES
+  r1 creator n10–n16, climax n16 [highlight, puzzle, promo]
+  r2 trap n6–n16, climax n12 [highlight, puzzle, promo]
+  r3 swing n5–n13, climax n11 [highlight, promo]
+  r4 idea n8–n16, climax n14 [highlight, puzzle, promo]
+
+PLAN
+  e1 hook n1–n1
+  e2 setup n1–n10
+  e3 bait n11–n11
+  e4 quiz n12–n12 answer=n12
+  e5 punish n13–n16
+  e6 safety n11–n11
+
+REVIEW NOTES
+  l1
+    n1 1.d4: Theory — Englund Gambit: Main Line (A40)
+    n2 1…e5: Theory — Englund Gambit: Main Line (A40)
+    n3 2.dxe5: Theory — Englund Gambit: Main Line (A40)
+    n4 2…Nc6: Theory — Englund Gambit: Main Line (A40)
+    n5 3.Nf3: Theory — Englund Gambit: Main Line (A40)
+    n6 3…Qe7: Theory — Englund Gambit: Main Line (A40)
+    n9 5.Bd2: Concedes the centre
+    n10 5…Qxb2: Costs 18 squares of piece mobility
+    n11 6.Bc3: They let you win a bishop through an eventual pin with Bb4 — the bishop on c3 is stuck in front of the king.; Won a knight, but it cost the queen.
+    n12 6…Bb4: You won a bishop through an eventual pin — the bishop on c3 is stuck in front of the king.
+    n14 7…Bxc3: Trades bishops on c3; You saved a hanging piece — saves the queen on b2.
+    n15 8.Qxc3: Missed Nxc3, winning material on c3; Recaptures the bishop on c3; They let you force mate with Qc1#.; Won a bishop, but it allowed mate.
+    n16 8…Qc1#: You forced mate.

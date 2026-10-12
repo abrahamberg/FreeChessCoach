@@ -134,7 +134,7 @@ export function CourseEpisodePanel({ document, episode, position, onStepEpisode,
             {episode.quiz ? (
               <>
                 <p className="meta">Answer: {answerNode ? moveLabel(document, answerNode) : episode.quiz.answerNodeId}</p>
-                {(['prompt', 'hint', 'reveal'] as const).map((field) => (
+                {(['scene', 'prompt', 'hint', 'reveal'] as const).map((field) => (
                   <label key={field} className="course-field">
                     <span>{field}</span>
                     <input value={episode.quiz?.[field] ?? ''} onChange={(event) => episode.quiz && onChange({ ...episode, quiz: { ...episode.quiz, [field]: event.target.value } })} />
@@ -151,7 +151,7 @@ export function CourseEpisodePanel({ document, episode, position, onStepEpisode,
                   type="button"
                   className="btn-secondary"
                   disabled={!selectedNodeId}
-                  onClick={() => selectedNodeId && onChange({ ...episode, quiz: { answerNodeId: selectedNodeId, prompt: 'Find the strongest move.', hint: '', reveal: '' } })}
+                  onClick={() => selectedNodeId && onChange({ ...episode, quiz: { answerNodeId: selectedNodeId, scene: '', prompt: 'Find the strongest move.', hint: '', reveal: '' } })}
                 >
                   Quiz on this move
                 </button>

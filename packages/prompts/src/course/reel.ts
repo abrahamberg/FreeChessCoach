@@ -1,6 +1,6 @@
-import { courseNodePath, renderCourseDossier } from '@freechesscoach/chess-analysis';
+import { courseNodeAncestry, courseNodePath, renderCourseDossier } from '@freechesscoach/chess-analysis';
 import type { CourseReel } from '@freechesscoach/shared';
-import { buildCourseSystemPrompt, nodeLabel, type CourseMessages, type CoursePromptContext } from './context.js';
+import { buildCourseSystemPrompt, lineMovetext, nodeLabel, type CourseMessages, type CoursePromptContext } from './context.js';
 import { episodeDossier, usedOpenersLine } from './episode.js';
 
 export const REEL_SCRIPT_JSON_SCHEMA = `{
@@ -42,8 +42,15 @@ export function buildCourseReelMessages(request: CourseReelRequest): CourseMessa
 Style: ${STYLE_TEXT[reel.style]}
 Its moves, from the position before the first:
 ${moves}
-- The first words name the idea and its keywords (the opening, the tactic, the piece):
-  platforms listen to them. No greeting, no "today".
+- The first words stop the scroll: the stake or a question ("Would you take the queen?"),
+  with the idea's keywords (the opening, the tactic, the piece) within the first sentence:
+  platforms listen to them. Never a label ("Petrov's Defense: Stafford Gambit Accepted"): the "hook" field is
+  the spoken first sentence ("A free queen. Take it and you are mated in two. This is the Stafford Gambit.").
+  No greeting, no "today".
+- Place the viewer before the point, in one breath and in plain words: the opening this
+  grows from and what has just happened ("Petrov's Defense. White took a pawn, and you
+  let them keep it"), from HOW WE GOT HERE below. It goes on the first beat, or in the hook
+  when it fits there.
 - The top band holds the challenge the whole time ("White to play", "Mate in 3?").
 - Lines only on the moves that carry the idea; the rest play without a word.
 - The app plays the build-up fast, cuts the sound for half a second before the climax,
@@ -53,6 +60,7 @@ ${moves}
   "like and subscribe".${promoLine(reel)}
 - The last line flows back into the first, so the reel loops.
 Every beat nodeId is one of: ${promoBeats(reel, path).join(', ')}.${usedOpenersLine(request.usedOpeners)}`,
+    howWeGotHere(context, reel.startNodeId),
     `DOSSIER (the reel's moves only)\n${renderCourseDossier(episodeDossier(context, { startNodeId: reel.startNodeId, endNodeId: reel.endNodeId, answerNodeId: null }))}`,
     request.retry
       ? `YOUR PREVIOUS ANSWER HAD THESE PROBLEMS — fix every one\n${request.retry.problems.map((problem) => `- ${problem}`).join('\n')}\n\nYour previous answer:\n${request.retry.previousOutput}`
@@ -60,6 +68,18 @@ Every beat nodeId is one of: ${promoBeats(reel, path).join(', ')}.${usedOpenersL
     `OUTPUT SCHEMA\n${REEL_SCRIPT_JSON_SCHEMA}`
   ];
   return { system: buildCourseSystemPrompt(context), user: sections.filter(Boolean).join('\n\n') };
+}
+
+/** The moves before the reel's first, with the opening names they reach:
+ * the reel's dossier starts at its own span, and the first Stafford reel
+ * never said it grows from the Petrov. */
+function howWeGotHere(context: CoursePromptContext, startNodeId: string): string {
+  const before = context.nodes.find((node) => node.id === startNodeId)?.parentId;
+  if (!before) return '';
+  const facts = new Map(context.dossier.nodes.map((node) => [node.nodeId, node]));
+  const path = courseNodeAncestry(new Map(context.nodes.map((node) => [node.id, node])), before);
+  const names = [...new Set(path.flatMap((node) => facts.get(node.id)?.openingName ?? []))];
+  return `HOW WE GOT HERE (played before the reel starts; not shown)\n${lineMovetext(context, before)}${names.length ? `\nOpening names on the way: ${names.join(' → ')}` : ''}`;
 }
 
 /** A promo stops before its climax, so its lines are on the moves before it. */

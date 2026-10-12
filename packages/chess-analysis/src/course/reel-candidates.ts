@@ -7,7 +7,7 @@ import type { CourseTree } from './tree.js';
 const BRILLIANT = new Set(['brilliant', 'great']);
 
 export type ReelStyle = 'highlight' | 'puzzle' | 'promo';
-export type ReelReason = 'puzzle' | 'mate' | 'brilliant' | 'swing' | 'trap' | 'idea' | 'technique';
+export type ReelReason = 'creator' | 'puzzle' | 'mate' | 'brilliant' | 'swing' | 'trap' | 'idea' | 'technique';
 /** A move whose board facts make it a point to show: a fork, a pin, or a
  * check. */
 const isIdeaFact = (fact: BoardFact): boolean => fact.kind === 'forks' || fact.kind === 'gives' || (fact.kind === 'attacks' && fact.pinnedTo !== undefined);
@@ -27,7 +27,7 @@ export interface ReelCandidate {
 /**
  * §13.3: the reel's candidates, best first — a puzzle's solution, a mate, a
  * brilliant or great move, a trap's punishment, a blunder that swings the
- * game, else the one clear move with a threat in it. Each spans at most 6 moves before its climax and 2 after (up to 4
+ * game, else the one clear move with a threat in it. Each spans at most 8 moves before its climax and 2 after (up to 4
  * when that reaches a mate), on the climax's own line. The planner picks one; with none, there is no reel.
  */
 export function reelCandidates(tree: CourseTree, dossier: CourseDossier, skeleton: CourseSkeleton | null): ReelCandidate[] {
@@ -39,6 +39,8 @@ export function reelCandidates(tree: CourseTree, dossier: CourseDossier, skeleto
     if (climax && !found.some((each) => each.climax.nodeId === climax.nodeId)) found.push({ reason, climax, rank });
   };
 
+  // The creator's own pick (`@reel`) goes first.
+  for (const node of dossier.nodes) if (node.creatorMarks.includes('reel')) add('creator', node.nodeId, -1);
   if (skeleton?.kind === 'puzzle') add('puzzle', skeleton.learnerNodeIds[skeleton.learnerNodeIds.length - 1], 0);
   // Phase 103: an endgame's reel is its last only move, asked as a puzzle;
   // with none, the technique's last move, the point it builds to (the
@@ -66,7 +68,7 @@ export function reelCandidates(tree: CourseTree, dossier: CourseDossier, skeleto
       const reach = descendants(tree, climax.nodeId, CONFIG.courses.reelMateReach);
       const mate = reach.findIndex((nodeId) => byId.get(nodeId)?.san.endsWith('#'));
       const after = mate >= 0 ? reach.slice(0, mate + 1) : reach.slice(0, CONFIG.courses.reelMovesAfter);
-      const findable = reason === 'puzzle' || climax.quizEligible || climax.san.endsWith('#');
+      const findable = reason === 'puzzle' || climax.quizEligible || climax.creatorMarks.includes('quiz') || climax.san.endsWith('#');
       return {
         id: `r${index + 1}`,
         reason,

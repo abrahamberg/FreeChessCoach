@@ -3,7 +3,8 @@ import type { CourseNodeFacts } from './dossier-node.js';
 import type { CourseDossier } from './dossier.js';
 import { courseNodeAncestry } from './node-path.js';
 
-export type CourseVerifyNode = Pick<CourseNode, 'id' | 'parentId' | 'san' | 'fenAfter'>;
+/** `marks` only where a check reads the creator's pace marks (the reel's length). */
+export type CourseVerifyNode = Pick<CourseNode, 'id' | 'parentId' | 'san' | 'fenAfter'> & Partial<Pick<CourseNode, 'marks'>>;
 
 /** Which nodes an episode covers and the positions around them. */
 export interface EpisodeScope {

@@ -1,7 +1,8 @@
-import { captureWords, courseNodeAncestry, lineBalance, renderAttackTarget, renderBoardFact, TACTIC_MOTIF_PHRASES, type CourseSkeleton } from '@freechesscoach/chess-analysis';
+import { captureWords, courseNodeAncestry, lineBalance, renderAttackTarget, renderBoardFact, TACTIC_MOTIF_PHRASES, type CourseSkeleton, type TrapSideline } from '@freechesscoach/chess-analysis';
 import { capitalise } from '@freechesscoach/shared';
 import type { CourseBudget } from './budget.js';
 import { midSentence, nodeLabel, promptVideos, type CoursePromptContext } from './context.js';
+import { trapSetupFacts } from './trap-setup.js';
 
 /** docs/courses.md §6.3, one playbook per kind, filled from the skeleton
  * (§5.5), the budget and the course. Missing facts are named as missing, so
@@ -39,7 +40,7 @@ const VIDEO_PLAYBOOK: Record<CoursePromptContext['kind'], string> = {
 };
 
 const REEL_PLAYBOOK: Record<CoursePromptContext['kind'], string> = {
-  trap: 'the bait and the punishment.',
+  trap: 'the bait and the punishment, after one breath on the opening it grows from and how the viewer got here.',
   opening: 'the one trap or idea a player of this opening must know.',
   tactics: 'the clearest example, as a puzzle.',
   puzzle: 'the position and the question ("White to play. Mate in 3." or "White to play and win."), then the solution.',
@@ -55,8 +56,11 @@ function productsPlaybook(context: CoursePromptContext): string {
 /** Episodes the outline should have, per kind (§6.4's `{episodeRange}`). */
 export function episodeRange(context: CoursePromptContext): string {
   switch (context.kind) {
-    case 'trap':
-      return '6';
+    case 'trap': {
+      const sidelines = context.skeleton?.kind === 'trap' ? context.skeleton.sidelines : [];
+      // The hook, setup, bait, quiz, punish and safety; a defence at the bait takes safety's place.
+      return String(6 + sidelines.length - (sidelines.some((sideline) => sideline.atBait && sideline.by === 'victim') ? 1 : 0));
+    }
     case 'opening':
       return `one chapter per line (${context.lines.length}), plus one episode per trap and the recap`;
     case 'tactics':
@@ -64,7 +68,7 @@ export function episodeRange(context: CoursePromptContext): string {
     case 'puzzle':
       return String(puzzleLearnerMoves(context).length + 2);
     case 'master_game':
-      return '6 to 20';
+      return context.lines.length > 1 ? `6 to 20, plus one variation episode per creator variation (${context.lines.length - 1})` : '6 to 20';
     case 'endgame':
       // Goal, one or two technique, a defence per sideline, the recap.
       return `${context.lines.length + 2} to ${context.lines.length + 3}`;
@@ -77,23 +81,54 @@ function trapPlaybook(context: CoursePromptContext, budget: CourseBudget, skelet
   const risk = skeleton?.trapperRiskNodeIds.length ? "\nThe trapper's setup is risky against best play (see the dossier); say so plainly." : '';
   // A trap whose answer ends it (Nd6#) has no punish episode in the plan.
   const punish = skeleton?.punishNodeIds.length !== 0;
+  const defenceAtBait = skeleton?.sidelines.some((sideline) => sideline.atBait && sideline.by === 'victim') ?? false;
   const items = [
-    `hook — at most ${budget.hookWords} words, true and specific to how the trap ends:\n   ${trapEnding(context)}`,
-    `setup — the setup moves play fast. At most two speak in the video, only\n   where the move order matters.`,
-    `bait — why the victim's move looks natural. This is the heart of the trap:\n   the viewer should think "I'd play that too".${baitFacts(context, skeleton)}`,
+    `hook — at most ${budget.hookWords} words, true and specific to how the trap ends:\n   ${trapEnding(context)}${hookInVideo(context)}`,
+    `setup — the setup moves play fast. At most four speak, in the video and in\n   the course, only on the moves below; the rest are silent.${trapSetupFacts(context, skeleton)}`,
+    `bait — why the victim's move looks natural. This is the heart of the trap:\n   the viewer should think "I'd play that too".${baitFacts(context, skeleton)}\n   List the victim's tempting moves the dossier gives at the bait, the two a\n   real opponent would try: they are the film's side roads after the line.\n   Each side road's "why" is heard while its moves play on the board: two or\n   three whole sentences, the viewer's question, what the pieces do in order,\n   and how it leaves both sides, never clipped notes ("It advances; bishops\n   trade.").`,
     `quiz — "What does ${trapper} play here?" plus a hint at the target. The\n   video pauses ${budget.pauseSeconds}s (the app adds the pause).${answerWins(context, skeleton)}`,
-    punish ? `punish — every forcing move speaks in the video; captions carry the rhythm.${victimErrors(context, skeleton)}` : null,
-    `safety — how the victim stays safe: ${safeMove}, in one or two sentences.${trapperDefence(context, skeleton)}${risk}${safeLineOnBoard(context, skeleton)}`
+    punish ? `punish — every forcing move speaks in the video; captions carry the rhythm.\n   Open on where the pieces already point ("the dark-squared bishop comes out\n   and aims at f2"). No detour here: what the victim could have played instead\n   belongs to the safety episode, after the line has run to its end.${victimErrors(context, skeleton)}` : null,
+    defenceAtBait ? null : `safety — how the victim stays safe: ${safeMove}, in one or two sentences.${trapperDefence(context, skeleton)}${risk}${safeLineOnBoard(context, skeleton)}${laterExit(context, skeleton)}`,
+    ...(skeleton?.sidelines ?? []).map((sideline) => sidelineItem(context, sideline))
   ].filter((item) => item !== null);
   return `KIND: TRAP
 The trapper is ${trapper}. The bait is node ${skeleton?.baitNodeId ?? 'not found'}. The answer is node
 ${skeleton?.answerNodeId ?? 'not found'}. The victim's safe move at the bait is ${safeMove}.
 Use exactly these episodes, in order:
 ${items.map((item, index) => `${index + 1}. ${item}`).join('\n')}
-The end card and call to action are added by the app; don't write them.
-In the course, every move speaks. The bait and the safe move get the longest
-lines. The learner drills both sides, so the lines must teach springing the
+The end card is added by the app; don't write one as an episode. The coach's
+spoken sign-off is the video's "outro" (see YOUTUBE VIDEO): always write it.
+THE FILM'S ORDER: the main line first, the side roads after. From the bait to the
+line's last move the video never leaves the line. The opponent's tempting moves
+you list at the bait are played by the app after the line's last move, just
+before the safety episode: so no line on the main road announces them, the
+first "why" opens the side roads ("So what else could White have tried? First,
+…"), and the safety episode then comes as the last and best of them ("And the
+move that really works: …"). The learner's own tempting moves show in the
+course only, never in the video: the learner is springing the trap and stays
+on its line, so no video line mentions them.
+Each stage carries one principle of good chess that its move shows (see "Teach
+the principle"): the setup, the bait, the punishment and the safety, four
+different ones. The bait, the answer and the safety lines use their room: the
+idea, then the principle, then what to do about it in a game. A trap film that
+does all this runs four minutes or more; one under three has skipped something.
+Why the king has no way out is told on the mating move itself, never on the
+move before it.
+The setup speaks on at most 4 moves (set its budgetCourse and budgetVideo to 4
+or less); from the bait on, every move speaks. The bait and the safe move get the
+longest lines. The learner drills both sides, so the lines must teach springing the
 trap and avoiding it.`;
+}
+
+/** The creator's own line besides the trap's: what it is for is the line's
+ * creator note in the dossier. */
+function sidelineItem(context: CoursePromptContext, sideline: TrapSideline): string {
+  const name = context.lines.find((line) => line.id === sideline.lineId)?.name ?? sideline.lineId;
+  const first = nodeLabel(context, sideline.nodeIds[0] ?? '');
+  if (sideline.by === 'victim') {
+    return `defence — "${name}", from ${first}${sideline.atBait ? ' (played instead of the bait: this is how the victim stays safe, so there is no separate safety episode)' : ''}: how the victim sidesteps, and what the trapper plays then.`;
+  }
+  return `alternative — "${name}", from ${first}: what changes when the trapper plays this instead.`;
 }
 
 const ERROR_QUALITIES = new Set(['inaccuracy', 'mistake', 'blunder', 'miss']);
@@ -118,7 +153,7 @@ function baitFacts(context: CoursePromptContext, skeleton: Extract<CourseSkeleto
     missed(context, skeleton)
   ].filter(Boolean);
   if (!rows.length) return '';
-  return `\n   ${rows.join('\n   ')}\n   Say what the victim wants with the move and what they miss.`;
+  return `\n   ${rows.join('\n   ')}\n   The bait's own line is the victim's side of the story, in two or three whole\n   sentences in the video: what the move attacks, what they expect to win, and\n   why any player would play it. Then name the danger they overlook only as a\n   place to look ("but nobody is watching their king"), and stop: never the\n   answer, not the move, not the piece that plays it, not what it takes, not\n   "take the pawn". The next move is the quiz; the learner finds it.`;
 }
 
 /** What the bait misses, as the trap's own line: the game review's sentence
@@ -146,7 +181,39 @@ function victimErrors(context: CoursePromptContext, skeleton: Extract<CourseSkel
     return [`${nodeLabel(context, id)}: ${node.quality}${best}`];
   });
   if (!errors.length) return '';
-  return `\n   The victim goes wrong at: ${errors.join(' | ')}.\n   At each, say what they hoped for; where even the best loses material, say\n   so, never "safe".`;
+  return `\n   The victim goes wrong at: ${errors.join(' | ')}.\n   On the main road say only what they hoped for with each, in a sentence. The\n   better moves are side roads: they are told in the safety episode, never on a\n   move of the line, and least of all on its last move.`;
+}
+
+/** The video's own hook is spoken just before this episode: the second
+ * Stafford film said the queen line twice in a row. */
+function hookInVideo(context: CoursePromptContext): string {
+  if (!promptVideos(context).video) return '';
+  // The line's own name, cut to its family: on move 1 the dossier still says "King's Pawn Game".
+  const family = context.dossier.lines[0]?.openingName?.split(':')[0];
+  const place = family ? `"This game starts as ${family}", in the coach's words` : 'what kind of position this is, in plain words';
+  return `\n   That is "text". In the video the spoken hook has just been said, so "say" never\n   repeats it: it places the viewer in one sentence: ${place}.`;
+}
+
+/** The engine's verdict on a node's best move, from its alternatives. */
+function verdictOf(node: CoursePromptContext['dossier']['nodes'][number]): string {
+  const verdict = node.alternatives.find((alternative) => alternative.san === node.bestInstead?.san)?.verdict;
+  return verdict ? ` (${midSentence(verdict)})` : '';
+}
+
+/** The victim's later way out (the Stafford's 7.Be3 for 7.Bxd8): the safety
+ * episode's second line, on that move, with its own line on the board. The
+ * second film put Be3 on the mate; the fourth squeezed it into the safe
+ * move's line as clipped notes. */
+function laterExit(context: CoursePromptContext, skeleton: Extract<CourseSkeleton, { kind: 'trap' }> | null): string {
+  const node = context.dossier.nodes.find((each) => each.nodeId === skeleton?.laterExitNodeId);
+  if (!node?.bestInstead) return '';
+  const board = promptVideos(context).video ? ` In the video the board goes to the position before ${nodeLabel(context, node.nodeId)} and plays ${node.bestInstead.line.join(' ')} while it is said.` : '';
+  return `\n   A second line, on ${nodeLabel(context, node.nodeId)}: the later way out. One move on, the victim can
+   still back out with ${node.bestInstead.san} instead: after ${node.bestInstead.line.join(' ')}, ${node.bestInstead.balance}${verdictOf(node)}.
+   Open it as the question ("And if White sees it one move late?"), say what
+   happens by piece in whole sentences, and how the learner stands then.${board}
+   So this episode speaks on two moves (budgetCourse 2, budgetVideo 2), each line
+   complete on its own; no line on the moves between.`;
 }
 
 /** §13.4: the video plays the safe line (`playOut`) under the safety
@@ -156,7 +223,8 @@ function safeLineOnBoard(context: CoursePromptContext, skeleton: Extract<CourseS
   if (!promptVideos(context).video || !line?.length) return '';
   return `\n   In the video the board goes back to before the bait and plays
    ${line.join(' ')} while this episode's video line on the bait is said:
-   walk through those moves in order.`;
+   say what happens in that order, by piece and in whole sentences; the board
+   shows the moves, so never read them out.`;
 }
 
 /** When the victim finds the safe move, what the trapper plays to lose as
@@ -235,13 +303,21 @@ function openingPlaybook(context: CoursePromptContext): string {
   const lineList = context.lines.map((line) => `${line.id} "${line.name}"`).join(', ');
   return `KIND: OPENING
 The learner plays ${capitalise(context.learnerSide)}. Lines, main line first: ${lineList}.
-- Chapter 1 "The idea": the main line to its end. What each learner move is
-  for; then the plan and the pawn structure it leads to.
-- One chapter per sideline: how to recognise the deviation, the principled
-  answer, and what changes in the plan.
+- Chapter 1 "The idea": the main line to its end. Its first episode speaks
+  on the line's first move with a placing line (the opening's name, and in a
+  breath what each side is going for in the moves that follow), then on the first
+  move that matters; the moves between play silently. Include that first move in
+  the episode's narratedNodeIds. Then what each learner move is
+  for, the plan and the pawn structure it leads to.
+- One chapter per sideline: who starts the deviation (the opponent or the
+  learner) and why they choose it, how to recognise it, the principled answer,
+  what changes in the plan, and which line the learner should choose at their
+  level and why.
 - Each trap the dossier finds inside the lines gets its own short episode: the
   bait, the punishment, and how the learner avoids the mirror version.
-- Last chapter "Recap": the move orders only, then the three takeaways.
+- Last chapter "Recap": one episode on the main line's last move, with one course
+  line and one video line (budgetCourse 1, budgetVideo 1): the move orders only,
+  then the three takeaways. Never an episode with no line.
 drillNodeIds: every learner move in the main line, plus the first two learner
 moves after each deviation.
 In the video: chapter 1's key moves speak; each sideline in two or three
@@ -376,6 +452,9 @@ beyond these headers and the creator's direction.
   master's move is the engine's best or marked "also good".
 - If the dossier marks a master's move as a mistake, say so respectfully and
   give the better move.
+- variation — the creator's own variation off the game, one episode each, after
+  the game: what would have happened there, and why the game went another way.
+  The dossier's line note says what the creator means by it.
 - In the video: the critical moments carry the story: the position, the
   question, the master's move, why.`;
 }

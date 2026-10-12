@@ -7,9 +7,9 @@ import { CourseDocumentSchema, CourseGenerationSchema, CourseKindSchema, CourseL
 /** The intake form (docs/courses.md §5.3). `learnerSide` null lets code
  * infer it (§3); the route refuses when it can't. */
 export const CreateCourseRequestSchema = z.object({
-  pgn: z.string().trim().min(1, 'Paste a PGN').max(200_000),
+  pgn: z.string().trim().min(1, 'Paste a PGN').max(1_000_000),
   kind: CourseKindSchema,
-  direction: z.string().trim().max(500).default(''),
+  direction: z.string().trim().max(20_000).default(''),
   levelBand: z.enum(RATING_BANDS).default('improving'),
   learnerSide: z.enum(['white', 'black']).nullable().default(null),
   coachPersona: z.enum(COACH_PERSONAS),
@@ -42,6 +42,12 @@ export const CourseResponseSchema = z.object({
   evals: z.record(z.string(), z.object({ cp: z.number(), quality: MoveQualitySchema }))
 });
 export type CourseResponse = z.infer<typeof CourseResponseSchema>;
+
+/** The key in a course's `evals` of a tempting move at `nodeId` (a move off
+ * the tree, shown in the video): its evaluation and quality. */
+export function temptingEvalKey(nodeId: string, san: string): string {
+  return `tempting:${nodeId}:${san}`;
+}
 
 export const CourseSummarySchema = z.object({
   id: z.string(),
@@ -212,15 +218,19 @@ export const CourseStageSchema = z.enum(COURSE_STAGES);
 export type CourseStage = z.infer<typeof CourseStageSchema>;
 
 /** Where the learner is in a course: the play-through's episode and step,
- * and in practice which moves they already know (drill key → state). A drill
- * restarts at its beginning; it is short, and its order follows the review. */
+ * in practice which moves they already know (drill key → state), and, in
+ * Practice or a drill, the line and move of the run in progress (`run`, an
+ * episode id and the number of its moves played) so it picks up there.
+ * `where` is the words for it on the Continue card ("Greedy · move 3"). */
 export const CourseEnrollmentPlaceSchema = z.object({
   episode: z.number().int().min(0).max(200).default(0),
   step: z.number().int().min(0).max(2000).default(0),
   practice: z
     .record(CourseDrillKeySchema, z.enum(['arrow', 'some_arrow', 'no_arrow', 'cleared']))
     .refine((practice) => Object.keys(practice).length <= 400, 'Too many practice moves.')
-    .default({})
+    .default({}),
+  run: z.object({ episode: z.string().min(1).max(40), step: z.number().int().min(0).max(2000) }).nullable().default(null),
+  where: z.string().max(120).nullable().default(null)
 });
 export type CourseEnrollmentPlace = z.infer<typeof CourseEnrollmentPlaceSchema>;
 

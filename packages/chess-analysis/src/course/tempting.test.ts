@@ -43,6 +43,9 @@ describe('tempting moves', () => {
     const tempting = withTempting(dossier, candidates, evals).nodes.find((node) => node.nodeId === 'n12')!.tempting;
     expect(tempting.map((each) => each.san)).toEqual(['Nxe5']);
     expect(tempting[0]?.refutation).toEqual(['Qd2', 'Nxf3+', 'exf3']);
+    // The video's bar and badge: Black walked from winning into a mate.
+    expect(tempting[0]?.quality).toBe('blunder');
+    expect(tempting[0]?.evalAfterCp).toBeGreaterThan(1000);
   });
 
   test('at a solving move every check is weighed, the obvious ones too', () => {

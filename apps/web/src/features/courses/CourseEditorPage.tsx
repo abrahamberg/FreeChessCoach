@@ -207,7 +207,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
           onClose={() => setPublishing(false)}
         />
       )}
-      {learnerPreview && <LearnerPreview document={document} onClose={() => setLearnerPreview(false)} />}
+      {learnerPreview && <LearnerPreview document={document} evals={course.evals} onClose={() => setLearnerPreview(false)} />}
       {previewing && <ClipPreview document={document} slug={course.slug} evals={course.evals} onClose={() => setPreviewing(false)} />}
       {startingOver && (
         <StartOverDialog

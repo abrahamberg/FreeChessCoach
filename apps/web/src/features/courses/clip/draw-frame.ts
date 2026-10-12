@@ -1,24 +1,52 @@
-import type { CoachPersona, CourseArrow } from '@freechesscoach/shared';
+import { expectedPoints } from '@freechesscoach/chess-analysis';
+import { MOVE_QUALITY_SYMBOLS, type CoachPersona, type CourseArrow, type MoveQuality } from '@freechesscoach/shared';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { defaultPieces } from 'react-chessboard';
+import { formatEval } from '../../board/EvalBar.js';
 import { markAlpha } from './speech-marks.js';
 import { CLIP_SIZES, type ClipSegment, type ClipTimeline } from './timeline.js';
 
 /** Fixed colours: a clip looks the same whatever theme the creator uses.
- * They are the app's light-theme tokens (styles/tokens.css). */
+ * They are the app's light-theme tokens (styles/tokens.css) and its board's. */
 const COLORS = {
   background: '#141f19',
   panel: '#1d2b22',
   text: '#f7f8f5',
   muted: '#b9c2b5',
   accent: '#5b9c6a',
-  light: '#ede2c8',
-  dark: '#8ba173',
-  lastMove: 'rgba(255, 214, 10, 0.38)',
+  /** The app's board: react-chessboard's own squares, which CoachBoard leaves
+   * as they are. Not `--board-light`/`--board-dark`: those colour the
+   * evaluation bar and the logo tile, and on the board they read as another
+   * site's green. */
+  light: '#f0d9b5',
+  dark: '#b58863',
+  /** `--board-light`, `--board-dark`: the evaluation bar's two sides, the logo's tile. */
+  barLight: '#ede2c8',
+  barDark: '#8ba173',
+  /** `--last-move`: the app's own green, not the yellow of other sites' boards. */
+  lastMove: 'rgba(130, 190, 130, 0.55)',
+  /** The king in check, as the app's board lights it; stronger when mated. */
+  check: '#e03131',
   /** A square the coach names, lit while it is said. */
   mark: '#ffd60a',
-  arrows: { idea: '#c9762a', threat: '#c0392b', best: '#5b9c6a' } satisfies Record<CourseArrow['kind'], string>
+  arrows: { idea: '#c9762a', threat: '#c0392b', best: '#5b9c6a' } satisfies Record<CourseArrow['kind'], string>,
+  /** `--quality-*`, the badge on a rated move; the glyph is dark except on
+   * the three MoveQualityBadge.css turns white. */
+  quality: {
+    brilliant: '#2f7dc4',
+    great: '#3f9fd1',
+    best: '#5b9c6a',
+    excellent: '#6fae7c',
+    good: '#86bf8f',
+    book: '#8a7355',
+    inaccuracy: '#c9a227',
+    mistake: '#d9622b',
+    miss: '#a8477a',
+    blunder: '#c0392b',
+    forced: '#6f6a5e'
+  } satisfies Record<MoveQuality, string>
 };
+const WHITE_GLYPH: readonly MoveQuality[] = ['brilliant', 'miss', 'blunder'];
 const FONT = "'Inter Tight', Inter, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
 /** The coach sprite (public/brand/coaches.png, 4 × 2 portraits of 256 × 512)
@@ -34,8 +62,9 @@ const AVATAR_CELL: Record<CoachPersona, [column: number, row: number]> = {
   gambler: [3, 1]
 };
 const AVATAR_TOP = [123, 538];
-/** The site's name, on the video's first slide. */
-const SITE_NAME = 'freechesscoach.org';
+/** The site's address: on the first slide, under the coach while the film
+ * plays, and on the closing cards with the course's link. */
+export const SITE_NAME = 'freechesscoach.org';
 
 export interface ClipAssets {
   pieces: Map<string, HTMLImageElement>;
@@ -99,11 +128,13 @@ function drawReelFrame(ctx: CanvasRenderingContext2D, input: FrameInput, width: 
   const board = { x: 0, y: 420, size: 1080 };
   wrapText(ctx, input.timeline.topText ?? '', { x: width / 2, y: 190, maxWidth: 980, font: `900 96px ${FONT}`, color: COLORS.text, lineHeight: 110, maxLines: 2, align: 'center' });
   drawBoard(ctx, input, board.x, board.y, board.size);
+  drawEvalBar(ctx, input, { x: board.x, y: board.y - 22, width: board.size, height: 14 });
   const { segment } = input;
   if (segment.moveLabel) text(ctx, segment.moveLabel, 40, 1580, `700 48px ${FONT}`, COLORS.accent);
   wrapText(ctx, segment.caption, { x: width / 2, y: 1690, maxWidth: 980, font: `900 80px ${FONT}`, color: COLORS.text, lineHeight: 92, maxLines: 2, align: 'center' });
   drawAvatar(ctx, input, width - 150, height - 150, 110);
-  if (segment.kind === 'cta') drawCard(ctx, width, height, segment.caption, input.link);
+  text(ctx, SITE_NAME, 40, height - 80, `700 44px ${FONT}`, COLORS.muted);
+  if (segment.kind === 'cta') drawCard(ctx, width, height, segment.caption, input.link, input.assets);
   drawCountdownOf(ctx, input, board.x + board.size / 2, board.y + board.size / 2);
 }
 
@@ -113,6 +144,7 @@ function drawVideoFrame(ctx: CanvasRenderingContext2D, input: FrameInput, width:
   const board = { x: 60, y: 60, size: 960 };
   const { segment } = input;
   drawBoard(ctx, input, board.x, board.y, board.size);
+  drawEvalBar(ctx, input, { x: 18, y: board.y, width: 26, height: board.size });
   if (segment.kind === 'title') {
     drawStartPanel(ctx, input, 1080);
     return;
@@ -122,15 +154,23 @@ function drawVideoFrame(ctx: CanvasRenderingContext2D, input: FrameInput, width:
   const caption = segment.kind === 'beat' || segment.kind === 'quiz' || segment.kind === 'tempting' || segment.kind === 'move' ? segment.caption : '';
   wrapText(ctx, input.title, { x: panelX, y: 130, maxWidth: 780, font: `700 52px ${FONT}`, color: COLORS.text, lineHeight: 62, maxLines: 3 });
   if (segment.moveLabel) text(ctx, segment.moveLabel, panelX, 360, `700 64px ${FONT}`, segment.kind === 'tempting' || (segment.kind === 'move' && caption) ? COLORS.arrows.threat : COLORS.accent);
-  if (segment.kind === 'tempting') text(ctx, 'Tempting, but…', panelX, 440, `600 44px ${FONT}`, COLORS.muted);
+  if (segment.kind === 'tempting') text(ctx, temptingLabel(input), panelX, 440, `600 44px ${FONT}`, COLORS.muted);
   wrapText(ctx, caption, { x: panelX, y: 540, maxWidth: 780, font: `800 72px ${FONT}`, color: COLORS.text, lineHeight: 84, maxLines: 4 });
   drawAvatar(ctx, input, panelX, 860, 150);
-  text(ctx, input.coachName, panelX + 180, 945, `600 42px ${FONT}`, COLORS.muted);
+  text(ctx, input.coachName, panelX + 180, 930, `600 42px ${FONT}`, COLORS.muted);
+  text(ctx, SITE_NAME, panelX + 180, 985, `700 38px ${FONT}`, COLORS.accent);
 
   if (segment.kind === 'chapter') drawCard(ctx, width, height, segment.caption, input.title);
-  if (segment.kind === 'outro') drawCard(ctx, width, height, segment.caption, `Learn it move by move: ${input.link}`);
-  if (segment.kind === 'end') drawCard(ctx, width, height, input.title, `Learn it move by move: ${input.link}`);
+  if (segment.kind === 'outro') drawCard(ctx, width, height, firstQuestion(segment.caption), `Free course, move by move: ${input.link}`, input.assets);
+  if (segment.kind === 'end') drawCard(ctx, width, height, input.title, `Free course, move by move: ${input.link}`, input.assets);
   drawCountdownOf(ctx, input, board.x + board.size / 2, board.y + board.size / 2);
+}
+
+/** A move that tempts the learner is a mistake to avoid; the opponent's is
+ * a question ("what if they play this instead?"). The board faces the learner. */
+function temptingLabel(input: FrameInput): string {
+  const mover = input.segment.fen.split(' ')[1] === 'b' ? 'black' : 'white';
+  return mover === input.orientation ? 'Tempting, but…' : 'What if…?';
 }
 
 /** The start slide's panel beside the climax board: the logo and the site,
@@ -155,7 +195,7 @@ function drawStartPanel(ctx: CanvasRenderingContext2D, input: FrameInput, x: num
 
   slide(0, () => {
     roundRect(ctx, x, 60, 110, 110, 24);
-    ctx.fillStyle = COLORS.light;
+    ctx.fillStyle = COLORS.barLight;
     ctx.fill();
     if (input.assets.logo) ctx.drawImage(input.assets.logo, x + 5, 65, 100, 100);
     text(ctx, SITE_NAME, x + 140, 132, `800 50px ${FONT}`, COLORS.text);
@@ -223,6 +263,8 @@ function drawBoard(ctx: CanvasRenderingContext2D, input: FrameInput, x: number, 
     ctx.fillStyle = `${COLORS.arrows[arrow.kind]}66`;
     ctx.fillRect(sx, sy, square, square);
   }
+  if (input.segment.king) drawCheckedKing(ctx, input, at(input.segment.king.square), square);
+  for (const name of input.segment.king?.shut ?? []) drawShutSquare(ctx, at(name), square);
   for (const [name, code] of piecesOf(input.segment.fen)) {
     const image = input.assets.pieces.get(code);
     const [sx, sy] = at(name);
@@ -233,6 +275,7 @@ function drawBoard(ctx: CanvasRenderingContext2D, input: FrameInput, x: number, 
     const [tx, ty] = at(arrow.to);
     drawArrow(ctx, fx + square / 2, fy + square / 2, tx + square / 2, ty + square / 2, square, COLORS.arrows[arrow.kind]);
   }
+  if (input.segment.rated && lastMove) drawQualityBadge(ctx, input.segment.rated.quality, at(lastMove.to), square);
   // The squares and moves the coach names, while they are said.
   const spokenMs = input.ms - input.segment.start - input.segment.audioOffsetMs;
   for (const mark of input.segment.marks ?? []) {
@@ -253,6 +296,99 @@ function drawBoard(ctx: CanvasRenderingContext2D, input: FrameInput, x: number, 
       drawArrow(ctx, fx + square / 2, fy + square / 2, tx + square / 2, ty + square / 2, square, COLORS.arrows.idea, alpha * 0.85);
     }
   }
+}
+
+/** The move's quality on the corner of the square it landed on, as the
+ * app's review pins it (MoveQualityBadgeOverlay). */
+function drawQualityBadge(ctx: CanvasRenderingContext2D, quality: MoveQuality, [sx, sy]: [number, number], square: number): void {
+  const radius = square * 0.2;
+  // Inside the board even on its top row and right-hand file.
+  const cx = sx + square - radius * 0.9;
+  const cy = sy + radius * 0.9;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fillStyle = COLORS.quality[quality];
+  ctx.fill();
+  ctx.lineWidth = square * 0.025;
+  ctx.strokeStyle = COLORS.text;
+  ctx.stroke();
+  ctx.fillStyle = WHITE_GLYPH.includes(quality) ? '#fff' : '#15140f';
+  ctx.font = `800 ${Math.round(radius * 1.15)}px ${FONT}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(MOVE_QUALITY_SYMBOLS[quality], cx, cy + radius * 0.06);
+  ctx.restore();
+}
+
+/**
+ * The app's evaluation bar (EvalBar) beside the board: upright on the
+ * YouTube video with White's share at White's end, lying above the board on
+ * the reel with White's share from the left. A board the engine did not rate
+ * keeps the bar's frame with no fill line and no figure, so nothing jumps.
+ */
+function drawEvalBar(ctx: CanvasRenderingContext2D, input: FrameInput, box: { x: number; y: number; width: number; height: number }): void {
+  const { rated, king } = input.segment;
+  const upright = box.height > box.width;
+  ctx.save();
+  roundRect(ctx, box.x, box.y, box.width, box.height, Math.min(box.width, box.height) / 3);
+  ctx.clip();
+  ctx.fillStyle = rated ? COLORS.barDark : COLORS.panel;
+  ctx.fillRect(box.x, box.y, box.width, box.height);
+  if (rated) {
+    // The engine has no figure for a finished game: the mated side, the one
+    // to move, has nothing left.
+    const white = king?.mated ? (input.segment.fen.split(' ')[1] === 'w' ? 0 : 1) : expectedPoints(rated.cp);
+    ctx.fillStyle = COLORS.barLight;
+    if (!upright) ctx.fillRect(box.x, box.y, box.width * white, box.height);
+    else if (input.orientation === 'white') ctx.fillRect(box.x, box.y + box.height * (1 - white), box.width, box.height * white);
+    else ctx.fillRect(box.x, box.y, box.width, box.height * white);
+  }
+  ctx.restore();
+  if (!rated || !upright) return;
+  ctx.font = `700 22px ${FONT}`;
+  ctx.fillStyle = COLORS.muted;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(king?.mated ? '#' : formatEval(rated.cp), box.x + box.width / 2 + 6, box.y + box.height + 34);
+}
+
+/** The checked king's square: a red glow under the piece; a mated king's
+ * fills the square, ringed, and pulses once a second so the eye finds it. */
+function drawCheckedKing(ctx: CanvasRenderingContext2D, input: FrameInput, [sx, sy]: [number, number], square: number): void {
+  const mated = input.segment.king?.mated ?? false;
+  const pulse = mated ? 0.75 + 0.25 * Math.sin(((input.ms - input.segment.start) / 1000) * Math.PI * 2) : 1;
+  const glow = ctx.createRadialGradient(sx + square / 2, sy + square / 2, square * 0.1, sx + square / 2, sy + square / 2, square * (mated ? 0.75 : 0.6));
+  glow.addColorStop(0, COLORS.check);
+  glow.addColorStop(1, mated ? `${COLORS.check}99` : `${COLORS.check}00`);
+  ctx.save();
+  ctx.globalAlpha = pulse;
+  ctx.fillStyle = glow;
+  ctx.fillRect(sx, sy, square, square);
+  if (mated) {
+    ctx.strokeStyle = COLORS.check;
+    ctx.lineWidth = square * 0.08;
+    ctx.strokeRect(sx + ctx.lineWidth / 2, sy + ctx.lineWidth / 2, square - ctx.lineWidth, square - ctx.lineWidth);
+  }
+  ctx.restore();
+}
+
+/** A square the mated king cannot run to: tinted red with a cross. */
+function drawShutSquare(ctx: CanvasRenderingContext2D, [sx, sy]: [number, number], square: number): void {
+  const inset = square * 0.34;
+  ctx.save();
+  ctx.fillStyle = `${COLORS.check}40`;
+  ctx.fillRect(sx, sy, square, square);
+  ctx.strokeStyle = `${COLORS.check}cc`;
+  ctx.lineWidth = square * 0.06;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(sx + inset, sy + inset);
+  ctx.lineTo(sx + square - inset, sy + square - inset);
+  ctx.moveTo(sx + square - inset, sy + inset);
+  ctx.lineTo(sx + inset, sy + square - inset);
+  ctx.stroke();
+  ctx.restore();
 }
 
 /** Square name → react-chessboard piece code ("wK", "bP"), from a FEN. */
@@ -317,12 +453,33 @@ function drawAvatar(ctx: CanvasRenderingContext2D, input: FrameInput, x: number,
   ctx.stroke();
 }
 
-function drawCard(ctx: CanvasRenderingContext2D, width: number, height: number, title: string, line: string): void {
+/** The outro is spoken whole (the question, the sign-off, the ask); its
+ * card shows the question only. */
+function firstQuestion(outro: string): string {
+  return /^.*?\?/.exec(outro)?.[0] ?? outro;
+}
+
+/** `brand`: the closing cards carry the logo and the site's address above the title. */
+function drawCard(ctx: CanvasRenderingContext2D, width: number, height: number, title: string, line: string, brand?: ClipAssets): void {
   ctx.fillStyle = 'rgba(20, 31, 25, 0.88)';
   ctx.fillRect(0, 0, width, height);
+  if (brand) drawBrand(ctx, brand, width / 2, height * 0.16);
   const maxWidth = width * 0.84;
   wrapText(ctx, title, { x: width / 2, y: height * 0.4, maxWidth, font: `800 84px ${FONT}`, color: COLORS.text, lineHeight: 98, maxLines: 3, align: 'center' });
   wrapText(ctx, line, { x: width / 2, y: height * 0.62, maxWidth, font: `600 52px ${FONT}`, color: COLORS.accent, lineHeight: 64, maxLines: 3, align: 'center' });
+}
+
+/** The logo tile and the site's address, centred on `x`. */
+function drawBrand(ctx: CanvasRenderingContext2D, assets: ClipAssets, x: number, y: number): void {
+  const tile = 120;
+  ctx.font = `800 64px ${FONT}`;
+  const nameWidth = ctx.measureText(SITE_NAME).width;
+  const left = x - (tile + 30 + nameWidth) / 2;
+  roundRect(ctx, left, y - tile / 2, tile, tile, 26);
+  ctx.fillStyle = COLORS.barLight;
+  ctx.fill();
+  if (assets.logo) ctx.drawImage(assets.logo, left + 6, y - tile / 2 + 6, tile - 12, tile - 12);
+  text(ctx, SITE_NAME, left + tile + 30, y + 22, `800 64px ${FONT}`, COLORS.text);
 }
 
 function drawCountdown(ctx: CanvasRenderingContext2D, x: number, y: number, seconds: number): void {

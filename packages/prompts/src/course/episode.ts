@@ -1,4 +1,4 @@
-import { courseNodePath, renderCourseDossier, type CourseDossier } from '@freechesscoach/chess-analysis';
+import { CONFIG, courseNodePath, renderCourseDossier, type CourseDossier } from '@freechesscoach/chess-analysis';
 import type { CourseOutline, CourseOutlineEpisode } from '@freechesscoach/shared';
 import { courseBudget, episodeWordBudget } from './budget.js';
 import { buildCourseSystemPrompt, nodeLabel, promptVideos, type CourseMessages, type CoursePromptContext } from './context.js';
@@ -10,7 +10,9 @@ export const EPISODE_SCRIPT_JSON_SCHEMA = `{
     "tempting": [{ "san": string, "why": string }] (moves that look right here and fail, from the dossier's tempting moves only),
     "course": boolean (speaks in the course), "video": boolean (speaks in the YouTube video) }] (in move order,
     only the moves that speak or carry arrows),
-  "quiz": { "answerNodeId": string, "prompt": string, "hint": string (points at the target, never names the move),
+  "quiz": { "answerNodeId": string,
+    "scene": string (one or two sentences on what is going on in the position before the answer: who threatens what, from the dossier's facts; never the answer),
+    "prompt": string, "hint": string (points at the target, never names the move),
     "reveal": string (names the move and says in one sentence why it works) } | null
 }`;
 
@@ -37,13 +39,14 @@ export function buildCourseEpisodeMessages(request: CourseEpisodeRequest): Cours
   const budget = courseBudget(context.kind, context.persona);
   const words = episodeWordBudget(budget, outline, episodeId);
   const quizLine = episode.answerNodeId
-    ? `\nQuiz: the answer is ${episode.answerNodeId}. The app shows the position before it, says quiz.prompt and pauses ${budget.pauseSeconds}s; the video's moves start at the answer and reveal it.`
+    ? `\nQuiz: the answer is ${episode.answerNodeId}. The app shows the position before it, says quiz.scene, then quiz.prompt, and pauses ${budget.pauseSeconds}s; the video's moves start at the answer and reveal it.`
     : '\nQuiz: none in this episode, so "quiz" is null.';
   // Phase 101: what every episode call of the course repeats comes first and
   // is cached; the episode's own blocks follow.
-  const shared = [`COURSE\nTitle: ${outline.title}\nPromise: ${outline.promise}`, `OUTLINE\n${renderOutline(outline)}`, `OUTPUT SCHEMA\n${EPISODE_SCRIPT_JSON_SCHEMA}`];
+  const brief = context.direction ? `CREATOR'S BRIEF (the lesson's main source; serve the points that belong to this episode)\n"""\n${context.direction}\n"""` : '';
+  const shared = [`COURSE\nTitle: ${outline.title}\nPromise: ${outline.promise}`, brief, `OUTLINE\n${renderOutline(outline)}`, `OUTPUT SCHEMA\n${EPISODE_SCRIPT_JSON_SCHEMA}`].filter(Boolean);
   const sections = [
-    `THIS EPISODE\n${episode.id} ${episode.role}, ${episode.startNodeId} to ${episode.endNodeId}\nFocus: ${episode.focus}\nThe plan's key moves: ${episode.narratedNodeIds.join(', ') || 'none'}${quizLine}\n${ownNodesLine(context, episode)}\n${speakingLines(context, episode, words)}\nSay every line as the coach in VOICE would.${usedOpenersLine(request.usedOpeners)}`,
+    `THIS EPISODE\n${episode.id} ${episode.role}, ${episode.startNodeId} to ${episode.endNodeId}\nFocus: ${episode.focus}\nThe plan's key moves: ${episode.narratedNodeIds.join(', ') || 'none'}${quizLine}\n${ownNodesLine(context, episode)}\n${speakingLines(context, episode, words)}${mateLine(context, episode)}\nSay every line as the coach in VOICE would.${usedOpenersLine(request.usedOpeners)}`,
     `DOSSIER (this episode only)\n${renderCourseDossier(episodeDossier(context, episode))}`,
     request.creatorRequest ? `CREATOR'S REQUEST FOR THIS EPISODE\n"${request.creatorRequest}"` : ''
   ];
@@ -51,6 +54,15 @@ export function buildCourseEpisodeMessages(request: CourseEpisodeRequest): Cours
     ? `YOUR PREVIOUS ANSWER HAD THESE PROBLEMS — fix every one\n${request.retry.problems.map((problem) => `- ${problem}`).join('\n')}\n\nYour previous answer:\n${request.retry.previousOutput}`
     : undefined;
   return { system: buildCourseSystemPrompt(context), shared: shared.join('\n\n'), user: sections.filter(Boolean).join('\n\n'), ...(retry ? { retry } : {}) };
+}
+
+/** The mate's own line: the third Stafford film still ended it on "Rewind:
+ * what if White challenges your bishop?", because the plan's focus said so. */
+function mateLine(context: CoursePromptContext, episode: CourseOutlineEpisode): string {
+  const path = courseNodePath(context.nodes, episode.startNodeId, episode.endNodeId) ?? [];
+  const mate = path.find((nodeId) => context.nodes.find((node) => node.id === nodeId)?.san.endsWith('#'));
+  if (!mate) return '';
+  return `\nThe line on ${nodeLabel(context, mate)} is the checkmate and nothing else: the move, why the king has no way out, and the quiet move that made it possible. It ends there, whatever the focus says: no other move, no "rewind", no "what if", no better try for the other side. Those belong to another episode.`;
 }
 
 /** The course-wide voice check, fed forward: without it the first real
@@ -65,7 +77,8 @@ export function usedOpenersLine(words: readonly string[] | undefined): string {
 function ownNodesLine(context: CoursePromptContext, episode: CourseOutlineEpisode): string {
   const path = courseNodePath(context.nodes, episode.startNodeId, episode.endNodeId) ?? [];
   const before = context.nodes.find((node) => node.id === episode.startNodeId)?.parentId;
-  const own = `Every plies nodeId is one of: ${path.map((nodeId) => nodeLabel(context, nodeId)).join(', ')}.`;
+  const fast = new Set(context.dossier.nodes.filter((node) => node.creatorMarks.includes('fast')).map((node) => node.nodeId));
+  const own = `Every plies nodeId is one of: ${path.map((nodeId) => nodeLabel(context, nodeId) + (fast.has(nodeId) ? ' (fast: no words)' : '')).join(', ')}.`;
   return before ? `${own} ${before} in the dossier is the move before, for context only: no line on it.` : own;
 }
 
@@ -104,5 +117,11 @@ function speakingLines(context: CoursePromptContext, episode: CourseOutlineEpiso
   const ticks = video ? '"course": true and "video": true' : '"course": true';
   if (keys.length) lines.push(`Must speak, ${ticks}: ${keys.map((id) => nodeLabel(context, id)).join(', ')}. These are the moves the episode is for; the budget counts them.`);
   if (video) lines.push(`Video words: at most ${words.wordsPerEpisode} spoken in this episode's part of the video, at most ${words.wordsPerBeat} per move; every video move has a caption of at most 6 words. Fewer is fine when there is less to say.`);
+  // The whys are not in the episode's words, and a run squeezed the bait's
+  // line and both side roads into them: "It advances; bishops trade."
+  if (video && episode.role === 'bait') {
+    const { minBaitVideoWords, minSideRoadWords } = CONFIG.courses;
+    lines.push(`The bait is the one place to take room: its video line has at least ${minBaitVideoWords} words, and each tempting "why" at least ${minSideRoadWords}, in whole sentences. The whys have their own room: they do not count against this episode's video words.`);
+  }
   return lines.join('\n');
 }

@@ -78,6 +78,8 @@ function episodeProblems(input: CourseOutlineCheckInput, byId: ReadonlyMap<strin
   if (episode.budgetCourse > path.length || episode.budgetVideo > path.length) {
     problems.push(`episode ${episode.id} lets ${Math.max(episode.budgetCourse, episode.budgetVideo)} moves speak but has ${path.length}`);
   }
+  const fast = episode.narratedNodeIds.filter((id) => input.dossier.nodes.find((node) => node.nodeId === id)?.creatorMarks.includes('fast'));
+  if (fast.length) problems.push(`episode ${episode.id} narrates ${fast.join(', ')}, which the creator marked @fast: no words there`);
   const strays = episode.narratedNodeIds.filter((id) => !path.includes(id));
   if (strays.length) problems.push(`episode ${episode.id} narrates ${strays.join(', ')}, outside ${episode.startNodeId}–${episode.endNodeId}`);
   if (episode.answerNodeId && !isQuizAnswerEligible(input.kind, input.dossier, episode.answerNodeId)) {
@@ -94,6 +96,8 @@ function episodeProblems(input: CourseOutlineCheckInput, byId: ReadonlyMap<strin
 export function isQuizAnswerEligible(kind: CourseKind, dossier: CourseDossier, nodeId: string): boolean {
   const facts = dossier.nodes.find((node) => node.nodeId === nodeId);
   if (!facts) return false;
+  // The creator's `@quiz` beats the engine's one-best-move rule (M6).
+  if (facts.creatorMarks.includes('quiz')) return true;
   if (kind === 'master_game') return facts.critical && (facts.quizEligible || MASTER_QUIZ_QUALITIES.has(facts.quality));
   // A puzzle asks every solution move (§13.2); a second good answer is
   // accepted by the player's engine check, and the checks warn about it.
@@ -121,7 +125,8 @@ function coverageProblems(input: CourseOutlineCheckInput, covered: ReadonlySet<s
     if (skeleton.answerNodeId && !covered.has(skeleton.answerNodeId)) problems.push(`no episode covers the answer ${skeleton.answerNodeId}`);
   }
   const roles = new Set(input.outline.chapters.flatMap((chapter) => chapter.episodes.map((episode) => episode.role)));
-  if (input.kind === 'trap' && !roles.has('safety')) problems.push('there is no safety episode');
+  const defenceAtBait = skeleton?.kind === 'trap' && skeleton.sidelines.some((sideline) => sideline.atBait && sideline.by === 'victim');
+  if (input.kind === 'trap' && !roles.has('safety') && !(defenceAtBait && roles.has('defence'))) problems.push(defenceAtBait ? 'there is no defence episode' : 'there is no safety episode');
   if (input.kind === 'endgame' && skeleton?.kind === 'endgame') {
     const uncovered = skeleton.learnerNodeIds.filter((id) => !covered.has(id));
     if (uncovered.length) problems.push(`every move of the technique needs an episode; ${uncovered.slice(0, MAX_LISTED_NODES).join(', ')} are in none`);

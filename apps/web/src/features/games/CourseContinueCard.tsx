@@ -34,6 +34,7 @@ export function CourseContinueCard({ course, onRemove }: CourseContinueCardProps
       <span className="rail-card__title rail-card__title-wrap">{course.title}</span>
       <span className="rail-card__meta">
         <span>{`Stage ${stageNumber} of ${COURSE_STAGES.length}: ${STAGE_LABELS[course.stage]}`}</span>
+        {course.place.where && <span>{`· ${course.place.where}`}</span>}
         <time dateTime={course.updatedAt}>· {shortDate(course.updatedAt)}</time>
       </span>
       <progress className="rail-card__progress" value={done} max={COURSE_STAGES.length} aria-label={`${done} of ${COURSE_STAGES.length} stages done`} />

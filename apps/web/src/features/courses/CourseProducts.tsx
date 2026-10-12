@@ -18,7 +18,7 @@ const VIDEO_FIELDS: { field: keyof CourseVideo; label: string; hint: string; row
   { field: 'title', label: 'Title', hint: 'At most 55 characters: curiosity and clarity.' },
   { field: 'thumbnailText', label: 'Thumbnail text', hint: 'At most 4 words.' },
   { field: 'hook', label: 'Hook', hint: 'The first 15 seconds: the premise or the climax, never “welcome back”.', rows: 3 },
-  { field: 'outro', label: 'Outro', hint: 'A question for the comments, then what comes next.', rows: 2 }
+  { field: 'outro', label: 'Outro', hint: 'A question for the comments (shown on the card), the coach’s sign-off with the site, one ask to like and subscribe, then what comes next.', rows: 4 }
 ];
 
 const REEL_TEXTS: { field: 'topText' | 'hook' | 'payoff' | 'cta' | 'loop'; label: string }[] = [

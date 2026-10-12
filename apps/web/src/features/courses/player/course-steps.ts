@@ -1,4 +1,4 @@
-import type { CourseArrow, CourseDocument, CourseEpisode, CourseNode, MoveQuality } from '@freechesscoach/shared';
+import type { CourseArrow, CourseDocument, CourseEpisode, CourseNode } from '@freechesscoach/shared';
 import { episodeNodeIds, fenBefore } from '../courseEdits.js';
 
 /** One episode as the learner walks it: the position before its first move,
@@ -26,15 +26,6 @@ export function stepView(episode: CourseEpisode, walk: EpisodeWalk, step: number
   if (!move) return { fen: walk.startFen, move: null, note: null, arrows: [] };
   const ply = episode.plies.find((each) => each.nodeId === move.id);
   return { fen: move.fenAfter, move, note: (ply?.course && ply.text.trim()) || null, arrows: ply?.arrows.length ? ply.arrows : move.arrows };
-}
-
-/** §11: a move the engine rates about as good as the course's is accepted,
- * with no penalty. The same tiers the classifier gives a move within a
- * couple of win-% points of the best. */
-const ACCEPTED: ReadonlySet<MoveQuality> = new Set(['brilliant', 'great', 'best', 'excellent']);
-
-export function isAcceptedAlternative(quality: MoveQuality): boolean {
-  return ACCEPTED.has(quality);
 }
 
 /** The note with the move's own name blanked out ("2...Nc6 hits e5" → "…

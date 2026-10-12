@@ -1,25 +1,38 @@
-import { randomBytes } from 'node:crypto';
-
 const MAX_TITLE = 120;
 const MAX_SLUG_WORDS = 60;
 
-/** The direction's first sentence ("Englund Gambit trap for beginners"), or
- * a placeholder the creator renames in the editor. */
-export function courseTitle(direction: string): string {
+/** The PGN's [Event] ("Evans Gambit"), else the direction's first sentence
+ * ("Englund Gambit trap for beginners"), else a placeholder the creator
+ * renames in the editor. */
+export function courseTitle(pgn: string, direction: string): string {
+  const event = courseHeaders(pgn).event;
+  if (event) return event.slice(0, MAX_TITLE);
   const first = direction.split(/(?<=[.!?])\s/)[0]?.replace(/[.!?]$/, '').trim() ?? '';
   return (first || 'Untitled course').slice(0, MAX_TITLE);
 }
 
-/** Unique enough to never collide in practice; the table's UNIQUE catches the rest. */
-export function courseSlug(title: string): string {
-  const words = title
+/** Words that say what kind of lesson it is, not what it teaches: a link
+ * leaves them off its end ("Stafford Gambit trap" is /learn/stafford-gambit). */
+const SLUG_TAIL_WORDS = ['trap', 'traps', 'course', 'lesson'];
+
+/** The course's address, from its title: "Stafford Gambit" is
+ * /learn/stafford-gambit, a link a person can read and say. A second course
+ * of that name is stafford-gambit-2 (`taken`: the slugs that start the same). */
+export function courseSlug(title: string, taken: readonly string[] = []): string {
+  const all = title
     .toLowerCase()
     .normalize('NFKD')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, MAX_SLUG_WORDS)
-    .replace(/-$/, '');
-  return `${words || 'course'}-${randomBytes(6).toString('hex')}`;
+    // The accents NFKD splits off: "Défense" is "defense", not "de-fense".
+    .replace(/[\u0300-\u036f]/g, '')
+    // "Noah's Ark" is "noahs-ark", not "noah-s-ark".
+    .replace(/['’]/g, '')
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+  let end = all.length;
+  while (end > 1 && SLUG_TAIL_WORDS.includes(all[end - 1]!)) end -= 1;
+  const words = all.slice(0, end).join('-').slice(0, MAX_SLUG_WORDS).replace(/-$/, '') || 'course';
+  if (!taken.includes(words)) return words;
+  for (let count = 2; ; count += 1) if (!taken.includes(`${words}-${count}`)) return `${words}-${count}`;
 }
 
 /** The first game's [Result] tag, e.g. "1-0"; null when absent or "*". */

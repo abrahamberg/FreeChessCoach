@@ -47,6 +47,22 @@ describe('course dossier', () => {
     expect(rows(499, null)).toBeGreaterThan(4);
   });
 
+  // The first Stafford film (2026-10-11) could not say what the usual Petrov
+  // move was, nor that 4…dxc6 opens the bishop that mates on g4.
+  test("a gambit's move lists the book's other moves in its opening, and a recapture the lines it opens", () => {
+    const tree = parseCourseTree('1. e4 e5 2. Nf3 Nf6 3. Nxe5 Nc6 4. Nxc6 dxc6 5. d3 Bc5 6. Bg5 Nxe4 7. Bxd8 Bxf2+ 8. Ke2 Bg4# *');
+    const { dossier } = analyseCourse(tree, fakeEvals(tree, () => 0), 'black');
+    const node = (id: string) => dossier.nodes.find((each) => each.nodeId === id);
+    expect(node('n6')?.bookSiblings.map((each) => each.san).sort()).toEqual(['Nxe4', 'd6']);
+    expect(node('n8')?.opens.map((each) => `${each.piece}${each.square}`)).toEqual(['qd8', 'bc8']);
+    // A move out of check opens nothing: the check was what shut the pieces in.
+    expect(node('n15')?.opens).toEqual([]);
+    const text = renderCourseDossier(dossier);
+    expect(text).toContain('the light-squared bishop on c8');
+    // 1.e4's other first moves are other openings: not listed.
+    expect(text.split('\n').filter((row) => row.includes('the book also has')).length).toBeLessThan(6);
+  });
+
   test('the rendered dossier carries verdict words and no engine numbers', () => {
     const text = renderCourseDossier(analyseEnglund().dossier);
     expect(text).toContain('Black is winning');

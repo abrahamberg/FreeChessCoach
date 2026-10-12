@@ -13,13 +13,14 @@ export class LocalTtsHttpError extends Error {
 }
 
 /** POSTs one piece of text to a Kokoro-FastAPI server's OpenAI-style
- * `/v1/audio/speech` and returns the MP3 bytes. `voice` is a Kokoro voice id
- * — the same ids persona-voices.ts already maps personas to. */
-export async function synthesizeLocal(baseUrl: string, text: string, voice: string, speed = 1): Promise<ArrayBuffer> {
+ * `/v1/audio/speech` and returns the audio bytes (MP3 unless asked). `voice`
+ * is a Kokoro voice id — the same ids persona-voices.ts already maps
+ * personas to. */
+export async function synthesizeLocal(baseUrl: string, text: string, voice: string, speed = 1, format: 'mp3' | 'wav' = 'mp3'): Promise<ArrayBuffer> {
   const response = await fetch(`${baseUrl}/v1/audio/speech`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ model: 'kokoro', input: text, voice, speed, response_format: 'mp3' })
+    body: JSON.stringify({ model: 'kokoro', input: text, voice, speed, response_format: format })
   });
   if (!response.ok) throw new LocalTtsHttpError(response.status);
   return response.arrayBuffer();
@@ -32,9 +33,19 @@ export async function synthesizeLocal(baseUrl: string, text: string, voice: stri
  * server stays a sentence or two in front of what's being heard. */
 export const localTtsClient: TtsClient = {
   mimeType: 'audio/mpeg',
+  studioMimeType: 'audio/wav',
   async speak(request, onChunk) {
     const baseUrl = readLocalTtsUrl();
     const { voice, speed } = kokoroSynthesisSpeed(request.persona);
+    // A course recording: the whole line in one request, so the voice
+    // carries its tone from sentence to sentence instead of starting each
+    // one cold, and uncompressed, since it is encoded again into the video.
+    // Sentence by sentence in MP3 is for the live coach, where the first
+    // words must come fast.
+    if (request.studio) {
+      onChunk(0, await synthesizeLocal(baseUrl, request.text, voice, speed, 'wav'));
+      return;
+    }
     const sentences = splitIntoSentences(request.text);
     const toSynthesize = sentences.length > 0 ? sentences : [request.text];
     for (const [index, sentence] of toSynthesize.entries()) {

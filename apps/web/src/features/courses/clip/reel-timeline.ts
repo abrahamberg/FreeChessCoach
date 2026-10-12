@@ -1,13 +1,20 @@
 import type { CourseNode } from '@freechesscoach/shared';
 import { courseMoveSound } from '../player/course-move-list.js';
 import { clipSoundLengthMs, type ClipSound } from './clip-sounds.js';
-import { boardAt, marksFor, SegmentWriter, type ClipTimeline, type TimelineOptions } from './timeline.js';
+import { boardAt, landingMs, marksFor, movePaceMs, SegmentWriter, type ClipTimeline, type TimelineOptions } from './timeline.js';
 
 /** docs/courses.md §13.3, the reel's pace, in ms. */
 export const REEL_TIMING = {
   /** The build-up: fast, so the board is never still for long. */
   moveMs: 500,
-  gapMs: 250,
+  /** The same for a move the creator marked `@fast`, and the hold on a `@slow` one. */
+  fastMoveMs: 250,
+  slowHoldMs: 1000,
+  /** After each line's audio: short, a reel is quick, but the sentence ends first. */
+  gapMs: 500,
+  /** More after the line on a capture or a check, and on a mate that is not the climax. */
+  landMs: 350,
+  mateMs: 1200,
   /** A line or the hook with no audio yet. */
   silentBeatMs: 1200,
   /** The held breath before the climax: no voice, no board sound. */
@@ -50,7 +57,7 @@ function reelPass(options: TimelineOptions & { timing?: typeof REEL_TIMING }, cl
   const path = spanOf(byId, reel.startNodeId, reel.endNodeId);
   const startBoard = path[0]?.parentId ? (byId.get(path[0].parentId) ?? null) : null;
   let shown: CourseNode | null = startBoard;
-  const board = (node: CourseNode | null) => boardAt(document, node);
+  const board = (node: CourseNode | null) => boardAt(document, node, options.evals);
 
   const hook = spoken('reel:hook', reel.hook);
   const hookMarks = marksFor(reel.hook, board(shown).fen, hook.key ? audioMs(hook.key) : undefined);
@@ -65,7 +72,10 @@ function reelPass(options: TimelineOptions & { timing?: typeof REEL_TIMING }, cl
     const sound = soundOf(node);
     const line = beat ? spoken(`reel:beat:${node.id}`, beat.say) : { key: null, length: 0 };
     const lead = sound && line.key ? soundLength(sound) : 0;
-    const length = Math.max(timing.moveMs, line.length + lead) + (extra.holdMs ?? 0);
+    const pace = movePaceMs(node, timing.moveMs, timing.fastMoveMs, timing.slowHoldMs);
+    // The climax has its own hold; any other line lands by what its move does.
+    const land = extra.holdMs ?? (line.key ? landingMs(node.san, timing) : 0);
+    const length = Math.max(pace, line.length + lead + (node.marks.includes('slow') ? timing.slowHoldMs : 0)) + land;
     const marks = beat && line.key ? marksFor(beat.say, node.fenAfter, audioMs(line.key)) : {};
     out.push({ kind: beat ? 'beat' : 'move', ...board(node), arrows: [], caption: extra.caption ?? beat?.caption ?? '', audioKey: line.key, pauseMs: 0, sound, audioOffsetMs: lead, ...marks }, length);
     shown = node;

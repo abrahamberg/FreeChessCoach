@@ -6,6 +6,10 @@ export interface TtsSpeakRequest {
   /** A Settings sample: lets the OpenAI route play it before voice is
    * turned on or switched to OpenAI. */
   preview?: boolean;
+  /** A recording made ahead of time (a course's video and notes), where
+   * nobody waits to hear the first word: the backend may trade speed for
+   * sound. The live coach never sets it. */
+  studio?: boolean;
 }
 
 /** Common shape for both coach-voice backends (kokoro-tts-client.ts,
@@ -16,6 +20,8 @@ export interface TtsSpeakRequest {
  * blobs the raw bytes it gets back from `speak()`. */
 export interface TtsClient {
   mimeType: string;
+  /** The container of a `studio` recording, where it differs from `mimeType`. */
+  studioMimeType?: string;
   /** Mirrors SharedTtsWorker.speak: `onChunk` fires once per chunk (in
    * order) as audio becomes available; the returned promise resolves once
    * the whole message has finished, or rejects on error. A backend that

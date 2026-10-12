@@ -1,8 +1,10 @@
 import type { CourseArrow, CourseDocument, CoursePly } from '@freechesscoach/shared';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { CoachBoard, type BoardArrow } from '../board/CoachBoard.js';
+import { MoveExplorer } from '../board/MoveExplorer.js';
 import { toBoardMarks } from './courseArrows.js';
 import { moveLabel } from './courseEdits.js';
+import { explorerExtras, explorerTree } from './explorer-tree.js';
 import { StepButtons } from './StepButtons.js';
 
 export interface CourseBoardPanelProps {
@@ -27,6 +29,9 @@ export function CourseBoardPanel({ document, nodeIds, selectedNodeId, onSelectNo
   const selected = selectedNodeId ? byId.get(selectedNodeId) : undefined;
   const index = selectedNodeId ? nodeIds.indexOf(selectedNodeId) : -1;
   const marks = toBoardMarks(arrows);
+  // The whole course as its tree, the selected episode's moves in full and the rest faded.
+  const tree = useMemo(() => explorerTree(document), [document]);
+  const extras = useMemo(() => explorerExtras(document, new Set(nodeIds)), [document, nodeIds]);
   const step = (offset: number): void => {
     const next = nodeIds[index + offset];
     if (next) onSelectNode(next);
@@ -89,6 +94,10 @@ export function CourseBoardPanel({ document, nodeIds, selectedNodeId, onSelectNo
           );
         })}
       </div>
+      <details className="course-board__tree">
+        <summary>All lines of the course</summary>
+        <MoveExplorer tree={tree} currentNodeId={selectedNodeId} onSelect={(next) => next && onSelectNode(next)} qualities={{}} showNotes={false} hideNav nodeExtras={extras} />
+      </details>
     </div>
   );
 }

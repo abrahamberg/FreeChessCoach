@@ -12,6 +12,8 @@ const QUEENSIDE = new Set(['a', 'b', 'c', 'd']);
 export interface CourseLineFacts {
   lineId: string;
   name: string;
+  /** The creator's section note: what the line is for. */
+  note: string | null;
   openingName: string | null;
   /** The first move of the line that is not in the opening book. */
   bookExitNodeId: string | null;
@@ -32,6 +34,7 @@ export function buildCourseLineFacts(line: CourseTreeLine, game: CourseLineGame,
   return {
     lineId: line.id,
     name: line.name,
+    note: line.note,
     openingName: resolveOpening(positions.map((position) => positionKey(position.fen)))?.name ?? null,
     bookExitNodeId: exitIndex >= 0 ? (game.nodeIds[exitIndex] ?? null) : null,
     endFeatures: endFen ? endFeatures(endFen, endEval) : []

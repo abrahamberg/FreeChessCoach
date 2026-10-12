@@ -1,10 +1,13 @@
 import { Chess } from 'chess.js';
-import { videoCaption, videoLine, type CourseArrow, type CourseDocument, type CourseEpisode, type CourseNode, type CoursePly } from '@freechesscoach/shared';
+import { temptingEvalKey, videoCaption, videoLine, type MoveQuality, type CourseArrow, type CourseDocument, type CourseEpisode, type CourseNode, type CoursePly } from '@freechesscoach/shared';
 import { moveSound } from '../../../sounds/move-sounds.js';
 import { courseMoveSound, type CourseEvals } from '../player/course-move-list.js';
 import { moveLabel as sanLabel } from '@freechesscoach/chess-analysis';
 import { moveLabel } from '../courseEdits.js';
+import { checkedKing, type CheckedKing } from '../../board/checked-king.js';
 import { clipSoundLengthMs, type ClipSound } from './clip-sounds.js';
+
+export { checkedKing, type CheckedKing };
 import { speechMarks, type ClipMark } from './speech-marks.js';
 
 /** docs/courses.md §13.1: the YouTube video is 16:9, the reel 9:16. */
@@ -22,8 +25,19 @@ export const PRODUCT_FORMAT: Record<ClipProduct, ClipFormat> = { video: 'landsca
 export const CLIP_TIMING = {
   /** An unnarrated move between lines. */
   moveMs: 700,
-  /** After each line's audio. */
-  gapMs: 350,
+  /** The same for a move the creator marked `@fast`. */
+  fastMoveMs: 350,
+  /** How long a move the creator marked `@slow` is held, on top of its own length. */
+  slowHoldMs: 1500,
+  /** After each line's audio: the coach finishes the sentence and the
+   * viewer gets a breath before the board moves on (the owner, 2026-10-12:
+   * the film cut on while he was still talking). The video's length is a
+   * guide, never a reason to hurry a line. */
+  gapMs: 1000,
+  /** More after the line on a capture or a check, so it lands before the next move. */
+  landMs: 600,
+  /** And after the line on a checkmate: the mated king is held on screen. */
+  mateMs: 2500,
   /** A line with no words (a caption only). */
   silentBeatMs: 1500,
   /** The end card with the course link. */
@@ -49,6 +63,8 @@ export interface ClipSegment {
   fen: string;
   /** The move just played, highlighted on the board. */
   lastMove: { from: string; to: string } | null;
+  /** The king in check on this board, lit; `mated` when it is checkmate. */
+  king?: CheckedKing;
   /** "6.Bc3", shown with the move; null on cards. */
   moveLabel: string | null;
   arrows: CourseArrow[];
@@ -66,6 +82,11 @@ export interface ClipSegment {
   /** The squares and moves the line names, timed from its audio's start
    * (speech-marks.ts); absent when it names none. */
   marks?: ClipMark[];
+  /** The engine's word on the lesson move this board shows, as the app's
+   * review shows it: the evaluation for the bar (centipawns, White's side)
+   * and the move's quality for its badge. Absent on a board the engine pass
+   * did not rate (the start, a move played out off the lesson's line). */
+  rated?: { cp: number; quality: MoveQuality };
 }
 
 export interface ClipTimeline {
@@ -84,6 +105,15 @@ export interface TimelineOptions {
   /** Board sounds under the moves: the course's evaluations (bad and great
    * for either side) and how long a sound lasts. Absent: none. */
   sounds?: { evals: CourseEvals; lengthMs?: (sound: ClipSound) => number } | null;
+  /** The course's evaluations, for the evaluation bar and the quality
+   * badges. Absent: neither is drawn. */
+  evals?: CourseEvals;
+}
+
+/** The hold after the line on `san`: a capture or a check lands, a mate stays. */
+export function landingMs(san: string, timing: { landMs: number; mateMs: number }): number {
+  if (san.endsWith('#')) return timing.mateMs;
+  return san.includes('x') || san.endsWith('+') ? timing.landMs : 0;
 }
 
 type NewSegment = Omit<ClipSegment, 'start' | 'end' | 'sound' | 'audioOffsetMs'> & Partial<Pick<ClipSegment, 'sound' | 'audioOffsetMs'>>;
@@ -105,9 +135,23 @@ export function marksFor(text: string, fen: string, audioMs: number | undefined)
   return marks.length ? { marks } : {};
 }
 
+/** How much of a "what if" line is said before its first move plays: its
+ * first sentence's share of the words (the question), or an even share when
+ * it is one sentence. */
+function leadShare(why: string, moves: number): number {
+  const words = (text: string): number => text.split(/\s+/).filter(Boolean).length;
+  const sentences = why.trim().split(/(?<=[.!?:])\s+/);
+  const even = 1 / (moves + 1);
+  if (sentences.length < 2 || !words(why)) return even;
+  return Math.min(0.5, Math.max(even / 2, words(sentences[0]!) / words(why)));
+}
+
 /** The board after `node`, or the start. */
-export function boardAt(document: CourseDocument, node: CourseNode | null): Pick<ClipSegment, 'fen' | 'lastMove' | 'moveLabel'> {
+export function boardAt(document: CourseDocument, node: CourseNode | null, evals?: CourseEvals): Pick<ClipSegment, 'fen' | 'lastMove' | 'moveLabel' | 'king' | 'rated'> {
+  const rated = node ? evals?.[node.id] : undefined;
   return {
+    ...checkedKing(node?.fenAfter ?? document.startFen),
+    ...(rated ? { rated } : {}),
     fen: node?.fenAfter ?? document.startFen,
     lastMove: node ? { from: node.uci.slice(0, 2), to: node.uci.slice(2, 4) } : null,
     moveLabel: node ? moveLabel(document, node) : null
@@ -123,6 +167,13 @@ export function movesBetween(byId: ReadonlyMap<string, CourseNode>, from: Course
     path.unshift(node);
   }
   return from ? [] : path;
+}
+
+/** How long a move without words lasts: a creator's `@fast` plays it quickly,
+ * a `@slow` holds it. */
+export function movePaceMs(node: CourseNode, moveMs: number, fastMoveMs: number, slowHoldMs: number): number {
+  if (node.marks.includes('fast')) return fastMoveMs;
+  return node.marks.includes('slow') ? moveMs + slowHoldMs : moveMs;
 }
 
 /** The episodes in chapter order, with their chapter. */
@@ -151,13 +202,13 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
   const byId = new Map(document.nodes.map((node) => [node.id, node]));
   const out = new SegmentWriter();
   let shown: CourseNode | null = null;
-  const board = (node: CourseNode | null) => boardAt(document, node);
+  const board = (node: CourseNode | null) => boardAt(document, node, options.evals);
   const spokenLength = (key: string, has: boolean): { key: string | null; length: number } => {
     const spoken = has ? audioMs(key) : undefined;
     return spoken === undefined ? { key: null, length: timing.silentBeatMs } : { key, length: spoken + timing.gapMs };
   };
   const playTo = (node: CourseNode): void => {
-    for (const between of movesBetween(byId, shown, node)) out.push({ kind: 'move', ...board(between), arrows: [], caption: '', audioKey: null, pauseMs: 0, sound: soundOf(between) }, timing.moveMs);
+    for (const between of movesBetween(byId, shown, node)) out.push({ kind: 'move', ...board(between), arrows: [], caption: '', audioKey: null, pauseMs: 0, sound: soundOf(between) }, movePaceMs(between, timing.moveMs, timing.fastMoveMs, timing.slowHoldMs));
   };
 
   // §13.4: the hook over the climax, then the cut back to the start.
@@ -180,14 +231,28 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
       playTo(before);
       shown = before;
     }
+    // The scene first: what is going on, said over the position, before the question.
+    const scene = episode.quiz.scene.trim() ? spokenLength(`quiz-scene:${episode.id}`, true) : null;
+    if (scene) out.push({ kind: 'beat', ...board(before ?? null), arrows: [], caption: '', audioKey: scene.key, pauseMs: 0, ...marksFor(episode.quiz.scene, board(before ?? null).fen, scene.key ? audioMs(scene.key) : undefined) }, scene.length);
     const key = `quiz:${episode.id}`;
     const spoken = episode.quiz.prompt.trim() ? audioMs(key) : undefined;
     const length = (spoken === undefined ? 0 : spoken + timing.gapMs) + timing.quizPauseMs;
     out.push({ kind: 'quiz', ...board(before ?? null), arrows: [], caption: episode.quiz.prompt, audioKey: spoken === undefined ? null : key, pauseMs: timing.quizPauseMs }, length);
   };
 
+  // A trap's film runs its line without a detour (the owner's note,
+  // 2026-10-11): the opponent's other tries wait for the line's end, and the
+  // learner's own are the course's, since the learner is springing the trap.
+  const trap = document.kind === 'trap';
+  const sideRoads: (() => void)[] = [];
   const temptingMoves = (episode: CourseEpisode, ply: CoursePly, node: CourseNode): void => {
     const before = node.parentId ? (byId.get(node.parentId) ?? null) : null;
+    const learners = sideToMove(before?.fenAfter ?? document.startFen) === document.learnerSide;
+    if (trap && learners) return;
+    if (trap) sideRoads.push(() => playTempting(episode, ply, before));
+    else playTempting(episode, ply, before);
+  };
+  const playTempting = (episode: CourseEpisode, ply: CoursePly, before: CourseNode | null): void => {
     (ply.tempting ?? []).forEach((tempting, index) => {
       const played = playOut(before?.fenAfter ?? document.startFen, [tempting.san, ...(tempting.refutation ?? [])]);
       const first = played[0];
@@ -195,13 +260,23 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
       const key = `tempting:${episode.id}:${ply.nodeId}:${index}`;
       const spoken = spokenLength(key, Boolean(tempting.why.trim()));
       const marks = marksFor(tempting.why, before?.fenAfter ?? document.startFen, spoken.key ? audioMs(key) : undefined);
+      // The moves play while the coach tells them, not after: a long "why"
+      // over a still board was hard to follow (the owner, 2026-10-12). The
+      // arrow stays for the opening question, the line's first sentence, and
+      // the moves share the rest of the audio.
+      // The engine's word on the tempting move; its answer is the engine's
+      // own line, so each move of it is the best and the figure holds.
+      const verdict = options.evals?.[temptingEvalKey(ply.nodeId, tempting.san)];
+      const ratedAt = (at: number): Pick<ClipSegment, 'rated'> => (verdict ? { rated: at === 0 ? verdict : { cp: verdict.cp, quality: 'best' } } : {});
+      const step = Math.max(timing.moveMs, Math.floor((spoken.length * (1 - leadShare(tempting.why, played.length))) / played.length));
+      const lead = Math.max(timing.moveMs, spoken.length - step * played.length);
       out.push(
-        { kind: 'tempting', ...board(before), arrows: [{ from: first.from, to: first.to, kind: 'threat' }], caption: `${tempting.san}?`, audioKey: spoken.key, pauseMs: 0, ...marks },
-        spoken.length
+        { kind: 'tempting', ...board(before), moveLabel: first.label, arrows: [{ from: first.from, to: first.to, kind: 'threat' }], caption: `${tempting.san}?`, audioKey: spoken.key, pauseMs: 0, ...marks },
+        lead
       );
       played.forEach((move, at) => {
         const sound = sounds ? (at === 0 ? 'bad' : moveSound({ san: move.san, mover: move.mover, learnerSide: document.learnerSide })) : null;
-        out.push({ kind: 'move', fen: move.fen, lastMove: { from: move.from, to: move.to }, moveLabel: move.label, arrows: [], caption: at === 0 ? `${tempting.san}?` : '', audioKey: null, pauseMs: 0, sound }, timing.moveMs);
+        out.push({ kind: 'move', fen: move.fen, ...checkedKing(move.fen), lastMove: { from: move.from, to: move.to }, moveLabel: move.label, arrows: [], caption: at === 0 ? `${tempting.san}?` : '', audioKey: null, pauseMs: 0, sound, ...ratedAt(at) }, step);
       });
       out.push({ kind: 'move', ...board(before), arrows: [], caption: '', audioKey: null, pauseMs: 0 }, timing.backMs);
     });
@@ -216,9 +291,12 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
     const step = Math.max(timing.moveMs, Math.round(spoken.length / (played.length + 1)));
     const caption = videoCaption(ply);
     out.push({ kind: 'beat', ...board(before), arrows: [], caption, audioKey: spoken.key, pauseMs: 0, sound: sounds ? 'whoosh' : null }, step);
+    // The safe line is the engine's best from here: the evaluation before it holds along it.
+    const held = before ? options.evals?.[before.id] : undefined;
+    const rated: Pick<ClipSegment, 'rated'> = held ? { rated: { cp: held.cp, quality: 'best' } } : {};
     for (const move of played) {
       const sound = sounds ? moveSound({ san: move.san, mover: move.mover, learnerSide: document.learnerSide }) : null;
-      out.push({ kind: 'beat', fen: move.fen, lastMove: { from: move.from, to: move.to }, moveLabel: move.label, arrows: [], caption, audioKey: null, pauseMs: 0, sound }, step);
+      out.push({ kind: 'beat', fen: move.fen, ...checkedKing(move.fen), lastMove: { from: move.from, to: move.to }, moveLabel: move.label, arrows: [], caption, audioKey: null, pauseMs: 0, sound, ...rated }, step);
     }
     shown = before;
   };
@@ -228,6 +306,7 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
       out.push({ kind: 'chapter', ...board(shown), moveLabel: null, lastMove: null, arrows: [], caption: chapter, audioKey: null, pauseMs: 0, sound: sounds ? 'whoosh' : null }, timing.chapterMs);
       cut = false;
     }
+    if (SIDE_ROAD_ROLES.has(episode.role)) sideRoads.splice(0).forEach((play) => play());
     if (cut) {
       // The hook's cut back to the start, when no chapter card makes it.
       out.push({ kind: 'move', ...board(null), arrows: [], caption: '', audioKey: null, pauseMs: 0, sound: sounds ? 'whoosh' : null }, timing.backMs);
@@ -258,9 +337,10 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
       const lead = sound && spoken.key ? soundLength(sound) : 0;
       shown = node;
       const marks = marksFor(videoLine(ply), node.fenAfter, spoken.key ? audioMs(key) : undefined);
-      out.push({ kind: 'beat', ...board(node), arrows: ply.arrows, caption: videoCaption(ply), audioKey: spoken.key, pauseMs: 0, sound, audioOffsetMs: lead, ...marks }, spoken.length + lead);
+      out.push({ kind: 'beat', ...board(node), arrows: ply.arrows, caption: videoCaption(ply), audioKey: spoken.key, pauseMs: 0, sound, audioOffsetMs: lead, ...marks }, spoken.length + lead + landingMs(node.san, timing) + (node.marks.includes('slow') ? timing.slowHoldMs : 0));
     });
   }
+  sideRoads.splice(0).forEach((play) => play());
   const outro = document.video?.outro.trim();
   if (outro) {
     const spoken = spokenLength('video:outro', true);
@@ -268,6 +348,13 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
   }
   out.push({ kind: 'end', ...board(shown), lastMove: null, moveLabel: null, arrows: [], caption: '', audioKey: null, pauseMs: 0 }, timing.endCardMs);
   return { product: 'video', format: 'landscape', segments: out.segments, durationMs: out.clock };
+}
+
+/** A trap's episodes after its line: the side roads open before the first. */
+const SIDE_ROAD_ROLES = new Set(['safety', 'defence', 'alternative']);
+
+function sideToMove(fen: string): 'white' | 'black' {
+  return fen.split(' ')[1] === 'b' ? 'black' : 'white';
 }
 
 /** Moves off the course's tree (a tempting move and its refutation), played

@@ -1,0 +1,178 @@
+Learner side: White
+
+Lines:
+l1 "Classical Scotch" | opening: Scotch Game: Classical Variation | leaves book at n13
+    creator note: "Black puts the bishop on c5 at once and White keeps the centre"
+    end position: the d-file is half-open for white; the e-file is half-open for black; black has a queenside pawn majority; white has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
+l2 "Schmidt variation" | opening: Scotch Game: Mieses Variation | leaves book at n21
+    creator note: "Black strikes back at the knight and White's centre"
+    end position: the b-file is half-open for black; the d-file is half-open for white; the e-file is half-open for black; black has an isolated pawn on a7; black has doubled pawns on the c-file; black has a queenside pawn majority; white has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
+l3 "Scotch Gambit" | opening: Scotch Game: Haxo Gambit | leaves book at n31
+    creator note: "White gives the d-pawn back for quick development"
+    end position: the d-file is half-open for white; the e-file is half-open for black; black has doubled pawns on the d-file; black has a queenside pawn majority; white has a kingside pawn majority; the white king is tucked away on g1; the black king is still in the centre on e8
+
+Moves:
+n1 1.e4 (White, Classical Scotch) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e2 to e4
+    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…e5 (Black, Classical Scotch) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e7 to e5
+    alternatives: c5: The position is roughly equal; c6: The position is roughly equal
+n3 2.Nf3 (White, Classical Scotch) | book
+    book: in book (King's Knight Opening)
+    board: moves the knight from g1 to f3
+    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+n4 2…Nc6 (Black, Classical Scotch) | book
+    book: in book (King's Knight Opening: Normal Variation)
+    board: moves the knight from b8 to c6
+    alternatives: d6: The position is roughly equal; Nf6: The position is roughly equal
+n5 3.d4 (White, Classical Scotch) | book
+    book: in book (Scotch Game)
+    board: moves the pawn from d2 to d4
+    alternatives: Bb5: The position is roughly equal; Bc4: The position is roughly equal; Nc3: The position is roughly equal
+n6 3…exd4 (Black, Classical Scotch) | book
+    book: in book (Scotch Game)
+    board: moves the pawn from e5 to d4 | captures the pawn on d4
+    alternatives: Nxd4: White is slightly better; d6: White is slightly better
+n7 4.Nxd4 (White, Classical Scotch) | book
+    book: in book (Scotch Game)
+    board: moves the knight from f3 to d4 | captures the pawn on d4 | attacks the knight on c6
+    alternatives: Bc4: The position is roughly equal; Bb5: The position is roughly equal
+n8 4…Bc5 (Black, Classical Scotch) | book
+    book: in book (Scotch Game: Classical Variation)
+    board: moves the bishop from f8 to c5 | attacks the knight on d4
+    alternatives: Bb4+: The position is roughly equal; Nf6: The position is roughly equal
+n9 5.Be3 (White, Classical Scotch) | book
+    book: in book (Scotch Game: Classical Variation)
+    board: moves the bishop from c1 to e3
+    alternatives: Nxc6: The position is roughly equal; Nb3: The position is roughly equal
+n10 5…Qf6 (Black, Classical Scotch) | book
+    book: in book (Scotch Game: Classical Variation)
+    board: moves the queen from d8 to f6 | attacks the knight on d4
+    alternatives: Bb6: White is slightly better; Bb4+: White is slightly better
+n11 6.c3 (White, Classical Scotch) | book
+    book: in book (Scotch Game: Classical Variation)
+    board: moves the pawn from c2 to c3
+    alternatives: Nb5: Black is slightly better; Nxc6: Black is slightly better
+n12 6…Nge7 (Black, Classical Scotch) | book
+    book: in book (Scotch Game: Classical Variation)
+    board: moves the knight from g8 to e7
+    alternatives: d6: The position is roughly equal; Qg6: The position is roughly equal
+n13 7.Bc4 (White, Classical Scotch) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the bishop from f1 to c4
+    alternatives: Bb5: The position is roughly equal; Qd2: The position is roughly equal
+n14 7…Ne5 (Black, Classical Scotch) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from c6 to e5 | attacks the bishop on c4
+    alternatives: d6: The position is roughly equal; O-O: The position is roughly equal
+n15 8.Be2 (White, Classical Scotch) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the bishop from c4 to e2
+    alternatives: Bb3: The position is roughly equal; Nd2: The position is roughly equal
+n16 8…Qg6 (Black, Classical Scotch) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the queen from f6 to g6
+    alternatives: d6: The position is roughly equal; h5: The position is roughly equal
+n17 4…Nf6 (Black, Schmidt variation) | book
+    book: in book (Scotch Game: Schmidt Variation)
+    board: moves the knight from g8 to f6
+    alternatives: Bb4+: The position is roughly equal; Bc5: The position is roughly equal
+n18 5.Nxc6 (White, Schmidt variation) | book
+    book: in book (Scotch Game: Schmidt Variation)
+    board: moves the knight from d4 to c6 | captures the knight on c6 | attacks the queen on d8 | leaves the white pawn on e4 hanging
+    alternatives: Nc3: The position is roughly equal; Qd3: The position is roughly equal
+n19 5…bxc6 (Black, Schmidt variation) | book
+    book: in book (Scotch Game: Schmidt Variation)
+    board: moves the pawn from b7 to c6 | captures the knight on c6
+    alternatives: dxc6: The position is roughly equal; Nxe4: White is much better
+n20 6.e5 (White, Schmidt variation) | book
+    book: in book (Scotch Game: Mieses Variation)
+    board: moves the pawn from e4 to e5 | attacks the knight on f6
+    alternatives: Bd3: The position is roughly equal; Nc3: The position is roughly equal
+n21 6…Qe7 (Black, Schmidt variation) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the queen from d8 to e7
+    alternatives: Ne4: The position is roughly equal; Nd5: White is slightly better
+n22 7.Qe2 (White, Schmidt variation) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the queen from d1 to e2
+    alternatives: Qd4: Black is slightly better; f4: Black is slightly better
+n23 7…Nd5 (Black, Schmidt variation) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from f6 to d5
+    alternatives: Ng8: White is slightly better; Kd8: White is better
+n24 8.c4 (White, Schmidt variation) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from c2 to c4 | attacks the knight on d5
+    alternatives: g3: The position is roughly equal; h4: The position is roughly equal
+n25 8…Ba6 (Black, Schmidt variation) | good | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the bishop from c8 to a6
+    alternatives: Nb6: The position is roughly equal; Qb4+: The position is roughly equal
+n26 4.Bc4 (White, Scotch Gambit) | book
+    book: in book (Scotch Game: Scotch Gambit)
+    board: moves the bishop from f1 to c4
+    alternatives: Nxd4: The position is roughly equal; Bb5: The position is roughly equal
+n27 4…Bc5 (Black, Scotch Gambit) | book
+    book: in book (Scotch Game: Haxo Gambit)
+    board: moves the bishop from f8 to c5
+    alternatives: Nf6: The position is roughly equal; Bb4+: The position is roughly equal
+n28 5.O-O (White, Scotch Gambit) | book
+    book: in book (Scotch Game: Haxo Gambit)
+    board: castles kingside
+    alternatives: c3: The position is roughly equal; Ng5: The position is roughly equal
+n29 5…d6 (Black, Scotch Gambit) | book
+    book: in book (Scotch Game: Haxo Gambit)
+    board: moves the pawn from d7 to d6
+    alternatives: Nf6: The position is roughly equal; Nge7: The position is roughly equal
+n30 6.c3 (White, Scotch Gambit) | book
+    book: in book (Scotch Game: Haxo Gambit)
+    board: moves the pawn from c2 to c3
+    alternatives: h3: Black is slightly better; Nbd2: Black is slightly better
+n31 6…Nf6 (Black, Scotch Gambit) | inaccuracy | before: Black is slightly better → after: The position is roughly equal
+    best instead: Bg4; after Bg4 Qb3 Bxf3 Bxf7+ Kf8 gxf3, White has a bishop for a knight
+    why Bg4 is better: moves the bishop from c8 to g4 | attacks the knight on f3, which is pinned to the queen on d1 by the bishop on g4
+    board: moves the knight from g8 to f6
+    alternatives: Bg4: Black is slightly better; Qf6: The position is roughly equal; dxc3: The position is roughly equal
+
+REEL CANDIDATES
+
+PLAN
+  e1 line n1–n16
+  e2 deviation n17–n25
+  e3 deviation n26–n31
+  e4 recap n16–n16
+
+REVIEW NOTES
+  l1
+    n1 1.e4: Theory — Scotch Game: Classical Variation (C45)
+    n2 1…e5: Theory — Scotch Game: Classical Variation (C45)
+    n3 2.Nf3: Theory — Scotch Game: Classical Variation (C45)
+    n4 2…Nc6: Theory — Scotch Game: Classical Variation (C45)
+    n5 3.d4: Theory — Scotch Game: Classical Variation (C45)
+    n6 3…exd4: Theory — Scotch Game: Classical Variation (C45)
+    n7 4.Nxd4: Theory — Scotch Game: Classical Variation (C45)
+    n8 4…Bc5: Theory — Scotch Game: Classical Variation (C45)
+    n9 5.Be3: Theory — Scotch Game: Classical Variation (C45)
+    n10 5…Qf6: Theory — Scotch Game: Classical Variation (C45)
+    n11 6.c3: Theory — Scotch Game: Classical Variation (C45)
+    n12 6…Nge7: Theory — Scotch Game: Classical Variation (C45)
+    n14 7…Ne5: Concedes the centre
+  l2
+    n1 1.e4: Theory — Scotch Game: Mieses Variation (C45)
+    n2 1…e5: Theory — Scotch Game: Mieses Variation (C45)
+    n3 2.Nf3: Theory — Scotch Game: Mieses Variation (C45)
+    n4 2…Nc6: Theory — Scotch Game: Mieses Variation (C45)
+    n5 3.d4: Theory — Scotch Game: Mieses Variation (C45)
+    n6 3…exd4: Theory — Scotch Game: Mieses Variation (C45)
+    n7 4.Nxd4: Theory — Scotch Game: Mieses Variation (C45)
+    n17 4…Nf6: Theory — Scotch Game: Mieses Variation (C45)
+    n18 5.Nxc6: Theory — Scotch Game: Mieses Variation (C45)
+    n19 5…bxc6: Theory — Scotch Game: Mieses Variation (C45)
+    n20 6.e5: Theory — Scotch Game: Mieses Variation (C45)
+  l3
+    n1 1.e4: Theory — Scotch Game: Haxo Gambit (C44)
+    n2 1…e5: Theory — Scotch Game: Haxo Gambit (C44)
+    n3 2.Nf3: Theory — Scotch Game: Haxo Gambit (C44)
+    n4 2…Nc6: Theory — Scotch Game: Haxo Gambit (C44)
+    n5 3.d4: Theory — Scotch Game: Haxo Gambit (C44)
+    n6 3…exd4: Theory — Scotch Game: Haxo Gambit (C44)
+    n26 4.Bc4: Theory — Scotch Game: Haxo Gambit (C44)
+    n27 4…Bc5: Theory — Scotch Game: Haxo Gambit (C44)
+    n28 5.O-O: Theory — Scotch Game: Haxo Gambit (C44)
+    n29 5…d6: Theory — Scotch Game: Haxo Gambit (C44)
+    n30 6.c3: Theory — Scotch Game: Haxo Gambit (C44)

@@ -88,7 +88,7 @@ export async function listEnrollments(db: Kysely<Database>, userId: string): Pro
     kind: row.kind,
     stage: row.stage,
     // Stored by this code, but parsed so an older shape can't reach the page.
-    place: CourseEnrollmentPlaceSchema.catch({ episode: 0, step: 0, practice: {} }).parse(row.place),
+    place: CourseEnrollmentPlaceSchema.catch({ episode: 0, step: 0, practice: {}, run: null, where: null }).parse(row.place),
     stagesDone: row.stagesDone,
     startedAt: row.startedAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),

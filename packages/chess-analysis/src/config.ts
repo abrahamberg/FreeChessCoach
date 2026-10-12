@@ -545,12 +545,18 @@ export const CONFIG = {
      * sentences per course note (more at a critical node). */
     maxArrowsPerBeat: 2,
     maxCaptionWords: 6,
+    /** A trap's bait is the heart of the film: its video line makes the
+     * viewer want the move, which three words cannot. */
+    minBaitVideoWords: 30,
+    /** A side road at the bait is heard while its moves play: whole
+     * sentences, not "Knight advances; bishops trade." */
+    minSideRoadWords: 25,
     maxNoteSentences: 2,
     maxCriticalNoteSentences: 4,
     /** A puzzle's solve line: the checks, captures and threats, then the move. */
     maxSolveNoteSentences: 5,
     /** docs/courses.md §13.3: at most this many moves before the reel's climax, and after it. */
-    reelMovesBefore: 6,
+    reelMovesBefore: 8,
     reelMovesAfter: 2,
     /** A mate this close after the climax is the payoff: the reel runs to it
      * (the first real run ended a trap's reel two moves before its mate). */
@@ -560,6 +566,9 @@ export const CONFIG = {
     swingWinDrop: 25,
     /** Plies of the engine's best line shown in a node's facts. */
     bestLinePlies: 6,
+    /** The opening book's other moves printed at a book move, from the same
+     * opening family (the name before the colon). */
+    bookSiblingsShown: 5,
     /** A dossier with more nodes than this is printed compactly. */
     fullBlockNodeLimit: 40,
     /** A line's end position is decided when the engine's best line is a
@@ -575,7 +584,7 @@ export const CONFIG = {
     /** A guide, not a target: a puzzle with little to say runs short, and
      * the words cap is the top of the range. */
     videoSeconds: {
-      trap: { min: 120, max: 300 },
+      trap: { min: 180, max: 420 },
       opening: { min: 480, max: 900 },
       tactics: { min: 300, max: 600 },
       puzzle: { min: 90, max: 240 },
@@ -589,7 +598,7 @@ export const CONFIG = {
     /** §13.3 the reel's length. */
     reelSeconds: { min: 30, max: 45 },
     hookWords: 12,
-    maxWordsPerBeat: 30,
+    maxWordsPerBeat: 45,
     quizPauseSeconds: 3,
     /** The video narrates at most one move per this many seconds. */
     secondsPerNarratedMove: 12,

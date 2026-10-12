@@ -1,4 +1,4 @@
-import { inferLearnerSide, parseCourseTree } from '@freechesscoach/chess-analysis';
+import { inferLearnerSide, parseCourseTree, quizSideProblems } from '@freechesscoach/chess-analysis';
 import { bandForRating, COURSE_KINDS, defaultCourseVideos, type CoachPersona, type CourseKind, type CourseVideos } from '@freechesscoach/shared';
 import { useMemo, useState, type ComponentType, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -6,11 +6,16 @@ import { describeApiError } from '../../api/client.js';
 import { ArrowLeftIcon, BookIcon, FlagIcon, type IconProps, KnightIcon, LightbulbIcon, PawnIcon, SearchIcon } from '../../components/Icon.js';
 import { useProfile } from '../../hooks/useProfile.js';
 import { MiniBoard } from '../board/MiniBoard.js';
+import { MoveExplorer } from '../board/MoveExplorer.js';
 import { BAND_LABELS } from '../settings/BandSelect.js';
 import { CoachPersonaSelect } from '../settings/CoachPersonaSelect.js';
 import { useCreateCourse } from './courseApi.js';
 import { COURSE_KIND_INFO } from './courseKinds.js';
 import { CourseVideosPicker } from './CourseVideosPicker.js';
+import { IntakeLines } from './IntakeLines.js';
+import { IntakeTextHelp, INTAKE_TEXT_EXAMPLE } from './IntakeTextHelp.js';
+import { explorerExtras, explorerTree } from './explorer-tree.js';
+import { intakeLineRows } from './intake-summary.js';
 import '../session/SessionPage.css';
 import './CourseEditor.css';
 import './CourseIntakePage.css';
@@ -44,6 +49,7 @@ export function CourseIntakePage(): ReactNode {
   const [chosenVideos, setVideos] = useState<CourseVideos | null>(null);
   const videos = chosenVideos ?? defaultCourseVideos(kind);
   const [side, setSide] = useState<SideChoice>('auto');
+  const [pickedNodeId, setPickedNodeId] = useState<string | null>(null);
   const [persona, setPersona] = useState<CoachPersona | null>(null);
   const coachPersona = persona ?? profile.data?.coachPersona ?? 'general';
 
@@ -51,11 +57,15 @@ export function CourseIntakePage(): ReactNode {
     if (!pgn.trim()) return null;
     const tree = parseCourseTree(pgn);
     const result = /\[Result\s+"([^"]*)"\]/.exec(pgn)?.[1] ?? null;
-    const leaf = tree.nodes.find((node) => node.id === tree.lines[0]?.leafNodeId);
-    return { tree, endFen: leaf?.fenAfter ?? tree.startFen, inferred: tree.errors.length ? null : inferLearnerSide(kind, tree, result === '*' ? null : result) };
+    return { tree, rows: intakeLineRows(tree), explorer: explorerTree(tree), extras: explorerExtras(tree), inferred: tree.errors.length ? null : inferLearnerSide(kind, tree, result === '*' ? null : result) };
   }, [pgn, kind]);
-  const valid = parsed !== null && parsed.tree.errors.length === 0 && parsed.tree.nodes.length > 0;
+  // The board shows the picked move (a click in the moves or a line), else the end of the first line.
+  const shownNodeId = parsed?.tree.nodes.some((node) => node.id === pickedNodeId) ? pickedNodeId : (parsed?.tree.lines[0]?.leafNodeId ?? null);
+  const shownLine = parsed?.tree.lines.find((line) => line.leafNodeId === shownNodeId);
+  const endFen = parsed?.tree.nodes.find((node) => node.id === shownNodeId)?.fenAfter ?? parsed?.tree.startFen ?? '';
   const teaches = side === 'auto' ? parsed?.inferred : side;
+  const quizProblems = parsed && teaches ? quizSideProblems(parsed.tree, teaches) : [];
+  const valid = parsed !== null && parsed.tree.errors.length === 0 && parsed.tree.nodes.length > 0 && quizProblems.length === 0;
 
   function submit(event: FormEvent): void {
     event.preventDefault();
@@ -79,30 +89,35 @@ export function CourseIntakePage(): ReactNode {
           <div className="course-new__moves">
             <label className="course-field course-new__pgn">
               <span className="visually-hidden">PGN</span>
-              <textarea rows={9} value={pgn} onChange={(event) => setPgn(event.target.value)} placeholder="Paste a PGN: 1. d4 e5 2. dxe5 Nc6 …" spellCheck={false} aria-label="PGN" />
+              <textarea rows={9} value={pgn} onChange={(event) => setPgn(event.target.value)} placeholder={`Paste a PGN: 1. d4 e5 2. dxe5 Nc6 …\n\nor write one section per line:\n${INTAKE_TEXT_EXAMPLE}`} spellCheck={false} aria-label="PGN" />
             </label>
             <div className="course-new__preview">
               {valid ? (
                 <>
                   <span data-testid="course-intake-board">
-                    <MiniBoard fen={parsed.endFen} size={168} />
+                    <MiniBoard fen={endFen} size={168} />
                   </span>
                   <p className="course-new__facts">
                     {`${parsed.tree.nodes.length} moves, ${parsed.tree.lines.length} ${parsed.tree.lines.length === 1 ? 'line' : 'lines'}${teaches ? `, you teach ${teaches === 'white' ? 'White' : 'Black'}` : ''}`}
                   </p>
+                  <IntakeLines rows={parsed.rows} selectedLineId={shownLine?.id ?? null} onSelect={(lineId) => setPickedNodeId(parsed.tree.lines.find((line) => line.id === lineId)?.leafNodeId ?? null)} />
+                  <div className="course-new__moves-tree">
+                    <MoveExplorer tree={parsed.explorer} currentNodeId={shownNodeId} onSelect={setPickedNodeId} qualities={{}} showNotes={false} hideNav nodeExtras={parsed.extras} />
+                  </div>
                 </>
               ) : (
                 <div className="course-new__placeholder">The line’s end position shows here.</div>
               )}
-              {parsed && parsed.tree.errors.length > 0 && (
+              {parsed && parsed.tree.errors.length + quizProblems.length > 0 && (
                 <ul className="course-intake__errors" role="alert">
-                  {parsed.tree.errors.slice(0, 3).map((error) => (
-                    <li key={`${error.pgnLine}-${error.message}`}>{error.message}</li>
+                  {[...parsed.tree.errors.map((error) => error.message), ...quizProblems].map((message) => (
+                    <li key={message}>{message}</li>
                   ))}
                 </ul>
               )}
             </div>
           </div>
+          <IntakeTextHelp />
         </section>
 
         <section className="card course-new__step" aria-labelledby="course-new-kind">
@@ -133,8 +148,8 @@ export function CourseIntakePage(): ReactNode {
           </h2>
           <textarea
             className="course-new__direction"
-            rows={3}
-            maxLength={500}
+            rows={8}
+            maxLength={20_000}
             value={direction}
             onChange={(event) => setDirection(event.target.value)}
             placeholder={COURSE_KIND_INFO[kind].example}

@@ -14,6 +14,9 @@ export interface RecordedClip {
 }
 
 const FRAME_RATE = 30;
+/** The coach's voice is the lesson: well above the recorder's own default,
+ * which a browser may set as low as it likes. */
+const AUDIO_BITS_PER_SECOND = 192_000;
 
 /** docs/courses.md §8: records the canvas plus the clip's audio in one pass,
  * by playing the clip from the start through the same player the preview
@@ -24,7 +27,7 @@ export function recordClip(player: ClipPlayer, canvas: HTMLCanvasElement, contex
   const audio = context.createMediaStreamDestination();
   player.output.connect(audio);
   const stream = new MediaStream([...canvas.captureStream(FRAME_RATE).getVideoTracks(), ...audio.stream.getAudioTracks()]);
-  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8_000_000 });
+  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8_000_000, audioBitsPerSecond: AUDIO_BITS_PER_SECOND });
   const chunks: Blob[] = [];
   recorder.ondataavailable = (event) => {
     if (event.data.size) chunks.push(event.data);

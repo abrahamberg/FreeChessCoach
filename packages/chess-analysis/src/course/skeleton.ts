@@ -1,6 +1,7 @@
 import type { CourseKind, TacticMotifType } from '@freechesscoach/shared';
 import type { CourseDossier, CourseNodeFacts } from './dossier.js';
 import type { CourseLineGame } from './line-game.js';
+import { ownMoves } from './own-moves.js';
 import { deviations, endgameSkeleton, puzzleSkeleton } from './skeleton-endgame.js';
 import type { CourseTree } from './tree.js';
 
@@ -15,8 +16,25 @@ export interface TrapSkeleton {
   answerNodeId: string | null;
   punishNodeIds: string[];
   safeMoveSan: string | null;
+  /** The victim's first error after the bait that the engine has a better
+   * move for: a second way out, one move late (the Stafford's 7.Be3 for
+   * 7.Bxd8). The safety episode runs on to it. */
+  laterExitNodeId: string | null;
   /** The trapper's own setup moves that are inaccurate or worse against best play. */
   trapperRiskNodeIds: string[];
+  /** The creator's other lines: how to defend, and what the trapper does then. */
+  sidelines: TrapSideline[];
+}
+
+/** A line besides the trap's own. `by` is who plays its first own move: the
+ * victim (a defence) or the trapper (another try); `atBait` when that move is
+ * played instead of the bait. */
+export interface TrapSideline {
+  lineId: string;
+  /** The moves no earlier line has. */
+  nodeIds: string[];
+  by: 'victim' | 'trapper';
+  atBait: boolean;
 }
 
 export interface OpeningSkeleton {
@@ -95,16 +113,13 @@ export interface CourseSkeletonInput {
 export function buildCourseSkeleton(input: CourseSkeletonInput): CourseSkeleton | null {
   const facts = new Map(input.dossier.nodes.map((node) => [node.nodeId, node]));
   const lineFacts = (line: CourseLineGame): CourseNodeFacts[] => line.nodeIds.flatMap((id) => facts.get(id) ?? []);
-  if (input.kind === 'trap') {
-    const line = input.lines[0];
-    return line ? trapSkeleton(line.lineId, lineFacts(line), input.dossier.learnerSide) : null;
-  }
+  if (input.kind === 'trap') return trapSkeleton(input, lineFacts);
   if (input.kind === 'tactics') return tacticsSkeleton(input.lines, lineFacts, input.dossier.learnerSide);
   if (input.kind === 'endgame') {
     const line = input.lines[0];
     return line ? endgameSkeleton(input, line.lineId, lineFacts(line)) : null;
   }
-  if (input.kind === 'master_game') return masterGameSkeleton(input.dossier);
+  if (input.kind === 'master_game') return masterGameSkeleton(input.dossier, input.lines[0]?.nodeIds ?? []);
   if (input.kind === 'puzzle') {
     const line = input.lines[0];
     return line ? puzzleSkeleton(line.lineId, lineFacts(line), input.dossier.learnerSide) : null;
@@ -112,23 +127,53 @@ export function buildCourseSkeleton(input: CourseSkeletonInput): CourseSkeleton 
   return openingSkeleton(input, lineFacts);
 }
 
-function trapSkeleton(lineId: string, nodes: CourseNodeFacts[], learnerSide: 'white' | 'black'): TrapSkeleton | null {
+/** The bait is the victim's one main-line move the creator marked `?` or `??`
+ * (docs/plan.md M4); else the victim's move with the largest drop. */
+function trapSkeleton(input: CourseSkeletonInput, lineFacts: (line: CourseLineGame) => CourseNodeFacts[]): TrapSkeleton | null {
+  const main = input.lines[0];
+  if (!main) return null;
+  const learnerSide = input.dossier.learnerSide;
+  const nodes = lineFacts(main);
+  const baitIndex = markedBaitIndex(nodes, learnerSide) ?? largestDropIndex(nodes, learnerSide);
+  const bait = nodes[baitIndex];
+  if (!bait) return null;
+  return {
+    kind: 'trap',
+    lineId: main.lineId,
+    baitNodeId: bait.nodeId,
+    answerNodeId: nodes[baitIndex + 1]?.nodeId ?? null,
+    punishNodeIds: nodes.slice(baitIndex + 2).map((node) => node.nodeId),
+    safeMoveSan: bait.bestInstead?.san ?? null,
+    laterExitNodeId: nodes.slice(baitIndex + 2).find((node) => node.side !== learnerSide && ERROR_QUALITIES.has(node.quality) && node.bestInstead)?.nodeId ?? null,
+    trapperRiskNodeIds: nodes.slice(0, baitIndex).filter((node) => node.side === learnerSide && ERROR_QUALITIES.has(node.quality)).map((node) => node.nodeId),
+    sidelines: trapSidelines(input, bait.nodeId)
+  };
+}
+
+function markedBaitIndex(nodes: CourseNodeFacts[], learnerSide: 'white' | 'black'): number | null {
+  const marked = nodes.flatMap((node, index) => (node.side !== learnerSide && (node.creatorGlyph === '?' || node.creatorGlyph === '??') ? [index] : []));
+  return marked.length === 1 ? (marked[0] ?? null) : null;
+}
+
+function largestDropIndex(nodes: CourseNodeFacts[], learnerSide: 'white' | 'black'): number {
   let baitIndex = -1;
   nodes.forEach((node, index) => {
     const best = nodes[baitIndex];
     if (node.side !== learnerSide && node.winDrop > 0 && (!best || node.winDrop > best.winDrop)) baitIndex = index;
   });
-  const bait = nodes[baitIndex];
-  if (!bait) return null;
-  return {
-    kind: 'trap',
-    lineId,
-    baitNodeId: bait.nodeId,
-    answerNodeId: nodes[baitIndex + 1]?.nodeId ?? null,
-    punishNodeIds: nodes.slice(baitIndex + 2).map((node) => node.nodeId),
-    safeMoveSan: bait.bestInstead?.san ?? null,
-    trapperRiskNodeIds: nodes.slice(0, baitIndex).filter((node) => node.side === learnerSide && ERROR_QUALITIES.has(node.quality)).map((node) => node.nodeId)
-  };
+  return baitIndex;
+}
+
+function trapSidelines(input: CourseSkeletonInput, baitNodeId: string): TrapSideline[] {
+  const facts = new Map(input.dossier.nodes.map((node) => [node.nodeId, node]));
+  const parentOf = new Map(input.tree.nodes.map((node) => [node.id, node.parentId]));
+  const own = ownMoves(input.lines);
+  return input.lines.flatMap((line, index) => {
+    const nodeIds = own[index] ?? [];
+    const first = nodeIds[0];
+    if (index === 0 || !first) return [];
+    return [{ lineId: line.lineId, nodeIds, by: facts.get(first)?.side === input.dossier.learnerSide ? ('trapper' as const) : ('victim' as const), atBait: parentOf.get(first) === parentOf.get(baitNodeId) }];
+  });
 }
 
 function openingSkeleton(input: CourseSkeletonInput, lineFacts: (line: CourseLineGame) => CourseNodeFacts[]): OpeningSkeleton {
@@ -178,8 +223,10 @@ function tacticsSkeleton(
   return { kind: 'tactics', examples: examples.sort((a, b) => a.depth - b.depth) };
 }
 
-function masterGameSkeleton(dossier: CourseDossier): MasterGameSkeleton {
-  const nodes = dossier.nodes;
+/** The game's own moments: the creator's variations are not critical moments. */
+function masterGameSkeleton(dossier: CourseDossier, mainLine: readonly string[]): MasterGameSkeleton {
+  const onMain = new Set(mainLine);
+  const nodes = dossier.nodes.filter((node) => onMain.has(node.nodeId));
   return {
     kind: 'master_game',
     criticalNodeIds: nodes.filter((node) => node.critical).map((node) => node.nodeId),

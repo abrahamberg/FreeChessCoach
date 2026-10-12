@@ -81,6 +81,20 @@ describe('buildCourseDrill', () => {
     expect(drill.episodes[1]!.steps.filter((step) => step.asked).map((step) => step.node.san)).toEqual(['Qe7']);
   });
 
+  // The owner (2026-10-12): practice was nine loops, three of them one knight move.
+  test("a line's episodes are one run from its first move to its last; a line that goes back starts its own", () => {
+    const document = course('trap', [episode('e1', 1, 4, [2, 4]), episode('e2', 6, 6, [6]), episode('e3', 7, 8, [8]), episode('e4', 5, 6, [6])]);
+    document.chapters = [{ id: 'c1', title: 'The trap', lineId: 'l1', episodeIds: ['e1', 'e2', 'e3', 'e4'] }];
+    const drill = buildCourseDrill(document);
+    expect(drill.episodes.map((each) => [each.episodeId, each.steps.map((step) => step.node.id).join(' '), each.steps.filter((step) => step.asked).map((step) => step.node.id).join(' ')])).toEqual([
+      ['e1', 'n1 n2 n3 n4 n5 n6 n7 n8', 'n2 n4 n6 n8']
+      // e4 goes back up the line: a run of its own, but its one move was asked already.
+    ]);
+    // Tactics examples are each their own position.
+    document.kind = 'tactics';
+    expect(buildCourseDrill(document).episodes.length).toBeGreaterThan(1);
+  });
+
   test('an episode with a missed or due move comes first', () => {
     const document = course('opening', [episode('e1', 1, 2, [2]), episode('e2', 1, 4, [4])]);
     const nc6 = tree.nodes[3]!;

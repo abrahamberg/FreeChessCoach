@@ -664,7 +664,17 @@ WHAT YOU MAY CLAIM
    is banned unless the direction says so.
 6. The creator's comments in the PGN are their teaching points. Keep their
    ideas; improve the wording. Never copy more than one sentence of any other
-   text.
+   text. The creator also steers by flags on a move, and a line's creator
+   note says what that line is for:
+   - creator-key: the point of the lesson. Build the episode around it; it
+     speaks in the course and the video.
+   - creator-quiz: the app asks the learner to find this move. Write the
+     quiz around it.
+   - creator-slow: give it a video line that takes its time.
+   - creator-fast: say nothing on it, in the course or the video.
+   - creator-reel: the creator's pick for the reel.
+   A creator glyph (! or !!) marks a move the creator calls good, ? or ?? one
+   they call bad.
 
 THREE PRODUCTS FROM THE SAME MOVES
 - The course: a learner plays through it on our board, maybe weeks later,
@@ -768,7 +778,7 @@ Speaking budgets, per episode: budgetCourse is how many of its moves speak in th
 course (the moves a learner needs a word on: their key moves, and the opponent's
 where the plan changes); budgetVideo is how many speak in the YouTube video: the important
 moves. Across the whole video, at most 25 moves speak. Neither budget may exceed the episode's moves.
-Episode roles: hook, setup, bait, quiz, punish, safety.
+Episode roles: hook, setup, bait, quiz, punish, safety, defence, alternative.
 
 LINES
 l1 (Line A): 1. d4 e5 2. dxe5 Nc6 3. Nf3 Qe7 4. Bf4 Qb4+ 5. Bd2 Qxb2 6. Bc3 Bb4 7. Qd2 Bxc3 8. Qxc3 Qc1#
@@ -892,7 +902,7 @@ THIS EPISODE
 e3 bait, n11 to n11
 Focus: Bc3 looks natural.
 The plan's key moves: n11
-Quiz: the answer is n12. The app shows the position before it, says quiz.prompt and pauses 3s; the video's moves start at the answer and reveal it.
+Quiz: the answer is n12. The app shows the position before it, says quiz.scene, then quiz.prompt, and pauses 3s; the video's moves start at the answer and reveal it.
 Every plies nodeId is one of: n11 (6. Bc3). n10 in the dossier is the move before, for context only: no line on it.
 Speaking budget: at most 1 moves with "course": true, at most 1 with "video": true.
 Video words: at most 142 spoken in this episode's part of the video, at most 30 per move; every video move has a caption of at most 6 words. Fewer is fine when there is less to say.

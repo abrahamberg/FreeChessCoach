@@ -1,12 +1,10 @@
 import { courseDrillKey, parseCourseTree } from '@freechesscoach/chess-analysis';
-import type { ClassifiedMoveDto, CourseDocument } from '@freechesscoach/shared';
+import type { CourseDocument } from '@freechesscoach/shared';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { CourseDrill } from './CourseDrill.js';
 import type { CourseProgressStore } from './course-progress.js';
-import { judgeQuizMove } from './judge-quiz-move.js';
 
-vi.mock('./judge-quiz-move.js', () => ({ judgeQuizMove: vi.fn() }));
 // react-chessboard measures its squares, which jsdom can't; the test plays
 // moves through the last onUserMove the board was given.
 const board = vi.hoisted(() => ({ play: ((): void => undefined) as (san: string, fen: string, uci: string) => void }));
@@ -51,7 +49,6 @@ describe('CourseDrill', () => {
   test('plays the other side, records the first try at each move, and sums up', async () => {
     const record = vi.fn(() => Promise.resolve());
     const progress: CourseProgressStore = { signedIn: true, lookup: vi.fn(() => Promise.resolve(new Map())), record, loadEnrollment: vi.fn(() => Promise.resolve(null)), saveEnrollment: vi.fn(() => Promise.resolve()) };
-    vi.mocked(judgeQuizMove).mockResolvedValue({ quality: 'mistake', bestLineSan: [] } as unknown as ClassifiedMoveDto);
     render(<CourseDrill document={document} stage="drill" progress={progress} courseSlug="englund-aaaaaaaaaaaa" {...handlers()} />);
 
     // 1.d4 is played for the learner, then Black is asked.
@@ -62,11 +59,12 @@ describe('CourseDrill', () => {
     expect(screen.getByRole('list', { name: 'Last moves' }).textContent).toContain('1…e5 ✓The gambit.');
     expect(record).toHaveBeenCalledWith([{ key: courseDrillKey(d4!.fenAfter, e5!.uci), san: 'e5', courseSlug: 'englund-aaaaaaaaaaaa', correct: true }]);
 
-    // 2.dxe5 is played; a weaker move than Nc6 is a miss, and counts once.
+    // 2.dxe5 is played; any move but Nc6 is a miss, said at once with the
+    // piece back where it was, and counts once.
     expect(await findPrompt()).toBeTruthy();
     await act(async () => board.play('Nf6', 'irrelevant', 'g8f6'));
-    expect(await screen.findByRole('button', { name: 'Try again' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(screen.getByRole('status').textContent).toBe('Nf6 is not it. Try again.');
+    expect(screen.getByTestId('board').dataset.fen).toBe(dxe5!.fenAfter);
     await act(async () => board.play('Nf6', 'irrelevant', 'g8f6'));
     fireEvent.click(await screen.findByRole('button', { name: 'Show the move' }));
     expect(record).toHaveBeenCalledTimes(2);
@@ -76,19 +74,20 @@ describe('CourseDrill', () => {
     expect(screen.getByText('To go over again tomorrow: Nc6.')).toBeTruthy();
   });
 
-  test('a move about as good as the course move is accepted without penalty; the preview saves nothing', async () => {
-    vi.mocked(judgeQuizMove).mockResolvedValue({ quality: 'excellent' } as ClassifiedMoveDto);
-    render(<CourseDrill document={{ ...document, episodes: [{ ...document.episodes[0]!, drillNodeIds: [e5!.id] }] }} stage="drill" {...handlers()} />);
+  // The owner (2026-10-12): no engine here; any other move is just not it.
+  test("another move, however good, is not the course's: the course's own word on it is said when it has one; the preview saves nothing", async () => {
+    const episode = { ...document.episodes[0]!, drillNodeIds: [e5!.id], plies: [{ nodeId: e5!.id, text: 'The gambit.', arrows: [], course: true, video: false, tempting: [{ san: 'd5', why: 'That is another opening.' }] }] };
+    render(<CourseDrill document={{ ...document, episodes: [episode] }} stage="drill" {...handlers()} />);
     expect(await findPrompt()).toBeTruthy();
     await act(async () => board.play('d5', 'irrelevant', 'd7d5'));
-    fireEvent.click(await screen.findByRole('button', { name: 'Play the course move' }));
-    expect(await screen.findByText('1 of 1 right first time.', undefined, { timeout: 3000 })).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toBe('d5 is not it. That is another opening.');
+    await act(async () => board.play('e5', e5!.fenAfter, e5!.uci));
+    expect(await screen.findByText('0 of 1 right first time.', undefined, { timeout: 3000 })).toBeTruthy();
   });
 
   test('practice: arrows first, then fewer; known moves are played for you; nothing is recorded', async () => {
     const record = vi.fn(() => Promise.resolve());
     const progress: CourseProgressStore = { signedIn: true, lookup: vi.fn(() => Promise.resolve(new Map())), record, loadEnrollment: vi.fn(() => Promise.resolve(null)), saveEnrollment: vi.fn(() => Promise.resolve()) };
-    vi.mocked(judgeQuizMove).mockResolvedValue({ quality: 'mistake', bestLineSan: [] } as unknown as ClassifiedMoveDto);
     const props = handlers();
     render(<CourseDrill document={document} stage="practice" progress={progress} courseSlug="englund-aaaaaaaaaaaa" {...props} />);
 

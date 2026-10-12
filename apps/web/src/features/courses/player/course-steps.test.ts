@@ -1,7 +1,7 @@
 import { parseCourseTree } from '@freechesscoach/chess-analysis';
 import type { CourseDocument, CourseEpisode } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { episodeWalk, isAcceptedAlternative, stepView, withoutMove } from './course-steps.js';
+import { episodeWalk, stepView, withoutMove } from './course-steps.js';
 
 const tree = parseCourseTree('1. d4 {[%cal Gd2d4]} e5 2. dxe5 Nc6 3. Nf3 Qe7 *');
 const ids = tree.nodes.map((node) => node.id);
@@ -16,7 +16,7 @@ function documentWith(episode: CourseEpisode): CourseDocument {
 const episode: CourseEpisode = {
   id: 'e1', role: 'bait', focus: '', startNodeId: ids[1]!, endNodeId: ids[5]!, drillNodeIds: [],
   plies: [{ nodeId: ids[2]!, text: 'Take the pawn.', arrows: [{ from: 'e5', to: 'e5', kind: 'idea' }], course: true, video: false }],
-  quiz: { answerNodeId: ids[5]!, prompt: 'What now?', hint: 'The queen.', reveal: 'Qe7 sets the trap.' }
+  quiz: { answerNodeId: ids[5]!, scene: '', prompt: 'What now?', hint: 'The queen.', reveal: 'Qe7 sets the trap.' }
 };
 
 describe('episodeWalk', () => {
@@ -34,11 +34,6 @@ describe('episodeWalk', () => {
     expect(stepView(episode, walk, 2)).toMatchObject({ note: 'Take the pawn.', arrows: [{ from: 'e5', to: 'e5', kind: 'idea' }] });
     expect(stepView(episode, walk, 1)).toMatchObject({ note: null, arrows: [] });
   });
-});
-
-test('only moves about as good as the course move are accepted', () => {
-  expect(['brilliant', 'great', 'best', 'excellent'].every((quality) => isAcceptedAlternative(quality as never))).toBe(true);
-  expect(['good', 'inaccuracy', 'mistake', 'blunder', 'miss'].some((quality) => isAcceptedAlternative(quality as never))).toBe(false);
 });
 
 test('a hidden move’s name is blanked out of its note, and only that move', () => {

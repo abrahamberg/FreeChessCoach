@@ -1,11 +1,6 @@
-import type { CourseLineGame, EndgameSkeleton, MasterGameSkeleton, PuzzleSkeleton, TacticsSkeleton } from '@freechesscoach/chess-analysis';
-import type { CourseChapter, CourseQuiz } from '@freechesscoach/shared';
-import { noteworthy, type EpisodeBuilder } from './manual-notes.js';
-
-function findMoveQuiz(nodeId: string, side: 'white' | 'black' | undefined): CourseQuiz {
-  const mover = side === 'black' ? 'Black' : 'White';
-  return { answerNodeId: nodeId, prompt: `${mover} to move. Find the strongest move.`, hint: '', reveal: '' };
-}
+import { ownMoves, type CourseLineGame, type EndgameSkeleton, type MasterGameSkeleton, type PuzzleSkeleton, type TacticsSkeleton } from '@freechesscoach/chess-analysis';
+import type { CourseChapter } from '@freechesscoach/shared';
+import { findMoveQuiz, noteworthy, type EpisodeBuilder } from './manual-notes.js';
 
 /** Phase 103 endgame: the goal; the technique, cut after each only move so
  * each piece asks one (with the reply that follows); a defence episode per
@@ -37,10 +32,11 @@ export function endgameChapters(skeleton: EndgameSkeleton, lines: CourseLineGame
   }
   cutAfter(main.length - 1, null);
   const chapters: CourseChapter[] = [{ id: 'c1', title: 'The technique', lineId: skeleton.lineId, episodeIds }];
-  const onMain = new Set(main);
+  const owned = ownMoves(lines);
   const learner = builder.fact(skeleton.learnerNodeIds[0] ?? '')?.side;
-  for (const line of lines.filter((each) => each.lineId !== skeleton.lineId)) {
-    const nodeIds = line.nodeIds.filter((id) => !onMain.has(id));
+  for (const [index, line] of lines.entries()) {
+    if (line.lineId === skeleton.lineId) continue;
+    const nodeIds = owned[index] ?? [];
     if (!nodeIds.length) continue;
     const ids = builder.add({ role: 'defence', focus: 'defence: what does the defender try here, and what is the answer?', nodeIds, drillNodeIds: nodeIds.filter((id) => builder.fact(id)?.side === learner) });
     chapters.push({ id: `c${chapters.length + 1}`, title: `The defender tries ${builder.fact(nodeIds[0]!)?.san ?? ''}`.trim(), lineId: line.lineId, episodeIds: ids });
@@ -124,7 +120,7 @@ export function tacticsChapters(skeleton: TacticsSkeleton, lines: CourseLineGame
 /** §6.3 master_game: intro and every move (notes on the learner's moves and
  * on opponent moves the facts flag), then one episode per critical moment,
  * with a guess-the-move quiz where the skeleton marks one. */
-export function masterGameChapters(skeleton: MasterGameSkeleton, lines: CourseLineGame[], learner: 'white' | 'black', builder: EpisodeBuilder): CourseChapter[] {
+export function masterGameChapters(skeleton: MasterGameSkeleton, lines: CourseLineGame[], learner: 'white' | 'black', lineNames: ReadonlyMap<string, string>, builder: EpisodeBuilder): CourseChapter[] {
   const line = lines[0];
   if (!line) return [];
   const quizNodes = new Set(skeleton.quizNodeIds);
@@ -142,5 +138,14 @@ export function masterGameChapters(skeleton: MasterGameSkeleton, lines: CourseLi
     const drill = builder.fact(nodeId)?.side === learner ? [nodeId] : [];
     return builder.add({ role: 'moment', focus: 'moment: the position, the question, the move, and why', nodeIds: [nodeId], noteNodeIds: [], drillNodeIds: drill, ...quiz });
   });
-  return moments.length ? [game, { id: 'c2', title: 'Critical moments', lineId: line.lineId, episodeIds: moments }] : [game];
+  const chapters = moments.length ? [game, { id: 'c2', title: 'Critical moments', lineId: line.lineId, episodeIds: moments }] : [game];
+  // The creator's variations: what would have happened, in an episode each.
+  const owned = ownMoves(lines);
+  lines.forEach((variation, index) => {
+    const nodeIds = owned[index] ?? [];
+    if (index === 0 || !nodeIds.length) return;
+    const ids = builder.add({ role: 'variation', focus: 'variation: what would have happened, and why the game went another way', nodeIds, noteNodeIds: noteworthy(nodeIds, learner, builder) });
+    chapters.push({ id: `c${chapters.length + 1}`, title: lineNames.get(variation.lineId) ?? variation.lineId, lineId: variation.lineId, episodeIds: ids });
+  });
+  return chapters;
 }

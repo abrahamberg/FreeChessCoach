@@ -1107,3 +1107,24 @@
 .course-editor__fields {
   display: contents;
 }
+
+/* The whole course as a move tree, under the episode's own move chips. */
+.course-board__tree {
+  border-top: 1px solid var(--color-border);
+  padding-top: 8px;
+}
+
+.course-board__tree summary {
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-secondary);
+}
+
+.course-board__tree .move-explorer {
+  height: auto;
+  max-height: 260px;
+  padding: 6px 0 0;
+}

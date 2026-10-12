@@ -11,8 +11,8 @@ export function draftProblem(stored: CourseDocument, next: CourseDocument): stri
   if (next.startFen !== stored.startFen || !sameList(next.nodes, stored.nodes, nodeKey)) {
     return 'The move tree cannot change after the course is created';
   }
-  if (!sameList(next.lines, stored.lines, (line) => `${line.id}>${line.leafNodeId}`)) {
-    return 'Lines can be renamed but not added, removed or moved';
+  if (!sameList(next.lines, stored.lines, (line) => `${line.id}>${line.leafNodeId}>${line.note ?? ''}`)) {
+    return 'Lines can be renamed but not added, removed or moved, and their notes are fixed';
   }
   const nodeIds = new Set(next.nodes.map((node) => node.id));
   const lineIds = new Set(next.lines.map((line) => line.id));
@@ -48,5 +48,5 @@ function sameList<T>(a: T[], b: T[], key: (item: T) => string): boolean {
 
 function nodeKey(node: CourseNode): string {
   const arrows = node.arrows.map((arrow: CourseArrow) => `${arrow.from}${arrow.to}${arrow.kind}`).join(',');
-  return [node.id, node.parentId, node.san, node.uci, node.fenAfter, node.lineId, node.comment, arrows].join('|');
+  return [node.id, node.parentId, node.san, node.uci, node.fenAfter, node.lineId, node.comment, arrows, node.marks.join(','), node.glyph].join('|');
 }

@@ -29,7 +29,7 @@ describe('course progress in the browser', () => {
   });
 
   test('a course’s place is kept here, and moves to the account with the progress', async () => {
-    await browserProgressStore.saveEnrollment('englund', { stage: 'practice', place: { episode: 1, step: 3, practice: {} }, stagesDone: ['play_through'] });
+    await browserProgressStore.saveEnrollment('englund', { stage: 'practice', place: { episode: 1, step: 3, practice: {}, run: null, where: null }, stagesDone: ['play_through'] });
     expect(await browserProgressStore.loadEnrollment('englund')).toMatchObject({ stage: 'practice', place: { episode: 1, step: 3 } });
     const fetch = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })));
     vi.stubGlobal('fetch', fetch);

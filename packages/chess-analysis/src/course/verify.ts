@@ -1,11 +1,12 @@
 import { videoCaption, videoLine, type CourseEpisode } from '@freechesscoach/shared';
 import { CONFIG } from '../config.js';
 import type { CourseDossier } from './dossier.js';
+import { Chess } from 'chess.js';
 import { arrowProblems, nodeProblems } from './verify-board.js';
-import { pieceProblems } from './verify-pieces.js';
+import { pieceProblems, takenPieceProblems } from './verify-pieces.js';
 import { moveLabel } from './moves.js';
 import { episodeScope, type CourseVerifyNode, type EpisodeScope } from './verify-scope.js';
-import { episodeTexts, moveProblems, nodeIdProblems, numberProblems, overLength, phraseProblems, sameMove, sanTokens, tacticWordProblems } from './verify-text.js';
+import { episodeTexts, moveProblems, nodeIdProblems, numberProblems, overLength, phraseProblems, sameMove, sanTokens, spokenNotationProblems, tacticWordProblems } from './verify-text.js';
 
 export type { CourseVerifyNode } from './verify-scope.js';
 
@@ -52,14 +53,17 @@ export function verifyCourseEpisode(input: CourseVerifyInput): CourseVerifyProbl
     ...moveProblems(texts, scope, dossier !== null),
     ...(dossier ? tacticWordProblems(texts, scope) : []),
     ...pieceProblems(episode, texts, scope),
+    ...takenPieceProblems(texts, scope),
     ...numberProblems(texts, input.direction ?? ''),
     ...arrowProblems(episode, scope),
     ...lengthProblems(episode, scope, input.budget ?? null),
     ...keyMoveProblems(episode, scope),
     ...(dossier ? temptingProblems(episode, scope) : []),
     ...quizProblems(episode, scope, dossier !== null),
+    ...baitProblems(episode, scope),
     ...nodeIdProblems(texts),
-    ...phraseProblems(texts)
+    ...phraseProblems(texts),
+    ...spokenNotationProblems(texts.filter((each) => each.where.startsWith('the video line on')))
   ];
 }
 
@@ -153,6 +157,55 @@ function keyMoveProblems(episode: CourseEpisode, scope: EpisodeScope): CourseVer
   });
 }
 
+const PIECE_NAMES: Record<string, string> = { k: 'king', q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn' };
+
+/**
+ * A trap's bait line is the victim's side of the story and stops there: the
+ * next move is the quiz, so the line never plays it for the learner. A run's
+ * bait said "White pins your knight to your queen. Take the pawn; count king
+ * threats before folding", one move before "What does Black play here?". And
+ * in the video it is long enough to make the viewer want the bait.
+ */
+function baitProblems(episode: CourseEpisode, scope: EpisodeScope): CourseVerifyProblem[] {
+  if (episode.role !== 'bait') return [];
+  const ply = episode.plies.find((each) => each.nodeId === episode.endNodeId);
+  const bait = scope.byId.get(episode.endNodeId);
+  const answer = [...scope.byId.values()].find((node) => node.parentId === episode.endNodeId);
+  if (!ply || !bait || !answer) return [];
+  const problems: CourseVerifyProblem[] = [];
+  const label = moveLabel(bait.fenAfter, answer.san);
+  const gives = givesAway(bait.fenAfter, answer.san);
+  for (const [where, text] of [['the line', ply.text], ['the video line', ply.say ?? ''], ['the caption', ply.caption ?? '']] as const) {
+    const found = gives(text);
+    if (found) problems.push({ code: 'quiz', nodeId: ply.nodeId, message: `${where} on ${ply.nodeId} gives away the answer ${label} ("${found}"): the bait line is the victim's side (what the move wants, why anyone would play it) and stops there; the learner finds the answer on the next move` });
+  }
+  const words = wordCount(videoLine(ply));
+  const least = CONFIG.courses.minBaitVideoWords;
+  if (ply.video && words < least) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The video line on the bait ${ply.nodeId} has ${words} words (at least ${least}): it is the heart of the trap, so say what the victim sees, what they expect to win and why any player would play it` });
+  const leastWhy = CONFIG.courses.minSideRoadWords;
+  for (const each of ply.video ? (ply.tempting ?? []) : []) {
+    const whyWords = wordCount(each.why);
+    if (whyWords < leastWhy) problems.push({ code: 'tempting', nodeId: ply.nodeId, message: `why ${each.san} fails on ${ply.nodeId} has ${whyWords} words (at least ${leastWhy}): it is spoken while its moves play, so say it in two or three whole sentences: the viewer's question, what the pieces do in order, and how it leaves both sides` });
+  }
+  return problems;
+}
+
+/** Finds the words in a text that play `san` from `fen` for the learner: the
+ * move itself, "the knight takes" or "take the pawn". */
+function givesAway(fen: string, san: string): (text: string) => string | null {
+  const move = new Chess(fen).moves({ verbose: true }).find((each) => each.san === san);
+  const mover = move ? PIECE_NAMES[move.piece] : null;
+  const taken = move?.captured ? PIECE_NAMES[move.captured] : null;
+  const patterns = [
+    ...(mover && taken ? [new RegExp(`\\b${mover} (?:takes|captures|grabs)\\b`, 'i'), new RegExp(`\\b(?:take|capture|grab)s? (?:the|that|their|a|white's|black's) (?:\\w+ )?${taken}\\b`, 'i')] : [])
+  ];
+  return (text) => {
+    const plain = text.replace(/’/g, "'");
+    const named = sanTokens(plain).find((token) => sameMove(token).some((form) => sameMove(san).includes(form)));
+    return named ?? patterns.map((pattern) => pattern.exec(plain)?.[0]).find(Boolean) ?? null;
+  };
+}
+
 function quizProblems(episode: CourseEpisode, scope: EpisodeScope, hasAnalysis: boolean): CourseVerifyProblem[] {
   const quiz = episode.quiz;
   const answer = quiz ? scope.byId.get(quiz.answerNodeId) : undefined;
@@ -162,9 +215,11 @@ function quizProblems(episode: CourseEpisode, scope: EpisodeScope, hasAnalysis: 
   const label = moveLabel(scope.fenBefore(answer.id), answer.san);
   const names = (text: string): boolean => sanTokens(text).some((san) => sameMove(san).some((form) => sameMove(answer.san).includes(form)));
   const problems: CourseVerifyProblem[] = [];
-  if (hasAnalysis && !scope.facts.get(answer.id)?.quizEligible) {
+  const answerFacts = scope.facts.get(answer.id);
+  if (hasAnalysis && !answerFacts?.quizEligible && !answerFacts?.creatorMarks.includes('quiz')) {
     problems.push({ code: 'quiz', nodeId: answer.id, message: `The quiz answer ${label} is not the one clearly best move` });
   }
+  if (names(quiz.scene)) problems.push({ code: 'quiz', nodeId: answer.id, message: `The quiz scene names the answer ${label}: it sets the scene, the learner finds the move` });
   if (names(quiz.hint)) problems.push({ code: 'quiz', nodeId: answer.id, message: `The quiz hint names the answer ${label}` });
   // A puzzle run asked "Nf7+ or Ng6+?": half the answer.
   if (names(quiz.prompt)) problems.push({ code: 'quiz', nodeId: answer.id, message: `The quiz prompt names the answer ${label}` });

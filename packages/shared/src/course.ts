@@ -23,6 +23,17 @@ export const CourseArrowSchema = z.object({
 });
 export type CourseArrow = z.infer<typeof CourseArrowSchema>;
 
+/** The creator's marks on a move, written `@key` in the course text
+ * (docs/courses.md §5.6). */
+export const PGN_MARKS = ['key', 'quiz', 'slow', 'fast', 'reel'] as const;
+export const CourseMarkSchema = z.enum(PGN_MARKS);
+export type CourseMark = z.infer<typeof CourseMarkSchema>;
+
+/** The glyphs a creator may put on a move. */
+export const PGN_GLYPHS = ['!', '?', '!!', '??', '!?', '?!'] as const;
+export const CourseGlyphSchema = z.enum(PGN_GLYPHS);
+export type CourseGlyph = z.infer<typeof CourseGlyphSchema>;
+
 /** Ids are assigned once, by code, when the PGN is parsed (`parseCourseTree`),
  * and never reused. `comment`/`arrows` are the creator's own, from the PGN. */
 export const CourseNodeSchema = z.object({
@@ -33,13 +44,17 @@ export const CourseNodeSchema = z.object({
   fenAfter: z.string().min(1),
   lineId: z.string().min(1),
   comment: z.string().nullable(),
-  arrows: z.array(CourseArrowSchema)
+  arrows: z.array(CourseArrowSchema),
+  marks: z.array(CourseMarkSchema),
+  glyph: CourseGlyphSchema.nullable()
 });
 export type CourseNode = z.infer<typeof CourseNodeSchema>;
 
 export const CourseLineSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
+  /** What the creator's section note says the line is for. */
+  note: z.string().nullable(),
   leafNodeId: NodeIdSchema
 });
 export type CourseLine = z.infer<typeof CourseLineSchema>;
@@ -151,8 +166,12 @@ export const CourseBudgetSchema = z.object({
 });
 export type CourseBudget = z.infer<typeof CourseBudgetSchema>;
 
+/** docs/courses.md §8 (the quiz moment): the board stops on the position
+ * before the answer, the coach sets the `scene` (what is going on, never the
+ * answer), asks the `prompt`, waits, then plays the answer and says `reveal`. */
 export const CourseQuizSchema = z.object({
   answerNodeId: NodeIdSchema,
+  scene: z.string(),
   prompt: z.string(),
   hint: z.string(),
   reveal: z.string()
@@ -267,11 +286,11 @@ export function bandForRating(rating: number): (typeof RATING_BANDS)[number] {
 
 /** docs/courses.md §6.3: the episode roles each kind's playbook uses. */
 export const COURSE_ROLES: Record<CourseKind, readonly string[]> = {
-  trap: ['hook', 'setup', 'bait', 'quiz', 'punish', 'safety'],
+  trap: ['hook', 'setup', 'bait', 'quiz', 'punish', 'safety', 'defence', 'alternative'],
   opening: ['line', 'deviation', 'trap', 'recap'],
   tactics: ['concept', 'example', 'scan'],
   puzzle: ['question', 'solve', 'recap'],
-  master_game: ['intro', 'moves', 'moment'],
+  master_game: ['intro', 'moves', 'moment', 'variation'],
   endgame: ['goal', 'technique', 'defence', 'recap']
 };
 

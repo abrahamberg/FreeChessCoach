@@ -24,10 +24,12 @@ function minimalDocument(): CourseDocument {
         fenAfter: 'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1',
         lineId: 'l1',
         comment: null,
-        arrows: [{ from: 'd2', to: 'd4', kind: 'best' }]
+        arrows: [{ from: 'd2', to: 'd4', kind: 'best' }],
+        marks: [],
+        glyph: null
       }
     ],
-    lines: [{ id: 'l1', name: 'Line A', leafNodeId: 'n1' }],
+    lines: [{ id: 'l1', name: 'Line A', note: null, leafNodeId: 'n1' }],
     chapters: [{ id: 'c1', title: 'The trap', lineId: 'l1', episodeIds: ['e1'] }],
     episodes: [
       {
@@ -50,6 +52,15 @@ function minimalDocument(): CourseDocument {
 describe('CourseDocumentSchema', () => {
   test('accepts a minimal draft', () => {
     expect(CourseDocumentSchema.parse(minimalDocument())).toEqual(minimalDocument());
+  });
+
+  test('a node keeps its marks and glyph, and refuses ones the creator cannot write', () => {
+    const document = minimalDocument();
+    const [node] = document.nodes;
+    if (node) Object.assign(node, { marks: ['key', 'quiz'], glyph: '??' });
+    expect(CourseDocumentSchema.parse(document).nodes[0]).toMatchObject({ marks: ['key', 'quiz'], glyph: '??' });
+    if (node) Object.assign(node, { marks: ['loud'] });
+    expect(CourseDocumentSchema.safeParse(document).success).toBe(false);
   });
 
   test('rejects a node id that is not n<number>', () => {

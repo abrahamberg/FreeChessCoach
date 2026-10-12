@@ -1,5 +1,6 @@
 import { Chess, type PieceSymbol } from 'chess.js';
-import type { CourseKind, EngineEval } from '@freechesscoach/shared';
+import type { CourseKind, EngineEval, MoveQuality } from '@freechesscoach/shared';
+import { classifySeverity } from '../classify-severity.js';
 import { CONFIG } from '../config.js';
 import { saidMateIn } from '../mate-count.js';
 import { moverMateIn } from '../mover-mate.js';
@@ -40,6 +41,12 @@ export interface CourseTemptingFacts {
    * there is no mate; the answer mates in 4"). Null when it simply fails. A
    * puzzle asks for the best move, not any move that works. */
   notTheAnswer: string | null;
+  /** The engine's evaluation after the tempting move (centipawns, White's
+   * side) and the move's quality against the best move, as the review rates
+   * a played move: the video's evaluation bar and badge while it is played
+   * out. The answer is the engine's own line, so the figure holds along it. */
+  evalAfterCp: number;
+  quality: MoveQuality;
 }
 
 export interface TemptingCandidate {
@@ -135,7 +142,9 @@ export function withTempting(dossier: CourseDossier, candidates: TemptingCandida
     const list = kept.get(candidate.nodeId) ?? [];
     const limit = candidate.solving ? CONFIG.courses.maxSolveTempting : CONFIG.courses.maxTempting;
     if (!facts || !evalBefore || !evalAfter || !best || !answer || list.length >= limit) continue;
-    const drop = winPctFor(facts.side, toCpWhite(best)) - winPctFor(facts.side, toCpWhite(answer));
+    const [cpBefore, cpAfter] = [toCpWhite(best), toCpWhite(answer)];
+    const [beforeWin, afterWin] = [winPctFor(facts.side, cpBefore), winPctFor(facts.side, cpAfter)];
+    const drop = beforeWin - afterWin;
     const walksIntoMate = answer.mateIn !== null && (answer.mateIn > 0) === (facts.side === 'black');
     // The best mates in N; after this candidate, with the other side to
     // move, N - 1 would keep pace. Later or never misses the mate.
@@ -161,7 +170,9 @@ export function withTempting(dossier: CourseDossier, candidates: TemptingCandida
       captures: captureWords(candidate.fenBefore, [candidate.san, ...refutation]),
       verdict: lineWords(answer, evalAfter),
       balance: lineBalance(candidate.fenBefore, [candidate.san, ...refutation]),
-      notTheAnswer: candidate.solving ? notTheAnswer(facts.side, evalBefore, evalAfter) : null
+      notTheAnswer: candidate.solving ? notTheAnswer(facts.side, evalBefore, evalAfter) : null,
+      evalAfterCp: cpAfter,
+      quality: classifySeverity({ drop, beforeWin, afterWin, cpBefore, cpAfter, mover: facts.side })
     });
     kept.set(candidate.nodeId, list);
   }

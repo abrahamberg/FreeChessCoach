@@ -1,0 +1,8 @@
+{
+  "kind": "master_game",
+  "levelBand": "improving",
+  "coachPersona": "scholar",
+  "learnerSide": null,
+  "direction": "Légal's mate: a short game and one quieter defence, so a club player sees why the queen sacrifice works.",
+  "pgn": "[Event \"Paris\"]\n[Site \"Paris\"]\n[Date \"1750.??.??\"]\n[White \"Sire de Légal\"]\n[Black \"Saint Brie\"]\n[Result \"1-0\"]\n\n1. e4 e5 2. Nf3 d6 3. Bc4 Bg4 4. Nc3 g6 ({A quieter defence} 4... Nf6 5. Ng5 d5 6. exd5) 5. Nxe5 Bxd1 6. Bxf7+ Ke7 7. Nd5# 1-0"
+}

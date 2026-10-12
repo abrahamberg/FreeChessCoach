@@ -1,7 +1,9 @@
 import { REEL_WARNINGS, type CourseResponse } from '@freechesscoach/shared';
 import { useMemo, useState, type ReactNode } from 'react';
 import { describeApiError } from '../../api/client.js';
+import { MenuUnlockModal } from '../../components/MenuUnlockModal.js';
 import { usePageMenuItems } from '../../components/PageMenu.js';
+import { useLlmSetupStatus } from '../../hooks/useLlmSetupStatus.js';
 import { isGenerating, useStartCourseGeneration } from './courseApi.js';
 import { CourseDebugPanel } from './CourseDebugPanel.js';
 
@@ -11,12 +13,19 @@ export interface CourseGenerationBarProps {
   dirty: boolean;
 }
 
+/** The job's own error when the AI setup was locked as it started (gateway.ts). */
+const LOCKED_ERROR = /unlock your ai setup/i;
+
 /** "Write with AI" on an empty course, and the job's progress (docs/courses.md
  * §5.2). A failed run resumes, keeping the episodes it finished; a written
  * course starts over from the editor's menu (Phase 90). */
 export function CourseGenerationBar({ course, dirty }: CourseGenerationBarProps): ReactNode {
   const start = useStartCourseGeneration(course.id);
   const [debugOpen, setDebugOpen] = useState(false);
+  const [unlockOpen, setUnlockOpen] = useState(false);
+  const setup = useLlmSetupStatus();
+  // A locked setup (a restart clears it): say so before the job fails on it.
+  const locked = setup.data?.configured === true && !setup.data.unlocked;
   // The chat's menu item, in the avatar menu: every AI call of the latest run.
   const hasRun = course.generation !== null;
   const menuItems = useMemo(() => [{ label: 'Debug last answer', onSelect: () => setDebugOpen(true), disabled: !hasRun }], [hasRun]);
@@ -33,20 +42,27 @@ export function CourseGenerationBar({ course, dirty }: CourseGenerationBarProps)
   const empty = !course.document.episodes.length && !running;
   const debug = debugOpen && <CourseDebugPanel courseId={course.id} generating={running} onClose={() => setDebugOpen(false)} />;
   const failed = generation?.status === 'failed';
+  // The run stopped on the lock: once unlocked, one button carries on.
+  const stoppedOnLock = failed && LOCKED_ERROR.test(generation.error ?? '');
   // Above every section of the editor: nothing when there is nothing to say.
-  if (!empty && !running && !failed && !start.error && !courseWarnings.length) return debug || null;
+  if (!empty && !running && !failed && !start.error && !courseWarnings.length && !(locked && !running)) return debug || null;
 
   return (
     <div className="course-generation">
       <div className="course-editor__actions">
-        {resumable && (
-          <button type="button" className="btn-primary" disabled={dirty || start.isPending} onClick={() => begin(false)}>
+        {resumable && !stoppedOnLock && (
+          <button type="button" className="btn-primary" disabled={dirty || start.isPending || locked} onClick={() => begin(false)}>
             Resume writing
+          </button>
+        )}
+        {stoppedOnLock && !locked && (
+          <button type="button" className="btn-primary" disabled={dirty || start.isPending} onClick={() => begin(!resumable)}>
+            Continue writing
           </button>
         )}
         {/* A written course starts over from the editor's "⋮" menu instead. */}
         {empty && (
-          <button type="button" className="btn-primary" disabled={dirty || start.isPending} title={dirty ? 'Save your changes first' : undefined} onClick={() => begin(true)}>
+          <button type="button" className="btn-primary" disabled={dirty || start.isPending || locked} title={dirty ? 'Save your changes first' : undefined} onClick={() => begin(true)}>
             Write with AI
           </button>
         )}
@@ -57,7 +73,15 @@ export function CourseGenerationBar({ course, dirty }: CourseGenerationBarProps)
           {generation && generation.total > 0 ? ` (${generation.done} of ${generation.total} done)` : ''}
         </p>
       )}
-      {failed && (
+      {locked && !running && (
+        <p className="meta" role="status">
+          Your AI is locked, so it can't write yet.{' '}
+          <button type="button" className="btn-secondary" onClick={() => setUnlockOpen(true)}>
+            Unlock
+          </button>
+        </p>
+      )}
+      {failed && !stoppedOnLock && (
         <p className="course-intake__errors" role="alert">
           {generation.error ?? 'Writing stopped.'}
         </p>
@@ -73,6 +97,7 @@ export function CourseGenerationBar({ course, dirty }: CourseGenerationBarProps)
         </p>
       ))}
       {debug}
+      {unlockOpen && <MenuUnlockModal onClose={() => setUnlockOpen(false)} />}
     </div>
   );
 }

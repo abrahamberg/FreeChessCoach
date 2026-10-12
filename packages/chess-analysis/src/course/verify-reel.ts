@@ -3,7 +3,8 @@ import { CONFIG } from '../config.js';
 import type { CourseDossier } from './dossier.js';
 import type { CourseVerifyNode, CourseVerifyProblem } from './verify.js';
 import { episodeScope } from './verify-scope.js';
-import { moveProblems, nodeIdProblems, numberProblems, overLength, phraseProblems, tacticWordProblems, type EpisodeText } from './verify-text.js';
+import { takenPieceProblems } from './verify-pieces.js';
+import { moveProblems, nodeIdProblems, numberProblems, overLength, phraseProblems, spokenNotationProblems, tacticWordProblems, type EpisodeText } from './verify-text.js';
 
 const MAX_HOOK_WORDS = 10;
 const MAX_BAND_WORDS = 5;
@@ -15,6 +16,9 @@ const MAX_VIDEO_HOOK_WORDS = 40;
  * with its silence, and the CTA card. */
 const REEL_FIXED_SECONDS = 4;
 const REEL_MOVE_SECONDS = 0.5;
+/** The same as the reel's `@fast` move, and the hold on a `@slow` one (web `REEL_TIMING`). */
+const REEL_FAST_SECONDS = 0.25;
+const REEL_SLOW_SECONDS = 1;
 const PUZZLE_COUNTDOWN_SECONDS = 5;
 const WORDS_PER_SECOND = 2.5;
 
@@ -69,7 +73,9 @@ export function verifyCourseReel(input: CourseReelVerifyInput): CourseVerifyProb
       if (climax >= 0 && scope.path.indexOf(beat.nodeId) >= climax) problems.push({ code: 'reel', nodeId: beat.nodeId, message: `The promo stops before ${reel.climaxNodeId}, so the line on ${beat.nodeId} never plays: keep lines before the climax` });
     }
   }
-  const seconds = reelSeconds(reel, scope.path.length);
+  const marksOf = (id: string): readonly string[] => scope.byId.get(id)?.marks ?? [];
+  const pace = { fast: scope.path.filter((id) => marksOf(id).includes('fast')).length, slow: scope.path.filter((id) => marksOf(id).includes('slow')).length };
+  const seconds = reelSeconds(reel, scope.path.length, pace);
   if (overLength(seconds, CONFIG.courses.reelSeconds.max)) problems.push({ code: 'reel', nodeId: null, message: `The reel runs about ${Math.round(seconds)} s (at most ${CONFIG.courses.reelSeconds.max}): cut words` });
 
   return [
@@ -78,7 +84,9 @@ export function verifyCourseReel(input: CourseReelVerifyInput): CourseVerifyProb
     ...(input.dossier ? tacticWordProblems(texts, scope) : []),
     ...numberProblems(texts, input.direction ?? ''),
     ...nodeIdProblems(texts),
-    ...phraseProblems(texts)
+    ...phraseProblems(texts),
+    ...takenPieceProblems(texts, scope),
+    ...spokenNotationProblems(texts.filter((each) => each.where.startsWith('the reel line on')))
   ];
 }
 
@@ -95,11 +103,12 @@ function sideToPlayProblems(input: CourseReelVerifyInput, texts: EpisodeText[]):
   });
 }
 
-/** The reel's rough length: its words, its moves at build-up pace, the
- * climax and the CTA card, and a puzzle's countdown. */
-export function reelSeconds(reel: CourseReel, moves: number): number {
+/** The reel's rough length: its words, its moves at build-up pace (the
+ * creator's `@fast` ones quicker, `@slow` ones held), the climax and the CTA
+ * card, and a puzzle's countdown. */
+export function reelSeconds(reel: CourseReel, moves: number, pace: { fast: number; slow: number } = { fast: 0, slow: 0 }): number {
   const spoken = [reel.hook, ...reel.beats.map((beat) => beat.say), reel.cta, reel.loop].reduce((sum, text) => sum + words(text), 0);
-  return spoken / WORDS_PER_SECOND + moves * REEL_MOVE_SECONDS + REEL_FIXED_SECONDS + (reel.style === 'puzzle' ? PUZZLE_COUNTDOWN_SECONDS : 0);
+  return spoken / WORDS_PER_SECOND + moves * REEL_MOVE_SECONDS - pace.fast * (REEL_MOVE_SECONDS - REEL_FAST_SECONDS) + pace.slow * REEL_SLOW_SECONDS + REEL_FIXED_SECONDS + (reel.style === 'puzzle' ? PUZZLE_COUNTDOWN_SECONDS : 0);
 }
 
 /**
@@ -115,7 +124,8 @@ export function verifyCourseFrame(document: CourseDocument): CourseVerifyProblem
     if (words(video.thumbnailText) > MAX_THUMBNAIL_WORDS) problems.push({ code: 'video', nodeId: null, message: `The thumbnail text has ${words(video.thumbnailText)} words (at most ${MAX_THUMBNAIL_WORDS})` });
     if (overLength(words(video.hook), MAX_VIDEO_HOOK_WORDS)) problems.push({ code: 'video', nodeId: null, message: `The video's hook has ${words(video.hook)} words (at most ${MAX_VIDEO_HOOK_WORDS}): the first 15 seconds` });
     problems.push(...introProblems(video.hook, "the video's hook"));
-    if (video.outro.trim() && !video.outro.includes('?')) problems.push({ code: 'video', nodeId: null, message: "The video's outro asks the viewer nothing: end on a question for the comments" });
+    // An empty one too: a run left it out, reading "the call to action is the app's".
+    if (!video.outro.includes('?')) problems.push({ code: 'video', nodeId: null, message: "The video's outro asks the viewer nothing: open it on a question for the comments, then the coach's sign-off" });
   }
   const seen = new Map<string, string>();
   for (const episode of document.episodes) {
@@ -140,7 +150,10 @@ export function verifyCourseFrame(document: CourseDocument): CourseVerifyProblem
 /** Board and everyday words any coach starts with; not a catchphrase. */
 const COMMON_OPENERS = new Set([
   'white', "white's", 'black', "black's", 'this', 'that', "that's", 'your', 'their', "it's", 'there', "there's", 'here', "here's", 'then', 'now',
-  'king', 'queen', 'rook', 'bishop', 'knight', 'pawn'
+  'king', 'queen', 'rook', 'bishop', 'knight', 'pawn',
+  // What a coach tells a player to do: "Take back with the pawn" three times
+  // in a course is chess, not a catchphrase.
+  'take', 'takes', 'play', 'push', 'check', 'trade', 'castle', 'move'
 ]);
 const CATCHPHRASE_LINES = 3;
 

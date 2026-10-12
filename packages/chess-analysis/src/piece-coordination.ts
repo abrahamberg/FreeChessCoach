@@ -41,26 +41,30 @@ export interface LineChange {
   after: number;
 }
 
-/** The own slider whose reach `move` changes the most, in the direction
- * asked (`'closes'`: loses squares, `'opens'`: gains them). The moved piece
- * itself is not counted, and a slider that was captured is gone. */
-export function lineChange(fenBefore: string, move: Move, direction: 'closes' | 'opens', side: 'own' | 'enemy' = 'own'): LineChange | null {
+/** The own sliders whose reach `move` changes, biggest change first, in the
+ * direction asked (`'closes'`: loses squares, `'opens'`: gains them). The
+ * moved piece itself is not counted, and a slider that was captured is gone. */
+export function lineChanges(fenBefore: string, move: Move, direction: 'closes' | 'opens', side: 'own' | 'enemy' = 'own'): LineChange[] {
   const color = side === 'own' ? move.color : move.color === 'w' ? 'b' : 'w';
   const before = sliderReach(fenBefore, color);
   const after = sliderReach(move.after, color);
-  if (!before || !after) return null;
-  let found: LineChange | null = null;
-  let biggest = 0;
+  if (!before || !after) return [];
+  const found: (LineChange & { change: number })[] = [];
   for (const [square, was] of before) {
     const now = after.get(square);
     if (square === move.from || !now) continue;
     const change = direction === 'closes' ? was.squares.size - now.squares.size : now.squares.size - was.squares.size;
     const kept = direction === 'closes' ? was.squares.size : now.squares.size;
-    if (kept < MIN_REACH || change < MIN_CHANGE || change <= biggest) continue;
-    biggest = change;
-    found = { piece: was.piece, square, before: was.squares.size, after: now.squares.size };
+    if (kept < MIN_REACH || change < MIN_CHANGE) continue;
+    found.push({ piece: was.piece, square, before: was.squares.size, after: now.squares.size, change });
   }
-  return found;
+  // A stable sort: of two equal changes the first found stays first.
+  return found.sort((a, b) => b.change - a.change).map(({ change: _change, ...each }) => each);
+}
+
+/** The one whose reach changes the most. */
+export function lineChange(fenBefore: string, move: Move, direction: 'closes' | 'opens', side: 'own' | 'enemy' = 'own'): LineChange | null {
+  return lineChanges(fenBefore, move, direction, side)[0] ?? null;
 }
 
 const squares = (count: number): string => `${count} square${count === 1 ? '' : 's'}`;

@@ -4,21 +4,19 @@ import { ChevronRightIcon, CloseIcon, PlayCircleIcon, PlaySmallIcon } from '../.
 import { CoachBoard } from '../../board/CoachBoard.js';
 import { EvalBar } from '../../board/EvalBar.js';
 import { GameEvalChart } from '../../board/GameEvalChart.js';
-import { MoveExplorer } from '../../board/MoveExplorer.js';
+import { LineMoveExplorer } from '../../board/LineMoveExplorer.js';
 import { MoveStrip, moveStripIndexToPly, plyToMoveStripIndex } from '../../board/MoveStrip.js';
 import { toBoardMarks } from '../courseArrows.js';
 import { AskCoachPanel, AskCoachSignIn } from './AskCoachPanel.js';
-import { AttemptFeedback, type Attempt, type Judgement } from './AttemptFeedback.js';
+import { QuizAsking } from './QuizAsking.js';
 import { CourseBoardLayout } from './CourseBoardLayout.js';
 import { CoursePane } from './CoursePane.js';
 import { CourseRecap } from './CourseRecap.js';
 import { STAGE_LABELS } from './CourseStageBar.js';
 import { boardSoundLengthMs, playBoardSound } from '../../../sounds/board-sounds.js';
-import { moveSound } from '../../../sounds/move-sounds.js';
 import { readMoveSoundsEnabled } from '../../../sounds/move-sounds-setting.js';
 import { courseMoveList, courseMoveSound, type CourseEvals } from './course-move-list.js';
-import { episodeWalk, isAcceptedAlternative, stepView } from './course-steps.js';
-import { judgeQuizMove } from './judge-quiz-move.js';
+import { episodeWalk, stepView } from './course-steps.js';
 import type { useNoteAudio } from './useNoteAudio.js';
 import { YouTubeClip } from './YouTubeClip.js';
 import { youtubeVideoId } from './youtube.js';
@@ -172,11 +170,11 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
   /** The furthest step seen: the move list and graph grow as the learner
    * goes, like a game, so they never show a move (a quiz answer) early. */
   const [reached, setReached] = useState(step);
-  const [solved, setSolved] = useState<'course' | 'alternative' | 'shown' | null>(null);
+  const [solved, setSolved] = useState<'course' | 'shown' | null>(null);
   const [hint, setHint] = useState(false);
-  const [attempt, setAttempt] = useState<Attempt | null>(null);
-  const [judgement, setJudgement] = useState<Judgement | null>(null);
-  const judgeRef = useRef(0);
+  /** A quiz try that is not the course's move, and the course's own word on
+   * it when it has one. No engine: the piece is back, the question stands. */
+  const [wrong, setWrong] = useState<{ san: string; why: string | null } | null>(null);
 
   const view = stepView(episode, walk, step);
   const tempting = view.note ? (episode.plies.find((each) => each.nodeId === view.move?.id)?.tempting ?? []) : [];
@@ -186,6 +184,11 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
   const atEnd = step >= walk.moves.length;
   // The arrows often point at the answer, so none while the quiz asks.
   const marks = toBoardMarks(asking ? [] : view.arrows);
+  // The move on the board, as the course's film shows it: its squares lit
+  // and the engine's badge on the square it landed on.
+  const played = view.move;
+  const lastMove = played ? [played.uci.slice(0, 2), played.uci.slice(2, 4)].map((square) => ({ square, color: 'var(--last-move)' })) : [];
+  const playedQuality = played ? evals[played.id]?.quality : undefined;
 
   const list = useMemo(() => courseMoveList(document, walk.moves, evals), [document, walk, evals]);
   const shownPlies = list.leadIn + reached;
@@ -196,9 +199,7 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
   const hasEvals = list.classifiedMoves.length > 0;
 
   const goTo = (next: number, great = false): void => {
-    judgeRef.current += 1;
-    setAttempt(null);
-    setJudgement(null);
+    setWrong(null);
     setStep(next);
     setReached((prev) => Math.max(prev, next));
     onStep(next);
@@ -216,36 +217,24 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
   // A lead-in move (before the episode starts) opens the episode's start.
   const selectPly = (selected: number): void => goTo(Math.min(Math.max(selected - list.leadIn, 0), reached));
 
-  const solve = (how: 'course' | 'alternative' | 'shown'): void => {
+  const solve = (how: 'course' | 'shown'): void => {
     setSolved(how);
     // Found it: great. Otherwise the move's own sounds.
     goTo(step + 1, how === 'course');
   };
 
-  const onQuizMove = (san: string, fenAfter: string, uci: string): void => {
+  const onQuizMove = (san: string, _fenAfter: string, uci: string): void => {
     if (!answer) return;
     if (uci === answer.uci) {
       solve('course');
       return;
     }
-    const tried = { fenBefore: view.fen, fenAfter, san };
-    const request = ++judgeRef.current;
-    setAttempt(tried);
-    setJudgement({ status: 'checking' });
-    playBoardSound(moveSound({ san, mover: document.learnerSide, learnerSide: document.learnerSide }));
-    judgeQuizMove({ ...tried, mover: view.fen.split(' ')[1] === 'b' ? 'black' : 'white' })
-      .then((move) => {
-        if (request !== judgeRef.current) return;
-        setJudgement({ status: 'ready', move });
-        playBoardSound(isAcceptedAlternative(move.quality) ? 'great' : 'bad');
-      })
-      .catch(() => request === judgeRef.current && setJudgement({ status: 'error' }));
-  };
-
-  const tryAgain = (): void => {
-    judgeRef.current += 1;
-    setAttempt(null);
-    setJudgement(null);
+    // Any other move, a good one too, is simply not the lesson's: said
+    // softly, with what the course says about it when it is one of the
+    // tempting moves here.
+    const plain = (move: string): string => move.replace(/[+#?!]+$/, '');
+    const known = episode.plies.find((ply) => ply.nodeId === answer.id)?.tempting?.find((each) => plain(each.san) === plain(san));
+    setWrong({ san, why: known?.why.trim() || null });
   };
 
   const revealed = quiz && solved && walk.quizAt !== null && step === walk.quizAt + 1;
@@ -274,12 +263,14 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
       <div className="session-board-row">
         {hasEvals && <EvalBar ply={ply} classifiedMoves={rated} orientation={document.learnerSide} />}
         <CoachBoard
-          fen={attempt?.fenAfter ?? view.fen}
+          fen={view.fen}
           orientation={document.learnerSide}
-          mode={asking && !attempt ? 'answer' : 'peek'}
-          disabled={!asking || attempt !== null}
-          arrows={attempt ? [] : marks.arrows}
-          highlights={attempt ? [] : marks.highlights}
+          mode={asking ? 'answer' : 'peek'}
+          disabled={!asking}
+          arrows={marks.arrows}
+          highlights={[...lastMove, ...marks.highlights]}
+          moveQualityBadge={played && playedQuality ? { square: played.uci.slice(2, 4), quality: playedQuality } : undefined}
+          mateEffect
           onUserMove={onQuizMove}
         />
       </div>
@@ -324,23 +315,15 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
         !revealed && !asking && <p className="meta">{step === 0 ? 'Press Next to play through the moves.' : 'No note on this move.'}</p>
       )}
       {tempting.length > 0 && !asking && <TemptingMoves tempting={tempting} />}
-      {asking && !attempt && (
-        <div className="course-player__quiz">
-          <p className="course-player__prompt">{quiz.prompt || 'Your move: what would you play here?'}</p>
-          {hint && quiz.hint && <p className="meta">Hint: {quiz.hint}</p>}
-          <div className="course-player__actions">
-            {quiz.hint && !hint && (
-              <button type="button" className="btn-secondary" onClick={() => setHint(true)}>
-                Hint
-              </button>
-            )}
-            <button type="button" className="btn-secondary" onClick={() => solve('shown')}>
-              Show the answer
-            </button>
-          </div>
-        </div>
+      {asking && (
+        <QuizAsking
+          quiz={quiz}
+          hintShown={hint}
+          onHint={() => setHint(true)}
+          onShow={() => solve('shown')}
+          wrong={wrong}
+        />
       )}
-      {asking && attempt && <AttemptFeedback attempt={attempt} judgement={judgement} answerSan={answer.san} acceptLabel="See the course move" onAccept={() => solve('alternative')} onRetry={tryAgain} />}
       {audio.error && (
         <p className="meta" role="alert">
           {audio.error}
@@ -354,15 +337,15 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
       isDesktop={isDesktop}
       episodes={episodes}
       explorer={
-        <MoveExplorer
+        <LineMoveExplorer
           sanMoves={sanMoves}
           classifiedMoves={rated}
           positions={positions}
           currentPly={ply}
           onSelect={selectPly}
           showNotes={false}
-          start={list.start}
           dimmedThroughPly={list.leadIn}
+          hideNav
         />
       }
       board={board}
@@ -407,8 +390,7 @@ function TemptingMoves({ tempting }: { tempting: CourseTempting[] }): ReactNode 
   );
 }
 
-function solvedLine(how: 'course' | 'alternative' | 'shown' | null, san: string | undefined): string {
+function solvedLine(how: 'course' | 'shown' | null, san: string | undefined): string {
   if (how === 'course') return `Yes, ${san}!`;
-  if (how === 'alternative') return `The course plays ${san}.`;
   return `The answer is ${san}.`;
 }

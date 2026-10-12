@@ -27,6 +27,12 @@ function wordsFor(persona: CoachPersona): { words: PersonaWords; intro: string }
   return { words, intro: `You are ${words.name}, a chess coach who is ${words.identity}.` };
 }
 
+/** The coach's name for a sign-off ("I'm The Gambler"); null for the
+ * neutral coach, who has none. */
+export function courseCoachName(persona: CoachPersona): string | null {
+  return persona === 'general' || persona === 'general_female' ? null : PERSONA_WORDS[persona].name;
+}
+
 /** docs/courses.md §6.2: the course's coach, without the chat-only rules
  * (greeting once, show_position). Built from the chat's word banks. */
 export function buildCourseVoiceBlock(persona: CoachPersona): string {

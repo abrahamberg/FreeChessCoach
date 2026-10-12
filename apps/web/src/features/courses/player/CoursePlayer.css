@@ -301,6 +301,11 @@
   color: var(--color-success);
 }
 
+.course-player__scene {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text);
+}
+
 .course-player__prompt {
   font-weight: 600;
 }
@@ -540,6 +545,62 @@
 
 .course-drill__panel .course-drill__progress {
   width: 100%;
+}
+
+.course-drill__stage {
+  margin: 0;
+  font-weight: 600;
+}
+
+.course-drill__lines {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.course-drill__lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+}
+
+.course-drill__lines li[aria-current='step'] {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.course-drill__lines li.course-drill__lines-done:not([aria-current='step']) span:first-child::before {
+  content: '✓ ';
+}
+
+.course-drill__line {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.course-drill__line p {
+  margin: 0;
+}
+
+.course-drill__line-done {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.course-drill__line-title {
+  font-weight: 600;
 }
 
 .course-drill__score {

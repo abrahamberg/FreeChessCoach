@@ -1,4 +1,4 @@
-import { courseLines, overusedOpeners, verifyCourseEpisode, type CourseVerifyProblem } from '@freechesscoach/chess-analysis';
+import { courseLines, courseNodePath, overusedOpeners, verifyCourseEpisode, type CourseVerifyProblem } from '@freechesscoach/chess-analysis';
 import { buildCourseEpisodeMessages, courseBudget, episodeWordBudget } from '@freechesscoach/prompts';
 import { courseVideos, EpisodeScriptSchema, type CourseEpisode, type CourseTempting, type CourseOutline, type CourseOutlineEpisode, type CourseWarning, type EpisodeScript } from '@freechesscoach/shared';
 import { learnerNodes } from './generate-outline.js';
@@ -95,14 +95,17 @@ function temptingDiscussed(inputs: GenerationInputs, outline: CourseOutline, epi
   );
 }
 
-/** A trap's safe line: the victim's best move at the bait and the engine's
- * line after it, for the video to play at the safety episode's line on the
- * bait. */
-export function trapSafeLine(inputs: GenerationInputs): { nodeId: string; moves: string[] } | null {
+/** A trap's safe lines: the victim's best move at the bait, and at their
+ * later way out, each with the engine's line after it, for the video to play
+ * at the safety episode's line on that move. */
+export function trapSafeLines(inputs: GenerationInputs): Map<string, string[]> {
   const skeleton = inputs.context.skeleton;
-  if (skeleton?.kind !== 'trap') return null;
-  const line = inputs.dossier.nodes.find((node) => node.nodeId === skeleton.baitNodeId)?.bestInstead?.line;
-  return line?.length ? { nodeId: skeleton.baitNodeId, moves: line } : null;
+  if (skeleton?.kind !== 'trap') return new Map();
+  const ids = [skeleton.baitNodeId, ...(skeleton.laterExitNodeId ? [skeleton.laterExitNodeId] : [])];
+  return new Map(ids.flatMap((nodeId) => {
+    const line = inputs.dossier.nodes.find((node) => node.nodeId === nodeId)?.bestInstead?.line;
+    return line?.length ? [[nodeId, line] as const] : [];
+  }));
 }
 
 function plannedEpisode(outline: CourseOutline, episodeId: string): CourseOutlineEpisode {
@@ -119,8 +122,11 @@ function toEpisode(inputs: GenerationInputs, outline: CourseOutline, episodeId: 
   const planned = plannedEpisode(outline, episodeId);
   // The course always; the video only when the course makes one (§13.1).
   const video = courseVideos(inputs.document).video;
-  const safeLine = planned.role === 'safety' ? trapSafeLine(inputs) : null;
+  const safeLines = planned.role === 'safety' ? trapSafeLines(inputs) : new Map<string, string[]>();
   const discussed = temptingDiscussed(inputs, outline, episodeId);
+  // A move the creator marked @fast says nothing (M2): its plies go, and the budgets fit the rest.
+  const fast = new Set(inputs.document.nodes.filter((node) => node.marks.includes('fast')).map((node) => node.id));
+  const speakable = (courseNodePath(inputs.document.nodes, planned.startNodeId, planned.endNodeId) ?? []).filter((id) => !fast.has(id)).length;
   return {
     id: planned.id,
     role: planned.role,
@@ -129,6 +135,7 @@ function toEpisode(inputs: GenerationInputs, outline: CourseOutline, episodeId: 
     endNodeId: planned.endNodeId,
     plies: script.plies
       .map((ply) => ({ ...ply, video: video && ply.video }))
+      .filter((ply) => !fast.has(ply.nodeId))
       .filter((ply) => ply.course || ply.video || ply.text.trim() || ply.arrows.length || ply.tempting.length)
       .map(({ say, caption, tempting, ...ply }) => {
         const known = OVERVIEW_ROLES.has(planned.role) || discussed.has(ply.nodeId) ? [] : withRefutations(inputs, ply.nodeId, tempting);
@@ -137,11 +144,12 @@ function toEpisode(inputs: GenerationInputs, outline: CourseOutline, episodeId: 
           ...(video && say?.trim() ? { say } : {}),
           ...(video && caption?.trim() ? { caption } : {}),
           ...(known.length ? { tempting: known } : {}),
-          ...(video && safeLine && ply.nodeId === safeLine.nodeId ? { playOut: safeLine.moves } : {})
+          ...(video && safeLines.has(ply.nodeId) ? { playOut: safeLines.get(ply.nodeId) } : {})
         };
       }),
-    budget: { course: planned.budgetCourse, video: planned.budgetVideo, ...(planned.keyNodeIds?.length ? { keyNodeIds: planned.keyNodeIds } : {}) },
+    budget: { course: Math.min(planned.budgetCourse, speakable), video: Math.min(planned.budgetVideo, speakable), ...(planned.keyNodeIds?.length ? { keyNodeIds: planned.keyNodeIds } : {}) },
     ...(script.quiz ? { quiz: script.quiz } : {}),
-    drillNodeIds: learnerNodes(inputs, planned.startNodeId, planned.endNodeId)
+    // The safety episode goes back over moves the quiz and the punishment already drill.
+    drillNodeIds: planned.role === 'safety' ? [] : learnerNodes(inputs, planned.startNodeId, planned.endNodeId)
   };
 }

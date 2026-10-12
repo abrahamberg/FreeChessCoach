@@ -4,6 +4,10 @@ import { moveSound, type BoardSound } from '../../../sounds/move-sounds.js';
 
 export type CourseEvals = PublicCourseResponse['evals'];
 
+/** A mate on the evaluation bar and graph: just past the engine's own
+ * figure for a mate in one (1990). */
+const MATE_CP = 2000;
+
 /** A course line in the shape the app's board widgets read (MoveExplorer,
  * MoveNavStrip, EvalBar, GameEvalChart): plies from the course's start. */
 export interface CourseMoveList {
@@ -39,7 +43,10 @@ export function moveListOf(document: CourseDocument, line: readonly CourseNode[]
     const mover = (index + (start.blackFirst ? 1 : 0)) % 2 === 0 ? 'white' : 'black';
     // The widgets read the ply, the evaluation and the quality; the rest is
     // the game review's and stays empty (no loss figure, no tactics).
-    return [{ ply: index + 1, moveSan: node.san, mover, isUserMove: mover === learner, cpLoss: 0, quality: rated.quality, bestLineSan: [], evalAfterCp: rated.cp, hangsPiece: false }];
+    // The engine has no figure for a finished game (it gives 0): a mate is
+    // all the mover's, at the clamp the review's own evaluations use.
+    const evalAfterCp = node.san.endsWith('#') ? (mover === 'white' ? MATE_CP : -MATE_CP) : rated.cp;
+    return [{ ply: index + 1, moveSan: node.san, mover, isUserMove: mover === learner, cpLoss: 0, quality: rated.quality, bestLineSan: [], evalAfterCp, hangsPiece: false }];
   });
   return {
     start,

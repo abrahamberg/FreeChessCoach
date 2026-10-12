@@ -343,7 +343,7 @@ describe('runCourseGeneration', () => {
 
   test('a quiz the outline did not plan is a problem for the repair call', async () => {
     const id = await newCourse('unplanned-quiz@example.com');
-    const quizzed = { ...script('e3', 'n11'), quiz: { answerNodeId: 'n12', prompt: 'What now?', hint: 'Look at the king.', reveal: 'Bb4 pins it.' } };
+    const quizzed = { ...script('e3', 'n11'), quiz: { answerNodeId: 'n12', scene: 'White has taken a pawn.', prompt: 'What now?', hint: 'Look at the king.', reveal: 'Bb4 pins it.' } };
     const { deps, prompts } = depsWith([step(outline()), step(script('e1', 'n1')), step(script('e2', 'n2')), step(quizzed), step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n16')), step(script('e6', 'n11'))]);
 
     await runCourseGeneration(deps, id);

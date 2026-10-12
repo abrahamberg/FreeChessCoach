@@ -23,7 +23,7 @@ export function episodeTexts(episode: CourseEpisode): EpisodeText[] {
     for (const tempting of ply.tempting ?? []) texts.push({ where: `why ${tempting.san} fails on ${ply.nodeId}`, nodeId: ply.nodeId, text: tempting.why });
   }
   const quiz = episode.quiz;
-  if (quiz) texts.push(...(['prompt', 'hint', 'reveal'] as const).map((field) => ({ where: `the quiz ${field}`, nodeId: quiz.answerNodeId, text: quiz[field] })));
+  if (quiz) texts.push(...(['scene', 'prompt', 'hint', 'reveal'] as const).map((field) => ({ where: `the quiz ${field}`, nodeId: quiz.answerNodeId, text: quiz[field] })));
   return texts;
 }
 
@@ -159,6 +159,17 @@ export function phraseProblems(texts: EpisodeText[]): CourseVerifyProblem[] {
     const listed = /\b(listed|given line|the continuation)\b/.exec(lower);
     const ours = listed ? [{ code: 'phrases' as const, nodeId, message: `${where} says "${listed[0]}": the learner never sees our list; name the moves or say what happens` }] : [];
     return [...stock, ...jargon, ...ours];
+  });
+}
+
+/** A spoken line is heard once (the prompt's "SAID ALOUD, HEARD ONCE"): one
+ * move in notation at most, the rest by piece. A run's safety line read
+ * "play Be2. As Black, Ng4 is best… Best next is Qh4". */
+export function spokenNotationProblems(spoken: EpisodeText[]): CourseVerifyProblem[] {
+  return spoken.flatMap(({ where, nodeId, text }) => {
+    const moves = sanTokens(text);
+    if (moves.length < 2) return [];
+    return [{ code: 'voice' as const, nodeId, message: `${where} reads out ${moves.length} moves in notation (${moves.join(', ')}): it is heard once, so say them by piece ("the bishop steps back", "your knight jumps in") and name at most one move` }];
   });
 }
 

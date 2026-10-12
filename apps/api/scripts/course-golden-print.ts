@@ -48,7 +48,7 @@ export function printCourseRun(run: CourseRun): void {
         lines.push(`    ${ply.nodeId} [${where}]: ${ply.text}${ply.say ? `  | video: ${ply.say}` : ''}${(ply.tempting ?? []).map((each) => `  | tempting ${each.san}: ${each.why}`).join('')}${ply.caption ? `  «${ply.caption}»` : ''}${arrows(ply.arrows)}`);
       }
       if (episode.quiz) {
-        lines.push(`    quiz ${episode.quiz.answerNodeId}: ${episode.quiz.prompt} / hint: ${episode.quiz.hint} / reveal: ${episode.quiz.reveal}`);
+        lines.push(`    quiz ${episode.quiz.answerNodeId}: scene: ${episode.quiz.scene} / ${episode.quiz.prompt} / hint: ${episode.quiz.hint} / reveal: ${episode.quiz.reveal}`);
       }
       lines.push(written.warnings.length ? written.warnings.map((warning) => `    ✗ ${warning.code}: ${warning.message}`).join('\n') : '    ✓ verifier: clean');
     }

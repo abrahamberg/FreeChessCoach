@@ -1,6 +1,6 @@
-import type { CourseLineGame, OpeningSkeleton } from '@freechesscoach/chess-analysis';
+import { ownMoves, type CourseLineGame, type OpeningSkeleton } from '@freechesscoach/chess-analysis';
 import type { CourseChapter } from '@freechesscoach/shared';
-import { noteworthy, type EpisodeBuilder } from './manual-notes.js';
+import { noteFocus, noteworthy, type EpisodeBuilder } from './manual-notes.js';
 
 /** §6.3 opening: "The idea", a chapter per sideline (from where it
  * leaves the lines before it), a trap episode per trap, then "Recap". */
@@ -9,6 +9,7 @@ export function openingChapters(
   lines: CourseLineGame[],
   learner: 'white' | 'black',
   lineNames: ReadonlyMap<string, string>,
+  lineNotes: ReadonlyMap<string, string>,
   builder: EpisodeBuilder
 ): CourseChapter[] {
   const [main, ...sidelines] = lines;
@@ -24,21 +25,20 @@ export function openingChapters(
       title: 'The idea',
       lineId: main.lineId,
       episodeIds: [
-        ...builder.add({ role: 'line', focus: 'line: what each learner move is for, then the plan', nodeIds: main.nodeIds, noteNodeIds: noteworthy(main.nodeIds, learner, builder), drillNodeIds: learnerMoves(main.nodeIds) }),
+        ...builder.add({ role: 'line', focus: noteFocus('line', lineNotes.get(main.lineId), 'what each learner move is for, then the plan'), nodeIds: main.nodeIds, noteNodeIds: noteworthy(main.nodeIds, learner, builder), drillNodeIds: learnerMoves(main.nodeIds) }),
         ...trapEpisodes(main)
       ]
     }
   ];
-  const seen = new Set(main.nodeIds);
-  for (const line of sidelines) {
-    const own = line.nodeIds.filter((id) => !seen.has(id));
-    own.forEach((id) => seen.add(id));
+  const owned = ownMoves(lines).slice(1);
+  for (const [index, line] of sidelines.entries()) {
+    const own = owned[index] ?? [];
     chapters.push({
       id: `c${chapters.length + 1}`,
       title: lineNames.get(line.lineId) ?? line.lineId,
       lineId: line.lineId,
       episodeIds: [
-        ...builder.add({ role: 'deviation', focus: 'deviation: how to recognise it, and the principled answer', nodeIds: own, noteNodeIds: noteworthy(own, learner, builder), drillNodeIds: learnerMoves(own).slice(0, 2) }),
+        ...builder.add({ role: 'deviation', focus: noteFocus('deviation', lineNotes.get(line.lineId), 'how to recognise it, and the principled answer'), nodeIds: own, noteNodeIds: noteworthy(own, learner, builder), drillNodeIds: learnerMoves(own).slice(0, 2) }),
         ...trapEpisodes(line)
       ]
     });

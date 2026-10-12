@@ -86,6 +86,7 @@ into a course (a lesson on the board, a YouTube video and a reel).
   - `move-verdict/` — move verdicts.
   - board facts — `packages/chess-analysis/src/board-facts/`: `BoardFact` data (`types.ts`) with one `renderBoardFact` (`render.ts`); what a move does, `loosePieces`, `forks`, checks, mates, material in words.
   - course code — `packages/chess-analysis/src/course/` (dossier, verify, tempting, skeletons).
+  - PGN trees — `packages/chess-analysis/src/pgn-tree/` (tokens, sections, marks, `parsePgnTree`, `edit.ts`): the move tree behind the studio's text and the move explorer.
 - `packages/prompts`: LLM prompt templates (course prompts in `src/course/`). `docs/prompts.md` is auto-generated.
 - `services/engine`: Stockfish/UCI HTTP microservice.
 - `deploy/helm`: K8s Helm charts.
@@ -120,6 +121,9 @@ into a course (a lesson on the board, a YouTube video and a reel).
 - **Keep them fast**: build expensive fixtures (an analysed game or course) once per file, not per test; fake timers for anything that waits; no real engine or LLM in the default run.
 - **Mocking**: Mock LLM (`apps/api/test/helpers/mock-model.ts`) and Engine HTTP in integration tests.
 - **Workflow**: write the failing test for a new invariant or bug, make it pass, `npm run verify:changed` before committing, full `npm run verify` before a PR.
+
+## Browser testing
+- The app runs in one tab at a time. When the dev app shows "Active on another tab", **always press Take over** and carry on; never stop to ask. The owner wants this every time, so it also covers a tab the agent did not open.
 
 ## Git
 - Small commits, conventional messages.

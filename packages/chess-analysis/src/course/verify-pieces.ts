@@ -65,3 +65,39 @@ function positionsAlong(fen: string, sans: readonly string[]): string[] {
   }
   return out;
 }
+
+const TAKEN = /\b(?:took|takes|taken|captured|captures|grabbed|grabs)\s+(?:your|the|my|our|their|a|white's|black's)\s+(king|queen|rook|bishop|knight|pawn)\b/gi;
+
+/**
+ * On a move that takes back, "took your pawn" names the piece that was just
+ * taken there, or the one this move takes: a reel said "White took your pawn.
+ * Taking back opens your light-squared bishop" on 4…dxc6, where White had
+ * taken the knight. Only the lines on the move itself are checked; a tempting
+ * move's "why" and the quiz speak of other positions.
+ */
+export function takenPieceProblems(texts: EpisodeText[], scope: EpisodeScope): CourseVerifyProblem[] {
+  return texts.flatMap(({ where, nodeId, text }) => {
+    const node = nodeId ? scope.byId.get(nodeId) : undefined;
+    const before = node?.parentId ? scope.byId.get(node.parentId) : undefined;
+    if (!node || !before || !/\b(?:line|caption) on\b/.test(where)) return [];
+    const taken = captureOf(scope.fenBefore(before.id), before.san);
+    const back = captureOf(scope.fenBefore(node.id), node.san);
+    if (!taken || !back || taken.square !== back.square) return [];
+    return [...text.replace(/’/g, "'").matchAll(TAKEN)].flatMap((match) => {
+      const piece = PIECES[match[1]!.toLowerCase()];
+      if (piece === taken.piece || piece === back.piece) return [];
+      const name = Object.keys(PIECES).find((each) => PIECES[each] === taken.piece);
+      return [{ code: 'pieces' as const, nodeId, message: `"${match[0]}" in ${where}: the move before, ${before.san}, took the ${name}, and this move takes back` }];
+    });
+  });
+}
+
+/** The piece a move takes and where; null when it takes nothing or is not legal. */
+function captureOf(fen: string, san: string): { piece: PieceSymbol; square: string } | null {
+  try {
+    const move = new Chess(fen).move(san);
+    return move.captured ? { piece: move.captured, square: move.to } : null;
+  } catch {
+    return null;
+  }
+}

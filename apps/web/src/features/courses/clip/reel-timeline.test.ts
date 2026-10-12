@@ -18,21 +18,21 @@ function withReel(reel: Partial<CourseReel>): CourseDocument {
 }
 
 const audio: Record<string, number> = { 'reel:hook': 2000, 'reel:beat:n14': 1000, 'reel:cta': 1500, 'reel:loop': 1200 };
-const TIMING = { ...REEL_TIMING, minMs: 0 };
+const TIMING = { ...REEL_TIMING, landMs: 0, mateMs: 0, minMs: 0 };
 const summary = (document: CourseDocument, timing = TIMING) =>
   buildReelTimeline({ document, audioMs: (key) => audio[key], timing, sounds: { evals: {}, lengthMs: () => 100 } }).segments.map((segment) => [segment.kind, segment.moveLabel, segment.caption, segment.sound, segment.end - segment.start]);
 
 describe('buildReelTimeline (§13.3)', () => {
   test('the hook on the first position, the build-up fast, silence, the climax slowed with the payoff, the call to action, the loop', () => {
     expect(summary(withReel({}))).toEqual([
-      ['beat', null, '', null, 2250],
+      ['beat', null, '', null, 2500],
       ['move', '7.Qd2', '', 'opponent', 500],
-      ['beat', '7…Bxc3', 'The pin', 'capture', 100 + 1250],
+      ['beat', '7…Bxc3', 'The pin', 'capture', 100 + 1500],
       ['move', '8.Qxc3', '', 'capture', 500],
       ['silence', '8.Qxc3', '', null, 500],
       ['move', '8…Qc1#', 'Mate in eight', 'check', 500 + 1400],
-      ['cta', null, 'Follow for a trap a day.', null, 1750],
-      ['beat', null, '', null, 1450]
+      ['cta', null, 'Follow for a trap a day.', null, 2000],
+      ['beat', null, '', null, 1700]
     ]);
     const timeline = buildReelTimeline({ document: withReel({}), audioMs: (key) => audio[key], timing: TIMING });
     expect(timeline).toMatchObject({ product: 'reel', format: 'vertical', topText: 'Black to play' });
@@ -50,5 +50,17 @@ describe('buildReelTimeline (§13.3)', () => {
     const climax = timeline.segments.find((segment) => segment.moveLabel === '8…Qc1#' && segment.kind === 'move');
     expect(climax!.end - climax!.start).toBeGreaterThan(REEL_TIMING.moveMs + REEL_TIMING.climaxMs);
     expect(timeline.segments.find((segment) => segment.moveLabel === '7.Qd2')!.end - timeline.segments.find((segment) => segment.moveLabel === '7.Qd2')!.start).toBe(REEL_TIMING.moveMs);
+  });
+
+  test('the build-up moves the creator marked play at their pace: @fast quicker, @slow held', () => {
+    const marked = parseCourseTree('1. d4 e5 2. dxe5 Nc6 3. Nf3 Qe7 4. Bf4 Qb4+ 5. Bd2 Qxb2 6. Bc3 Bb4 7. Qd2 @fast Bxc3 8. Qxc3 @slow Qc1# *');
+    const lengths = (nodes: typeof tree.nodes) => buildReelTimeline({ document: { ...withReel({ beats: [] }), nodes }, audioMs: () => undefined, timing: TIMING }).segments;
+    const base = lengths(tree.nodes).find((segment) => segment.moveLabel === '7.Qd2');
+    const fast = lengths(marked.nodes).find((segment) => segment.moveLabel === '7.Qd2');
+    const slow = lengths(marked.nodes).find((segment) => segment.moveLabel === '8.Qxc3');
+
+    expect(base!.end - base!.start).toBe(TIMING.moveMs);
+    expect(fast!.end - fast!.start).toBe(TIMING.fastMoveMs);
+    expect(slow!.end - slow!.start).toBe(TIMING.moveMs + TIMING.slowHoldMs);
   });
 });

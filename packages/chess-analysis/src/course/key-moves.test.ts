@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { episodeKeyMoves } from './key-moves.js';
 import type { TrapSkeleton } from './skeleton.js';
 
-const trap: TrapSkeleton = { kind: 'trap', lineId: 'l1', baitNodeId: 'n11', answerNodeId: 'n12', punishNodeIds: ['n13', 'n14', 'n15', 'n16'], safeMoveSan: 'Nc3', trapperRiskNodeIds: [] };
+const trap: TrapSkeleton = { kind: 'trap', lineId: 'l1', baitNodeId: 'n11', answerNodeId: 'n12', punishNodeIds: ['n13', 'n14', 'n15', 'n16'], laterExitNodeId: null, safeMoveSan: 'Nc3', trapperRiskNodeIds: [], sidelines: [] };
 const sans = new Map([
   ['n13', 'Qd2'],
   ['n14', 'Bxc3'],
@@ -21,5 +21,16 @@ describe('episodeKeyMoves', () => {
     expect(episodeKeyMoves({ role: 'safety', path: ['n11'], answerNodeId: null, sans, skeleton: trap })).toEqual([]);
     expect(episodeKeyMoves({ role: 'hook', path: ['n1'], answerNodeId: null, sans, skeleton: trap })).toEqual([]);
     expect(episodeKeyMoves({ role: 'example', path: ['n13', 'n14', 'n15', 'n16'], answerNodeId: 'n14', sans, skeleton: null })).toEqual(['n14', 'n16']);
+  });
+
+  test('the creator’s @key and !/!! moves are key moves; a mate marked @fast is not', () => {
+    const creator = new Map<string, { creatorMarks: ('key' | 'fast')[]; creatorGlyph: '!' | '!!' | '?' | null }>([
+      ['n13', { creatorMarks: ['key'], creatorGlyph: null }],
+      ['n14', { creatorMarks: [], creatorGlyph: '!!' }],
+      ['n15', { creatorMarks: [], creatorGlyph: '?' }],
+      ['n16', { creatorMarks: ['fast'], creatorGlyph: null }]
+    ]);
+
+    expect(episodeKeyMoves({ role: 'example', path: ['n13', 'n14', 'n15', 'n16'], answerNodeId: null, sans, skeleton: null, creator })).toEqual(['n13', 'n14']);
   });
 });

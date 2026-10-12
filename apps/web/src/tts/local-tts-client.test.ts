@@ -30,6 +30,18 @@ describe('localTtsClient', () => {
     expect(bodies[0]?.voice).toBe('am_michael');
   });
 
+  // The owner (2026-10-12): course audio sounded lower quality than it could.
+  test('a course recording is one uncompressed request for the whole line', async () => {
+    const fetchMock = stubFetch();
+    const chunks: number[] = [];
+    await localTtsClient.speak({ text: 'Nice move. Watch the knight.', persona: 'general', studio: true }, (index) => chunks.push(index));
+
+    expect(chunks).toEqual([0]);
+    const bodies = callsOf(fetchMock).map(([, init]) => JSON.parse(String(init.body)) as { input: string; response_format: string });
+    expect(bodies).toMatchObject([{ input: 'Nice move. Watch the knight.', response_format: 'wav' }]);
+    expect(localTtsClient.studioMimeType).toBe('audio/wav');
+  });
+
   test('sends the persona speed, so the older coaches speak slower', async () => {
     const fetchMock = stubFetch();
     await localTtsClient.speak({ text: 'Why does this move work?', persona: 'scholar' }, () => {});

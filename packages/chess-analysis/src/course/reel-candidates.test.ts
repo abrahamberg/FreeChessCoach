@@ -6,15 +6,15 @@ import { analyseCourse, analyseEnglund, fakeEvals } from './test-fixtures.js';
 import { parseCourseTree } from './tree.js';
 
 describe('reel candidates (§13.3)', () => {
-  test('the Englund: the mate first, then the trap’s answer, then the blunder that swings it; at most 6 moves before and 2 after, or on to a mate', () => {
+  test('the Englund: the mate first, then the trap’s answer, then the blunder that swings it; at most 8 moves before and 2 after, or on to a mate', () => {
     const { tree, dossier } = analyseEnglund();
     const skeleton = buildCourseSkeleton({ kind: 'trap', tree, lines: courseLineGames(tree), dossier });
     expect(reelCandidates(tree, dossier, skeleton).map((each) => [each.id, each.reason, each.startNodeId, each.climaxNodeId, each.endNodeId, each.styles.join(' ')])).toEqual([
-      ['r1', 'mate', 'n10', 'n16', 'n16', 'highlight puzzle promo'],
+      ['r1', 'mate', 'n8', 'n16', 'n16', 'highlight puzzle promo'],
       // The trap's answer runs on to the mate, 4 moves later: the payoff.
-      ['r2', 'trap', 'n6', 'n12', 'n16', 'highlight puzzle promo'],
+      ['r2', 'trap', 'n4', 'n12', 'n16', 'highlight puzzle promo'],
       // The blunder is not the move to find, so it is no puzzle.
-      ['r3', 'swing', 'n5', 'n11', 'n13', 'highlight promo']
+      ['r3', 'swing', 'n3', 'n11', 'n13', 'highlight promo']
     ]);
   });
 
@@ -29,7 +29,7 @@ describe('reel candidates (§13.3)', () => {
     const tree = parseCourseTree('[FEN "1K6/1P1k4/8/8/8/8/r7/2R5 w - - 0 1"]\n\n1. Rd1+ Ke7 (1... Kc6 2. Kc8) 2. Rd4 Ra1 3. Kc7 Rc1+ 4. Kb6 Rb1+ 5. Kc6 Rc1+ 6. Kb5 Rb1+ 7. Rb4 *');
     const { dossier } = analyseCourse(tree, fakeEvals(tree, () => 2000), 'white');
     const skeleton = buildCourseSkeleton({ kind: 'endgame', tree, lines: courseLineGames(tree), dossier });
-    expect(reelCandidates(tree, dossier, skeleton)[0]).toMatchObject({ reason: 'technique', startNodeId: 'n7', climaxNodeId: 'n13', endNodeId: 'n13', styles: ['highlight', 'promo'] });
+    expect(reelCandidates(tree, dossier, skeleton)[0]).toMatchObject({ reason: 'technique', startNodeId: 'n5', climaxNodeId: 'n13', endNodeId: 'n13', styles: ['highlight', 'promo'] });
   });
 
   test('an endgame with only moves: the last one as a puzzle, the moves before it leading in', () => {
@@ -47,5 +47,15 @@ describe('reel candidates (§13.3)', () => {
     const marked = { ...dossier, nodes: dossier.nodes.map((node) => ({ ...node, quizEligible: quiz.has(node.nodeId) })) };
     const skeleton = buildCourseSkeleton({ kind: 'opening', tree, lines: courseLineGames(tree), dossier: marked });
     expect(reelCandidates(tree, marked, skeleton).map((each) => [each.reason, each.climaxNodeId])).toEqual([['idea', 'n13']]);
+  });
+
+  test('a move the creator marked @reel is the first candidate, with the span rule of the others', () => {
+    const { tree, dossier } = analyseEnglund();
+    const marked = { ...dossier, nodes: dossier.nodes.map((node) => ({ ...node, creatorMarks: node.nodeId === 'n9' ? ['reel' as const] : [] })) };
+    const skeleton = buildCourseSkeleton({ kind: 'trap', tree, lines: courseLineGames(tree), dossier: marked });
+    const [first, second] = reelCandidates(tree, marked, skeleton);
+
+    expect(first).toMatchObject({ reason: 'creator', climaxNodeId: 'n9', startNodeId: 'n1', endNodeId: 'n11' });
+    expect(second?.reason).toBe('mate');
   });
 });

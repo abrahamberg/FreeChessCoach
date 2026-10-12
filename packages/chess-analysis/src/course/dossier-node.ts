@@ -1,5 +1,5 @@
 import { Chess } from 'chess.js';
-import type { EngineEval, MovePhase, MoveQuality, TacticMotifType } from '@freechesscoach/shared';
+import type { CourseGlyph, CourseMark, EngineEval, MovePhase, MoveQuality, TacticMotifType } from '@freechesscoach/shared';
 import type { ClassifiedMove } from '../classify.js';
 import { CONFIG } from '../config.js';
 import { abandonedGuard, betterMoveFacts, replyFork } from '../board-facts/better-move.js';
@@ -10,7 +10,8 @@ import { lineWords, positionWords } from '../board-facts/verdict-words.js';
 import { lineBalance, settledLine } from '../board-facts/material.js';
 import type { CourseTemptingFacts } from './tempting.js';
 import type { CourseTreeNode } from './tree.js';
-import { isBookMoveFrom, resolveOpening } from '../opening-book.js';
+import { bookMovesForFen, isBookMoveFrom, resolveOpening } from '../opening-book.js';
+import { lineChanges, type LineChange } from '../piece-coordination.js';
 import { positionKey } from '../opening-book-key.js';
 import { tacticAllowedReason, tacticOpportunityReason } from '../tactic-reason-text.js';
 
@@ -30,6 +31,14 @@ export interface CourseNodeFacts {
   after: string;
   inBook: boolean;
   openingName: string | null;
+  /** The opening book's other moves from the position before, each with the
+   * name it leads to: where the Stafford's 3…Nc6 leaves the Petrov, the
+   * usual 3…d6 and 3…Nxe4. The first Stafford run could not say what the
+   * normal move was. */
+  bookSiblings: { san: string; name: string }[];
+  /** The mover's bishops, rooks and queens the move gives squares to: the
+   * Stafford's 4…dxc6 opens the bishop on c8 that mates on g4. */
+  opens: LineChange[];
   /** The engine's best move and line (at most 6 plies) when the course move
    * is not it, with its board facts (`betterMoveFacts`) and the material at
    * the line's end ("White is a pawn up"). */
@@ -53,6 +62,9 @@ export interface CourseNodeFacts {
   quizEligible: boolean;
   critical: boolean;
   creatorComment: string | null;
+  /** The creator's `@key`, `@quiz`, `@slow`, `@fast`, `@reel` and `!`/`??` on the move: their steer, as data. */
+  creatorMarks: CourseMark[];
+  creatorGlyph: CourseGlyph | null;
   /** For the skeleton only, never rendered: the mover's win% drop and the game phase. */
   winDrop: number;
   phase: MovePhase | null;
@@ -88,6 +100,8 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     after,
     inBook: isBookMoveFrom(fenBefore, node.san),
     openingName: opening?.name ?? null,
+    bookSiblings: bookMovesForFen(fenBefore).filter((entry) => entry.san !== node.san).map(({ san, name }) => ({ san, name })),
+    opens: opened(fenBefore, node.san),
     mateAhead: (evalsByFen.get(node.fenAfter)?.lines[0]?.mateIn ?? null) !== null,
     bestInstead: bestInstead(move, node.san, fenBefore),
     board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, reply), ...replyFork(node.fenAfter, reply), ...repetition(node.fenAfter, input.linePositionFens)],
@@ -98,9 +112,19 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     quizEligible: isOnlyMove(evalBefore, node.san, side),
     critical: input.critical,
     creatorComment: node.comment,
+    creatorMarks: node.marks,
+    creatorGlyph: node.glyph,
     winDrop: move.drop ?? 0,
     phase: move.phase ?? null
   };
+}
+
+/** Out of a check every piece gains squares it only lacked because of the
+ * check: 8.Ke2 "opened" the bishop on d8. */
+function opened(fenBefore: string, san: string): LineChange[] {
+  const board = new Chess(fenBefore);
+  if (board.inCheck()) return [];
+  return lineChanges(fenBefore, board.move(san), 'opens');
 }
 
 /** After a checkmate the mate is the whole description: 38…Rc1# listed

@@ -1,5 +1,5 @@
-import { episodeKeyMoves, renderBoardFact, type CourseNodeFacts, type CourseSkeleton, type CourseTemptingFacts } from '@freechesscoach/chess-analysis';
-import type { CourseArrow, CourseEpisode, CoursePly, CourseTempting, CourseVideos } from '@freechesscoach/shared';
+import { cutAtQuizzes, episodeKeyMoves, renderBoardFact, type CourseNodeFacts, type CourseSkeleton, type CourseTemptingFacts } from '@freechesscoach/chess-analysis';
+import type { CourseArrow, CourseEpisode, CoursePly, CourseQuiz, CourseTempting, CourseVideos } from '@freechesscoach/shared';
 
 /** docs/courses.md §10: a note pre-filled from checked facts only — the
  * creator's own comment first, then the opening name, the board facts and
@@ -13,6 +13,12 @@ export function noteText(facts: CourseNodeFacts): string {
   if (board.length) parts.push(`${facts.san} ${board.join(', ')}.`);
   parts.push(...facts.tactics);
   return parts.join(' ');
+}
+
+/** The quiz code writes where there is no model: the side to move and the answer. */
+export function findMoveQuiz(nodeId: string, side: 'white' | 'black' | undefined): CourseQuiz {
+  const mover = side === 'black' ? 'Black' : 'White';
+  return { answerNodeId: nodeId, scene: '', prompt: `${mover} to move. Find the strongest move.`, hint: '', reveal: '' };
 }
 
 export interface EpisodeDraft {
@@ -38,15 +44,30 @@ export class EpisodeBuilder {
     readonly videos: CourseVideos = { video: true, reel: true }
   ) {}
 
-  /** Adds the episode and returns its id; a draft with no nodes is skipped. */
+  /** Adds the episode and returns its id; a draft with no nodes is skipped.
+   * A span with moves the creator marked `@quiz` is cut after each, so every
+   * quiz has an episode of its own (a quiz the caller gave stays on its node). */
   add(draft: EpisodeDraft): string[] {
+    const quizNodes = draft.nodeIds.filter((id) => this.facts.get(id)?.creatorMarks.includes('quiz'));
+    if (!quizNodes.length) return this.addOne(draft);
+    const answered = draft.quiz?.answerNodeId;
+    return cutAtQuizzes(draft.nodeIds, quizNodes).flatMap((nodeIds, index) => {
+      const last = nodeIds[nodeIds.length - 1] ?? '';
+      const quiz = answered && nodeIds.includes(answered) ? draft.quiz : quizNodes.includes(last) ? findMoveQuiz(last, this.facts.get(last)?.side) : undefined;
+      const own = (ids: string[] | undefined): string[] | undefined => ids?.filter((id) => nodeIds.includes(id));
+      return this.addOne({ ...draft, nodeIds, noteNodeIds: own(draft.noteNodeIds), drillNodeIds: own(draft.drillNodeIds), quiz, extraNotes: index === 0 ? draft.extraNotes : undefined });
+    });
+  }
+
+  private addOne(draft: EpisodeDraft): string[] {
     const first = draft.nodeIds[0];
     const last = draft.nodeIds[draft.nodeIds.length - 1];
     if (!first || !last) return [];
     const id = `e${this.episodes.length + 1}`;
     const sans = new Map(draft.nodeIds.map((nodeId) => [nodeId, this.facts.get(nodeId)?.san ?? '']));
-    const keys = episodeKeyMoves({ role: draft.role, path: draft.nodeIds, answerNodeId: draft.quiz?.answerNodeId ?? null, sans, skeleton: this.skeleton });
-    const speaking = new Set([...(draft.noteNodeIds ?? draft.nodeIds), ...keys]);
+    const keys = episodeKeyMoves({ role: draft.role, path: draft.nodeIds, answerNodeId: draft.quiz?.answerNodeId ?? null, sans, skeleton: this.skeleton, creator: this.facts });
+    // A move the creator marked @fast says nothing (M2).
+    const speaking = new Set([...(draft.noteNodeIds ?? draft.nodeIds).filter((nodeId) => !this.facts.get(nodeId)?.creatorMarks.includes('fast')), ...keys]);
     const plies = [...this.plies(draft.nodeIds.filter((nodeId) => speaking.has(nodeId)), keys), ...(draft.extraNotes ?? [])];
     this.episodes.push({
       id,
@@ -98,6 +119,9 @@ export function temptingNote(facts: CourseTemptingFacts): CourseTempting {
 export function noteworthy(nodeIds: string[], learner: 'white' | 'black', builder: EpisodeBuilder): string[] {
   return nodeIds.filter((id) => {
     const facts = builder.fact(id);
-    return facts && (facts.side === learner || facts.creatorComment || facts.tactics.length > 0);
+    return facts && !facts.creatorMarks.includes('fast') && (facts.side === learner || facts.creatorComment || facts.tactics.length > 0);
   });
 }
+
+/** A line's focus: the creator's note when the line has one (§5.6 S5), else the role's own question. */
+export const noteFocus = (role: string, note: string | undefined, fallback: string): string => `${role}: ${note ?? fallback}`;

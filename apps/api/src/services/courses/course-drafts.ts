@@ -3,6 +3,7 @@ import {
   inferLearnerSide,
   parseCourseTree,
   endgameShapeProblems,
+  quizSideProblems,
   puzzleShapeProblems,
   type CourseTree
 } from '@freechesscoach/chess-analysis';
@@ -29,7 +30,7 @@ import { courseSlug, courseTitle, resultHeader } from './intake-text.js';
 
 /** Bounds the one engine batch the skeleton runs (a long master game with
  * a few sidelines fits; a whole repertoire does not). */
-export const MAX_COURSE_NODES = 400;
+export const MAX_COURSE_NODES = 800;
 
 export type CourseIntake = z.output<typeof CreateCourseRequestSchema>;
 
@@ -41,7 +42,7 @@ export async function createCourse(db: Kysely<Database>, ownerId: string, intake
   const title = document.title;
   const row = await coursesRepo.insert(db, {
     ownerId,
-    slug: courseSlug(title),
+    slug: courseSlug(title, await coursesRepo.slugsStartingWith(db, courseSlug(title))),
     kind: intake.kind,
     title,
     sourcePgn: intake.pgn,
@@ -62,10 +63,12 @@ export function draftFromIntake(intake: CourseIntake, order = 1): CourseDocument
   if (shape.length) throw new ValidationError(shape.join('; '));
   const learnerSide = intake.learnerSide ?? inferLearnerSide(intake.kind, tree, resultHeader(intake.pgn));
   if (!learnerSide) throw new ValidationError('Pick the learner side: it cannot be told from this PGN');
+  const quizSide = quizSideProblems(tree, learnerSide);
+  if (quizSide.length) throw new ValidationError(quizSide.join('; '));
   return {
     version: 1,
     kind: intake.kind,
-    title: courseTitle(intake.direction),
+    title: courseTitle(intake.pgn, intake.direction),
     promise: '',
     learnerSide,
     levelBand: intake.rating === undefined ? intake.levelBand : bandForRating(intake.rating),

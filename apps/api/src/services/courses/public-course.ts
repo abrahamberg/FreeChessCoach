@@ -1,5 +1,5 @@
 import type { CourseDossier } from '@freechesscoach/chess-analysis';
-import { CourseCatalogItemSchema, CourseDocumentSchema, type CourseCatalogQuery, type CourseCatalogResponse, type CourseDocument, type PublicCourseResponse } from '@freechesscoach/shared';
+import { CourseCatalogItemSchema, CourseDocumentSchema, temptingEvalKey, type CourseCatalogQuery, type CourseCatalogResponse, type CourseDocument, type PublicCourseResponse } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as courseAudioRepo from '../../db/repositories/course-audio.js';
 import * as coursesRepo from '../../db/repositories/courses.js';
@@ -34,10 +34,17 @@ export async function publicCourse(db: Kysely<Database>, slug: string, mirror?: 
 }
 
 /** Each of the course's moves' evaluation and quality, from its engine pass
- * (`{}` without one): the player's eval bar and graph, the board sounds. */
+ * (`{}` without one): the player's eval bar and graph, the board sounds. The
+ * tempting moves' too, under `temptingEvalKey`, for the video that plays
+ * them out. */
 export function courseEvals(document: CourseDocument, dossier: CourseDossier | null): PublicCourseResponse['evals'] {
   const nodeIds = new Set(document.nodes.map((node) => node.id));
-  return Object.fromEntries((dossier?.nodes ?? []).filter((facts) => nodeIds.has(facts.nodeId)).map((facts) => [facts.nodeId, { cp: facts.evalAfterCp, quality: facts.quality }]));
+  const nodes = (dossier?.nodes ?? []).filter((facts) => nodeIds.has(facts.nodeId));
+  return Object.fromEntries([
+    ...nodes.map((facts) => [facts.nodeId, { cp: facts.evalAfterCp, quality: facts.quality }] as const),
+    // A dossier from before the tempting moves kept their evaluation has none.
+    ...nodes.flatMap((facts) => (facts.tempting ?? []).filter((tempting) => typeof tempting.evalAfterCp === 'number').map((tempting) => [temptingEvalKey(facts.nodeId, tempting.san), { cp: tempting.evalAfterCp, quality: tempting.quality }] as const))
+  ]);
 }
 
 /** One note's audio file, only while a note of the published copy says it. */
