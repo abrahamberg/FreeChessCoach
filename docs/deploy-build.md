@@ -162,14 +162,13 @@ All three runtime images build `FROM dhi.io/...` (Docker Hardened Images:
 Compared to `node:*-slim` / `nginx-unprivileged` they have no shell, no package
 manager and a much smaller CVE surface, and the web image no longer advertises
 its nginx version. Each `FROM` is pinned by digest; Dependabot refreshes the
-digests weekly (`.github/dependabot.yml`), and those PRs auto-merge once CI —
-including the image smoke test — passes.
+digests weekly (`.github/dependabot.yml`). CI does not build images, so a bad
+digest bump is caught by the publishing workflow's smoke test after the merge,
+before anything is pushed.
 
-Pulling needs a Docker Hub login (`docker login dhi.io`). CI reads
-`DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (a Docker Hub access token with
-read-only scope) from **both** the Actions secrets and the Dependabot secrets —
-workflows started by a Dependabot PR only see the latter, and Dependabot itself
-uses them to look up new digests. The pushed images carry the base layers, so
+Pulling needs a Docker Hub login (`docker login dhi.io`). The publishing
+workflow reads `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (a Docker Hub access
+token with read-only scope) from the Actions secrets; PR CI needs neither. The pushed images carry the base layers, so
 the cluster never pulls from `dhi.io`.
 
 With no shell in the images, `kubectl exec ... sh` does not work; use
@@ -187,9 +186,9 @@ read-only root filesystem, every capability dropped, `no-new-privileges`, and
 a writable `/tmp` for web only — next to a throwaway Postgres. It checks that
 migrations apply, the api reports `/readyz`, the worker stays up, the engine
 spawns Stockfish and returns an analysis, and nginx serves the SPA with its
-security headers; and that each image runs as uid 1000 with no shell. CI runs
-it on every PR (`images` job) and the publishing workflow runs it again before
-pushing anything.
+security headers; and that each image runs as uid 1000 with no shell. CI does
+not build images (PR runs, Dependabot's included, only lint, typecheck, build
+and test the app); the publishing workflow runs it before pushing anything.
 
 ## All three images run as uid 1000
 

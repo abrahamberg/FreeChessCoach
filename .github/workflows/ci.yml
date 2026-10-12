@@ -21,7 +21,7 @@ on:
         type: boolean
         default: false
 
-# Read-only token: CI only checks out, tests and builds images locally.
+# Read-only token: CI only checks out, tests and builds the app.
 permissions:
   contents: read
 
@@ -56,6 +56,7 @@ jobs:
 
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm run build -w @freechesscoach/web
 
       # Ephemeral (development-driving) tests are deleted before a task's last
       # commit; one that reaches the repo would run in every default suite.
@@ -136,44 +137,11 @@ jobs:
 
       - run: deploy/helm/test.sh
 
-  # Builds the real api/web/engine images for the runner's architecture and
-  # runs them the way the chart does (read-only, non-root, no capabilities)
-  # against a real Postgres. Catches base-image bumps that break the app —
-  # the unit tests never touch the images.
-  images:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      # Base images come from Docker Hardened Images. Dependabot PRs read these
-      # from the *Dependabot* secrets store, so they must be set in both.
-      - name: Log in to Docker Hardened Images
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          registry: dhi.io
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-
-      - name: Build images for the runner's architecture
-        run: scripts/build-images.sh --platform "" --tag smoke
-
-      - name: Smoke-test the images
-        run: scripts/smoke-images.sh --tag smoke
-
   # The one check branch protection requires, so adding or renaming a job
   # above never needs a settings change.
   ci-passed:
     if: always()
-    needs: [test, helm-lint, images]
+    needs: [test, helm-lint]
     runs-on: ubuntu-latest
     steps:
       - name: All CI jobs succeeded
