@@ -1,6 +1,6 @@
-/* The source image is a 6-column by 5-row uniform portrait grid, so (unlike
- * coaches.png) every crop uses the same background-size and a
- * mechanically-computed position — see BotAvatar.tsx. */
+/* The source image is a 6-column by 5-row uniform portrait grid, so every
+ * crop uses the same background-size and a mechanically-computed position,
+ * see BotAvatar.tsx. */
 .bot-avatar-image {
   display: inline-block;
   flex: none;
