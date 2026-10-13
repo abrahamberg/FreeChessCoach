@@ -1,19 +1,18 @@
-/* The source image is a 4-column by 2-row portrait sheet. Each avatar keeps
- * the source ratio while the square frame crops toward the eyes/shoulders,
- * which stays recognizable at chat size. */
+/* One transparent 1:2 portrait per coach (public/brand/coaches/<persona>.png).
+ * The square frame crops toward the eyes/shoulders, which stays recognizable
+ * at chat size. */
 .coach-avatar-image {
-  --coach-avatar-x: 0%;
-  --coach-avatar-y: 16%;
+  --coach-avatar-y: 48%;
   display: inline-block;
   flex: none;
   aspect-ratio: 1;
   border: 2px solid var(--color-surface);
   border-radius: 50%;
   background-color: var(--color-surface-strong);
-  background-image: url('/brand/coaches.png'), var(--avatar-backdrop);
+  background-image: var(--coach-avatar-image), var(--avatar-backdrop);
   background-repeat: no-repeat;
-  background-size: 400% 400%, 100% 100%;
-  background-position: var(--coach-avatar-x) var(--coach-avatar-y), 0 0;
+  background-size: 100% auto, 100% 100%;
+  background-position: 50% var(--coach-avatar-y), 0 0;
   box-shadow: 0 1px 3px rgb(18 28 22 / 18%), 0 0 0 1px rgb(18 28 22 / 8%);
   vertical-align: middle;
 }
@@ -31,34 +30,38 @@
   margin-right: 7px;
 }
 
+.coach-avatar-image[data-coach-persona='general'] {
+  --coach-avatar-image: url('/brand/coaches/general.png');
+}
+
 .coach-avatar-image[data-coach-persona='general_female'] {
-  --coach-avatar-x: 33.3333%;
+  --coach-avatar-image: url('/brand/coaches/general_female.png');
 }
 
 .coach-avatar-image[data-coach-persona='commander'] {
-  --coach-avatar-x: 66.6667%;
+  --coach-avatar-image: url('/brand/coaches/commander.png');
 }
 
 .coach-avatar-image[data-coach-persona='scholar'] {
-  --coach-avatar-x: 100%;
+  --coach-avatar-image: url('/brand/coaches/scholar.png');
 }
 
 .coach-avatar-image[data-coach-persona='huntress'] {
-  --coach-avatar-x: 0%;
-  --coach-avatar-y: 70%;
+  --coach-avatar-y: 10%;
+  --coach-avatar-image: url('/brand/coaches/huntress.png');
 }
 
 .coach-avatar-image[data-coach-persona='shark'] {
-  --coach-avatar-x: 33.3333%;
-  --coach-avatar-y: 70%;
+  --coach-avatar-y: 10%;
+  --coach-avatar-image: url('/brand/coaches/shark.png');
 }
 
 .coach-avatar-image[data-coach-persona='sunzi'] {
-  --coach-avatar-x: 66.6667%;
-  --coach-avatar-y: 70%;
+  --coach-avatar-y: 10%;
+  --coach-avatar-image: url('/brand/coaches/sunzi.png');
 }
 
 .coach-avatar-image[data-coach-persona='gambler'] {
-  --coach-avatar-x: 100%;
-  --coach-avatar-y: 70%;
+  --coach-avatar-y: 10%;
+  --coach-avatar-image: url('/brand/coaches/gambler.png');
 }

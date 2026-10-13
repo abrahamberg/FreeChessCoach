@@ -9,9 +9,8 @@ export interface CoachAvatarProps {
   size?: CoachAvatarSize;
 }
 
-/** Renders one portrait from the supplied 4x2 coach sprite sheet. The
- * persona order is kept in CSS so the same crop is shared by Settings and
- * the compact chat-run marker. */
+/** Renders the coach's portrait; the per-persona image lives in CSS so the
+ * same crop is shared by Settings and the compact chat-run marker. */
 export function CoachAvatar({ persona = 'general', size = 'chat' }: CoachAvatarProps): ReactNode {
   return (
     <span
