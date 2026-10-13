@@ -2,6 +2,7 @@ import {
   CourseDebugResponseSchema,
   CourseListResponseSchema,
   CourseResponseSchema,
+  NoteAudioUploadResponseSchema,
   type CourseDebugResponse,
   type CourseDocument,
   type CourseListResponse,
@@ -10,7 +11,7 @@ import {
   type PublishCourseRequest
 } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
-import { apiGet, apiPost, apiPut, apiPutBlob } from '../../api/client.js';
+import { apiGet, apiPost, apiPut } from '../../api/client.js';
 
 export function useCourses(): UseQueryResult<CourseListResponse> {
   return useQuery({ queryKey: ['courses'], queryFn: ({ signal }) => apiGet('/api/courses', CourseListResponseSchema, signal) });
@@ -116,7 +117,15 @@ export function fetchCourse(id: string): Promise<CourseResponse> {
   return apiGet(`/api/courses/${id}`, CourseResponseSchema);
 }
 
-/** §8: one note's audio, as its saved draft text reads. */
-export function uploadNoteAudio(id: string, episodeId: string, nodeId: string, audio: Blob): Promise<void> {
-  return apiPutBlob(`/api/courses/${id}/notes/${episodeId}/${nodeId}/audio`, audio);
+/** §8: one note's audio, as its saved draft text reads. The file goes straight
+ * to the bucket on a signed URL from the api, never through the api itself;
+ * the api is told afterwards where it went. */
+export async function uploadNoteAudio(id: string, episodeId: string, nodeId: string, audio: Blob): Promise<void> {
+  const note = `/api/courses/${id}/notes/${episodeId}/${nodeId}/audio`;
+  const slot = await apiPost(`${note}-url`, { size: audio.size }, NoteAudioUploadResponseSchema);
+  const response = await fetch(slot.url, { method: 'PUT', headers: { 'content-type': audio.type }, body: audio }).catch((error: unknown) => {
+    throw new Error(`Could not upload the note audio to the bucket (${error instanceof Error ? error.message : 'network error'}). Check the bucket's CORS rule allows this site.`);
+  });
+  if (!response.ok) throw new Error(`The bucket refused the note audio (${response.status}).`);
+  await apiPut(note, { key: slot.key });
 }

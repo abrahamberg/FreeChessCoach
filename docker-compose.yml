@@ -44,8 +44,34 @@ x-node-dev: &node-dev
     # dev-commands.ts). Also requires AUTH_MODE=dev-stub, so it can never
     # switch on in production. Set COACH_DEV_COMMANDS=0 to test the plain prompt.
     COACH_DEV_COMMANDS: ${COACH_DEV_COMMANDS:-1}
+    # Course note audio goes browser -> bucket (docs/courses.md §8). Locally the
+    # bucket is the minio service below; the browser reaches it on localhost,
+    # the api on the compose network. Throwaway dev credentials.
+    COURSE_AUDIO_S3_ENDPOINT: http://minio:9000
+    COURSE_AUDIO_S3_UPLOAD_ENDPOINT: http://localhost:9000
+    COURSE_AUDIO_S3_BUCKET: course-audio
+    COURSE_AUDIO_S3_ACCESS_KEY_ID: minioadmin
+    COURSE_AUDIO_S3_SECRET_ACCESS_KEY: minioadmin
+    COURSE_AUDIO_PUBLIC_URL: http://localhost:9000/course-audio
 
 services:
+  # Local stand-in for the R2 bucket that holds course note audio. MinIO's own
+  # images are gone from the public registries; this is Bitnami's last build.
+  minio:
+    image: bitnamilegacy/minio:latest
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      # bucket:policy, created on start; "download" lets anyone read the files.
+      MINIO_DEFAULT_BUCKETS: course-audio:download
+    ports:
+      - '9000:9000'
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:9000/minio/health/live']
+      interval: 2s
+      timeout: 5s
+      retries: 20
+
   redis:
     image: redis:7-alpine
     command: redis-server --save '' --appendonly no
@@ -104,6 +130,8 @@ services:
       migrate:
         condition: service_completed_successfully
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
 
   worker:

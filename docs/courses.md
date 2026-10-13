@@ -1284,15 +1284,21 @@ Decided with the owner:
 - Videos are never uploaded. The creator posts them and pastes the links into
   the course (`clipLinks`: `youtube` for the video; `shorts`, `instagram`,
   `tiktok` for the reel), so the course page can link and embed them.
-- Course-note audio is uploaded with the course when it is published (small
-  files, one per note) and played on the public board, so every visitor hears
-  exactly the same voice. Each file is a 64 kbps mono MP3 (about 8 KB a
-  second; the browser encodes it after voicing, the clips keep the
-  uncompressed audio they are recorded from) with the coach's
-  playback rate baked in, keyed by the note text's hash (`course_audio`); only
-  notes whose current text has no audio are voiced again, and publishing drops
-  audio no published note uses. Caps: `CONFIG.courses.maxNoteAudioBytes` and
-  `maxCourseAudioBytes`.
+- Course-note audio is made when the course is published (small files, one
+  per note) and played on the public board, so every visitor hears exactly the
+  same voice. Each file is a 64 kbps mono MP3 (about 8 KB a second; the
+  browser encodes it after voicing, the clips keep the uncompressed audio
+  they are recorded from) with the coach's playback rate baked in. It is
+  uploaded straight from the browser to the bucket, never to the api or
+  Postgres: the browser asks `POST /api/courses/:id/notes/:ep/:node/audio-url`
+  (its size) for a signed PUT URL (5 minutes, for exactly that size and
+  `audio/mpeg`, at a key the api made), PUTs the file to the bucket, then
+  `PUT …/audio` with the key; the api checks the object is there within the
+  caps and records the note text's hash, the key and the size (`course_audio`).
+  Only notes whose current text has no audio are voiced again, and publishing
+  drops audio no published note uses, from the bucket too. Caps:
+  `CONFIG.courses.maxNoteAudioBytes` and `maxCourseAudioBytes`. With no bucket
+  configured the studio cannot save note audio.
 
 ---
 
@@ -1318,9 +1324,8 @@ Decided with the owner:
   The slug is set when the draft is made and is not changed after.
 - Public route `/learn/:slug` (SPA outside the app shell, no login) and
   read-only endpoints `GET /api/public/courses/:slug` (the published copy,
-  each note's audio URL, and each move's evaluation and quality from the
-  engine pass, `evals`, `{}` without one) and
-  `GET /api/public/courses/:slug/audio/<hash>.mp3`
+  each note's audio URL in the bucket, and each move's evaluation and quality
+  from the engine pass, `evals`, `{}` without one)
   (`routes/public-courses.ts`). Drafts and removed courses are 404.
 - **Catalogue**: `GET /api/public/courses?kind=&sort=&cursor=&limit=` lists
   `public` courses only (unlisted ones are for their link), 50 a page,
@@ -1370,27 +1375,27 @@ Decided with the owner:
   Remember screen first. In the app, `/courses/:slug` is the same player in
   the signed-in shell (a board route: its own header, no top bar).
 - Learners never make audio: it is made once, in the creator's browser, when
-  they publish (§8). Each file is named by the hash of its bytes (a column
-  Postgres computes, migration 0018), so a URL never serves different audio
-  and is sent `Cache-Control: public, max-age=31536000, immutable` with no
-  cookie. Behind Cloudflare it is then served from the edge; the origin sees
-  each file about once per edge location. Cloudflare caches `.mp3` by default and honours
-  the origin's header. The course JSON is cached 60 s (a removal shows
-  within a minute).
-- **R2 mirror** (optional; `services/courses/audio-mirror*.ts`): Postgres keeps
-  the files, and each publish copies the ones the bucket lacks to
-  `courses/<slug>/audio/<hash>.mp3` and deletes the ones no note uses any
-  more (a re-voiced note replaces its old file; identical bytes share one
-  object). The page links a file to the bucket's custom domain once it is
-  copied, and to the api otherwise, so a failed or missing mirror never breaks
-  a course; a failed copy is logged and the next publish carries on. Config:
-  `COURSE_AUDIO_S3_{ENDPOINT,BUCKET,ACCESS_KEY_ID,SECRET_ACCESS_KEY}` and
-  `COURSE_AUDIO_PUBLIC_URL`, all or none (Helm: `courseAudioMirror`, the four
-  keys from a Secret). Any S3-compatible store works; the signer is
-  `lib/s3-sign.ts` (AWS SigV4, checked against AWS's published example).
-  One-time Cloudflare setup: an R2 bucket, a custom domain on it (e.g.
-  `media.freechesscoach.org`; not the rate-limited r2.dev URL), an R2 API
-  token with Object Read & Write on that bucket only, and the Secret.
+  they publish (§8). Each file has its own key in the bucket
+  (`courses/<slug>/audio/<uuid>.mp3`, made at upload and never reused), so a
+  URL never serves different audio, and learners fetch it from the bucket's
+  custom domain at the edge (Cloudflare caches `.mp3` by default; a Cache Rule
+  on that domain can raise the edge TTL, since a key never changes). The api
+  serves no audio and holds no bytes; `GET /api/public/courses/:slug` carries
+  each note's URL. The course JSON is cached 60 s (a removal shows within a
+  minute).
+- **The bucket** (`services/courses/audio-store.ts`): any S3-compatible store;
+  Cloudflare R2 in production. Config: `COURSE_AUDIO_S3_{ENDPOINT,BUCKET,
+  ACCESS_KEY_ID,SECRET_ACCESS_KEY}` and `COURSE_AUDIO_PUBLIC_URL`, all or none
+  (Helm: `courseAudioStorage`; the endpoint, bucket and public URL are values,
+  the two keys come from a Secret), plus `COURSE_AUDIO_S3_UPLOAD_ENDPOINT` when
+  the browser reaches the bucket at another address than the api does (local
+  dev: the compose MinIO). The api signs the upload URLs and deletes files
+  (`lib/s3-sign.ts`, AWS SigV4, checked against AWS's published examples);
+  only a course creator can ask for a URL. One-time Cloudflare setup: an R2
+  bucket, a custom domain on it (e.g. `media.freechesscoach.org`; not the
+  rate-limited r2.dev URL), a CORS rule allowing `PUT` from the site with the
+  `content-type` header, and an R2 API token with Object Read & Write on that
+  bucket only.
 - Removing a course: `npx tsx apps/api/scripts/course-remove.ts <slug>` sets
   `removed`, deletes its files from the bucket, and prints the prefixes to
   purge in Cloudflare (the api's and the bucket domain's), since the edge may

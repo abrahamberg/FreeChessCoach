@@ -32,8 +32,8 @@ steps done by hand, once, when courses first go to production.
       you override `extraArgs` (e.g. for Lichess login), copy them too.
 - [ ] **Course creators**: grant the flag per user,
       `npx tsx apps/api/scripts/course-creator.ts grant <email>`.
-- [ ] **R2 mirror for learner audio** (optional but intended; without it
-      learners get the audio from the api, which still works):
+- [ ] **R2 bucket for course note audio** (required for course creators:
+      without it the studio cannot save note audio):
   1. In Cloudflare, create an R2 bucket (e.g. `freechesscoach-course-audio`).
   2. Connect a custom domain to it (e.g. `media.freechesscoach.org`). Not
      the r2.dev URL: Cloudflare rate-limits it and says it is not for
@@ -51,20 +51,26 @@ steps done by hand, once, when courses first go to production.
   5. Set in your values (the endpoint and bucket are not secret):
 
      ```yaml
-     courseAudioMirror:
+     courseAudioStorage:
        existingSecret: course-audio-r2
        endpoint: https://<account id>.r2.cloudflarestorage.com
        bucket: freechesscoach-course-audio
        publicUrl: https://media.freechesscoach.org
      ```
 
-  6. After the deploy, publish a course once and check its files appear in
+  6. Add a CORS rule to the bucket (Settings → CORS Policy) so the browser
+     may upload to it:
+
+     ```json
+     [{ "AllowedOrigins": ["https://freechesscoach.org"], "AllowedMethods": ["PUT"], "AllowedHeaders": ["content-type"], "ExposeHeaders": ["ETag"], "MaxAgeSeconds": 3600 }]
+     ```
+
+  7. After the deploy, publish a course once and check its files appear in
      the bucket under `courses/<slug>/audio/`, and that the course page
      (`/learn/<slug>`) plays audio from the custom domain. This is the first
      run against real R2: the request signer (`apps/api/src/lib/s3-sign.ts`)
-     is tested against AWS's published SigV4 example only. A failed copy is
-     logged ("course audio mirror sync failed") and the page falls back to
-     the api.
+     is tested against AWS's published SigV4 examples only. A failed upload
+     shows in the Publish dialog.
 - [ ] **CSP**: `media-src` in `docker/nginx.security-headers.conf` allows
       `https:` for the bucket's domain (report-only today). Narrow it to the
       custom domain when the script CSP is enforced (threat model R1).

@@ -88,6 +88,13 @@ export const PublishCourseRequestSchema = z.object({
 });
 export type PublishCourseRequest = z.input<typeof PublishCourseRequestSchema>;
 
+/** §8: ask for a URL to upload one note's MP3 to (its size in bytes), then say
+ * where it went. The browser sends the file to the bucket, not to the api. */
+export const NoteAudioUploadRequestSchema = z.object({ size: z.number().int().positive() });
+export const NoteAudioUploadResponseSchema = z.object({ url: z.string().url(), key: z.string() });
+export type NoteAudioUploadResponse = z.infer<typeof NoteAudioUploadResponseSchema>;
+export const NoteAudioConfirmRequestSchema = z.object({ key: z.string().min(1).max(200) });
+
 /** docs/courses.md §9: a published course as anyone with the link sees it
  * (`GET /api/public/courses/:slug`). Nothing about the creator: their display
  * name defaults to their email's local part. */
