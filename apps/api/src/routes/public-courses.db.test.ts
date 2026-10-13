@@ -5,11 +5,11 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build-app.js';
 import { ENGLUND } from '../../test/helpers/course-fixtures.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
+import { fakeAudioStore } from '../../test/helpers/fake-audio-store.js';
 import * as courseAudioRepo from '../db/repositories/course-audio.js';
 import * as coursesRepo from '../db/repositories/courses.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
-import { createHash } from 'node:crypto';
 import { noteTextHash } from '../services/courses/note-audio.js';
 
 let testDb: TestDb;
@@ -44,14 +44,14 @@ async function insertCourse(slug: string, status: 'draft' | 'unlisted' | 'public
   const row = await coursesRepo.insert(db, { ownerId: owner.id, slug, kind: 'trap', title: document.title, sourcePgn: ENGLUND, direction: '', document });
   if (status !== 'draft') await coursesRepo.publish(db, row.id, owner.id, document, 'unlisted');
   if (status === 'public' || status === 'removed') await coursesRepo.setStatus(db, row.id, status);
-  await courseAudioRepo.upsert(db, row.id, noteTextHash('The centre pawn.'), { mimeType: 'audio/mpeg', bytes: Buffer.from('RIFF-audio') });
+  await courseAudioRepo.upsert(db, row.id, noteTextHash('The centre pawn.'), 'courses/' + slug + '/audio/0b9b8d1e-aaaa-4bbb-8ccc-000000000001.mp3', 10);
   return row.id;
 }
 
 describe('public course routes', () => {
-  test('a published course and its note audio need no login; drafts, removed courses and wrong links are 404', async () => {
+  test('a published course and its note audio URL need no login; drafts, removed courses and wrong links are 404', async () => {
     // Proxy mode with no identity headers: what a logged-out visitor sends.
-    const app = buildTestApp({ db, authMode: 'proxy' });
+    const app = buildTestApp({ db, authMode: 'proxy', audioStore: fakeAudioStore() });
     await app.ready();
     await insertCourse('englund-unlisted-aaaaaaaaaaaa', 'unlisted');
     await insertCourse('englund-public-bbbbbbbbbbbb', 'public');
@@ -62,9 +62,8 @@ describe('public course routes', () => {
     expect(course.statusCode).toBe(200);
     expect(course.headers['cache-control']).toBe('public, max-age=60');
     const body = course.json<PublicCourseResponse>();
-    // Named by the bytes' hash, so the file can be cached for good.
-    const file = `${createHash('sha256').update('RIFF-audio').digest('hex').slice(0, 32)}.mp3`;
-    const audioUrl = `/api/public/courses/englund-unlisted-aaaaaaaaaaaa/audio/${file}`;
+    // The file's own key in the bucket, made once at upload, so it can be cached for good.
+    const audioUrl = 'https://media.test/courses/englund-unlisted-aaaaaaaaaaaa/audio/0b9b8d1e-aaaa-4bbb-8ccc-000000000001.mp3';
     expect(body.noteAudio).toEqual({ [`e1:${body.document.nodes[0]!.id}`]: audioUrl });
     expect(body.document.takeaways).toEqual(['One.', 'Two.', 'Three.']);
     expect(JSON.stringify(body)).not.toContain('example.com');
@@ -72,21 +71,11 @@ describe('public course routes', () => {
     expect(body.evals).toEqual({});
     expect((await app.inject({ method: 'GET', url: '/api/public/courses/englund-public-bbbbbbbbbbbb' })).statusCode).toBe(200);
 
-    const audio = await app.inject({ method: 'GET', url: audioUrl });
-    expect(audio.statusCode).toBe(200);
-    expect(audio.headers['cache-control']).toBe('public, max-age=31536000, immutable');
-    expect(audio.headers['content-type']).toBe('audio/mpeg');
-    expect(audio.body).toBe('RIFF-audio');
-
     for (const url of [
       '/api/public/courses/englund-draft-cccccccccccc',
       '/api/public/courses/englund-removed-dddddddddddd',
-      `/api/public/courses/englund-removed-dddddddddddd/audio/${file}`,
-      `/api/public/courses/englund-public-bbbbbbbbbbbb/audio/${file.replace('.mp3', '.wav')}`,
-      `/api/public/courses/englund-unlisted-aaaaaaaaaaaa/audio/${noteTextHash('The centre pawn.')}.mp3`,
       '/api/public/courses/no-such-course',
-      '/api/public/courses/Not%20A%20Slug',
-      '/api/public/courses/englund-unlisted-aaaaaaaaaaaa/audio/xyz'
+      '/api/public/courses/Not%20A%20Slug'
     ]) {
       expect((await app.inject({ method: 'GET', url })).statusCode, url).toBe(404);
     }
@@ -98,7 +87,7 @@ describe('public course routes', () => {
   });
 
   test('a course with an engine pass carries each move’s evaluation for the eval bar and graph', async () => {
-    const app = buildTestApp({ db, authMode: 'proxy' });
+    const app = buildTestApp({ db, authMode: 'proxy', audioStore: fakeAudioStore() });
     await app.ready();
     const id = await insertCourse('englund-evals-aaaaaaaaaaaa', 'unlisted');
     const [first, second] = trapDocument().nodes;
@@ -113,7 +102,7 @@ describe('public course routes', () => {
   });
 
   test('curriculum order: by level, then place; courses with no level last; paged by position', async () => {
-    const app = buildTestApp({ db, authMode: 'proxy' });
+    const app = buildTestApp({ db, authMode: 'proxy', audioStore: fakeAudioStore() });
     await app.ready();
     await insertCourse('cur-1400-01-aaaaaaaaaaaa', 'public', { rating: 1400, order: 1 });
     await insertCourse('cur-1200-02-bbbbbbbbbbbb', 'public', { rating: 1200, order: 2 });
@@ -139,7 +128,7 @@ describe('public course routes', () => {
   });
 
   test('the catalogue lists public courses only, newest first, a page at a time', async () => {
-    const app = buildTestApp({ db, authMode: 'proxy' });
+    const app = buildTestApp({ db, authMode: 'proxy', audioStore: fakeAudioStore() });
     await app.ready();
     const catalogue = async (query = '') => {
       const response = await app.inject({ method: 'GET', url: `/api/public/courses${query}` });
@@ -198,7 +187,7 @@ describe('public course routes', () => {
   });
 
   test('the catalogue lists the codes a course trains and filters by one', async () => {
-    const app = buildTestApp({ db, authMode: 'proxy' });
+    const app = buildTestApp({ db, authMode: 'proxy', audioStore: fakeAudioStore() });
     await app.ready();
     await insertCourse('code-loose-eeeeeeeeeeee', 'public', undefined, ['BV-22', 'TA-01']);
     await insertCourse('code-mate-ffffffffffff', 'public', undefined, ['TA-01']);

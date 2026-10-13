@@ -25,6 +25,7 @@ import * as courseEnrollments from './migrations/0021_course_enrollments.js';
 import * as courseKinds from './migrations/0022_course_kinds.js';
 import * as courseKindEndgame from './migrations/0023_course_kind_endgame.js';
 import * as progressMemory from './migrations/0024_progress_memory.js';
+import * as courseAudioInBucket from './migrations/0025_course_audio_in_bucket.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -53,7 +54,8 @@ const provider: MigrationProvider = {
       '0021_course_enrollments': courseEnrollments,
       '0022_course_kinds': courseKinds,
       '0023_course_kind_endgame': courseKindEndgame,
-      '0024_progress_memory': progressMemory
+      '0024_progress_memory': progressMemory,
+      '0025_course_audio_in_bucket': courseAudioInBucket
     })
 };
 

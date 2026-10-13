@@ -190,15 +190,16 @@ internalApi:
   existingSecret: ""
   tokenKey: token
 
-## Published course audio mirrored to S3-compatible storage (Cloudflare R2),
-## so learners fetch it from the edge (docs/courses.md §9). Off unless
-## existingSecret, publicUrl, endpoint and bucket are all set; learners then
-## get it from the api. endpoint (https://<account id>.r2.cloudflarestorage.com),
+## Where course note audio is stored: an S3-compatible bucket (Cloudflare R2).
+## The creator's browser uploads to it on a signed URL, and learners fetch
+## from it at the edge (docs/courses.md §8). Off unless existingSecret,
+## publicUrl, endpoint and bucket are all set; without it the studio cannot
+## save note audio. endpoint (https://<account id>.r2.cloudflarestorage.com),
 ## bucket and publicUrl (the bucket's custom domain) are plain values. The
 ## Secret holds only accessKeyId and secretAccessKey (an R2 API token with
 ## Object Read & Write on that bucket only).
 ## Step-by-step setup (a TODO at the first deploy with courses): README.md.
-courseAudioMirror:
+courseAudioStorage:
   existingSecret: ""
   endpoint: ""
   bucket: ""

@@ -7,7 +7,7 @@ import { registerAnalysesRoutes } from './routes/analyses.js';
 import { registerBugReportsRoutes } from './routes/bug-reports.js';
 import { registerChesscomRoutes } from './routes/chesscom.js';
 import { registerPublicCoursesRoutes } from './routes/public-courses.js';
-import type { AudioMirror } from './services/courses/audio-mirror.js';
+import type { AudioStore } from './services/courses/audio-store.js';
 import { registerCoursesRoutes } from './routes/courses.js';
 import { registerCourseProgressRoutes } from './routes/course-progress.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
@@ -84,8 +84,8 @@ export interface BuildAppOptions {
    * default so tests stay quiet; server.ts turns it on. Without it every
    * `log.error` in the app is a silent no-op. */
   logger?: boolean;
-  /** The R2 copy of published course audio (services/courses/audio-mirror.ts). */
-  audioMirror?: AudioMirror;
+  /** The bucket course note audio lives in (services/courses/audio-store.ts). */
+  audioStore?: AudioStore;
   /** Overrides the per-user cap on all /api routes (plugins/api-rate-limit.ts). */
   apiRateLimit?: RateLimit;
 }
@@ -125,13 +125,13 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   if (options.db) {
     registerUsersRoutes(app, options.db);
     registerBugReportsRoutes(app, options.db);
-    registerPublicCoursesRoutes(app, options.db, options.audioMirror);
+    registerPublicCoursesRoutes(app, options.db, options.audioStore);
     registerCourseProgressRoutes(app, options.db);
     registerCoursesRoutes(app, options.db, {
       buildDossier: options.courseDossierBuilder ?? (options.engineBackendOptions ? courseDossierBuilderFor(options.engineBackendOptions) : undefined),
       jobQueue: options.jobQueue ?? noopJobQueue,
       resolveModel: options.courseModelResolver ?? courseModelResolver(options.db, options.coachAgentBaseDeps?.gatewayConfig),
-      audioMirror: options.audioMirror
+      audioStore: options.audioStore
     });
     registerDashboardRoutes(app, options.db);
     registerDiagnosticsRoutes(app, options.db);

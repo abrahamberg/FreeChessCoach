@@ -354,16 +354,13 @@ export interface CourseAiCallsTable {
   createdAt: Generated<Date>;
 }
 
-/** 0017_course_audio.ts: a course note's audio, by the note text's hash. */
+/** 0025_course_audio_in_bucket.ts: where a course note's audio file is in the
+ * bucket, by the note text's hash. */
 export interface CourseAudioTable {
   courseId: string;
   textHash: string;
-  mimeType: string;
-  bytes: Buffer;
-  /** 0018: sha256 of `bytes` (32 hex), computed by Postgres; the public URL. */
-  contentHash: Generated<string>;
-  /** 0019: the content hash of this row's file in the R2 mirror; null when none. */
-  mirroredHash: string | null;
+  objectKey: string;
+  size: number;
   createdAt: Generated<Date>;
 }
 

@@ -6,6 +6,7 @@ import { buildTestApp } from '../../test/helpers/build-app.js';
 import { ENGLUND, ENGLUND_INTAKE, englundDossier } from '../../test/helpers/course-fixtures.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import { mockResolution, multiStepGenerateModel } from '../../test/helpers/mock-model.js';
+import { fakeAudioStore } from '../../test/helpers/fake-audio-store.js';
 import { noopJobQueue } from '../jobs/queue.js';
 import * as coursesRepo from '../db/repositories/courses.js';
 import * as usersRepo from '../db/repositories/users.js';
@@ -26,8 +27,10 @@ afterAll(async () => {
   await testDb.cleanup();
 });
 
+const audioStore = fakeAudioStore();
+
 async function creatorApp() {
-  const app = buildTestApp({ db, courseDossierBuilder: englundDossier });
+  const app = buildTestApp({ db, courseDossierBuilder: englundDossier, audioStore });
   await app.ready();
   await app.inject({ method: 'GET', url: '/api/users/me' });
   await usersRepo.setCanCreateCourses(db, DEV_EMAIL, true);
@@ -188,7 +191,6 @@ describe('course routes', () => {
     const course = (await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE })).json<CourseResponse>();
     const built = (await app.inject({ method: 'POST', url: `/api/courses/${course.id}/skeleton` })).json<CourseResponse>();
     const url = `/api/courses/${course.id}`;
-    const audio = (size: number): Buffer => Buffer.alloc(size, 1);
 
     const untitled = await app.inject({ method: 'POST', url: `${url}/publish`, payload: {} });
     expect(untitled.statusCode).toBe(400);
@@ -201,11 +203,18 @@ describe('course routes', () => {
     const first = missing[0]!;
     const noteUrl = `${url}/notes/${first.episodeId}/${first.nodeId}/audio`;
 
-    expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/mpeg' }, payload: audio(100) })).statusCode).toBe(204);
-    expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/ogg' }, payload: audio(100) })).statusCode).toBe(415);
-    expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/wav' }, payload: audio(100) })).statusCode).toBe(415);
-    expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/mpeg' }, payload: audio(400_000) })).statusCode).toBe(413);
-    expect((await app.inject({ method: 'PUT', url: `${url}/notes/e1/n99/audio`, headers: { 'content-type': 'audio/mpeg' }, payload: audio(10) })).statusCode).toBe(404);
+    // The browser asks for a signed URL (capped, and only for a note of the draft), uploads to the bucket, then confirms.
+    const ask = (size: number, at = noteUrl) => app.inject({ method: 'POST', url: `${at}-url`, payload: { size } });
+    expect((await ask(400_000)).statusCode).toBe(400);
+    expect((await ask(0)).statusCode).toBe(400);
+    expect((await ask(100, `${url}/notes/e1/n99/audio`)).statusCode).toBe(404);
+    const slot = (await ask(100)).json<{ url: string; key: string }>();
+    expect(audioStore.presigned.at(-1)).toEqual({ key: slot.key, contentType: 'audio/mpeg', size: 100 });
+    const confirm = (key: string) => app.inject({ method: 'PUT', url: noteUrl, payload: { key } });
+    expect((await confirm(slot.key)).statusCode).toBe(400);
+    audioStore.put(slot.key, 100);
+    expect((await confirm('courses/other-course/audio/0b9b8d1e-aaaa-4bbb-8ccc-000000000001.mp3')).statusCode).toBe(400);
+    expect((await confirm(slot.key)).statusCode).toBe(204);
     const after = (await app.inject({ method: 'GET', url })).json<CourseResponse>();
     expect(after.missingNoteAudio).toHaveLength(missing.length - after.document.episodes.flatMap((episode) => episode.plies).filter((ply) => ply.course && ply.text === noteText(after, first)).length);
 
@@ -223,6 +232,7 @@ describe('course routes', () => {
     const republished = await app.inject({ method: 'POST', url: `${url}/publish`, payload: { visibility: 'public', warningsChecked: true } });
     expect(republished.json<CourseResponse>().status).toBe('public');
     expect(await db.selectFrom('courseAudio').select('textHash').where('courseId', '=', course.id).execute()).toEqual([]);
+    expect(audioStore.objects.has(slot.key)).toBe(false);
 
     const badLink = await app.inject({ method: 'PUT', url: `${url}/draft`, payload: { document: { ...edited, clipLinks: { youtube: 'https://evil.example/watch' } } } });
     expect(badLink.statusCode).toBe(400);

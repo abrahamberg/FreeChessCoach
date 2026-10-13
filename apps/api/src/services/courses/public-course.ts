@@ -5,21 +5,17 @@ import * as courseAudioRepo from '../../db/repositories/course-audio.js';
 import * as coursesRepo from '../../db/repositories/courses.js';
 import type { Database } from '../../db/schema.js';
 import { NotFoundError, ValidationError } from '../../lib/errors.js';
-import type { AudioMirror } from './audio-mirror.js';
-import { audioFileUrl } from './audio-mirror-sync.js';
+import type { AudioStore } from './audio-store.js';
 import { noteHashes } from './note-audio.js';
 
 const NOT_FOUND = 'No course at this link';
 
-/** Note audio files are named by their bytes' hash; only MP3 is stored (§8). */
-const AUDIO_FILE = /^([0-9a-f]{32})\.mp3$/;
-
-/** docs/courses.md §9: the frozen published copy, each note's audio file,
- * and each move's evaluation from the engine pass (the eval bar and graph).
- * The file is named by its content, so its URL never serves different bytes
- * and Cloudflare can keep it at the edge; from the R2 mirror once copied there. Drafts and removed courses are 404,
- * like a wrong link. */
-export async function publicCourse(db: Kysely<Database>, slug: string, mirror?: AudioMirror): Promise<PublicCourseResponse> {
+/** docs/courses.md §9: the frozen published copy, each note's audio file URL
+ * in the bucket (a key made once per upload, so the URL never serves different
+ * audio and Cloudflare can keep it at the edge), and each move's evaluation
+ * from the engine pass (the eval bar and graph). Drafts and removed courses
+ * are 404, like a wrong link. */
+export async function publicCourse(db: Kysely<Database>, slug: string, store?: AudioStore): Promise<PublicCourseResponse> {
   const row = await coursesRepo.findPublishedBySlug(db, slug);
   if (!row?.publishedDocument || !row.publishedAt) throw new NotFoundError(NOT_FOUND);
   const document = CourseDocumentSchema.parse(row.publishedDocument);
@@ -27,7 +23,7 @@ export async function publicCourse(db: Kysely<Database>, slug: string, mirror?: 
   const noteAudio = Object.fromEntries(
     noteHashes(document).flatMap((note) => {
       const file = files.get(note.hash);
-      return file ? [[`${note.episodeId}:${note.nodeId}`, audioFileUrl(mirror, row.slug, file)]] : [];
+      return file && store ? [[`${note.episodeId}:${note.nodeId}`, `${store.publicUrl}/${file.objectKey}`]] : [];
     })
   );
   return { slug: row.slug, publishedAt: row.publishedAt.toISOString(), document, noteAudio, evals: courseEvals(document, row.dossier) };
@@ -45,17 +41,6 @@ export function courseEvals(document: CourseDocument, dossier: CourseDossier | n
     // A dossier from before the tempting moves kept their evaluation has none.
     ...nodes.flatMap((facts) => (facts.tempting ?? []).filter((tempting) => typeof tempting.evalAfterCp === 'number').map((tempting) => [temptingEvalKey(facts.nodeId, tempting.san), { cp: tempting.evalAfterCp, quality: tempting.quality }] as const))
   ]);
-}
-
-/** One note's audio file, only while a note of the published copy says it. */
-export async function publicNoteAudio(db: Kysely<Database>, slug: string, file: string): Promise<courseAudioRepo.CourseAudio> {
-  const content = AUDIO_FILE.exec(file)?.[1];
-  const row = content ? await coursesRepo.findPublishedBySlug(db, slug) : undefined;
-  if (!content || !row?.publishedDocument) throw new NotFoundError('No such note audio');
-  const audio = await courseAudioRepo.findByContent(db, row.id, content);
-  const document = CourseDocumentSchema.parse(row.publishedDocument);
-  if (!audio || !noteHashes(document).some((note) => note.hash === audio.textHash)) throw new NotFoundError('No such note audio');
-  return { mimeType: audio.mimeType, bytes: audio.bytes };
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;

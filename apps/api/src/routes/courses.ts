@@ -1,12 +1,15 @@
 import {
   CreateCourseRequestSchema,
+  NoteAudioConfirmRequestSchema,
+  NoteAudioUploadRequestSchema,
   PublishCourseRequestSchema,
   RegenerateEpisodeRequestSchema,
   SaveCourseDraftRequestSchema,
   StartCourseGenerationRequestSchema,
   type CourseDebugResponse,
   type CourseListResponse,
-  type CourseResponse
+  type CourseResponse,
+  type NoteAudioUploadResponse
 } from '@freechesscoach/shared';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
@@ -19,11 +22,10 @@ import type { ModelResolution } from '../llm/gateway.js';
 import type { CourseDossierBuilder } from '../services/courses/dossier.js';
 import * as courseGenerate from '../services/courses/generation.js';
 import * as coursesService from '../services/courses/course-drafts.js';
-import { NOTE_AUDIO_TYPES, saveNoteAudio } from '../services/courses/note-audio.js';
-import type { AudioMirror } from '../services/courses/audio-mirror.js';
+import { confirmNoteAudio, requestNoteAudioUpload } from '../services/courses/note-audio.js';
+import type { AudioStore } from '../services/courses/audio-store.js';
 import { publishCourse } from '../services/courses/publish.js';
 import { requireCourseCreator } from '../services/courses/require-course-creator.js';
-import { CONFIG } from '@freechesscoach/chess-analysis';
 import * as userProfileService from '../services/user-profile.js';
 
 const CourseParamsSchema = z.object({ id: z.string().uuid() });
@@ -36,8 +38,8 @@ export interface CoursesRouteDeps {
   jobQueue: JobQueue;
   /** The creator's standard-tier model, for regenerating one episode in the request. */
   resolveModel: ((userId: string) => Promise<ModelResolution>) | undefined;
-  /** The R2 copy of published note audio (docs/courses.md §9); absent without one. */
-  audioMirror?: AudioMirror;
+  /** The bucket the note audio lives in (docs/courses.md §8); absent without one. */
+  audioStore?: AudioStore;
 }
 
 /**
@@ -46,8 +48,6 @@ export interface CoursesRouteDeps {
  */
 export function registerCoursesRoutes(app: FastifyInstance, db: Kysely<Database>, deps: CoursesRouteDeps): void {
   const { buildDossier } = deps;
-  // Note audio arrives as the raw file (docs/courses.md §8).
-  app.addContentTypeParser([...NOTE_AUDIO_TYPES], { parseAs: 'buffer', bodyLimit: CONFIG.courses.maxNoteAudioBytes }, (_request, body, done) => done(null, body));
   const creatorId = async (request: FastifyRequest): Promise<string> => {
     const user = await userProfileService.getOrCreate(db, request.user);
     requireCourseCreator(user);
@@ -99,19 +99,29 @@ export function registerCoursesRoutes(app: FastifyInstance, db: Kysely<Database>
   app.post('/api/courses/:id/publish', async (request): Promise<CourseResponse> => {
     const ownerId = await creatorId(request);
     const body = parseRequest(PublishCourseRequestSchema, request.body ?? {});
-    const mirror = deps.audioMirror && { mirror: deps.audioMirror, onError: (error: unknown) => request.log.error({ err: error }, 'course audio mirror sync failed') };
-    return publishCourse(db, ownerId, courseId(request), body, mirror);
+    const store = deps.audioStore && { store: deps.audioStore, onError: (error: unknown) => request.log.error({ err: error }, 'course audio cleanup failed') };
+    return publishCourse(db, ownerId, courseId(request), body, store);
   });
 
-  /** §8: one note's audio, as its draft text reads now. 204. */
+  /** §8: a signed URL to upload one note's MP3 to, as its draft text reads now. */
+  app.post('/api/courses/:id/notes/:episodeId/:nodeId/audio-url', async (request): Promise<NoteAudioUploadResponse> => {
+    const ownerId = await creatorId(request);
+    const params = NoteParamsSchema.safeParse(request.params);
+    if (!params.success) throw new NotFoundError('Note not found');
+    const body = parseRequest(NoteAudioUploadRequestSchema, request.body);
+    const course = await coursesService.ownedCourse(db, ownerId, params.data.id);
+    return requestNoteAudioUpload(db, deps.audioStore, course, coursesService.storedDocument(course), params.data, body.size);
+  });
+
+  /** §8: the browser has uploaded that file; record it for the note. 204. */
   app.put('/api/courses/:id/notes/:episodeId/:nodeId/audio', async (request, reply) => {
     const ownerId = await creatorId(request);
     const params = NoteParamsSchema.safeParse(request.params);
     if (!params.success) throw new NotFoundError('Note not found');
+    const body = parseRequest(NoteAudioConfirmRequestSchema, request.body);
     const course = await coursesService.ownedCourse(db, ownerId, params.data.id);
-    const mimeType = (request.headers['content-type'] ?? '').split(';')[0]!.trim();
-    if (!Buffer.isBuffer(request.body)) throw new ValidationError('Send the audio file as the request body');
-    await saveNoteAudio(db, course.id, coursesService.storedDocument(course), params.data, { mimeType, bytes: request.body });
+    const onError = (error: unknown): void => request.log.error({ err: error }, 'course audio cleanup failed');
+    await confirmNoteAudio(db, deps.audioStore, course, coursesService.storedDocument(course), params.data, body.key, onError);
     return reply.code(204).send();
   });
 
