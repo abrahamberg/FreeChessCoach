@@ -1,16 +1,16 @@
 import { describe, expect, test } from 'vitest';
-import { encodeWav } from './note-audio-file.js';
+import { encodeMp3 } from './note-audio-file.js';
 
-describe('encodeWav', () => {
-  test('a 16-bit mono WAV header and clamped samples', async () => {
-    const blob = encodeWav(new Float32Array([0, 1, -1, 2]), 24_000);
-    const view = new DataView(await blob.arrayBuffer());
-    const ascii = (at: number) => String.fromCharCode(...new Uint8Array(view.buffer, at, 4));
+describe('encodeMp3', () => {
+  test('a second of speech-rate audio becomes a small MP3', async () => {
+    const samples = Float32Array.from({ length: 24_000 }, (_, index) => Math.sin(index / 10) * 0.5);
+    const blob = encodeMp3(samples, 24_000);
+    const bytes = new Uint8Array(await blob.arrayBuffer());
 
-    expect(blob.type).toBe('audio/wav');
-    expect(blob.size).toBe(44 + 8);
-    expect([ascii(0), ascii(8), ascii(12), ascii(36)]).toEqual(['RIFF', 'WAVE', 'fmt ', 'data']);
-    expect([view.getUint16(22, true), view.getUint32(24, true), view.getUint16(34, true)]).toEqual([1, 24_000, 16]);
-    expect([0, 1, 2, 3].map((index) => view.getInt16(44 + index * 2, true))).toEqual([0, 32767, -32767, 32767]);
+    expect(blob.type).toBe('audio/mpeg');
+    expect(bytes[0]).toBe(0xff);
+    expect(bytes[1]! & 0xe0).toBe(0xe0);
+    expect(blob.size).toBeGreaterThan(4_000);
+    expect(blob.size).toBeLessThan(12_000);
   });
 });

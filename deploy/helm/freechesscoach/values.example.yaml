@@ -76,7 +76,9 @@ database:
 # from the api. Setup steps: README.md, "Before the first deploy with courses".
 # TODO(owner, at deploy): create the bucket, domain, token and Secret, then:
 # courseAudioMirror:
-#   existingSecret: course-audio-r2
+#   existingSecret: course-audio-r2   # holds accessKeyId and secretAccessKey
+#   endpoint: https://<account id>.r2.cloudflarestorage.com
+#   bucket: freechesscoach-course-audio
 #   publicUrl: https://media.freechesscoach.org
 
 # The cluster ExternalSecret syncs the Bitwarden item

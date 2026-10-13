@@ -38,9 +38,13 @@ spec:
             {{- include "freechesscoach.env.database" . | nindent 12 }}
             {{- include "freechesscoach.env.app" . | nindent 12 }}
             {{- with .Values.courseAudioMirror }}
-            {{- if and .existingSecret .publicUrl }}
+            {{- if and .existingSecret .publicUrl .endpoint .bucket }}
             # docs/courses.md §9: published course audio copied to R2.
-            {{- range $name, $key := dict "COURSE_AUDIO_S3_ENDPOINT" "endpoint" "COURSE_AUDIO_S3_BUCKET" "bucket" "COURSE_AUDIO_S3_ACCESS_KEY_ID" "accessKeyId" "COURSE_AUDIO_S3_SECRET_ACCESS_KEY" "secretAccessKey" }}
+            - name: COURSE_AUDIO_S3_ENDPOINT
+              value: {{ .endpoint | quote }}
+            - name: COURSE_AUDIO_S3_BUCKET
+              value: {{ .bucket | quote }}
+            {{- range $name, $key := dict "COURSE_AUDIO_S3_ACCESS_KEY_ID" "accessKeyId" "COURSE_AUDIO_S3_SECRET_ACCESS_KEY" "secretAccessKey" }}
             - name: {{ $name }}
               valueFrom:
                 secretKeyRef:

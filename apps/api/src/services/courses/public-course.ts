@@ -11,8 +11,8 @@ import { noteHashes } from './note-audio.js';
 
 const NOT_FOUND = 'No course at this link';
 
-/** Note audio files are named by their bytes' hash; only WAV is stored (§8). */
-const AUDIO_FILE = /^([0-9a-f]{32})\.wav$/;
+/** Note audio files are named by their bytes' hash; only MP3 is stored (§8). */
+const AUDIO_FILE = /^([0-9a-f]{32})\.mp3$/;
 
 /** docs/courses.md §9: the frozen published copy, each note's audio file,
  * and each move's evaluation from the engine pass (the eval bar and graph).

@@ -44,7 +44,7 @@ async function insertCourse(slug: string, status: 'draft' | 'unlisted' | 'public
   const row = await coursesRepo.insert(db, { ownerId: owner.id, slug, kind: 'trap', title: document.title, sourcePgn: ENGLUND, direction: '', document });
   if (status !== 'draft') await coursesRepo.publish(db, row.id, owner.id, document, 'unlisted');
   if (status === 'public' || status === 'removed') await coursesRepo.setStatus(db, row.id, status);
-  await courseAudioRepo.upsert(db, row.id, noteTextHash('The centre pawn.'), { mimeType: 'audio/wav', bytes: Buffer.from('RIFF-audio') });
+  await courseAudioRepo.upsert(db, row.id, noteTextHash('The centre pawn.'), { mimeType: 'audio/mpeg', bytes: Buffer.from('RIFF-audio') });
   return row.id;
 }
 
@@ -63,7 +63,7 @@ describe('public course routes', () => {
     expect(course.headers['cache-control']).toBe('public, max-age=60');
     const body = course.json<PublicCourseResponse>();
     // Named by the bytes' hash, so the file can be cached for good.
-    const file = `${createHash('sha256').update('RIFF-audio').digest('hex').slice(0, 32)}.wav`;
+    const file = `${createHash('sha256').update('RIFF-audio').digest('hex').slice(0, 32)}.mp3`;
     const audioUrl = `/api/public/courses/englund-unlisted-aaaaaaaaaaaa/audio/${file}`;
     expect(body.noteAudio).toEqual({ [`e1:${body.document.nodes[0]!.id}`]: audioUrl });
     expect(body.document.takeaways).toEqual(['One.', 'Two.', 'Three.']);
@@ -75,15 +75,15 @@ describe('public course routes', () => {
     const audio = await app.inject({ method: 'GET', url: audioUrl });
     expect(audio.statusCode).toBe(200);
     expect(audio.headers['cache-control']).toBe('public, max-age=31536000, immutable');
-    expect(audio.headers['content-type']).toBe('audio/wav');
+    expect(audio.headers['content-type']).toBe('audio/mpeg');
     expect(audio.body).toBe('RIFF-audio');
 
     for (const url of [
       '/api/public/courses/englund-draft-cccccccccccc',
       '/api/public/courses/englund-removed-dddddddddddd',
       `/api/public/courses/englund-removed-dddddddddddd/audio/${file}`,
-      `/api/public/courses/englund-public-bbbbbbbbbbbb/audio/${file.replace('.wav', '.mp3')}`,
-      `/api/public/courses/englund-unlisted-aaaaaaaaaaaa/audio/${noteTextHash('The centre pawn.')}.wav`,
+      `/api/public/courses/englund-public-bbbbbbbbbbbb/audio/${file.replace('.mp3', '.wav')}`,
+      `/api/public/courses/englund-unlisted-aaaaaaaaaaaa/audio/${noteTextHash('The centre pawn.')}.mp3`,
       '/api/public/courses/no-such-course',
       '/api/public/courses/Not%20A%20Slug',
       '/api/public/courses/englund-unlisted-aaaaaaaaaaaa/audio/xyz'

@@ -61,16 +61,16 @@ async function publishedCourse(slug: string, notes: string[]): Promise<{ id: str
   return { id: row.id, slug };
 }
 
-const wav = (text: string) => ({ mimeType: 'audio/wav', bytes: Buffer.from(text) });
+const mp3 = (text: string) => ({ mimeType: 'audio/mpeg', bytes: Buffer.from(text) });
 
 describe('syncCourseAudio', () => {
   test('copies each file once, re-voiced files replace the old object, dropped ones go, shared bytes stay', async () => {
     const course = await publishedCourse('mirror-course-aaaaaaaaaaaa', ['One.', 'Two.', 'Three.']);
-    await courseAudioRepo.upsert(db, course.id, noteTextHash('One.'), wav('audio-1'));
-    await courseAudioRepo.upsert(db, course.id, noteTextHash('Two.'), wav('audio-2'));
-    await courseAudioRepo.upsert(db, course.id, noteTextHash('Three.'), wav('audio-2'));
+    await courseAudioRepo.upsert(db, course.id, noteTextHash('One.'), mp3('audio-1'));
+    await courseAudioRepo.upsert(db, course.id, noteTextHash('Two.'), mp3('audio-2'));
+    await courseAudioRepo.upsert(db, course.id, noteTextHash('Three.'), mp3('audio-2'));
     const mirror = fakeMirror();
-    const key = (bytes: string) => `courses/${course.slug}/audio/${hashOf(bytes)}.wav`;
+    const key = (bytes: string) => `courses/${course.slug}/audio/${hashOf(bytes)}.mp3`;
 
     await syncCourseAudio(db, mirror, course, []);
     expect([...mirror.objects.keys()].sort()).toEqual([key('audio-1'), key('audio-2')].sort());
@@ -82,7 +82,7 @@ describe('syncCourseAudio', () => {
     mirror.calls.length = 0;
     await syncCourseAudio(db, mirror, course, []);
     expect(mirror.calls).toEqual([]);
-    await courseAudioRepo.upsert(db, course.id, noteTextHash('One.'), wav('audio-1b'));
+    await courseAudioRepo.upsert(db, course.id, noteTextHash('One.'), mp3('audio-1b'));
     const dropped = await courseAudioRepo.keepOnly(db, course.id, [noteTextHash('One.'), noteTextHash('Three.')]);
     await syncCourseAudio(db, mirror, course, dropped);
     expect([...mirror.objects.keys()].sort()).toEqual([key('audio-1b'), key('audio-2')].sort());
@@ -90,12 +90,12 @@ describe('syncCourseAudio', () => {
 
   test('a failed copy leaves that file on the api, and the next sync carries on', async () => {
     const course = await publishedCourse('mirror-fail-bbbbbbbbbbbb', ['One.']);
-    await courseAudioRepo.upsert(db, course.id, noteTextHash('One.'), wav('audio-x'));
+    await courseAudioRepo.upsert(db, course.id, noteTextHash('One.'), mp3('audio-x'));
     const failing = fakeMirror(hashOf('audio-x'));
 
     await expect(syncCourseAudio(db, failing, course, [])).rejects.toThrow('R2 down');
     const page = await publicCourse(db, course.slug, failing);
-    expect(Object.values(page.noteAudio)).toEqual([`/api/public/courses/${course.slug}/audio/${hashOf('audio-x')}.wav`]);
+    expect(Object.values(page.noteAudio)).toEqual([`/api/public/courses/${course.slug}/audio/${hashOf('audio-x')}.mp3`]);
 
     const working = fakeMirror();
     await syncCourseAudio(db, working, course, []);

@@ -40,21 +40,21 @@ steps done by hand, once, when courses first go to production.
      production.
   3. Create an R2 API token with **Object Read & Write on that bucket
      only**.
-  4. Create the Secret (keys exactly as below):
+  4. Create the Secret with only the token's two keys (keys exactly as below):
 
      ```sh
      kubectl create secret generic course-audio-r2 \
-       --from-literal=endpoint=https://<account id>.r2.cloudflarestorage.com \
-       --from-literal=bucket=freechesscoach-course-audio \
        --from-literal=accessKeyId=... \
        --from-literal=secretAccessKey=...
      ```
 
-  5. Set in your values:
+  5. Set in your values (the endpoint and bucket are not secret):
 
      ```yaml
      courseAudioMirror:
        existingSecret: course-audio-r2
+       endpoint: https://<account id>.r2.cloudflarestorage.com
+       bucket: freechesscoach-course-audio
        publicUrl: https://media.freechesscoach.org
      ```
 
@@ -65,10 +65,6 @@ steps done by hand, once, when courses first go to production.
      is tested against AWS's published SigV4 example only. A failed copy is
      logged ("course audio mirror sync failed") and the page falls back to
      the api.
-- [ ] **Cloudflare Cache Rule** for the api fallback: URI path starts with
-      `/api/public/courses/` and ends with `.wav` → eligible for cache, edge
-      TTL from the origin (the api sends `max-age=31536000, immutable`).
-      Cloudflare does not cache `.wav` by default.
 - [ ] **CSP**: `media-src` in `docker/nginx.security-headers.conf` allows
       `https:` for the bucket's domain (report-only today). Narrow it to the
       custom domain when the script CSP is enforced (threat model R1).

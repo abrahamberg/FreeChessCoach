@@ -12,7 +12,7 @@ export interface AudioMirror {
 
 /** The object key (and public path) of one note's audio file. */
 export function mirrorKey(slug: string, contentHash: string): string {
-  return `courses/${slug}/audio/${contentHash}.wav`;
+  return `courses/${slug}/audio/${contentHash}.mp3`;
 }
 
 export interface R2MirrorConfig extends Omit<S3Credentials, 'region'> {

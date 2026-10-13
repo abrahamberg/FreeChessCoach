@@ -602,9 +602,9 @@ export const CONFIG = {
     quizPauseSeconds: 3,
     /** The video narrates at most one move per this many seconds. */
     secondsPerNarratedMove: 12,
-    /** §8 note audio uploads: a WAV at 24 kHz mono is ~48 KB a second, so
+    /** §8 note audio uploads: an MP3 at 64 kbps is ~8 KB a second, so
      * one note is at most ~30 s and a course's notes ~10 minutes. */
-    maxNoteAudioBytes: 1_500_000,
-    maxCourseAudioBytes: 30_000_000
+    maxNoteAudioBytes: 300_000,
+    maxCourseAudioBytes: 6_000_000
   }
 } as const;
