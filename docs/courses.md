@@ -1312,7 +1312,10 @@ Decided with the owner:
   voice for the notes; then it saves, voices and uploads the missing note
   audio, and publishes (`POST /api/courses/:id/publish`). The server re-runs
   the checks with the engine facts and refuses while they find problems,
-  unless the creator ticked "I checked these".
+  unless the creator ticked "I checked these". The dialog reads those same
+  checks first (`GET /api/courses/:id/publish-check`: episode, move and
+  message for each problem) and lists them, and stops before any note is
+  voiced or uploaded until they are ticked.
 - **The course's address** is its title in words, `/learn/stafford-gambit`
   (`courseSlug`, `intake-text.ts`): a link a person can read, say in a video
   and type. A word at the end that names the kind of lesson, not its subject

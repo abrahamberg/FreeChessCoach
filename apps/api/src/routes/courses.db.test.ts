@@ -218,7 +218,13 @@ describe('course routes', () => {
     const after = (await app.inject({ method: 'GET', url })).json<CourseResponse>();
     expect(after.missingNoteAudio).toHaveLength(missing.length - after.document.episodes.flatMap((episode) => episode.plies).filter((ply) => ply.course && ply.text === noteText(after, first)).length);
 
+    const check = (await app.inject({ method: 'GET', url: `${url}/publish-check` })).json<{ problems: { episodeId: string; episode: string; move: string | null; message: string }[] }>();
     const refused = await app.inject({ method: 'POST', url: `${url}/publish`, payload: {} });
+    if (refused.statusCode === 409) {
+      expect(check.problems.length).toBeGreaterThan(0);
+      expect(refused.body).toContain(`found ${check.problems.length} `);
+      expect(check.problems[0]).toMatchObject({ episodeId: expect.any(String), episode: expect.any(String), message: expect.any(String) });
+    } else expect(check.problems).toEqual([]);
     const published = refused.statusCode === 409 ? await app.inject({ method: 'POST', url: `${url}/publish`, payload: { warningsChecked: true } }) : refused;
     expect(published.statusCode).toBe(200);
     const body = published.json<CourseResponse>();

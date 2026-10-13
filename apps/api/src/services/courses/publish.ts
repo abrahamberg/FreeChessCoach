@@ -1,5 +1,5 @@
-import { verifyCourseEpisode } from '@freechesscoach/chess-analysis';
-import type { CourseDocument, CourseResponse, PublishCourseRequest } from '@freechesscoach/shared';
+import { moveLabel, verifyCourseEpisode } from '@freechesscoach/chess-analysis';
+import type { CourseCheckProblem, CourseDocument, CourseResponse, PublishCheckResponse, PublishCourseRequest } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as courseAudioRepo from '../../db/repositories/course-audio.js';
 import * as coursesRepo from '../../db/repositories/courses.js';
@@ -19,13 +19,30 @@ export function publishBlockers(document: CourseDocument): string[] {
 }
 
 /** The verifier's problems over the whole draft, with the engine facts when
- * the course has them (§7). */
-export function draftCheckProblems(document: CourseDocument, row: coursesRepo.CourseRow): string[] {
+ * the course has them (§7), each with its episode and move. */
+export function draftCheckProblems(document: CourseDocument, row: coursesRepo.CourseRow): CourseCheckProblem[] {
+  const byId = new Map(document.nodes.map((node) => [node.id, node]));
+  const moveOf = (nodeId: string | null): string | null => {
+    const node = nodeId ? byId.get(nodeId) : undefined;
+    if (!node) return null;
+    const parent = node.parentId ? byId.get(node.parentId) : undefined;
+    return moveLabel(parent ? parent.fenAfter : document.startFen, node.san);
+  };
   return document.episodes.flatMap((episode) =>
-    verifyCourseEpisode({ episode, startFen: document.startFen, nodes: document.nodes, dossier: row.dossier, direction: row.direction }).map(
-      (problem) => `${episode.role} (${episode.id}): ${problem.message}`
-    )
+    verifyCourseEpisode({ episode, startFen: document.startFen, nodes: document.nodes, dossier: row.dossier, direction: row.direction }).map((problem) => ({
+      episodeId: episode.id,
+      episode: episode.role,
+      nodeId: problem.nodeId,
+      move: moveOf(problem.nodeId),
+      message: problem.message
+    }))
   );
+}
+
+/** §9: what publishing would be refused for, read before the notes are voiced. */
+export async function publishCheck(db: Kysely<Database>, ownerId: string, id: string): Promise<PublishCheckResponse> {
+  const row = await ownedCourse(db, ownerId, id);
+  return { problems: draftCheckProblems(storedDocument(row), row) };
 }
 
 /** §9: copies the draft to the frozen published copy. Refused while the

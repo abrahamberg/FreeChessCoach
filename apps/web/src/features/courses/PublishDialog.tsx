@@ -1,10 +1,9 @@
-import { verifyCourseEpisode } from '@freechesscoach/chess-analysis';
-import type { CourseClipLinks, CourseDocument, CourseResponse } from '@freechesscoach/shared';
-import { useMemo, useState, type ReactNode } from 'react';
+import type { CourseCheckProblem, CourseClipLinks, CourseDocument, CourseResponse } from '@freechesscoach/shared';
+import { useEffect, useState, type ReactNode } from 'react';
 import { describeApiError } from '../../api/client.js';
 import { Modal } from '../../components/Modal.js';
 import { personaPlaybackRate } from '../../tts/persona-voices.js';
-import { fetchCourse, uploadNoteAudio, usePublishCourse, useSaveCourseDraft } from './courseApi.js';
+import { fetchCourse, fetchPublishCheck, uploadNoteAudio, usePublishCourse, useSaveCourseDraft } from './courseApi.js';
 import { noteAudioFile } from './clip/note-audio-file.js';
 import { openCourseAudioCache, prepareCourseAudio } from './clip/prepare-audio.js';
 import { COURSE_VOICE_LABELS, useCourseVoice, type CourseVoice } from './clip/useCourseVoice.js';
@@ -38,19 +37,15 @@ export function PublishDialog({ course, document, onDocumentChange, onPublished,
   const [links, setLinks] = useState<CourseClipLinks>(document.clipLinks);
   const [visibility, setVisibility] = useState<'unlisted' | 'public'>(course.status === 'public' ? 'public' : 'unlisted');
   const [checked, setChecked] = useState(false);
-  /** The server's checks use the engine facts too, so they can find more. */
-  const [serverFound, setServerFound] = useState(false);
+  /** The full checks, with the engine facts, over the saved draft; null until read. */
+  const [problems, setProblems] = useState<CourseCheckProblem[] | null>(null);
   const [step, setStep] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const problems = useMemo(
-    () =>
-      document.episodes.flatMap((episode) =>
-        verifyCourseEpisode({ episode, startFen: document.startFen, nodes: document.nodes, dossier: null, direction: course.direction }).map((problem) => `${episode.role}: ${problem.message}`)
-      ),
-    [document, course.direction]
-  );
-  const mustTick = problems.length > 0 || serverFound;
+  useEffect(() => {
+    fetchPublishCheck(course.id).then((result) => setProblems(result.problems), () => setProblems(null));
+  }, [course.id]);
+  const mustTick = (problems?.length ?? 0) > 0;
   const ready = takeaways.every((takeaway) => takeaway.trim()) && (!mustTick || checked);
 
   async function run(): Promise<void> {
@@ -61,6 +56,14 @@ export function PublishDialog({ course, document, onDocumentChange, onPublished,
       setStep('Saving the draft…');
       await save.mutateAsync(next);
       onDocumentChange(next);
+      // Before anything is voiced: what the checks find now, with the engine facts.
+      const found = (await fetchPublishCheck(course.id)).problems;
+      setProblems(found);
+      if (found.length > 0 && !checked) {
+        setError(`The checks found ${found.length === 1 ? 'one problem' : `${found.length} problems`}. Read them below, fix the text or tick "I checked these", then publish.`);
+        setStep(null);
+        return;
+      }
       const saved = await fetchCourse(course.id);
       const keys = new Set(saved.missingNoteAudio.map(({ episodeId, nodeId }) => `note:${episodeId}:${nodeId}`));
       if (keys.size) {
@@ -86,7 +89,6 @@ export function PublishDialog({ course, document, onDocumentChange, onPublished,
     } catch (failure) {
       setError(describeApiError(failure) ?? (failure instanceof Error ? failure.message : 'Could not publish.'));
       setStep(null);
-      if (/tick "I checked these"/.test(String(describeApiError(failure)))) setServerFound(true);
     }
   }
 
@@ -138,15 +140,21 @@ export function PublishDialog({ course, document, onDocumentChange, onPublished,
           </select>
         </label>
         {course.missingNoteAudio.length > 0 && <p className="meta">{course.missingNoteAudio.length} notes will be voiced before publishing (cached sentences are quick).</p>}
-        {problems.length > 0 && (
+        {problems && problems.length > 0 && (
           <div className="publish-dialog__checks">
             <p>The checks found {problems.length === 1 ? 'one problem' : `${problems.length} problems`}:</p>
             <ul>
-              {problems.slice(0, 8).map((problem, index) => (
-                <li key={index}>{problem}</li>
+              {problems.map((problem, index) => (
+                <li key={index}>
+                  <strong>
+                    {problem.episode}
+                    {problem.move ? `, ${problem.move}` : ''}
+                    {problem.nodeId ? ` (${problem.nodeId})` : ''}
+                  </strong>
+                  : {problem.message}
+                </li>
               ))}
             </ul>
-            {problems.length > 8 && <p className="meta">…and {problems.length - 8} more, shown on each episode.</p>}
           </div>
         )}
         {mustTick && (

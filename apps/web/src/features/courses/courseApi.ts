@@ -3,11 +3,13 @@ import {
   CourseListResponseSchema,
   CourseResponseSchema,
   NoteAudioUploadResponseSchema,
+  PublishCheckResponseSchema,
   type CourseDebugResponse,
   type CourseDocument,
   type CourseListResponse,
   type CourseResponse,
   type CreateCourseRequest,
+  type PublishCheckResponse,
   type PublishCourseRequest
 } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
@@ -111,6 +113,11 @@ export function usePublishCourse(id: string): UseMutationResult<CourseResponse, 
       void queryClient.invalidateQueries({ queryKey: ['courses'] });
     }
   });
+}
+
+/** §9: the full checks (with the engine facts) over the saved draft. */
+export function fetchPublishCheck(id: string): Promise<PublishCheckResponse> {
+  return apiGet(`/api/courses/${id}/publish-check`, PublishCheckResponseSchema);
 }
 
 export function fetchCourse(id: string): Promise<CourseResponse> {

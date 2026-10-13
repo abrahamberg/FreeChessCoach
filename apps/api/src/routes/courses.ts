@@ -9,7 +9,8 @@ import {
   type CourseDebugResponse,
   type CourseListResponse,
   type CourseResponse,
-  type NoteAudioUploadResponse
+  type NoteAudioUploadResponse,
+  type PublishCheckResponse
 } from '@freechesscoach/shared';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
@@ -24,7 +25,7 @@ import * as courseGenerate from '../services/courses/generation.js';
 import * as coursesService from '../services/courses/course-drafts.js';
 import { confirmNoteAudio, requestNoteAudioUpload } from '../services/courses/note-audio.js';
 import type { AudioStore } from '../services/courses/audio-store.js';
-import { publishCourse } from '../services/courses/publish.js';
+import { publishCheck, publishCourse } from '../services/courses/publish.js';
 import { requireCourseCreator } from '../services/courses/require-course-creator.js';
 import * as userProfileService from '../services/user-profile.js';
 
@@ -93,6 +94,12 @@ export function registerCoursesRoutes(app: FastifyInstance, db: Kysely<Database>
     const { restart } = parseRequest(StartCourseGenerationRequestSchema, request.body ?? {});
     const course = await courseGenerate.startCourseGeneration(db, deps.jobQueue, ownerId, courseId(request), restart);
     return reply.code(202).send(course);
+  });
+
+  /** §9: the checks over the draft, with the engine facts, before anything is voiced. */
+  app.get('/api/courses/:id/publish-check', async (request): Promise<PublishCheckResponse> => {
+    const ownerId = await creatorId(request);
+    return publishCheck(db, ownerId, courseId(request));
   });
 
   /** §9: publish the draft (unlisted unless the creator picks public). */
