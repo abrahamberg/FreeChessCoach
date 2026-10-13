@@ -10,13 +10,11 @@ export class LocalTtsHttpError extends Error {
   }
 }
 
-/** The request never got an answer: the server is off, the address is wrong,
- * or Chrome blocked this site from calling a local address (Private Network
- * Access, which needs the server to answer `Access-Control-Allow-Private-Network`).
- * fetch reports all of these as the same bare TypeError. */
+/** The request never got an answer: the server is off or the address is
+ * wrong. fetch reports every such failure as the same bare TypeError. */
 export class LocalTtsUnreachableError extends Error {
   constructor(readonly url: string) {
-    super(`Cannot reach your voice server at ${url}. If it is running, Chrome may be blocking this site from calling a local address (Private Network Access). Start the server with private-network CORS (see the guide), or choose 'Kokoro in the browser'.`);
+    super(`Cannot reach your voice server at ${url}. Check that it is running and the address is right, or choose 'Kokoro in the browser'.`);
   }
 }
 

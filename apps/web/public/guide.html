@@ -223,17 +223,6 @@ cd Kokoro-FastAPI
               
 
                 <details class="faq">
-                <summary>The server is running but Test voice still fails (Chrome or Edge, hosted site)</summary>
-                <p>This is only needed if Test voice fails although the server is running. When you use the app on its web address, Chrome and Edge ask a server on your own computer for permission first (the header <code>Access-Control-Allow-Private-Network: true</code>). Today they usually go ahead without it, but they have been tightening this and may start to block it. Kokoro does not send the header by default. Add one line to Kokoro's code, then restart it:</p>
-                <ol>
-                <li>Open <code>api/src/main.py</code> in the <code>Kokoro-FastAPI</code> folder with any text editor.</li>
-                <li>Find the block that starts with <code>app.add_middleware(</code> and <code>CORSMiddleware,</code>. After the line <code>allow_headers=["*"],</code> add this line, with the same indentation:</li>
-                </ol>
-                <pre><code>        allow_private_network=True,</code></pre>
-                <p>Stop the server (<code>Ctrl+C</code>) and start it again with the same command as before. <strong>Docker:</strong> the ready-made image has the same file inside it. Save your edited <code>main.py</code> next to where you run Docker, remove the old container with <code>docker rm -f kokoro</code> and start it again with <code>-v "$PWD/main.py:/app/api/src/main.py"</code> added after <code>-p 8880:8880</code> (on PowerShell use <code>${PWD}</code>). If that is too fiddly, use <strong>Kokoro in the browser</strong> for the course voice instead.</p>
-                </details>
-
-                <details class="faq">
                 <summary>Test voice says it can't reach the server</summary>
                 <p>Check that the server is running: for Docker, <code>docker ps</code> should list <code>kokoro</code> (open Docker Desktop if it doesn't); for the terminal way, the window must still be open. Give it a minute after starting, because it loads the voice model first. Make sure the address in Settings matches where you started it. If it still fails, some browsers (Safari in particular) may stop a website from talking to your own computer, so try Chrome, Edge or Firefox.</p>
                 </details>

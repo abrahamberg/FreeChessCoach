@@ -79,7 +79,6 @@ describe('a request that gets no answer', () => {
     const failure = await synthesizeLocal('http://localhost:8880', 'Hi.', 'am_michael').catch((error: unknown) => error);
     expect(failure).toBeInstanceOf(LocalTtsUnreachableError);
     expect((failure as Error).message).toContain('http://localhost:8880');
-    expect((failure as Error).message).toContain('Private Network Access');
 
     stubFetch(500);
     await expect(synthesizeLocal('http://localhost:8880', 'Hi.', 'am_michael')).rejects.toBeInstanceOf(LocalTtsHttpError);
