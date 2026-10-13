@@ -124,7 +124,7 @@ into a course (a lesson on the board, a YouTube video and a reel).
 - **Workflow**: write the failing test for a new invariant or bug, make it pass, `npm run verify:changed` before committing, full `npm run verify` before a PR.
 
 ## Browser testing
-- The app runs in one tab at a time. When the dev app shows "Active on another tab", **always press Take over** and carry on; never stop to ask. The owner wants this every time, so it also covers a tab the agent did not open.
+- The app runs in one tab at a time. When the app (the local dev app or freechesscoach.org) shows "Active on another tab", **always press Take over** and carry on; never stop to ask. The dialog comes back after every refresh or navigation, so press it again each time. The owner wants this every time, so it also covers a tab the agent did not open.
 
 ## Git
 - Small commits, conventional messages.
