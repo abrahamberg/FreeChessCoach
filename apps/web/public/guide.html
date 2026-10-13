@@ -223,8 +223,8 @@ cd Kokoro-FastAPI
               
 
                 <details class="faq">
-                <summary>The server is running but Test voice still fails (Chrome and Edge, hosted site)</summary>
-                <p>When you use the app on its web address, Chrome and Edge only let the page talk to a server on your own computer if that server says so in its answer (the header <code>Access-Control-Allow-Private-Network: true</code>). Kokoro does not say it by default. Add one line to Kokoro's code, then restart it:</p>
+                <summary>The server is running but Test voice still fails (Chrome or Edge, hosted site)</summary>
+                <p>This is only needed if Test voice fails although the server is running. When you use the app on its web address, Chrome and Edge ask a server on your own computer for permission first (the header <code>Access-Control-Allow-Private-Network: true</code>). Today they usually go ahead without it, but they have been tightening this and may start to block it. Kokoro does not send the header by default. Add one line to Kokoro's code, then restart it:</p>
                 <ol>
                 <li>Open <code>api/src/main.py</code> in the <code>Kokoro-FastAPI</code> folder with any text editor.</li>
                 <li>Find the block that starts with <code>app.add_middleware(</code> and <code>CORSMiddleware,</code>. After the line <code>allow_headers=["*"],</code> add this line, with the same indentation:</li>
