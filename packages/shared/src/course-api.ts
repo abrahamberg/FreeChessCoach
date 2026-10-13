@@ -88,6 +88,21 @@ export const PublishCourseRequestSchema = z.object({
 });
 export type PublishCourseRequest = z.input<typeof PublishCourseRequestSchema>;
 
+/** Where the checks found a problem: the episode, the move (null when it is
+ * about the episode as a whole) and what is wrong. Read before anything is
+ * voiced or uploaded. */
+export const CourseCheckProblemSchema = z.object({
+  episodeId: z.string(),
+  episode: z.string(),
+  nodeId: z.string().nullable(),
+  /** "7…Bxf2+", from the node the problem is about. */
+  move: z.string().nullable(),
+  message: z.string()
+});
+export const PublishCheckResponseSchema = z.object({ problems: z.array(CourseCheckProblemSchema) });
+export type CourseCheckProblem = z.infer<typeof CourseCheckProblemSchema>;
+export type PublishCheckResponse = z.infer<typeof PublishCheckResponseSchema>;
+
 /** §8: ask for a URL to upload one note's MP3 to (its size in bytes), then say
  * where it went. The browser sends the file to the bucket, not to the api. */
 export const NoteAudioUploadRequestSchema = z.object({ size: z.number().int().positive() });
