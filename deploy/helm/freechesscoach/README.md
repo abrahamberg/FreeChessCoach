@@ -65,10 +65,6 @@ steps done by hand, once, when courses first go to production.
      is tested against AWS's published SigV4 example only. A failed copy is
      logged ("course audio mirror sync failed") and the page falls back to
      the api.
-- [ ] **Cloudflare Cache Rule** for the api fallback: URI path starts with
-      `/api/public/courses/` and ends with `.wav` → eligible for cache, edge
-      TTL from the origin (the api sends `max-age=31536000, immutable`).
-      Cloudflare does not cache `.wav` by default.
 - [ ] **CSP**: `media-src` in `docker/nginx.security-headers.conf` allows
       `https:` for the bucket's domain (report-only today). Narrow it to the
       custom domain when the script CSP is enforced (threat model R1).
