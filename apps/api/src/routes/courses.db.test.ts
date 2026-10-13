@@ -188,7 +188,7 @@ describe('course routes', () => {
     const course = (await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE })).json<CourseResponse>();
     const built = (await app.inject({ method: 'POST', url: `/api/courses/${course.id}/skeleton` })).json<CourseResponse>();
     const url = `/api/courses/${course.id}`;
-    const wav = (size: number): Buffer => Buffer.alloc(size, 1);
+    const audio = (size: number): Buffer => Buffer.alloc(size, 1);
 
     const untitled = await app.inject({ method: 'POST', url: `${url}/publish`, payload: {} });
     expect(untitled.statusCode).toBe(400);
@@ -201,11 +201,11 @@ describe('course routes', () => {
     const first = missing[0]!;
     const noteUrl = `${url}/notes/${first.episodeId}/${first.nodeId}/audio`;
 
-    expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/wav' }, payload: wav(100) })).statusCode).toBe(204);
-    expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/ogg' }, payload: wav(100) })).statusCode).toBe(415);
-    expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/mpeg' }, payload: wav(100) })).statusCode).toBe(415);
-    expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/wav' }, payload: wav(1_600_000) })).statusCode).toBe(413);
-    expect((await app.inject({ method: 'PUT', url: `${url}/notes/e1/n99/audio`, headers: { 'content-type': 'audio/wav' }, payload: wav(10) })).statusCode).toBe(404);
+    expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/mpeg' }, payload: audio(100) })).statusCode).toBe(204);
+    expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/ogg' }, payload: audio(100) })).statusCode).toBe(415);
+    expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/wav' }, payload: audio(100) })).statusCode).toBe(415);
+    expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/mpeg' }, payload: audio(400_000) })).statusCode).toBe(413);
+    expect((await app.inject({ method: 'PUT', url: `${url}/notes/e1/n99/audio`, headers: { 'content-type': 'audio/mpeg' }, payload: audio(10) })).statusCode).toBe(404);
     const after = (await app.inject({ method: 'GET', url })).json<CourseResponse>();
     expect(after.missingNoteAudio).toHaveLength(missing.length - after.document.episodes.flatMap((episode) => episode.plies).filter((ply) => ply.course && ply.text === noteText(after, first)).length);
 

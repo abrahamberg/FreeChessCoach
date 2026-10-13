@@ -1286,7 +1286,9 @@ Decided with the owner:
   `tiktok` for the reel), so the course page can link and embed them.
 - Course-note audio is uploaded with the course when it is published (small
   files, one per note) and played on the public board, so every visitor hears
-  exactly the same voice. Each file is a 16-bit mono WAV with the coach's
+  exactly the same voice. Each file is a 64 kbps mono MP3 (about 8 KB a
+  second; the browser encodes it after voicing, the clips keep the
+  uncompressed audio they are recorded from) with the coach's
   playback rate baked in, keyed by the note text's hash (`course_audio`); only
   notes whose current text has no audio are voiced again, and publishing drops
   audio no published note uses. Caps: `CONFIG.courses.maxNoteAudioBytes` and
@@ -1318,7 +1320,7 @@ Decided with the owner:
   read-only endpoints `GET /api/public/courses/:slug` (the published copy,
   each note's audio URL, and each move's evaluation and quality from the
   engine pass, `evals`, `{}` without one) and
-  `GET /api/public/courses/:slug/audio/<hash>.wav`
+  `GET /api/public/courses/:slug/audio/<hash>.mp3`
   (`routes/public-courses.ts`). Drafts and removed courses are 404.
 - **Catalogue**: `GET /api/public/courses?kind=&sort=&cursor=&limit=` lists
   `public` courses only (unlisted ones are for their link), 50 a page,
@@ -1372,14 +1374,12 @@ Decided with the owner:
   Postgres computes, migration 0018), so a URL never serves different audio
   and is sent `Cache-Control: public, max-age=31536000, immutable` with no
   cookie. Behind Cloudflare it is then served from the edge; the origin sees
-  each file about once per edge location. Cloudflare does not cache `.wav`
-  by default, so it needs one Cache Rule: URI path starts with
-  `/api/public/courses/` and ends with `.wav` → eligible for cache, edge TTL
-  from the origin's header. The course JSON is cached 60 s (a removal shows
+  each file about once per edge location. Cloudflare caches `.mp3` by default and honours
+  the origin's header. The course JSON is cached 60 s (a removal shows
   within a minute).
 - **R2 mirror** (optional; `services/courses/audio-mirror*.ts`): Postgres keeps
   the files, and each publish copies the ones the bucket lacks to
-  `courses/<slug>/audio/<hash>.wav` and deletes the ones no note uses any
+  `courses/<slug>/audio/<hash>.mp3` and deletes the ones no note uses any
   more (a re-voiced note replaces its old file; identical bytes share one
   object). The page links a file to the bucket's custom domain once it is
   copied, and to the api otherwise, so a failed or missing mirror never breaks
