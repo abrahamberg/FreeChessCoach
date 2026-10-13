@@ -50,12 +50,9 @@ const WHITE_GLYPH: readonly MoveQuality[] = ['brilliant', 'miss', 'blunder'];
 const FONT = "'Inter Tight', Inter, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
 /** One portrait per coach (public/brand/coaches/<persona>.png), transparent,
- * 1:2 (width:height). The avatar is a square cut from the top, around the
+ * 2:3 (width:height). The avatar is a square cut from the top, around the
  * face, as CoachAvatar.css does. */
-const AVATAR_TOP = 123 / 512;
-/** Portraits whose head sits higher in the frame start the cut higher. */
-const AVATAR_TOP_HIGH = 26 / 512;
-const HIGH_HEAD: readonly CoachPersona[] = ['huntress', 'shark', 'sunzi', 'gambler'];
+const AVATAR_TOP = 0.03;
 /** The site's address: on the first slide, under the coach while the film
  * plays, and on the closing cards with the course's link. */
 export const SITE_NAME = 'freechesscoach.org';
@@ -209,7 +206,7 @@ function drawStartPanel(ctx: CanvasRenderingContext2D, input: FrameInput, x: num
   });
   slide(300, () => wrapText(ctx, input.title, { x, y: 850, maxWidth: 520, font: `600 40px ${FONT}`, color: COLORS.muted, lineHeight: 50, maxLines: 3 }));
   slide(450, () => {
-    drawPortrait(ctx, input, 1620, 440, 260);
+    drawPortrait(ctx, input, 1577, 440, 346);
     ctx.textAlign = 'center';
     ctx.font = `700 36px ${FONT}`;
     ctx.fillStyle = COLORS.accent;
@@ -220,7 +217,7 @@ function drawStartPanel(ctx: CanvasRenderingContext2D, input: FrameInput, x: num
 /** The coach's whole portrait standing in the corner. */
 function drawPortrait(ctx: CanvasRenderingContext2D, input: FrameInput, x: number, y: number, width: number): void {
   const avatar = input.assets.avatars.get(input.persona);
-  if (avatar) ctx.drawImage(avatar, x, y, width, width * 2);
+  if (avatar) ctx.drawImage(avatar, x, y, width, width * 1.5);
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number): void {
@@ -445,7 +442,7 @@ function drawAvatar(ctx: CanvasRenderingContext2D, input: FrameInput, x: number,
   const avatar = input.assets.avatars.get(input.persona);
   if (avatar) {
     const side = avatar.naturalWidth;
-    ctx.drawImage(avatar, 0, Math.round(avatar.naturalHeight * (HIGH_HEAD.includes(input.persona) ? AVATAR_TOP_HIGH : AVATAR_TOP)), side, side, x, y, size, size);
+    ctx.drawImage(avatar, 0, Math.round(avatar.naturalHeight * AVATAR_TOP), side, side, x, y, size, size);
   }
   ctx.restore();
   ctx.strokeStyle = COLORS.accent;

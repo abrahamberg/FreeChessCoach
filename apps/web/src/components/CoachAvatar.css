@@ -1,8 +1,8 @@
-/* One transparent 1:2 portrait per coach (public/brand/coaches/<persona>.png).
+/* One transparent 2:3 portrait per coach (public/brand/coaches/<persona>.png).
  * The square frame crops toward the eyes/shoulders, which stays recognizable
  * at chat size. */
 .coach-avatar-image {
-  --coach-avatar-y: 48%;
+  --coach-avatar-y: 9%;
   display: inline-block;
   flex: none;
   aspect-ratio: 1;
@@ -47,21 +47,17 @@
 }
 
 .coach-avatar-image[data-coach-persona='huntress'] {
-  --coach-avatar-y: 10%;
   --coach-avatar-image: url('/brand/coaches/huntress.png');
 }
 
 .coach-avatar-image[data-coach-persona='shark'] {
-  --coach-avatar-y: 10%;
   --coach-avatar-image: url('/brand/coaches/shark.png');
 }
 
 .coach-avatar-image[data-coach-persona='sunzi'] {
-  --coach-avatar-y: 10%;
   --coach-avatar-image: url('/brand/coaches/sunzi.png');
 }
 
 .coach-avatar-image[data-coach-persona='gambler'] {
-  --coach-avatar-y: 10%;
   --coach-avatar-image: url('/brand/coaches/gambler.png');
 }
