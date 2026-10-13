@@ -800,8 +800,16 @@ backends (three clients behind `apps/web/src/tts/resolve-tts-client.ts`, plus `n
   on blur or Test, not per keystroke, because a half-typed `ftp` is a valid
   hostname. The panel links to the one-time setup steps in the user guide
   (`/guide#voice`, Docker and terminal, Windows and Mac). Only Kokoro-FastAPI is
-  documented: it enables CORS for all origins by default, which a direct browser
-  call needs. There is deliberately no API-key option: a server behind auth has
+  documented: it enables CORS for all origins by default, but that is not
+  enough from the hosted https site. Chrome sends a Private Network Access
+  preflight (`Access-Control-Request-Private-Network: true`) for https -> loopback
+  and the server must answer `Access-Control-Allow-Private-Network: true`;
+  Kokoro-FastAPI does not unless its `CORSMiddleware` gets
+  `allow_private_network=True` (`api/src/main.py`, a one-line patch; the guide
+  says how, including a bind-mounted `main.py` for the Docker image). Without
+  it fetch fails with a bare `TypeError`, which `synthesizeLocal` turns into
+  `LocalTtsUnreachableError` (the address plus this hint); the Publish dialog
+  then offers to switch the course voice to the browser Kokoro and retry. There is deliberately no API-key option: a server behind auth has
   to answer the CORS preflight `OPTIONS` without credentials, which most
   reverse-proxy auth setups don't, and it added a plain-text secret to
   `localStorage`.

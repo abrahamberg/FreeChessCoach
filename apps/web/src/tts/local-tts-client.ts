@@ -3,12 +3,20 @@ import { readLocalTtsUrl } from './local-tts-settings.js';
 import { splitIntoSentences } from './splitSentences.js';
 import type { TtsClient } from './tts-client.js';
 
-/** The server answered but with an error status. A request that never got an
- * answer — server off, wrong address, or blocked by CORS — is a plain
- * TypeError from fetch instead, which is how the Test button tells them apart. */
+/** The server answered but with an error status. */
 export class LocalTtsHttpError extends Error {
   constructor(readonly status: number) {
     super(`Local voice server responded with ${status}`);
+  }
+}
+
+/** The request never got an answer: the server is off, the address is wrong,
+ * or Chrome blocked this site from calling a local address (Private Network
+ * Access, which needs the server to answer `Access-Control-Allow-Private-Network`).
+ * fetch reports all of these as the same bare TypeError. */
+export class LocalTtsUnreachableError extends Error {
+  constructor(readonly url: string) {
+    super(`Cannot reach your voice server at ${url}. If it is running, Chrome may be blocking this site from calling a local address (Private Network Access). Start the server with private-network CORS (see the guide), or choose 'Kokoro in the browser'.`);
   }
 }
 
@@ -17,13 +25,22 @@ export class LocalTtsHttpError extends Error {
  * is a Kokoro voice id — the same ids persona-voices.ts already maps
  * personas to. */
 export async function synthesizeLocal(baseUrl: string, text: string, voice: string, speed = 1, format: 'mp3' | 'wav' = 'mp3'): Promise<ArrayBuffer> {
-  const response = await fetch(`${baseUrl}/v1/audio/speech`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ model: 'kokoro', input: text, voice, speed, response_format: format })
-  });
+  const response = await fetchSpeech(baseUrl, { model: 'kokoro', input: text, voice, speed, response_format: format });
   if (!response.ok) throw new LocalTtsHttpError(response.status);
   return response.arrayBuffer();
+}
+
+async function fetchSpeech(baseUrl: string, body: object): Promise<Response> {
+  try {
+    return await fetch(`${baseUrl}/v1/audio/speech`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+  } catch (error) {
+    if (error instanceof TypeError) throw new LocalTtsUnreachableError(baseUrl);
+    throw error;
+  }
 }
 
 /** Same shape as openai-tts-client.ts (one request per sentence, strictly in

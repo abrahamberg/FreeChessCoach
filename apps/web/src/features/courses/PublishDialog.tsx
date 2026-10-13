@@ -3,6 +3,7 @@ import type { CourseClipLinks, CourseDocument, CourseResponse } from '@freechess
 import { useMemo, useState, type ReactNode } from 'react';
 import { describeApiError } from '../../api/client.js';
 import { Modal } from '../../components/Modal.js';
+import { LocalTtsUnreachableError } from '../../tts/local-tts-client.js';
 import { personaPlaybackRate } from '../../tts/persona-voices.js';
 import { fetchCourse, uploadNoteAudio, usePublishCourse, useSaveCourseDraft } from './courseApi.js';
 import { noteAudioFile } from './clip/note-audio-file.js';
@@ -42,6 +43,7 @@ export function PublishDialog({ course, document, onDocumentChange, onPublished,
   const [serverFound, setServerFound] = useState(false);
   const [step, setStep] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [voiceUnreachable, setVoiceUnreachable] = useState(false);
 
   const problems = useMemo(
     () =>
@@ -53,8 +55,9 @@ export function PublishDialog({ course, document, onDocumentChange, onPublished,
   const mustTick = problems.length > 0 || serverFound;
   const ready = takeaways.every((takeaway) => takeaway.trim()) && (!mustTick || checked);
 
-  async function run(): Promise<void> {
+  async function run(backend: CourseVoice = voice): Promise<void> {
     setError(null);
+    setVoiceUnreachable(false);
     const clipLinks = Object.fromEntries(Object.entries(links).filter(([, value]) => value?.trim())) as CourseClipLinks;
     const next = { ...document, takeaways: takeaways.map((takeaway) => takeaway.trim()), clipLinks };
     try {
@@ -66,12 +69,12 @@ export function PublishDialog({ course, document, onDocumentChange, onPublished,
       if (keys.size) {
         const audio = await prepareCourseAudio({
           document: next,
-          backend: voice,
+          backend,
           cache,
           keys,
           onProgress: ({ done, total }) => setStep(`Voicing the notes: ${done} of ${total}`)
         });
-        const rate = personaPlaybackRate(next.coachPersona, voice);
+        const rate = personaPlaybackRate(next.coachPersona, backend);
         let sent = 0;
         for (const { episodeId, nodeId } of saved.missingNoteAudio) {
           const spoken = audio.get(`note:${episodeId}:${nodeId}`);
@@ -86,6 +89,7 @@ export function PublishDialog({ course, document, onDocumentChange, onPublished,
     } catch (failure) {
       setError(describeApiError(failure) ?? (failure instanceof Error ? failure.message : 'Could not publish.'));
       setStep(null);
+      setVoiceUnreachable(failure instanceof LocalTtsUnreachableError);
       if (/tick "I checked these"/.test(String(describeApiError(failure)))) setServerFound(true);
     }
   }
@@ -159,6 +163,18 @@ export function PublishDialog({ course, document, onDocumentChange, onPublished,
           <p className="course-intake__errors" role="alert">
             {error}
           </p>
+        )}
+        {voiceUnreachable && (
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => {
+              setVoice('browser');
+              void run('browser');
+            }}
+          >
+            Use Kokoro in the browser and retry
+          </button>
         )}
         <div className="publish-dialog__actions">
           <button type="button" className="btn-secondary" disabled={busy} onClick={onClose}>

@@ -265,6 +265,8 @@ ingress:
   annotations:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    # Note audio is uploaded up to 1.5 MB (maxNoteAudioBytes); nginx's default is 1m.
+    nginx.ingress.kubernetes.io/proxy-body-size: "2m"
   # e.g. [{secretName: freechesscoach-tls, hosts: [coach.example.com]}]
   tls: []
 

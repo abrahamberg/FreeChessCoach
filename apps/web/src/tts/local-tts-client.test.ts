@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { localTtsClient } from './local-tts-client.js';
+import { LocalTtsHttpError, LocalTtsUnreachableError, localTtsClient, synthesizeLocal } from './local-tts-client.js';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -70,5 +70,18 @@ describe('localTtsClient', () => {
   test('rejects with the HTTP status when the server errors', async () => {
     stubFetch(500);
     await expect(localTtsClient.speak({ text: 'Hi there', persona: 'general' }, () => {})).rejects.toMatchObject({ status: 500 });
+  });
+});
+
+describe('a request that gets no answer', () => {
+  test('is an unreachable-server error that names the address, apart from an HTTP error', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))));
+    const failure = await synthesizeLocal('http://localhost:8880', 'Hi.', 'am_michael').catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(LocalTtsUnreachableError);
+    expect((failure as Error).message).toContain('http://localhost:8880');
+    expect((failure as Error).message).toContain('Private Network Access');
+
+    stubFetch(500);
+    await expect(synthesizeLocal('http://localhost:8880', 'Hi.', 'am_michael')).rejects.toBeInstanceOf(LocalTtsHttpError);
   });
 });

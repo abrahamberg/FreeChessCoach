@@ -1,6 +1,6 @@
 import type { CoachPersona } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
-import { LocalTtsHttpError, synthesizeLocal } from '../../tts/local-tts-client.js';
+import { LocalTtsHttpError, LocalTtsUnreachableError, synthesizeLocal } from '../../tts/local-tts-client.js';
 import { applyPlaybackRate, kokoroSynthesisSpeed, personaPlaybackRate } from '../../tts/persona-voices.js';
 import { coachPreviewLine } from '../onboarding/coach-lines.js';
 import {
@@ -16,7 +16,8 @@ const GUIDE_URL = '/guide#voice';
 
 function describeFailure(error: unknown): string {
   if (error instanceof LocalTtsHttpError) return `The voice server answered with an error (${error.status}).`;
-  return 'Couldn’t reach the voice server. Make sure it’s running (see the setup guide) and the address matches.';
+  if (error instanceof LocalTtsUnreachableError) return error.message;
+  return 'Couldn’t play the test voice. Check your browser allows sound from this page, then try again.';
 }
 
 /** Speaks as the chosen coach, so a passing test also previews their voice. */
