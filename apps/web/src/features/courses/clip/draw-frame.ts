@@ -1,5 +1,5 @@
 import { expectedPoints } from '@freechesscoach/chess-analysis';
-import { MOVE_QUALITY_SYMBOLS, type CoachPersona, type CourseArrow, type MoveQuality } from '@freechesscoach/shared';
+import { COACH_PERSONAS, MOVE_QUALITY_SYMBOLS, type CoachPersona, type CourseArrow, type MoveQuality } from '@freechesscoach/shared';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { defaultPieces } from 'react-chessboard';
 import { formatEval } from '../../board/EvalBar.js';
@@ -49,26 +49,18 @@ const COLORS = {
 const WHITE_GLYPH: readonly MoveQuality[] = ['brilliant', 'miss', 'blunder'];
 const FONT = "'Inter Tight', Inter, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
-/** The coach sprite (public/brand/coaches.png, 4 × 2 portraits of 256 × 512)
- * cropped to a square around the face, as CoachAvatar.css does. */
-const AVATAR_CELL: Record<CoachPersona, [column: number, row: number]> = {
-  general: [0, 0],
-  general_female: [1, 0],
-  commander: [2, 0],
-  scholar: [3, 0],
-  huntress: [0, 1],
-  shark: [1, 1],
-  sunzi: [2, 1],
-  gambler: [3, 1]
-};
-const AVATAR_TOP = [123, 538];
+/** One portrait per coach (public/brand/coaches/<persona>.png), transparent,
+ * 2:3 (width:height). The avatar is a square cut from the top, around the
+ * face, as CoachAvatar.css does. */
+const AVATAR_TOP = 0.03;
 /** The site's address: on the first slide, under the coach while the film
  * plays, and on the closing cards with the course's link. */
 export const SITE_NAME = 'freechesscoach.org';
 
 export interface ClipAssets {
   pieces: Map<string, HTMLImageElement>;
-  avatar: HTMLImageElement | null;
+  /** Coach portraits by persona; a missing file is simply absent. */
+  avatars: Map<string, HTMLImageElement>;
   /** public/brand/logo.png, dark green on transparent. */
   logo: HTMLImageElement | null;
 }
@@ -93,8 +85,15 @@ export async function loadClipAssets(): Promise<ClipAssets> {
       pieces.set(code, await loadImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`));
     })
   );
-  const [avatar, logo] = await Promise.all([loadImage('/brand/coaches.png').catch(() => null), loadImage('/brand/logo.png').catch(() => null)]);
-  return { pieces, avatar, logo };
+  const avatars = new Map<string, HTMLImageElement>();
+  const [logo] = await Promise.all([
+    loadImage('/brand/logo.png').catch(() => null),
+    ...COACH_PERSONAS.map(async (persona) => {
+      const image = await loadImage(`/brand/coaches/${persona}.png`).catch(() => null);
+      if (image) avatars.set(persona, image);
+    })
+  ]);
+  return { pieces, avatars, logo };
 }
 
 export interface FrameInput {
@@ -207,7 +206,7 @@ function drawStartPanel(ctx: CanvasRenderingContext2D, input: FrameInput, x: num
   });
   slide(300, () => wrapText(ctx, input.title, { x, y: 850, maxWidth: 520, font: `600 40px ${FONT}`, color: COLORS.muted, lineHeight: 50, maxLines: 3 }));
   slide(450, () => {
-    drawPortrait(ctx, input, 1620, 440, 260);
+    drawPortrait(ctx, input, 1577, 440, 346);
     ctx.textAlign = 'center';
     ctx.font = `700 36px ${FONT}`;
     ctx.fillStyle = COLORS.accent;
@@ -215,11 +214,10 @@ function drawStartPanel(ctx: CanvasRenderingContext2D, input: FrameInput, x: num
   });
 }
 
-/** The coach's whole portrait from the sprite, standing in the corner. */
+/** The coach's whole portrait standing in the corner. */
 function drawPortrait(ctx: CanvasRenderingContext2D, input: FrameInput, x: number, y: number, width: number): void {
-  if (!input.assets.avatar) return;
-  const [column, row] = AVATAR_CELL[input.persona];
-  ctx.drawImage(input.assets.avatar, column * 256, row * 512, 256, 512, x, y, width, width * 2);
+  const avatar = input.assets.avatars.get(input.persona);
+  if (avatar) ctx.drawImage(avatar, x, y, width, width * 1.5);
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number): void {
@@ -441,9 +439,10 @@ function drawAvatar(ctx: CanvasRenderingContext2D, input: FrameInput, x: number,
   ctx.fillStyle = COLORS.panel;
   ctx.fill();
   ctx.clip();
-  if (input.assets.avatar) {
-    const [column, row] = AVATAR_CELL[input.persona];
-    ctx.drawImage(input.assets.avatar, column * 256, AVATAR_TOP[row]!, 256, 256, x, y, size, size);
+  const avatar = input.assets.avatars.get(input.persona);
+  if (avatar) {
+    const side = avatar.naturalWidth;
+    ctx.drawImage(avatar, 0, Math.round(avatar.naturalHeight * AVATAR_TOP), side, side, x, y, size, size);
   }
   ctx.restore();
   ctx.strokeStyle = COLORS.accent;
