@@ -15,7 +15,7 @@ The tool is `npm run review:audit -w apps/api -- <command>` (code in
 `apps/api/scripts/review-audit/`, how it works at the top of `cli.ts`). Its
 workspace is `apps/api/.review-audit/` (git ignores it; `labels.jsonl` is the
 valuable part — it holds every judge's verdict). The plan behind it, and
-the known gaps, is `docs/plan.md` (Phase 120 onward). **Read its section
+the known gaps, is `docs/review-audit-plan.md` (Phase 120 onward). **Read its section
 "Where it stands, and what the next session does" first**: it has the last
 numbers, the next clusters in order, what waits on the owner, and what
 cost time before. Update that section at the end of every day.
@@ -118,7 +118,7 @@ position that exposed it, then the check.
 - Tell the owner: today's accuracy per split/surface, the clusters fixed,
   what is next, and anything that needs their decision.
 - Rewrite "Where it stands, and what the next session does" in
-  `docs/plan.md` so a session that starts cold knows what to do.
+  `docs/review-audit-plan.md` so a session that starts cold knows what to do.
 
 ## Done means
 

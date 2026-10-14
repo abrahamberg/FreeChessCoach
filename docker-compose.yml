@@ -99,6 +99,10 @@ services:
 
   engine:
     <<: *node-dev
+    # Its own name: under the anchor's `node:24-slim` the built image took
+    # that tag, and the next pull of the base image left the engine without
+    # Stockfish.
+    image: chess-ai-coach-engine-dev
     build:
       context: .
       dockerfile: docker/Dockerfile.engine.dev

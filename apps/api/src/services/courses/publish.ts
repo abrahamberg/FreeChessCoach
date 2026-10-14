@@ -1,5 +1,5 @@
-import { moveLabel, verifyCourseEpisode } from '@freechesscoach/chess-analysis';
-import type { CourseCheckProblem, CourseDocument, CourseResponse, PublishCheckResponse, PublishCourseRequest } from '@freechesscoach/shared';
+import { moveLabel, verifyCourseEpisode, verifyCourseFrame, verifyCourseReel, type CourseVerifyProblem } from '@freechesscoach/chess-analysis';
+import { courseVideos, REEL_WARNINGS, type CourseCheckProblem, type CourseDocument, type CourseResponse, type PublishCheckResponse, type PublishCourseRequest } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as courseAudioRepo from '../../db/repositories/course-audio.js';
 import * as coursesRepo from '../../db/repositories/courses.js';
@@ -8,6 +8,9 @@ import { ConflictError, ValidationError } from '../../lib/errors.js';
 import { ownedCourse, storedDocument, toCourseResponse } from './course-drafts.js';
 import type { AudioStore } from './audio-store.js';
 import { noteHashes } from './note-audio.js';
+
+/** The `episodeId` of a problem that is about no one episode. */
+const WHOLE_COURSE = 'course';
 
 /** What must be there before anything is published (docs/courses.md §4, §9). */
 export function publishBlockers(document: CourseDocument): string[] {
@@ -19,7 +22,9 @@ export function publishBlockers(document: CourseDocument): string[] {
 }
 
 /** The verifier's problems over the whole draft, with the engine facts when
- * the course has them (§7), each with its episode and move. */
+ * the course has them (§7), each with its episode and move: every episode,
+ * then the reel and the whole course (§13.9), as a generation checks them,
+ * so a draft written by hand is held to the same checks. */
 export function draftCheckProblems(document: CourseDocument, row: coursesRepo.CourseRow): CourseCheckProblem[] {
   const byId = new Map(document.nodes.map((node) => [node.id, node]));
   const moveOf = (nodeId: string | null): string | null => {
@@ -28,15 +33,14 @@ export function draftCheckProblems(document: CourseDocument, row: coursesRepo.Co
     const parent = node.parentId ? byId.get(node.parentId) : undefined;
     return moveLabel(parent ? parent.fenAfter : document.startFen, node.san);
   };
-  return document.episodes.flatMap((episode) =>
-    verifyCourseEpisode({ episode, startFen: document.startFen, nodes: document.nodes, dossier: row.dossier, direction: row.direction }).map((problem) => ({
-      episodeId: episode.id,
-      episode: episode.role,
-      nodeId: problem.nodeId,
-      move: moveOf(problem.nodeId),
-      message: problem.message
-    }))
-  );
+  const listed = (episodeId: string, episode: string, problems: CourseVerifyProblem[]): CourseCheckProblem[] =>
+    problems.map((problem) => ({ episodeId, episode, nodeId: problem.nodeId, move: moveOf(problem.nodeId), message: problem.message }));
+  const checks = { startFen: document.startFen, nodes: document.nodes, dossier: row.dossier, direction: row.direction };
+  return [
+    ...document.episodes.flatMap((episode) => listed(episode.id, episode.role, verifyCourseEpisode({ episode, ...checks }))),
+    ...(document.reel ? listed(REEL_WARNINGS, 'reel', verifyCourseReel({ reel: document.reel, ...checks, hasVideo: courseVideos(document).video })) : []),
+    ...listed(WHOLE_COURSE, 'whole course', verifyCourseFrame(document))
+  ];
 }
 
 /** §9: what publishing would be refused for, read before the notes are voiced. */

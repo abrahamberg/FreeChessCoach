@@ -8,6 +8,8 @@ export interface ProbeOptions {
   fen: string;
   moves: string[];
   depth: number;
+  /** How many engine lines; 3 when absent. */
+  lines?: number;
 }
 
 const NAMES: Record<string, string> = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
@@ -40,7 +42,7 @@ export async function probe(options: ProbeOptions): Promise<string> {
   const moves = chess.moves({ verbose: true });
   rows.push('', `legal moves: ${moves.map((move) => move.san).join(' ') || 'none'}`);
   if (!chess.isGameOver()) {
-    const analysis = await new NativeEngineBackend(options.engineUrl).analyzePosition(fen, { depth: options.depth, multiPv: 3 });
+    const analysis = await new NativeEngineBackend(options.engineUrl).analyzePosition(fen, { depth: options.depth, multiPv: options.lines ?? 3 });
     const lines = analysis.lines.map((line) => ({ san: line.moveSan, cp: line.cp, mate: line.mateIn, pv: line.pvSan.slice(0, 12) }));
     rows.push(`engine depth ${analysis.reachedDepth ?? analysis.depth}${analysis.reachedDepth && analysis.reachedDepth < analysis.depth ? ` (asked for ${analysis.depth}; stopped by the engine's time limit)` : ''} (White's view): ${linesText(lines)}`);
   }

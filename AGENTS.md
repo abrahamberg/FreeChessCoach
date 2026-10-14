@@ -11,15 +11,20 @@ into a course (a lesson on the board, a YouTube video and a reel).
 
 ## Docs — read only what your task names
 
-- `docs/plan.md` — the plan being built now: Phases 120–127, the review
-  audit, and Phases 128–129, the coach's progress memory (two progress
-  rounds per session, general notes, a graduated list; the moment picker
-  sees the student's habits). The audit checks Game Review's move notes and
-  the course dossier sentence by sentence on real games until 98% are
-  correct on held-out games. Work one task at a time and read only that task's **Read:** files.
-  Its "How to work through this plan" section applies to every task. The
-  daily loop itself is the skill `.claude/skills/review-audit/SKILL.md`
-  (agents `review-judge` and `review-fixer` in `.claude/agents/`).
+- `docs/plan.md` — the plan being built now: Phases 130–133, the content
+  studio (`../chess-content-studio`) writes courses itself. Phases 130–132.1
+  are built: the `course:studio` tools on the app's own engine and dossier,
+  a course filled through the API with no AI call, export to production.
+  Open: the studio's first course with them (132.2) and a new course kind,
+  `position`, learn from a position (133). Work one task at a time and read
+  only that task's **Read:** files.
+- `docs/review-audit-plan.md` — the review audit's plan (Phases 120–127) and
+  the shipped coach progress memory (Phases 128–129). The audit checks Game
+  Review's move notes and the course dossier sentence by sentence on real
+  games until 98% are correct on held-out games; its open tasks and its
+  "Where it stands" section live there. The daily loop is the skill
+  `.claude/skills/review-audit/SKILL.md` (agents `review-judge` and
+  `review-fixer` in `.claude/agents/`). Open it only for audit work.
 - `docs/architecture.md` — how everything shipped fits together (layout, DB,
   agent, courses, K8s, the "Welcome flow" at `/welcome`). Always relevant.
 - `docs/courses.md` — the courses spec: the dossier (§5.4), prompts (§6),
@@ -61,6 +66,7 @@ into a course (a lesson on the board, a YouTube video and a reel).
 - `npm run test:golden`: the course facts snapshot, no engine needed (opt-in tier; added in Phase 110). `GOLDEN_UPDATE=1` re-records it — only when a task allows it.
 - `npm run test:slow`: files named `*.slow.*` (several seconds each). Skipped by `npm test` and CI; run them when you touch what they cover. A new test that takes more than ~2s goes there or is not written. No test, slow tier included, starts the real Stockfish or calls a real LLM: engine results are mocked or recorded (`services/engine/test/helpers/fake-stockfish.ts`, `apps/api/test/golden/fixture-engine.ts`), models are mock models. Keep the default suite small: a few tests that catch a silent break, not one per behaviour; delete a development-driving test once its feature is done.
 - `npm run course:golden -w apps/api -- --facts [--only <kind|name>]`: print the facts the course prompts get (needs the engine).
+- `npm run course:studio -w apps/api -- <command>`: the content studio's tools (`apps/api/scripts/course-studio/cli.ts` lists them: `explore`, `dossier`, `create`, `pull`, `push`, `check`, `script`, `export`): research a position, print the app's facts and the gaps of a PGN, and fill a course through the api with no AI call. Needs the dev stack (engine, api). `../chess-content-studio/tools/course.sh` runs it from the studio's folder.
 - `npm run review:audit -w apps/api -- <command>`: the review audit (`apps/api/scripts/review-audit/cli.ts` lists the commands: `corpus`, `run`, `recheck`, `report`, `failures`, `batch`, `ingest`, `calibrate`, `probe`, `show`, `seed`). Needs the engine; its workspace `apps/api/.review-audit/` is not in git.
 - `npm run docs:prompts`: regenerate `docs/prompts.md` after any change in `packages/prompts/src/`.
 - `npm run dev`: Full local stack (Docker).
