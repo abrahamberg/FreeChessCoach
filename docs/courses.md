@@ -1306,6 +1306,11 @@ Decided with the owner:
 
 - Status: `draft` → `unlisted` (link works, not listed) → `public` (listed) →
   `removed` (moderator). New courses publish as `unlisted` by default.
+- The creator deletes a course, published or not, from its studio card
+  (trash can, then a dialog naming it; `DELETE /api/courses/:id`, refused
+  while the AI writes it). The row goes with its audio rows, AI calls and
+  enrollments (cascade) and its files in the bucket; learner progress is
+  keyed by position, shared with other courses, and stays.
 - The Publish dialog asks for the three takeaways, who can see it, where the
   videos were posted (the YouTube video on youtube.com/youtu.be; the reel on
   YouTube Shorts, instagram.com or tiktok.com; https only), and the
@@ -1454,7 +1459,24 @@ overwrites (`manual-episodes.ts`):
   `temptingNote`).
 - The reel and the video's packaging are left empty: "Write the reel with
   AI" writes the reel alone, and the video card is filled by hand.
-- The same verifier runs on hand-written text, so a typo'd move is caught.
+- The same verifier runs on hand-written text, so a typo'd move is caught:
+  the path keeps the dossier it builds, and the publish check (§9) runs
+  every episode, the reel and the whole-course checks (§13.9) against it.
+- The content studio fills this path from the command line
+  (`npm run course:studio -w apps/api`, `apps/api/scripts/course-studio/`):
+  `explore` and `dossier` before the PGN is final (the app's facts, and the
+  gaps: opponent replies the tree has no line for, `courseGaps`), then
+  `create`, `push`, `check`, and `export` for production.
+- The tree is fixed for every edit but one: `PUT /api/courses/:id/document`
+  (`replaceCourse`, `course-drafts.ts`) stores the studio's finished course
+  as given, `{ pgn, direction, document, dossier }`, a new tree, level and
+  clip links included; the studio runs the checks itself. Id, slug and
+  status stay; the old run's state goes. Refused only another kind or an
+  episode naming a move not in the tree. The published copy stays until
+  Publish, whose audio cleanup drops the old notes' files, and its evals
+  match the dossier by node id and move. Learner progress is keyed by
+  position, so it carries over where the moves do. The answer is the course
+  with the publish check's `problems`.
 
 ---
 

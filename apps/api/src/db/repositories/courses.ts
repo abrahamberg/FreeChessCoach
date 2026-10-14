@@ -197,6 +197,43 @@ export async function updateDraft(
     .executeTakeFirst();
 }
 
+/** A new tree for the draft, in one write: the PGN, the direction, the
+ * document and its dossier. The old run's state names the old tree, so it
+ * goes. The published copy stays until the next publish. */
+export async function replaceTree(
+  db: Kysely<Database>,
+  id: string,
+  ownerId: string,
+  values: { sourcePgn: string; direction: string; document: CourseDocument; dossier: CourseDossier }
+): Promise<CourseRow | undefined> {
+  const parsed = CourseDocumentSchema.parse(values.document);
+  return db
+    .updateTable('courses')
+    .set({
+      document: JSON.stringify(parsed),
+      title: parsed.title,
+      sourcePgn: values.sourcePgn,
+      direction: values.direction,
+      dossier: JSON.stringify(values.dossier),
+      generation: null,
+      updatedAt: new Date()
+    })
+    .where('id', '=', id)
+    .where('ownerId', '=', ownerId)
+    .returningAll()
+    .executeTakeFirst();
+}
+
+/** The course and, by cascade, its audio rows, AI calls and enrollments.
+ * Returns the audio files' object keys, so the bucket can be cleaned too. */
+export async function remove(db: Kysely<Database>, id: string, ownerId: string): Promise<string[] | undefined> {
+  return db.transaction().execute(async (trx) => {
+    const audio = await trx.selectFrom('courseAudio').select('objectKey').where('courseId', '=', id).execute();
+    const deleted = await trx.deleteFrom('courses').where('id', '=', id).where('ownerId', '=', ownerId).executeTakeFirst();
+    return deleted.numDeletedRows > 0n ? audio.map((row) => row.objectKey) : undefined;
+  });
+}
+
 export function listByOwner(db: Kysely<Database>, ownerId: string): Promise<CourseSummaryRow[]> {
   return db
     .selectFrom('courses')

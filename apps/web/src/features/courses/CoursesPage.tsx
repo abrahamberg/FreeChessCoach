@@ -2,13 +2,15 @@ import { levelCode, type CourseStatus, type CourseSummary } from '@freechesscoac
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { describeApiError } from '../../api/client.js';
-import { BookIcon, EditIcon, ExternalLinkIcon, PlusIcon } from '../../components/Icon.js';
+import { ConfirmDialog } from '../../components/ConfirmDialog.js';
+import { BookIcon, EditIcon, ExternalLinkIcon, PlusIcon, TrashIcon } from '../../components/Icon.js';
 import { shortDate } from '../games/gameDisplay.js';
-import { useCourses } from './courseApi.js';
+import { useCourses, useDeleteCourse } from './courseApi.js';
 import { SortControl, byCurriculum } from './learn/course-sort.js';
 import type { CatalogueSort } from './learn/useCourseCatalogue.js';
 import { COURSE_KIND_INFO } from './courseKinds.js';
 import '../games/GameCard.css';
+import '../games/DeleteGameButton.css';
 import '../games/GamesPage.css';
 import '../games/RailCard.css';
 import './learn/CoursesHomePage.css';
@@ -95,6 +97,8 @@ function StudioCard({ course }: { course: CourseSummary }): ReactNode {
   const writing = course.generation && (course.generation.status === 'queued' || course.generation.status === 'running') ? course.generation : null;
   const published = course.status === 'unlisted' || course.status === 'public';
   const title = course.title || 'Untitled course';
+  const remove = useDeleteCourse();
+  const [confirming, setConfirming] = useState(false);
   return (
     <article className="card courses-home__course studio__card">
       <span className="rail-card__top">
@@ -135,7 +139,34 @@ function StudioCard({ course }: { course: CourseSummary }): ReactNode {
             Open
           </Link>
         )}
+        {!writing && (
+          <button type="button" className="delete-game-button delete-game-button--icon" title="Delete course" aria-label={`Delete ${title}`} disabled={remove.isPending} onClick={() => setConfirming(true)}>
+            <TrashIcon width={16} height={16} />
+          </button>
+        )}
       </div>
+      {remove.isError && (
+        <span className="rail-card__meta studio__failed" role="alert">
+          {describeApiError(remove.error) ?? 'Could not delete the course.'}
+        </span>
+      )}
+      {confirming && (
+        <ConfirmDialog
+          title="Delete this course?"
+          description={
+            <p>
+              Deleting <strong>{title}</strong> also deletes its episodes, notes and voice files.
+              {published && ' It is published: learners lose it and its link stops working.'} This cannot be undone.
+            </p>
+          }
+          confirmLabel="Delete course"
+          onCancel={() => setConfirming(false)}
+          onConfirm={() => {
+            setConfirming(false);
+            remove.mutate(course.id);
+          }}
+        />
+      )}
     </article>
   );
 }

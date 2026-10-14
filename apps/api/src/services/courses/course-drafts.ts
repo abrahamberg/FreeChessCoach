@@ -1,10 +1,12 @@
 import {
   buildCourseSkeleton,
+  courseDiagnosisCodes,
   inferLearnerSide,
   parseCourseTree,
   endgameShapeProblems,
   quizSideProblems,
   puzzleShapeProblems,
+  type CourseDossier,
   type CourseTree
 } from '@freechesscoach/chess-analysis';
 import {
@@ -21,6 +23,7 @@ import type { z } from 'zod';
 import * as coursesRepo from '../../db/repositories/courses.js';
 import type { Database } from '../../db/schema.js';
 import { ConflictError, NotFoundError, ValidationError } from '../../lib/errors.js';
+import type { AudioStore } from './audio-store.js';
 import type { CourseDossierBuilder } from './dossier.js';
 import { draftProblem } from './draft-checks.js';
 import { missingNoteAudio } from './note-audio.js';
@@ -134,9 +137,46 @@ export async function buildSkeletonDraft(db: Kysely<Database>, ownerId: string, 
   const skeleton = buildCourseSkeleton({ kind: document.kind, tree, lines: lineGames, dossier });
   if (!skeleton) throw new ValidationError('No trap found: no move by the other side loses ground on this line');
   const { chapters, episodes } = buildManualEpisodes({ document, skeleton, dossier, lines: lineGames });
-  const saved = await coursesRepo.updateDraft(db, id, ownerId, { ...document, chapters, episodes });
+  // Kept, so a course written by hand is checked against the engine's facts
+  // too; the codes follow the first dossier, as in a generation.
+  const diagnosisCodes = row.dossier ? document.diagnosisCodes : courseDiagnosisCodes(tree, dossier);
+  await coursesRepo.setDossier(db, id, dossier);
+  const saved = await coursesRepo.updateDraft(db, id, ownerId, { ...document, diagnosisCodes, chapters, episodes });
   if (!saved) throw new NotFoundError('Course not found');
   return toCourseResponse(db, saved);
+}
+
+/**
+ * The content studio's finished course, stored as given (it runs the checks
+ * itself): a new PGN, direction, document and dossier under the same id,
+ * slug and status. Refused only what would break the app: another kind, or
+ * an episode naming a move that is not in the tree. The published copy
+ * stays until Publish.
+ */
+export async function replaceCourse(
+  db: Kysely<Database>,
+  ownerId: string,
+  id: string,
+  request: { pgn: string; direction: string; document: CourseDocument; dossier: CourseDossier }
+): Promise<CourseResponse> {
+  const row = await ownedCourse(db, ownerId, id);
+  notBeingWritten(row);
+  const { document } = request;
+  const problem = draftProblem({ ...document, kind: row.kind }, document);
+  if (problem) throw new ValidationError(problem);
+  const saved = await coursesRepo.replaceTree(db, id, ownerId, { sourcePgn: request.pgn, direction: request.direction, document, dossier: request.dossier });
+  if (!saved) throw new NotFoundError('Course not found');
+  return toCourseResponse(db, saved);
+}
+
+/** Deletes the course, published or not: its link stops working and its
+ * audio leaves the bucket (a failure there never fails the delete).
+ * Learner progress is keyed by position, shared with other courses, so it stays. */
+export async function deleteCourse(db: Kysely<Database>, ownerId: string, id: string, audio?: { store: AudioStore; onError: (error: unknown) => void }): Promise<void> {
+  notBeingWritten(await ownedCourse(db, ownerId, id));
+  const keys = await coursesRepo.remove(db, id, ownerId);
+  if (!keys) throw new NotFoundError('Course not found');
+  if (audio) await Promise.all(keys.map((key) => audio.store.delete(key).catch(audio.onError)));
 }
 
 export async function ownedCourse(db: Kysely<Database>, ownerId: string, id: string): Promise<coursesRepo.CourseRow> {

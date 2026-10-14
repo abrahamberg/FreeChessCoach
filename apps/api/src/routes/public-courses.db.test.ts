@@ -91,8 +91,14 @@ describe('public course routes', () => {
     await app.ready();
     const id = await insertCourse('englund-evals-aaaaaaaaaaaa', 'unlisted');
     const [first, second] = trapDocument().nodes;
-    const facts = (nodeId: string, evalAfterCp: number, quality: string) => ({ nodeId, evalAfterCp, quality });
-    const dossier = { learnerSide: 'black', lines: [], nodes: [facts(first!.id, 30, 'best'), facts(second!.id, -120, 'mistake'), facts('n999', 0, 'good')] } as unknown as CourseDossier;
+    const facts = (nodeId: string, san: string, evalAfterCp: number, quality: string) => ({ nodeId, san, evalAfterCp, quality });
+    // n999 is not in the published tree; the third names a node with another move (a replaced tree).
+    const stale = trapDocument().nodes[2]!;
+    const dossier = {
+      learnerSide: 'black',
+      lines: [],
+      nodes: [facts(first!.id, first!.san, 30, 'best'), facts(second!.id, second!.san, -120, 'mistake'), facts('n999', 'e4', 0, 'good'), facts(stale.id, `${stale.san}x`, 0, 'good')]
+    } as unknown as CourseDossier;
     await coursesRepo.setDossier(db, id, dossier);
 
     const body = (await app.inject({ method: 'GET', url: '/api/public/courses/englund-evals-aaaaaaaaaaaa' })).json<PublicCourseResponse>();

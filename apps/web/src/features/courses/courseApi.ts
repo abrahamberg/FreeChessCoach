@@ -13,7 +13,7 @@ import {
   type PublishCourseRequest
 } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
-import { apiGet, apiPost, apiPut } from '../../api/client.js';
+import { apiDelete, apiGet, apiPost, apiPut } from '../../api/client.js';
 
 export function useCourses(): UseQueryResult<CourseListResponse> {
   return useQuery({ queryKey: ['courses'], queryFn: ({ signal }) => apiGet('/api/courses', CourseListResponseSchema, signal) });
@@ -50,6 +50,18 @@ export function useCreateCourse(): UseMutationResult<CourseResponse, Error, Crea
     mutationFn: (intake: CreateCourseRequest) => apiPost('/api/courses', intake, CourseResponseSchema),
     onSuccess: (course) => {
       queryClient.setQueryData(['course', course.id], course);
+      void queryClient.invalidateQueries({ queryKey: ['courses'] });
+    }
+  });
+}
+
+/** Deletes a course for good; the studio confirms first. */
+export function useDeleteCourse(): UseMutationResult<void, Error, string> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiDelete(`/api/courses/${id}`),
+    onSuccess: (_result, id) => {
+      queryClient.removeQueries({ queryKey: ['course', id] });
       void queryClient.invalidateQueries({ queryKey: ['courses'] });
     }
   });

@@ -1,16 +1,19 @@
+import type { CourseDossier } from '@freechesscoach/chess-analysis';
 import {
   CreateCourseRequestSchema,
   NoteAudioConfirmRequestSchema,
   NoteAudioUploadRequestSchema,
   PublishCourseRequestSchema,
   RegenerateEpisodeRequestSchema,
+  ReplaceCourseRequestSchema,
   SaveCourseDraftRequestSchema,
   StartCourseGenerationRequestSchema,
   type CourseDebugResponse,
   type CourseListResponse,
   type CourseResponse,
   type NoteAudioUploadResponse,
-  type PublishCheckResponse
+  type PublishCheckResponse,
+  type ReplaceCourseResponse
 } from '@freechesscoach/shared';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
@@ -68,6 +71,14 @@ export function registerCoursesRoutes(app: FastifyInstance, db: Kysely<Database>
     return coursesService.getCourse(db, ownerId, courseId(request));
   });
 
+  /** 204. Refused while the AI is writing it; the studio confirms first. */
+  app.delete('/api/courses/:id', async (request, reply) => {
+    const ownerId = await creatorId(request);
+    const store = deps.audioStore && { store: deps.audioStore, onError: (error: unknown) => request.log.error({ err: error }, 'course audio cleanup failed') };
+    await coursesService.deleteCourse(db, ownerId, courseId(request), store);
+    return reply.code(204).send();
+  });
+
   /** Task 80.6: every AI call of the latest run, prompts and answers as they were. */
   app.get('/api/courses/:id/debug', async (request): Promise<CourseDebugResponse> => {
     const ownerId = await creatorId(request);
@@ -86,6 +97,15 @@ export function registerCoursesRoutes(app: FastifyInstance, db: Kysely<Database>
     const ownerId = await creatorId(request);
     if (!buildDossier) throw new EngineUnavailableError('No engine is configured');
     return coursesService.buildSkeletonDraft(db, ownerId, courseId(request), buildDossier);
+  });
+
+  /** The content studio's finished course, in place; the published copy
+   * stays until Publish. */
+  app.put('/api/courses/:id/document', async (request): Promise<ReplaceCourseResponse> => {
+    const ownerId = await creatorId(request);
+    const { dossier, ...body } = parseRequest(ReplaceCourseRequestSchema, request.body);
+    const course = await coursesService.replaceCourse(db, ownerId, courseId(request), { ...body, dossier: dossier as unknown as CourseDossier });
+    return { ...course, ...(await publishCheck(db, ownerId, course.id)) };
   });
 
   /** 202: the worker writes the draft; the editor polls GET for progress. */

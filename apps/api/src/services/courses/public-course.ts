@@ -34,8 +34,10 @@ export async function publicCourse(db: Kysely<Database>, slug: string, store?: A
  * tempting moves' too, under `temptingEvalKey`, for the video that plays
  * them out. */
 export function courseEvals(document: CourseDocument, dossier: CourseDossier | null): PublicCourseResponse['evals'] {
-  const nodeIds = new Set(document.nodes.map((node) => node.id));
-  const nodes = (dossier?.nodes ?? []).filter((facts) => nodeIds.has(facts.nodeId));
+  // By id and move: after a tree is replaced, the published copy keeps the
+  // old tree until the next publish, and the dossier is already the new one's.
+  const sans = new Map(document.nodes.map((node) => [node.id, node.san]));
+  const nodes = (dossier?.nodes ?? []).filter((facts) => sans.get(facts.nodeId) === facts.san);
   return Object.fromEntries([
     ...nodes.map((facts) => [facts.nodeId, { cp: facts.evalAfterCp, quality: facts.quality }] as const),
     // A dossier from before the tempting moves kept their evaluation has none.

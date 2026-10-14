@@ -72,6 +72,22 @@ export type CourseListResponse = z.infer<typeof CourseListResponseSchema>;
 export const SaveCourseDraftRequestSchema = z.object({ document: CourseDocumentSchema });
 export type SaveCourseDraftRequest = z.infer<typeof SaveCourseDraftRequestSchema>;
 
+/** A finished course from the content studio, which does its own checks:
+ * the draft, its tree and its dossier are replaced in place, under the same
+ * id and address. The dossier is the engine pass (`CourseDossier`); only
+ * the fields the app reads by id are checked here. */
+export const ReplaceCourseRequestSchema = CreateCourseRequestSchema.pick({ pgn: true, direction: true }).extend({
+  document: CourseDocumentSchema,
+  dossier: z
+    .object({
+      learnerSide: z.enum(['white', 'black']),
+      nodes: z.array(z.object({ nodeId: z.string(), san: z.string() }).passthrough()),
+      lines: z.array(z.object({}).passthrough())
+    })
+    .passthrough()
+});
+export type ReplaceCourseRequest = z.input<typeof ReplaceCourseRequestSchema>;
+
 /** docs/courses.md §6.5: regenerate one episode with the creator's words. */
 export const RegenerateEpisodeRequestSchema = z.object({ instruction: z.string().trim().max(300).default('') });
 export type RegenerateEpisodeRequest = z.input<typeof RegenerateEpisodeRequestSchema>;
@@ -102,6 +118,8 @@ export const CourseCheckProblemSchema = z.object({
 export const PublishCheckResponseSchema = z.object({ problems: z.array(CourseCheckProblemSchema) });
 export type CourseCheckProblem = z.infer<typeof CourseCheckProblemSchema>;
 export type PublishCheckResponse = z.infer<typeof PublishCheckResponseSchema>;
+/** The course as GET returns it, with the publish check over the new draft. */
+export type ReplaceCourseResponse = CourseResponse & PublishCheckResponse;
 
 /** §8: ask for a URL to upload one note's MP3 to (its size in bytes), then say
  * where it went. The browser sends the file to the bucket, not to the api. */
