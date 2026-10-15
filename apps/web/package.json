@@ -18,16 +18,16 @@
     "@breezystack/lamejs": "^1.2.7",
     "@freechesscoach/chess-analysis": "0.0.1",
     "@freechesscoach/shared": "0.0.1",
-    "@tanstack/react-query": "^5.104.1",
-    "ai": "^7.0.136",
+    "@tanstack/react-query": "^5.104.2",
+    "ai": "^7.0.137",
     "chess.js": "^1.4.0",
     "kokoro-js": "^1.2.1",
     "react": "^19.3.0",
     "react-chessboard": "^5.12.1",
     "react-dom": "^19.3.0",
     "react-router-dom": "^7.18.4",
-    "stockfish": "^19.0.0",
-    "zod": "^4.6.5"
+    "stockfish": "^19.0.1",
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
