@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
 import type { CourseDossier } from './dossier.js';
+import { courseFenBefore } from './moves.js';
 import type { CourseTree } from './tree.js';
 
 /** `checkReply`: a way out of a check the learner gave. `engineBest`: the
@@ -28,13 +29,18 @@ export interface CourseGap {
  */
 export function courseGaps(tree: CourseTree, dossier: CourseDossier): CourseGap[] {
   const byId = new Map(tree.nodes.map((node) => [node.id, node]));
-  const played = new Map<string | null, Set<string>>();
-  for (const node of tree.nodes) played.set(node.parentId, (played.get(node.parentId) ?? new Set()).add(node.san));
+  // Where a move is played from: its parent, or, at a start, that start's position.
+  const place = (parentId: string | null, fenBefore: string): string => parentId ?? `start:${fenBefore}`;
+  const played = new Map<string, Set<string>>();
+  for (const node of tree.nodes) {
+    const key = place(node.parentId, courseFenBefore(byId, tree.startFen, node));
+    played.set(key, (played.get(key) ?? new Set()).add(node.san));
+  }
   const gaps = new Map<string, CourseGap>();
-  const add = (reason: CourseGapReason, afterNodeId: string | null, san: string): void => {
-    const fenBefore = afterNodeId ? (byId.get(afterNodeId)?.fenAfter ?? tree.startFen) : tree.startFen;
+  const add = (reason: CourseGapReason, afterNodeId: string | null, san: string, fromFen: string): void => {
+    const fenBefore = afterNodeId ? (byId.get(afterNodeId)?.fenAfter ?? tree.startFen) : fromFen;
     const key = `${fenBefore}|${san}`;
-    if (played.get(afterNodeId)?.has(san) || gaps.has(key)) return;
+    if (played.get(place(afterNodeId, fenBefore))?.has(san) || gaps.has(key)) return;
     const board = new Chess(fenBefore);
     board.move(san);
     gaps.set(key, { reason, afterNodeId, fenBefore, san, fen: board.fen() });
@@ -45,9 +51,9 @@ export function courseGaps(tree: CourseTree, dossier: CourseDossier): CourseGap[
     if (facts.side === dossier.learnerSide) {
       const board = new Chess(node.fenAfter);
       // A line that ends on the check has shown no answer at all: not a gap.
-      if (board.inCheck() && played.has(node.id)) for (const san of board.moves()) add('checkReply', node.id, san);
+      if (board.inCheck() && played.has(node.id)) for (const san of board.moves()) add('checkReply', node.id, san, node.fenAfter);
     } else if (facts.bestInstead && (facts.quality === 'mistake' || facts.quality === 'blunder')) {
-      add('engineBest', node.parentId, facts.bestInstead.san);
+      add('engineBest', node.parentId, facts.bestInstead.san, courseFenBefore(byId, tree.startFen, node));
     }
   }
   return [...gaps.values()];

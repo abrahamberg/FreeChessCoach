@@ -1,4 +1,4 @@
-import { moveLabel } from './moves.js';
+import { courseFenBefore, moveLabel } from './moves.js';
 import type { CourseTree } from './tree.js';
 
 /** M5: a `@quiz` asks the learner to find the move, so it must be a move of
@@ -7,7 +7,7 @@ export function quizSideProblems(tree: Pick<CourseTree, 'startFen' | 'nodes'>, l
   const byId = new Map(tree.nodes.map((node) => [node.id, node]));
   return tree.nodes.flatMap((node) => {
     if (!node.marks.includes('quiz')) return [];
-    const fenBefore = (node.parentId ? byId.get(node.parentId)?.fenAfter : undefined) ?? tree.startFen;
+    const fenBefore = courseFenBefore(byId, tree.startFen, node);
     const mover = fenBefore.split(' ')[1] === 'b' ? 'black' : 'white';
     if (mover === learnerSide) return [];
     const [name, other] = mover === 'white' ? ['White', 'Black'] : ['Black', 'White'];

@@ -102,6 +102,8 @@ export interface FrameInput {
   /** Time into the clip, for the quiz countdown. */
   ms: number;
   title: string;
+  /** "Chess From Zero, lesson 7 of 14", on the title card; null for a course in no series. */
+  series: string | null;
   persona: CoachPersona;
   coachName: string;
   orientation: 'white' | 'black';
@@ -199,6 +201,7 @@ function drawStartPanel(ctx: CanvasRenderingContext2D, input: FrameInput, x: num
     if (input.assets.logo) ctx.drawImage(input.assets.logo, x + 5, 65, 100, 100);
     text(ctx, SITE_NAME, x + 140, 132, `800 50px ${FONT}`, COLORS.text);
   });
+  if (input.series) slide(75, () => wrapText(ctx, input.series ?? '', { x, y: 215, maxWidth: 780, font: `700 38px ${FONT}`, color: COLORS.accent, lineHeight: 46, maxLines: 1 }));
   slide(150, () => {
     ctx.fillStyle = COLORS.accent;
     ctx.fillRect(x, 250, 120, 12);

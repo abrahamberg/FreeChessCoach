@@ -1,4 +1,4 @@
-import { renderBoardFact, reviewMoveTexts, type BoardFact, type CourseNodeFacts } from '@freechesscoach/chess-analysis';
+import { courseFenBefore, renderBoardFact, reviewMoveTexts, type BoardFact, type CourseNodeFacts } from '@freechesscoach/chess-analysis';
 import type { ClassifiedMoveDto, EngineEval } from '@freechesscoach/shared';
 import type { AnalysedGame } from './analyze.js';
 import type { SeedExpectation } from './corpus.js';
@@ -141,7 +141,7 @@ function dossierDrafts(analysed: AnalysedGame): NodeDrafts[] {
     const treeNode = treeNodes.get(node.nodeId);
     const shown = rows.get(node.nodeId);
     if (!treeNode) return [];
-    const fenBefore = treeNode.parentId ? (treeNodes.get(treeNode.parentId)?.fenAfter ?? tree.startFen) : tree.startFen;
+    const fenBefore = courseFenBefore(treeNodes, tree.startFen, treeNode);
     const searches = { before: searchView(dossierEvals.get(fenBefore)), after: searchView(dossierEvals.get(treeNode.fenAfter)) };
     const position = { ...basePosition(analysed, node.nodeId, node.san, node.side, fenBefore, treeNode.fenAfter, dossierEvals), dossier: searches };
     const drafts = shown ? nodeDrafts(node, shown, position) : [];

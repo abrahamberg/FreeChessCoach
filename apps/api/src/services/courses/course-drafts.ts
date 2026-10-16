@@ -2,7 +2,7 @@ import {
   buildCourseSkeleton,
   courseDiagnosisCodes,
   inferLearnerSide,
-  parseCourseTree,
+  parseCourseTreeOfKind,
   endgameShapeProblems,
   quizSideProblems,
   puzzleShapeProblems,
@@ -58,7 +58,7 @@ export async function createCourse(db: Kysely<Database>, ownerId: string, intake
 /** The new draft for an intake: the tree, the learner side (inferred when
  * not given) and empty episodes. Throws a `ValidationError` the creator can read. */
 export function draftFromIntake(intake: CourseIntake, order = 1): CourseDocument {
-  const tree = parseCourseTree(intake.pgn);
+  const tree = parseCourseTreeOfKind(intake.pgn, intake.kind);
   if (tree.errors.length) throw new ValidationError(tree.errors.map((error) => error.message).join('; '));
   if (!tree.nodes.length) throw new ValidationError('The PGN has no moves');
   if (tree.nodes.length > MAX_COURSE_NODES) throw new ValidationError(`A course can have at most ${MAX_COURSE_NODES} moves`);
@@ -77,6 +77,8 @@ export function draftFromIntake(intake: CourseIntake, order = 1): CourseDocument
     levelBand: intake.rating === undefined ? intake.levelBand : bandForRating(intake.rating),
     coachPersona: intake.coachPersona,
     ...(intake.rating === undefined ? {} : { level: { rating: intake.rating, order: Math.min(Math.max(order, 1), 99) } }),
+    ...(intake.series === undefined ? {} : { series: intake.series }),
+    ...(intake.tags === undefined ? {} : { tags: intake.tags }),
     videos: intake.videos ?? defaultCourseVideos(intake.kind),
     startFen: tree.startFen,
     nodes: tree.nodes,

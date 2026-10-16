@@ -2,6 +2,7 @@ import { GENERIC_CTAS, VIDEO_INTRO_PHRASES, type CourseDocument, type CourseEpis
 import { CONFIG } from '../config.js';
 import type { CourseDossier } from './dossier.js';
 import type { CourseVerifyNode, CourseVerifyProblem } from './verify.js';
+import { courseFenBefore, sideToMove } from './moves.js';
 import { episodeScope } from './verify-scope.js';
 import { takenPieceProblems } from './verify-pieces.js';
 import { moveProblems, nodeIdProblems, numberProblems, overLength, phraseProblems, spokenNotationProblems, tacticWordProblems, type EpisodeText } from './verify-text.js';
@@ -95,8 +96,7 @@ export function verifyCourseReel(input: CourseReelVerifyInput): CourseVerifyProb
 function sideToPlayProblems(input: CourseReelVerifyInput, texts: EpisodeText[]): CourseVerifyProblem[] {
   const climax = input.nodes.find((node) => node.id === input.reel.climaxNodeId);
   if (!climax) return [];
-  const parent = input.nodes.find((node) => node.id === climax.parentId);
-  const side = ((parent?.fenAfter ?? input.startFen).split(' ')[1] === 'b' ? 'black' : 'white');
+  const side = sideToMove(courseFenBefore(new Map(input.nodes.map((node) => [node.id, node])), input.startFen, climax));
   return texts.flatMap(({ where, text }) => {
     const said = text.toLowerCase().match(/\b(white|black) to (?:play|move)\b/)?.[1];
     return said && said !== side ? [{ code: 'reel' as const, nodeId: climax.id, message: `${where} says "${said} to play", but ${side} plays the climax` }] : [];

@@ -1076,3 +1076,33 @@
   width: min(calc(100% - 2rem), max(8rem, calc(100vh - 24.5rem)));
   width: min(calc(100% - 2rem), max(8rem, calc(100svh - 24.5rem)));
 }
+
+/* --- the series bar under the header (SeriesNav) --- */
+.series-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+}
+
+.series-nav__where {
+  flex: 1 1 auto;
+  font-weight: 600;
+}
+
+.series-nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 100%;
+  min-height: 36px;
+}
+
+.series-nav__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 40vw;
+}

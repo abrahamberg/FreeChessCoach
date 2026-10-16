@@ -11,6 +11,13 @@ export type CourseKind = z.infer<typeof CourseKindSchema>;
  * reel is a puzzle: the examples of a theme, a lesson or an endgame. */
 export const asksEveryLearnerMove = (kind: CourseKind): boolean => kind === 'puzzle' || kind === 'tactics' || kind === 'endgame' || kind === 'lesson';
 
+/** Kinds whose examples each start from a position of their own: a PGN of
+ * several games, each with its `[FEN]`, gives one example per game. */
+export const allowsSeveralStarts = (kind: CourseKind): boolean => kind === 'tactics' || kind === 'lesson';
+
+/** Most start positions (games of the PGN) one such course takes. */
+export const MAX_COURSE_STARTS = 6;
+
 /** docs/courses.md §9: `removed` is set only by the moderator script. */
 export const COURSE_STATUSES = ['draft', 'unlisted', 'public', 'removed'] as const;
 export const CourseStatusSchema = z.enum(COURSE_STATUSES);
@@ -29,7 +36,7 @@ export type CourseArrow = z.infer<typeof CourseArrowSchema>;
 
 /** The creator's marks on a move, written `@key` in the course text
  * (docs/courses.md §5.6). */
-export const PGN_MARKS = ['key', 'quiz', 'slow', 'fast', 'reel'] as const;
+export const PGN_MARKS = ['key', 'quiz', 'slow', 'fast', 'reel', 'noeval'] as const;
 export const CourseMarkSchema = z.enum(PGN_MARKS);
 export type CourseMark = z.infer<typeof CourseMarkSchema>;
 
@@ -50,7 +57,12 @@ export const CourseNodeSchema = z.object({
   comment: z.string().nullable(),
   arrows: z.array(CourseArrowSchema),
   marks: z.array(CourseMarkSchema),
-  glyph: CourseGlyphSchema.nullable()
+  glyph: CourseGlyphSchema.nullable(),
+  /** The position the move is played from, on a root node (`parentId` null)
+   * of a course with several start positions: each example of a lesson or
+   * tactics course has its own `[FEN]`. Absent on a course stored before
+   * that (all its roots start at `startFen`) and on every non-root node. */
+  startFen: z.string().min(1).optional()
 });
 export type CourseNode = z.infer<typeof CourseNodeSchema>;
 
@@ -106,11 +118,40 @@ export const CoursePlySchema = z.object({
 export type CoursePly = z.infer<typeof CoursePlySchema>;
 
 /** A course's target rating and its order among that level's courses. */
+export const COURSE_MIN_RATING = 100;
+export const COURSE_MAX_RATING = 2800;
 export const CourseLevelSchema = z.object({
-  rating: z.number().int().min(400).max(2800),
+  rating: z.number().int().min(COURSE_MIN_RATING).max(COURSE_MAX_RATING),
   order: z.number().int().min(1).max(99)
 });
 export type CourseLevel = z.infer<typeof CourseLevelSchema>;
+
+/** A short slug a diagnosis or the creator's tooling matches on
+ * (`hangs-piece`, `no-scan-before-move`). */
+export const CourseTagSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'A tag is lowercase words joined by hyphens').max(40);
+export const CourseTagsSchema = z
+  .array(CourseTagSchema)
+  .max(20)
+  .refine((tags) => new Set(tags).size === tags.length, 'A tag is listed twice');
+
+/** A course's place in a series ("Chess From Zero, lesson 7 of 14") and the
+ * module it belongs to. The series is the `name` among the owner's courses;
+ * `position` orders its lessons on `/learn` and gives the next and previous
+ * links. */
+export const CourseSeriesSchema = z
+  .object({
+    name: z.string().trim().min(1).max(80),
+    position: z.number().int().min(1).max(999),
+    total: z.number().int().min(1).max(999).optional(),
+    module: z.string().trim().min(1).max(80).optional()
+  })
+  .refine((series) => series.total === undefined || series.position <= series.total, 'The position is past the series total');
+export type CourseSeries = z.infer<typeof CourseSeriesSchema>;
+
+/** "Chess From Zero, lesson 7 of 14" (or "…, lesson 7" without a total). */
+export function seriesLabel(series: CourseSeries): string {
+  return `${series.name}, lesson ${series.position}${series.total === undefined ? '' : ` of ${series.total}`}`;
+}
 
 /** docs/courses.md §13.1: the videos a course makes besides the course
  * itself, which is always made. At least one; the creator can add the other
@@ -247,6 +288,10 @@ export const CourseDocumentSchema = z.object({
   /** Phase 90: the learner's target rating and the course's place in that
    * level's curriculum ("1200-01"); how the Courses page sorts. */
   level: CourseLevelSchema.optional(),
+  /** The series the course belongs to, and its place in it. */
+  series: CourseSeriesSchema.optional(),
+  /** Diagnostic tags: the weaknesses this lesson fixes, for the diagnostics to link to it. */
+  tags: CourseTagsSchema.optional(),
   /** §13.1: the videos besides the course (absent: the kind's default). */
   videos: CourseVideosSchema.optional(),
   video: CourseVideoSchema.optional(),

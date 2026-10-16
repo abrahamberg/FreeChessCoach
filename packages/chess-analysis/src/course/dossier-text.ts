@@ -42,11 +42,13 @@ function renderLine(line: CourseLineFacts): string[] {
 }
 
 function renderNode(node: CourseNodeFacts, lineName: string, oneLine: boolean): string[] {
-  const head = `${node.nodeId} ${moveLabel(node)} (${capitalise(node.side)}, ${lineName}) | ${node.quality}`;
+  const label = `${node.nodeId} ${moveLabel(node)} (${capitalise(node.side)}, ${lineName})`;
+  // No verdict word is said of a "no evaluation" example, the move's quality included.
+  const head = node.noEvaluation ? label : `${label} | ${node.quality}`;
   if (oneLine) return [head];
   // A book move's verdict is noise: the Najdorf's read "roughly equal → White
   // is slightly better" and back on every move, the eval on a word's edge.
-  const rows = [node.quality === 'book' ? head : `${head} | before: ${node.before} → after: ${node.after}`];
+  const rows = [node.quality === 'book' || node.noEvaluation ? head : `${head} | before: ${node.before} → after: ${node.after}`];
   const detail = (label: string, value: string): void => {
     rows.push(`    ${label}: ${value}`);
   };
@@ -82,7 +84,8 @@ function temptingText(node: CourseNodeFacts, tempting: CourseTemptingFacts): str
   const line = rest.length ? ` Then ${rest.join(' ')}.` : '';
   // A puzzle move that still works is no "?": it is not the answer, and why.
   const verdict = tempting.notTheAnswer ? ` Works, but not the answer: ${tempting.notTheAnswer}.` : '';
-  return `${tempting.san}${tempting.notTheAnswer ? '' : '?'}${does}${after}${line} Over the line ${tempting.captures}; at the end ${tempting.balance} (${tempting.verdict}).${verdict}`;
+  const standing = tempting.verdict ? ` (${tempting.verdict})` : '';
+  return `${tempting.san}${tempting.notTheAnswer ? '' : '?'}${does}${after}${line} Over the line ${tempting.captures}; at the end ${tempting.balance}${standing}.${verdict}`;
 }
 
 /** The book's other moves that stay in this move's opening (the Petrov's

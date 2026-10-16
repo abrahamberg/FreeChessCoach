@@ -1,5 +1,5 @@
 import { nextCourseStage, type CourseStage } from '@freechesscoach/chess-analysis';
-import type { CourseDocument, CourseEnrollmentPlace } from '@freechesscoach/shared';
+import type { CourseDocument, CourseEnrollmentPlace, PublicCourseResponse } from '@freechesscoach/shared';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { OverflowMenuItem } from '../../../components/OverflowMenu.js';
 import { useConfirmDialog } from '../../../hooks/useConfirmDialog.js';
@@ -10,6 +10,7 @@ import { CourseHeader } from './CourseHeader.js';
 import type { CourseProgressStore } from './course-progress.js';
 import type { CourseEvals } from './course-move-list.js';
 import { PlayThrough, type AskCoach } from './PlayThrough.js';
+import { SeriesNav } from './SeriesNav.js';
 import { useCourseEnrollment } from './useCourseEnrollment.js';
 import { useNoteAudio, type NoteAudioSource } from './useNoteAudio.js';
 import '../CourseEditor.css';
@@ -33,6 +34,8 @@ export interface CoursePlayerProps {
   back?: { label: string; onBack: () => void };
   /** Inside the signed-in app: the header's menu is the account menu. */
   inApp?: boolean;
+  /** The lessons before and after this one in its series (the published page). */
+  seriesNeighbours?: PublicCourseResponse['seriesNeighbours'];
 }
 
 const NO_EVALS: CourseEvals = {};
@@ -44,7 +47,7 @@ const START: CourseEnrollmentPlace = { episode: 0, step: 0, practice: {}, run: n
  * voice) or drill the moves. A quiz waits for the learner's move; a
  * different move is rated in the browser with no AI. Takes a document, not a
  * slug, so the editor previews the draft. */
-export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug, startStage, evals = NO_EVALS, back, inApp = false }: CoursePlayerProps): ReactNode {
+export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug, startStage, evals = NO_EVALS, back, inApp = false, seriesNeighbours }: CoursePlayerProps): ReactNode {
   const isDesktop = useIsDesktop();
   const [stage, setStage] = useState<CourseStage>(startStage ?? 'play_through');
   const [done, setDone] = useState<ReadonlySet<CourseStage>>(new Set());
@@ -129,6 +132,7 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
         inApp={inApp}
         isDesktop={isDesktop}
       />
+      {document.series && <SeriesNav series={document.series} neighbours={seriesNeighbours} />}
       {notice}
       {dialog}
       {stage === 'play_through' ? (

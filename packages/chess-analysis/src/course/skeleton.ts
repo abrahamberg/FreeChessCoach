@@ -119,8 +119,8 @@ export function buildCourseSkeleton(input: CourseSkeletonInput): CourseSkeleton 
   const facts = new Map(input.dossier.nodes.map((node) => [node.nodeId, node]));
   const lineFacts = (line: CourseLineGame): CourseNodeFacts[] => line.nodeIds.flatMap((id) => facts.get(id) ?? []);
   if (input.kind === 'trap') return trapSkeleton(input, lineFacts);
-  if (input.kind === 'tactics') return tacticsSkeleton(input.lines, lineFacts, input.dossier.learnerSide);
-  if (input.kind === 'lesson') return { ...tacticsSkeleton(input.lines, lineFacts, input.dossier.learnerSide), kind: 'lesson' };
+  if (input.kind === 'tactics') return tacticsSkeleton(input.lines, lineFacts, input.dossier.learnerSide, false);
+  if (input.kind === 'lesson') return { ...tacticsSkeleton(input.lines, lineFacts, input.dossier.learnerSide, true), kind: 'lesson' };
   if (input.kind === 'endgame') {
     const line = input.lines[0];
     return line ? endgameSkeleton(input, line.lineId, lineFacts(line)) : null;
@@ -212,14 +212,18 @@ function openingSkeleton(input: CourseSkeletonInput, lineFacts: (line: CourseLin
  * not just 6.Bxf7+). */
 const MISTAKES = new Set(['mistake', 'blunder']);
 
+/** A lesson's example need not play a motif or be an only move (how a knight
+ * moves, what stalemate looks like): `everyLine` keeps one example per line
+ * anyway, on the learner's first move, else the line's first. */
 function tacticsSkeleton(
   lines: CourseLineGame[],
   lineFacts: (line: CourseLineGame) => CourseNodeFacts[],
-  learnerSide: 'white' | 'black'
+  learnerSide: 'white' | 'black',
+  everyLine: boolean
 ): TacticsSkeleton {
   const examples = lines.flatMap((line) => {
     const nodes = lineFacts(line).filter((node) => node.side === learnerSide);
-    const pick = nodes.find((node) => node.motif) ?? nodes.find((node) => node.quizEligible);
+    const pick = nodes.find((node) => node.motif) ?? nodes.find((node) => node.quizEligible) ?? (everyLine ? (nodes[0] ?? lineFacts(line)[0]) : undefined);
     if (!pick) return [];
     const at = line.nodeIds.indexOf(pick.nodeId);
     const allowedBy = lineFacts(line).find((node) => node.nodeId === line.nodeIds[at - 1]);

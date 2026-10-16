@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { MoveQualitySchema } from './analysis.js';
 import { COACH_PERSONAS, RATING_BANDS } from './constants.js';
 import { DiagnosisCodeIdSchema } from './diagnosis/catalog-types.js';
-import { CourseDocumentSchema, CourseGenerationSchema, CourseKindSchema, CourseLevelSchema, CourseStatusSchema, CourseVideosSchema } from './course.js';
+import { COURSE_MAX_RATING, COURSE_MIN_RATING, CourseDocumentSchema, CourseGenerationSchema, CourseKindSchema, CourseLevelSchema, CourseSeriesSchema, CourseStatusSchema, CourseTagsSchema, CourseVideosSchema } from './course.js';
 
 /** The intake form (docs/courses.md §5.3). `learnerSide` null lets code
  * infer it (§3); the route refuses when it can't. */
@@ -15,7 +15,11 @@ export const CreateCourseRequestSchema = z.object({
   coachPersona: z.enum(COACH_PERSONAS),
   /** Phase 90: the learner's target rating; it sets the band the prompts
    * write for, and the course takes the next place at that level ("1200-02"). */
-  rating: z.number().int().min(400).max(2800).optional(),
+  rating: z.number().int().min(COURSE_MIN_RATING).max(COURSE_MAX_RATING).optional(),
+  /** The series the course belongs to and its place in it. */
+  series: CourseSeriesSchema.optional(),
+  /** Diagnostic tags: the weaknesses the course fixes. */
+  tags: CourseTagsSchema.optional(),
   /** §13.1: which videos to make besides the course; the kind's default
    * when absent. */
   videos: CourseVideosSchema.optional()
@@ -128,6 +132,9 @@ export const NoteAudioUploadResponseSchema = z.object({ url: z.string().url(), k
 export type NoteAudioUploadResponse = z.infer<typeof NoteAudioUploadResponseSchema>;
 export const NoteAudioConfirmRequestSchema = z.object({ key: z.string().min(1).max(200) });
 
+export const SeriesLinkSchema = z.object({ slug: z.string(), title: z.string(), position: z.number().int() });
+export type SeriesLink = z.infer<typeof SeriesLinkSchema>;
+
 /** docs/courses.md §9: a published course as anyone with the link sees it
  * (`GET /api/public/courses/:slug`). Nothing about the creator: their display
  * name defaults to their email's local part. */
@@ -140,7 +147,10 @@ export const PublicCourseResponseSchema = z.object({
   noteAudio: z.record(z.string(), z.string()),
   /** Node id → White's evaluation after the move and its quality, from the
    * course's engine pass; `{}` when it has none (docs/courses.md §9). */
-  evals: z.record(z.string(), z.object({ cp: z.number(), quality: MoveQualitySchema }))
+  evals: z.record(z.string(), z.object({ cp: z.number(), quality: MoveQualitySchema })),
+  /** The lessons before and after this one in its series (public courses
+   * only); null at the ends and for a course in no series. */
+  seriesNeighbours: z.object({ previous: z.lazy(() => SeriesLinkSchema).nullable(), next: z.lazy(() => SeriesLinkSchema).nullable() })
 });
 export type PublicCourseResponse = z.infer<typeof PublicCourseResponseSchema>;
 
@@ -172,7 +182,11 @@ export const CourseCatalogItemSchema = z.object({
   /** Where it sits in its level's curriculum; null when the creator set none. */
   level: CourseLevelSchema.nullable(),
   /** The weaknesses it trains (`diagnosisCodes` of the published document). */
-  diagnosisCodes: z.array(DiagnosisCodeIdSchema)
+  diagnosisCodes: z.array(DiagnosisCodeIdSchema),
+  /** The series it belongs to; null when it is a single course. */
+  series: CourseSeriesSchema.nullable(),
+  /** The creator's diagnostic tags. */
+  tags: CourseTagsSchema
 });
 export type CourseCatalogItem = z.infer<typeof CourseCatalogItemSchema>;
 

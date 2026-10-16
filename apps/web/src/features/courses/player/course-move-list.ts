@@ -1,6 +1,7 @@
 import type { ClassifiedMoveDto, CourseDocument, CourseNode, PublicCourseResponse } from '@freechesscoach/shared';
 import { moveListStart, type MoveListStart } from '../../board/moveListStart.js';
 import { moveSound, type BoardSound } from '../../../sounds/move-sounds.js';
+import { fenBefore } from '../courseEdits.js';
 
 export type CourseEvals = PublicCourseResponse['evals'];
 
@@ -35,7 +36,8 @@ export function courseMoveList(document: CourseDocument, moves: readonly CourseN
 
 /** Moves played from the course's start, in order (a drill's played moves). */
 export function moveListOf(document: CourseDocument, line: readonly CourseNode[], evals: CourseEvals): CourseMoveList {
-  const start = moveListStart(document.startFen);
+  const startFen = line[0] ? fenBefore(document, line[0]) : document.startFen;
+  const start = moveListStart(startFen);
   const learner = document.learnerSide;
   const classifiedMoves = line.flatMap((node, index): ClassifiedMoveDto[] => {
     const rated = evals[node.id];
@@ -51,7 +53,7 @@ export function moveListOf(document: CourseDocument, line: readonly CourseNode[]
   return {
     start,
     sanMoves: line.map((node) => node.san),
-    positions: [{ ply: 0, fen: document.startFen }, ...line.map((node, index) => ({ ply: index + 1, fen: node.fenAfter }))],
+    positions: [{ ply: 0, fen: startFen }, ...line.map((node, index) => ({ ply: index + 1, fen: node.fenAfter }))],
     classifiedMoves
   };
 }

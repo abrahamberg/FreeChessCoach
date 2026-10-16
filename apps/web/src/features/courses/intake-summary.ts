@@ -1,4 +1,4 @@
-import { moveLabel, type CourseTree } from '@freechesscoach/chess-analysis';
+import { courseFenBefore, moveLabel, type CourseTree } from '@freechesscoach/chess-analysis';
 
 /** One line of the creator's text as the intake form shows it. */
 export interface IntakeLineRow {
@@ -20,8 +20,7 @@ export function intakeLineRows(tree: Pick<CourseTree, 'startFen' | 'nodes' | 'li
   return tree.lines.map((line, index) => {
     const own = tree.nodes.filter((node) => node.lineId === line.id);
     const first = own[0];
-    const parent = first?.parentId ? byId.get(first.parentId) : undefined;
-    const from = index === 0 || !first ? null : moveLabel(parent?.fenAfter ?? tree.startFen, first.san, '...');
+    const from = index === 0 || !first ? null : moveLabel(courseFenBefore(byId, tree.startFen, first), first.san, '...');
     return { lineId: line.id, name: line.name, note: line.note, from, added: own.length, leafNodeId: line.leafNodeId };
   });
 }

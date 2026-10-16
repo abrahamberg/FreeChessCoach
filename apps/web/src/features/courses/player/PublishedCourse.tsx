@@ -57,6 +57,7 @@ export function PublishedCourse({ slug, startStage }: PublishedCourseProps): Rea
       evals={course.data.evals}
       back={back}
       inApp={signedIn}
+      seriesNeighbours={course.data.seriesNeighbours}
     />
   );
 }

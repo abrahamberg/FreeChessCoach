@@ -1,5 +1,5 @@
 import { Chess } from 'chess.js';
-import { buildCourseSkeleton, parseCourseTree } from '@freechesscoach/chess-analysis';
+import { buildCourseSkeleton, renderCourseDossier, parseCourseTreeOfKind } from '@freechesscoach/chess-analysis';
 import type { CourseDocument, CourseKind, CourseVideos, EngineEval } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { ENGLUND, englundDossier } from '../../../test/helpers/course-fixtures.js';
@@ -20,7 +20,7 @@ function levelEngine(fens: string[]): Promise<EngineEval[]> {
 }
 
 async function manual(pgn: string, kind: CourseKind, learnerSide: 'white' | 'black', options: { engine?: CourseDossierBuilder; videos?: CourseVideos } = {}) {
-  const tree = parseCourseTree(pgn);
+  const tree = parseCourseTreeOfKind(pgn, kind);
   const document: CourseDocument = {
     version: 1, kind, title: 't', promise: '', learnerSide, levelBand: 'improving', coachPersona: 'general', startFen: tree.startFen,
     nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], episodes: [], takeaways: [], hookOptions: [], clipLinks: {},
@@ -30,7 +30,7 @@ async function manual(pgn: string, kind: CourseKind, learnerSide: 'white' | 'bla
   const lineGames = lines.map((analysis) => analysis.line);
   const skeleton = buildCourseSkeleton({ kind, tree, lines: lineGames, dossier });
   if (!skeleton) throw new Error('no skeleton');
-  return buildManualEpisodes({ document, skeleton, dossier, lines: lineGames });
+  return { ...buildManualEpisodes({ document, skeleton, dossier, lines: lineGames }), dossier, tree };
 }
 
 const LUCENA = '[FEN "1K6/1P1k4/8/8/8/8/r7/2R5 w - - 0 1"]\n\n1. Rd1+ Ke7 (1... Kc6 2. Kc8 Rh2 3. b8=Q) 2. Rd4 Ra1 3. Kc7 Rc1+ 4. Kb6 Rb1+ 5. Kc6 Rc1+ 6. Kb5 Rb1+ 7. Rb4 *';
@@ -59,6 +59,24 @@ describe('buildManualEpisodes', () => {
     const roles = episodes.map((episode) => episode.role);
     expect([roles[0], roles[roles.length - 1]]).toEqual(['concept', 'recap']);
     expect(chapters.map((chapter) => chapter.title)[0]).toBe('The idea');
+  });
+
+  test('lesson: three games, each from its own [FEN], are three example episodes, each from its own position', async () => {
+    const games = ['4k3/8/8/8/8/8/8/R3K3 w - - 0 1|1. Ra8+ Kd7', '7k/8/8/8/8/8/8/K2N4 w - - 0 1|1. Nc3 Kg7', '4k3/8/8/8/8/8/8/4KR2 w - - 0 1|1. Rf8+ Kxf8'];
+    const pgn = games.map((game) => `[FEN "${game.split('|')[0]}"]\n\n${game.split('|')[1]} *`).join('\n\n');
+    const { episodes } = await manual(pgn, 'lesson', 'white');
+    const examples = episodes.filter((episode) => episode.role === 'example');
+    expect(examples.map((episode) => [episode.startNodeId, episode.endNodeId])).toEqual([['n1', 'n2'], ['n3', 'n4'], ['n5', 'n6']]);
+  });
+
+  test('lesson: an example marked @noeval says no engine verdict and no move quality', async () => {
+    const pgn = '[FEN "4k3/8/8/8/8/8/8/R3K3 w - - 0 1"]\n\n1. Ra8+ @noeval Kd7 *';
+    const tree = parseCourseTreeOfKind(pgn, 'lesson');
+    const { dossier } = await buildCourseDossierFromEngine(tree, 'white', { analyzeGame: levelEngine });
+    const text = renderCourseDossier(dossier);
+
+    expect(dossier.nodes.every((node) => node.noEvaluation && node.before === '' && node.after === '' && node.alternatives.length === 0 && node.bestInstead === null)).toBe(true);
+    expect(text).not.toMatch(/before:|after:|alternatives:|best instead/);
   });
 
   test('the creator\'s section notes become the focus of the line and its sidelines', async () => {

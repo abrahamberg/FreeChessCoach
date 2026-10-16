@@ -1,4 +1,5 @@
-import { parsePgnTree, type PgnArrow, type PgnGlyph, type PgnMark, type PgnTreeError, type PgnTreeNode } from '../pgn-tree/parse.js';
+import { allowsSeveralStarts, type CourseKind } from '@freechesscoach/shared';
+import { parsePgnTree, type PgnArrow, type PgnGlyph, type PgnMark, type PgnTreeError, type PgnTreeNode, type PgnTreeOptions } from '../pgn-tree/parse.js';
 
 export type { PgnArrow as CourseTreeArrow, PgnTreeError as CourseTreeError } from '../pgn-tree/parse.js';
 
@@ -16,6 +17,8 @@ export interface CourseTreeNode {
   /** The creator's `@key`, `@quiz` … on the move, with its section's pace. */
   marks: PgnMark[];
   glyph: PgnGlyph | null;
+  /** On a root node of a tree read with `allGames`: the position its example starts from. */
+  startFen?: string;
 }
 
 export interface CourseTreeLine {
@@ -39,10 +42,16 @@ export interface CourseTree {
  * Ids depend only on the PGN text, so parsing the same PGN twice gives the
  * same ids.
  */
-export function parseCourseTree(pgn: string): CourseTree {
-  const tree = parsePgnTree(pgn);
+export function parseCourseTree(pgn: string, options: PgnTreeOptions = {}): CourseTree {
+  const tree = parsePgnTree(pgn, options);
   const { nodes, lines } = withLines(tree.nodes);
   return { startFen: tree.startFen, nodes, lines, errors: tree.errors };
+}
+
+/** The tree of a course's PGN: a lesson or tactics course reads every game
+ * (each example starts from its own `[FEN]`), the other kinds the first. */
+export function parseCourseTreeOfKind(pgn: string, kind: CourseKind): CourseTree {
+  return parseCourseTree(pgn, { allGames: allowsSeveralStarts(kind) });
 }
 
 function withLines(treeNodes: PgnTreeNode[]): { nodes: CourseTreeNode[]; lines: CourseTreeLine[] } {
@@ -57,7 +66,7 @@ function withLines(treeNodes: PgnTreeNode[]): { nodes: CourseTreeNode[]; lines: 
   };
   const { names, notes } = describedLeaves(treeNodes, leafOf);
   const lines = leaves.map((leaf, index) => ({ id: `l${index + 1}`, name: names.get(leaf.id) ?? `Line ${lineLetter(index)}`, note: notes.get(leaf.id) ?? null, leafNodeId: leaf.id }));
-  const nodes = treeNodes.map(({ id, parentId, san, uci, fenAfter, comment, arrows, marks, glyph }) => ({
+  const nodes = treeNodes.map(({ id, parentId, san, uci, fenAfter, comment, arrows, marks, glyph, startFen }) => ({
     id,
     parentId,
     san,
@@ -69,7 +78,8 @@ function withLines(treeNodes: PgnTreeNode[]): { nodes: CourseTreeNode[]; lines: 
     comment,
     arrows,
     marks,
-    glyph
+    glyph,
+    ...(startFen === undefined ? {} : { startFen })
   }));
   return { nodes, lines };
 }

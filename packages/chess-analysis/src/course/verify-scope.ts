@@ -1,10 +1,11 @@
 import type { CourseEpisode, CourseNode } from '@freechesscoach/shared';
 import type { CourseNodeFacts } from './dossier-node.js';
 import type { CourseDossier } from './dossier.js';
+import { courseFenBefore } from './moves.js';
 import { courseNodeAncestry } from './node-path.js';
 
 /** `marks` only where a check reads the creator's pace marks (the reel's length). */
-export type CourseVerifyNode = Pick<CourseNode, 'id' | 'parentId' | 'san' | 'fenAfter'> & Partial<Pick<CourseNode, 'marks'>>;
+export type CourseVerifyNode = Pick<CourseNode, 'id' | 'parentId' | 'san' | 'fenAfter'> & Partial<Pick<CourseNode, 'marks' | 'startFen'>>;
 
 /** Which nodes an episode covers and the positions around them. */
 export interface EpisodeScope {
@@ -43,8 +44,8 @@ export function episodeScope(episode: CourseEpisode, startFen: string, nodes: re
     byId,
     facts: new Map((dossier?.nodes ?? []).map((facts) => [facts.nodeId, facts])),
     fenBefore: (nodeId) => {
-      const parentId = byId.get(nodeId)?.parentId;
-      return (parentId ? byId.get(parentId)?.fenAfter : undefined) ?? startFen;
+      const node = byId.get(nodeId);
+      return node ? courseFenBefore(byId, startFen, node) : startFen;
     }
   };
 }

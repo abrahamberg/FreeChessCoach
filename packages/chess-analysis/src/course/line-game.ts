@@ -19,13 +19,14 @@ export function courseLineGames(tree: CourseTree): CourseLineGame[] {
   const byId = new Map(tree.nodes.map((node) => [node.id, node]));
   return tree.lines.map((line) => {
     const path = pathTo(byId, line.leafNodeId);
-    return { lineId: line.id, nodeIds: path.map((node) => node.id), game: lineGame(tree.startFen, path), pgn: linePgn(tree.startFen, path) };
+    const startFen = path[0]?.startFen ?? tree.startFen;
+    return { lineId: line.id, nodeIds: path.map((node) => node.id), game: lineGame(startFen, path), pgn: linePgn(startFen, path) };
   });
 }
 
-/** Every distinct position in the tree (start first), each evaluated once. */
+/** Every distinct position in the tree (starts first), each evaluated once. */
 export function courseTreeFens(tree: CourseTree): string[] {
-  return [...new Set([tree.startFen, ...tree.nodes.map((node) => node.fenAfter)])];
+  return [...new Set([tree.startFen, ...tree.nodes.flatMap((node) => (node.startFen ? [node.startFen] : [])), ...tree.nodes.map((node) => node.fenAfter)])];
 }
 
 function pathTo(byId: ReadonlyMap<string, CourseTreeNode>, leafId: string): CourseTreeNode[] {

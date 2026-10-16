@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs';
-import { moveLabel, parseCourseTree } from '@freechesscoach/chess-analysis';
+import { courseFenBefore, moveLabel, parseCourseTreeOfKind } from '@freechesscoach/chess-analysis';
 import { CourseDocumentSchema, videoLine, type CourseDocument, type CourseResponse, type PublishCheckResponse } from '@freechesscoach/shared';
 import type { CourseIntake } from '../../src/services/courses/course-drafts.js';
 import { publishBlockers } from '../../src/services/courses/publish.js';
@@ -54,7 +54,7 @@ export function courseScript(document: CourseDocument): string {
   const label = (nodeId: string): string => {
     const node = byId.get(nodeId);
     if (!node) return nodeId;
-    return `${moveLabel((node.parentId ? byId.get(node.parentId)?.fenAfter : undefined) ?? document.startFen, node.san, '...')} (${nodeId})`;
+    return `${moveLabel(courseFenBefore(byId, document.startFen, node), node.san, '...')} (${nodeId})`;
   };
   const rows = [`${document.title} — ${document.kind}, ${document.coachPersona}, ${document.levelBand}, learner ${document.learnerSide}`, `Promise: ${document.promise}`, `Takeaways: ${document.takeaways.join(' | ')}`, ''];
   if (document.video) rows.push(`VIDEO "${document.video.title}" [${document.video.thumbnailText}]`, `  hook: ${document.video.hook}`, `  outro: ${document.video.outro}`, '');
@@ -82,7 +82,7 @@ export function courseScript(document: CourseDocument): string {
  * checks. Nothing is published.
  */
 export function importSnippet(intake: CourseIntake, document: CourseDocument): string {
-  const tree = parseCourseTree(intake.pgn);
+  const tree = parseCourseTreeOfKind(intake.pgn, intake.kind);
   const same = tree.nodes.length === document.nodes.length && tree.nodes.every((node, index) => node.id === document.nodes[index]?.id && node.fenAfter === document.nodes[index]?.fenAfter);
   if (!same) throw new Error("the intake's PGN is not this course's tree: export with the intake file the course was created from");
   const bundle = JSON.stringify({ intake, document: { ...document, clipLinks: {} } });

@@ -35,13 +35,14 @@ export interface CourseDossier {
 /** Facts per node, taken from the node's own line (`node.lineId`, the line
  * of its first leaf — every line through a node sees the same move). */
 export function buildCourseDossier(input: CourseDossierInput): CourseDossier {
+  const unevaluated = noEvaluationNodeIds(input.tree);
   const byLine = new Map(input.lines.map((analysis) => [analysis.line.lineId, analysis]));
   const nodes = input.tree.nodes.map((node) => {
     const analysis = byLine.get(node.lineId);
     const index = analysis?.line.nodeIds.indexOf(node.id) ?? -1;
     const move = index >= 0 ? analysis?.moves[index] : undefined;
     if (!analysis || !move) throw new Error(`No analysis for course node ${node.id} on line ${node.lineId}`);
-    const fenBefore = index === 0 ? input.tree.startFen : (analysis.line.game.positions[index]?.fen ?? input.tree.startFen);
+    const fenBefore = analysis.line.game.positions[index]?.fen ?? input.tree.startFen;
     return buildCourseNodeFacts({
       node,
       move,
@@ -49,7 +50,8 @@ export function buildCourseDossier(input: CourseDossierInput): CourseDossier {
       linePositionFens: analysis.line.game.positions.slice(0, index + 2).map((position) => position.fen),
       evalsByFen: input.evalsByFen,
       critical: analysis.candidateMoments.some((moment) => moment.ply === move.ply),
-      learnerSide: input.learnerSide
+      learnerSide: input.learnerSide,
+      noEvaluation: unevaluated.has(node.id)
     });
   });
   const lines = input.tree.lines.map((line) => {
@@ -58,4 +60,14 @@ export function buildCourseDossier(input: CourseDossierInput): CourseDossier {
     return buildCourseLineFacts(line, analysis.line, input.evalsByFen.get(analysis.line.game.positions.at(-1)?.fen ?? ''));
   });
   return { learnerSide: input.learnerSide, nodes, lines };
+}
+
+/** The nodes the creator marked "no evaluation": a node with `@noeval` and
+ * everything played after it. */
+export function noEvaluationNodeIds(tree: Pick<CourseTree, 'nodes'>): Set<string> {
+  const marked = new Set<string>();
+  for (const node of tree.nodes) {
+    if (node.marks.includes('noeval') || (node.parentId !== null && marked.has(node.parentId))) marked.add(node.id);
+  }
+  return marked;
 }

@@ -14,6 +14,7 @@ import { useCourseProgressStore } from '../player/useCourseProgressStore.js';
 import { COURSE_KIND_INFO } from '../courseKinds.js';
 import { useCourseCatalogue, type CatalogueSort } from './useCourseCatalogue.js';
 import { SortControl, levelGroups } from './course-sort.js';
+import { splitSeries } from './series-sections.js';
 import '../../games/GameCard.css';
 import '../../games/GamesPage.css';
 import '../../games/RailCard.css';
@@ -92,7 +93,23 @@ export function LearnHomePage(): ReactNode {
         )}
         {browse.length > 0 &&
           (sort === 'curriculum' ? (
-            levelGroups(browse).map((group) => (
+            [
+              ...splitSeries(browse).sections.map((section) => (
+                <div key={`series:${section.name}`} className="courses-home__level">
+                  <h3 className="courses-home__level-heading">{section.name}</h3>
+                  {section.modules.map((group) => (
+                    <div key={group.module ?? 'none'}>
+                      {group.module && <h4 className="courses-home__module-heading">{group.module}</h4>}
+                      <div className="courses-home__grid">
+                        {group.items.map((course) => (
+                          <CatalogueCard key={course.slug} course={course} status={status.get(course.slug)} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )),
+              ...levelGroups(splitSeries(browse).others).map((group) => (
               <div key={group.rating ?? 'none'} className="courses-home__level">
                 <h3 className="courses-home__level-heading">
                   {group.rating === null ? 'Other courses' : `${group.rating}`}
@@ -104,7 +121,8 @@ export function LearnHomePage(): ReactNode {
                   ))}
                 </div>
               </div>
-            ))
+              ))
+            ]
           ) : (
             <div className="courses-home__grid">
               {browse.map((course) => (
@@ -144,7 +162,7 @@ function CatalogueCard({ course, status }: { course: CourseCatalogItem; status?:
           <BookIcon width={16} height={16} />
           {COURSE_KIND_INFO[course.kind].label}
         </span>
-        {course.level && <span className="courses-home__code">{levelCode(course.level)}</span>}
+        {course.series ? <span className="courses-home__code">{lessonChip(course.series)}</span> : course.level && <span className="courses-home__code">{levelCode(course.level)}</span>}
         {status && <span className="badge badge--primary courses-home__status">{status}</span>}
       </span>
       <span className="rail-card__title rail-card__title-wrap">{course.title}</span>
@@ -154,6 +172,11 @@ function CatalogueCard({ course, status }: { course: CourseCatalogItem; status?:
       </span>
     </Link>
   );
+}
+
+/** "Lesson 7 of 14" on a card; the series' name is its section's heading. */
+function lessonChip(series: NonNullable<CourseCatalogItem['series']>): string {
+  return `Lesson ${series.position}${series.total === undefined ? '' : ` of ${series.total}`}`;
 }
 
 function LearnedCard({ course, due }: { course: CourseEnrollment; due?: DueCourse }): ReactNode {

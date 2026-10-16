@@ -38,9 +38,15 @@ function trapDocument(): CourseDocument {
   };
 }
 
-async function insertCourse(slug: string, status: 'draft' | 'unlisted' | 'public' | 'removed', level?: CourseDocument['level'], diagnosisCodes: CourseDocument['diagnosisCodes'] = []): Promise<string> {
-  const owner = await usersRepo.insert(db, { email: `${slug}@example.com`, displayName: 'Creator', engineMode: 'chess_api' });
-  const document = { ...trapDocument(), diagnosisCodes, ...(level ? { level } : {}) };
+async function insertCourse(
+  slug: string,
+  status: 'draft' | 'unlisted' | 'public' | 'removed',
+  level?: CourseDocument['level'],
+  diagnosisCodes: CourseDocument['diagnosisCodes'] = [],
+  extra: { series?: CourseDocument['series']; tags?: string[]; ownerId?: string } = {}
+): Promise<string> {
+  const owner = extra.ownerId ? { id: extra.ownerId } : await usersRepo.insert(db, { email: `${slug}@example.com`, displayName: 'Creator', engineMode: 'chess_api' });
+  const document = { ...trapDocument(), diagnosisCodes, ...(level ? { level } : {}), ...(extra.series ? { series: extra.series } : {}), ...(extra.tags ? { tags: extra.tags } : {}), ...(extra.series ? { title: slug } : {}) };
   const row = await coursesRepo.insert(db, { ownerId: owner.id, slug, kind: 'trap', title: document.title, sourcePgn: ENGLUND, direction: '', document });
   if (status !== 'draft') await coursesRepo.publish(db, row.id, owner.id, document, 'unlisted');
   if (status === 'public' || status === 'removed') await coursesRepo.setStatus(db, row.id, status);
@@ -107,6 +113,50 @@ describe('public course routes', () => {
     await app.close();
   });
 
+  test('a lesson in a series links the public lessons before and after it, and the catalogue carries the series and tags', async () => {
+    const app = buildTestApp({ db, authMode: 'proxy', audioStore: fakeAudioStore() });
+    await app.ready();
+    const owner = await usersRepo.insert(db, { email: 'series-owner@example.com', displayName: 'Creator', engineMode: 'chess_api' });
+    const lesson = (position: number): CourseDocument['series'] => ({ name: 'Chess From Zero', position, total: 14, module: position < 4 ? 'The pieces' : 'Tactics' });
+    await insertCourse('zero-lesson-1', 'public', undefined, [], { ownerId: owner.id, series: lesson(1), tags: ['cannot-read-square'] });
+    await insertCourse('zero-lesson-2', 'public', undefined, [], { ownerId: owner.id, series: lesson(2) });
+    await insertCourse('zero-lesson-3', 'unlisted', undefined, [], { ownerId: owner.id, series: lesson(3) });
+    await insertCourse('zero-lesson-4', 'public', undefined, [], { ownerId: owner.id, series: lesson(4) });
+    // Another creator's series of the same name is not this one.
+    await insertCourse('other-lesson-5', 'public', undefined, [], { series: lesson(5) });
+
+    const page = async (slug: string) => (await app.inject({ method: 'GET', url: `/api/public/courses/${slug}` })).json<PublicCourseResponse>();
+    expect((await page('zero-lesson-2')).seriesNeighbours).toEqual({ previous: { slug: 'zero-lesson-1', title: 'zero-lesson-1', position: 1 }, next: { slug: 'zero-lesson-4', title: 'zero-lesson-4', position: 4 } });
+    expect((await page('zero-lesson-1')).seriesNeighbours.previous).toBeNull();
+    expect((await page('zero-lesson-4')).seriesNeighbours.next).toBeNull();
+    // An unlisted lesson has its own page with its neighbours, but is nobody's neighbour.
+    expect((await page('zero-lesson-3')).seriesNeighbours).toMatchObject({ previous: { slug: 'zero-lesson-2' }, next: { slug: 'zero-lesson-4' } });
+    await insertCourse('plain-lesson-aaaaaaaaaaaa', 'unlisted');
+    expect((await page('plain-lesson-aaaaaaaaaaaa')).seriesNeighbours).toEqual({ previous: null, next: null });
+
+    const catalogue = (await app.inject({ method: 'GET', url: '/api/public/courses?limit=50' })).json<CourseCatalogResponse>();
+    const first = catalogue.items.find((item) => item.slug === 'zero-lesson-1');
+    expect(first).toMatchObject({ series: { name: 'Chess From Zero', position: 1, total: 14, module: 'The pieces' }, tags: ['cannot-read-square'] });
+    expect(catalogue.items.find((item) => item.slug === 'englund-public-bbbbbbbbbbbb')).toMatchObject({ series: null, tags: [] });
+    await app.close();
+  });
+
+  test('a move of an example marked "no evaluation" has no evaluation for the bar', async () => {
+    const app = buildTestApp({ db, authMode: 'proxy', audioStore: fakeAudioStore() });
+    await app.ready();
+    const id = await insertCourse('englund-noeval-aaaaaaaaaaaa', 'unlisted');
+    const [first, second] = trapDocument().nodes;
+    const dossier = {
+      learnerSide: 'black',
+      lines: [],
+      nodes: [{ nodeId: first!.id, san: first!.san, evalAfterCp: 30, quality: 'best', noEvaluation: false }, { nodeId: second!.id, san: second!.san, evalAfterCp: 900, quality: 'best', noEvaluation: true }]
+    } as unknown as CourseDossier;
+    await coursesRepo.setDossier(db, id, dossier);
+    const body = (await app.inject({ method: 'GET', url: '/api/public/courses/englund-noeval-aaaaaaaaaaaa' })).json<PublicCourseResponse>();
+    expect(body.evals).toEqual({ [first!.id]: { cp: 30, quality: 'best' } });
+    await app.close();
+  });
+
   test('curriculum order: by level, then place; courses with no level last; paged by position', async () => {
     const app = buildTestApp({ db, authMode: 'proxy', audioStore: fakeAudioStore() });
     await app.ready();
@@ -165,7 +215,9 @@ describe('public course routes', () => {
       episodes: 1,
       moves: trapDocument().nodes.length,
       level: null,
-      diagnosisCodes: []
+      diagnosisCodes: [],
+      series: null,
+      tags: []
     });
     expect(JSON.stringify(listed)).not.toContain('example.com');
 

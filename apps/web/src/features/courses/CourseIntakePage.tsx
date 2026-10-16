@@ -1,4 +1,4 @@
-import { inferLearnerSide, parseCourseTree, quizSideProblems } from '@freechesscoach/chess-analysis';
+import { inferLearnerSide, parseCourseTreeOfKind, quizSideProblems } from '@freechesscoach/chess-analysis';
 import { bandForRating, COURSE_KINDS, defaultCourseVideos, type CoachPersona, type CourseKind, type CourseVideos } from '@freechesscoach/shared';
 import { useMemo, useState, type ComponentType, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -23,7 +23,7 @@ import './CourseIntakePage.css';
 type SideChoice = 'auto' | 'white' | 'black';
 
 /** The ratings a course can aim at (Phase 90's curriculum levels). */
-const RATINGS = [800, 1000, 1200, 1400, 1600, 1800, 2000, 2200];
+const RATINGS = [100, 300, 500, 700, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200];
 
 const KIND_ICONS: Record<CourseKind, ComponentType<IconProps>> = {
   trap: FlagIcon,
@@ -56,7 +56,7 @@ export function CourseIntakePage(): ReactNode {
 
   const parsed = useMemo(() => {
     if (!pgn.trim()) return null;
-    const tree = parseCourseTree(pgn);
+    const tree = parseCourseTreeOfKind(pgn, kind);
     const result = /\[Result\s+"([^"]*)"\]/.exec(pgn)?.[1] ?? null;
     return { tree, rows: intakeLineRows(tree), explorer: explorerTree(tree), extras: explorerExtras(tree), inferred: tree.errors.length ? null : inferLearnerSide(kind, tree, result === '*' ? null : result) };
   }, [pgn, kind]);
