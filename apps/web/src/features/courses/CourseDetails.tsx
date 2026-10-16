@@ -6,7 +6,7 @@ import { BAND_LABELS } from '../settings/BandSelect.js';
 import { CoachPersonaSelect } from '../settings/CoachPersonaSelect.js';
 import { CourseVideosPicker } from './CourseVideosPicker.js';
 
-const RATINGS = [800, 1000, 1200, 1400, 1600, 1800, 2000, 2200];
+const RATINGS = [100, 300, 500, 700, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200];
 const CATALOGUE = ALL_DIAGNOSIS_CODES.filter((entry) => entry.detectability !== 'unsupported');
 
 export interface CourseDetailsProps {

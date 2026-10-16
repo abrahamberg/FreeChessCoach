@@ -36,10 +36,10 @@ course.
 | Reel | The 9:16 short: one idea from a span of moves, in one of three styles (§13.3). |
 | Tempting move | A move that looks right at a position and fails; found by code and the engine, with the engine's refutation (§13.5). |
 | Budget | How many plies the outline lets an episode speak: `course` in the course, `video` in the video. The episode call stays inside it. |
-| Level | Where a course sits in the curriculum: a rating (800 … 2200) and its place at that rating, shown as `1200-01`, `1200-02`. |
+| Level | Where a course sits in the curriculum: a rating (100 … 2800; the studio's picker offers 100 to 2200) and its place at that rating, shown as `1200-01`, `1200-02`. |
 | Quiz | "Find the move" at a node: the coach sets the scene, asks, and the answer follows: after a countdown in the video, after the learner's move in the course (§5.6, M7). |
 | Section | A part of the creator's text divided by a `---` line: the game, or a line that leaves it at a move number (§5.6). |
-| Mark | `@key`, `@quiz`, `@slow`, `@fast` or `@reel` after a move: the creator's instruction to code and the AI (§5.6). |
+| Mark | `@key`, `@quiz`, `@slow`, `@fast`, `@reel` or `@noeval` after a move: the creator's instruction to code and the AI (§5.6). |
 | Dossier | Everything our code and the engine know about every node, rendered as text for the AI (§5.2). The only source of chess facts. |
 
 ---
@@ -79,6 +79,16 @@ trap = the side that wins material or mates at the end of the line; master game 
 the winner (a draw asks); puzzle and endgame = the side to move; openings = asked (White or
 Black repertoire).
 
+**Several start positions** (Phase 133). A `lesson` or `tactics` course may
+be a PGN of several games, up to 6, each with its own `[FEN]` and its own
+short line (`allowsSeveralStarts`, `MAX_COURSE_STARTS`). Each game is an
+example: its lines are the course's lines, its first move is a root of the
+tree (`parentId` null) and carries that game's `startFen`. Games are told
+apart by a header line after movetext, so `[Event]` is not needed. The
+document's own `startFen` is the first game's. Every other kind reads the
+first game only. A PGN line number in an error counts from the top of the
+whole text.
+
 **A puzzle** needs a `[FEN]` and no sidelines; the form refuses it otherwise.
 Where the engine finds a second good move at a solution move
 (`unsoundNodeIds`), the checks warn, and the player accepts either.
@@ -102,8 +112,9 @@ CourseDocument = {
   startFen: string,                // the initial position unless the PGN sets one
   nodes: { id, parentId | null, san, uci, fenAfter, lineId,
            comment | null, arrows,
-           marks: ('key'|'quiz'|'slow'|'fast'|'reel')[],   // §5.6, M2
-           glyph | null }[],                                // '!', '??' … (M4)
+           marks: ('key'|'quiz'|'slow'|'fast'|'reel'|'noeval')[],   // §5.6, M2
+           glyph | null,                                    // '!', '??' … (M4)
+           startFen? }[],                                   // root nodes of a lesson/tactics course with several [FEN]s (§3)
   lines: { id, name, note | null, leafNodeId }[],       // note: the section's `#` note (S2)
   chapters: { id, title, lineId, episodeIds }[],
   episodes: {
@@ -124,7 +135,9 @@ CourseDocument = {
   }[],
   takeaways: string[],             // exactly 3
   hookOptions: string[],           // 3 from the AI; the creator picks one
-  level?: { rating, order },       // curriculum place: 1200-02 (§9)
+  level?: { rating, order },       // curriculum place: 1200-02 (§9); rating 100 to 2800
+  series?: { name, position, total?, module? },   // "Chess From Zero, lesson 7 of 14" (§9)
+  tags?: string[],                 // the creator's diagnostic tags: `hangs-piece` (lowercase words joined by hyphens, at most 20)
   videos?: { video, reel },        // what is made besides the course (absent: the kind's default)
   video?: { title, thumbnailText, hook, outro },   // §13.4
   reel?: { style, startNodeId, climaxNodeId, endNodeId,
@@ -403,6 +416,17 @@ a line "Too early" that leaves it at Black's 9th.
   | `@slow` | take time here | the video and the reel hold on the move; flagged, so the model gives it a video line |
   | `@fast` | nothing to say here | the move plays quicker in the video and the reel and never speaks, in the course or the video |
   | `@reel` | this is the moment for the reel | the first reel candidate, with this move as its climax |
+  | `@noeval` | this example is a teaching setup, not a game: say no engine verdict | the move and every move after it get no verdict words (see below) |
+  **`@noeval`** (Phase 133, a `lesson` or `tactics` example such as a lone
+  knight or a drill setup): put it on the example's first move. From that move
+  on, the dossier says nothing the engine thinks of the position: `before`,
+  `after`, `alternatives` (the other top moves and their verdicts),
+  `bestInstead` and `mateAhead` are empty, the move's quality is not printed,
+  a tempting move has no verdict and no "not the answer" line, and the
+  player and the video show no evaluation bar for those moves. What the moves
+  do stays: captures, checks, attacks, the tempting move's refutation and the
+  material after it. Moves before it, and sidelines that leave the line before
+  it, are unchanged.
 - **M3** `@fast` and `@slow` may also stand in a head (S2) or before the
   first move of a `( )` variation: they then apply to every move that
   section or variation adds, nested variations included, except moves that
@@ -1334,8 +1358,9 @@ Decided with the owner:
   The slug is set when the draft is made and is not changed after.
 - Public route `/learn/:slug` (SPA outside the app shell, no login) and
   read-only endpoints `GET /api/public/courses/:slug` (the published copy,
-  each note's audio URL in the bucket, and each move's evaluation and quality
-  from the engine pass, `evals`, `{}` without one)
+  each note's audio URL in the bucket, each move's evaluation and quality
+  from the engine pass, `evals`, `{}` without one, and the course's
+  `seriesNeighbours`, `{ previous, next }`, each `{ slug, title, position }` or null)
   (`routes/public-courses.ts`). Drafts and removed courses are 404.
 - **Catalogue**: `GET /api/public/courses?kind=&sort=&cursor=&limit=` lists
   `public` courses only (unlisted ones are for their link), 50 a page,
@@ -1343,8 +1368,9 @@ Decided with the owner:
   row's `published_at` to the microsecond and its id); `sort=curriculum`
   orders by level (rating, then place, courses without a level last, then
   newest) and pages by offset. Each item: slug, title, promise, kind, level
-  band, the curriculum `level` (or null), coach, learner side, published
-  date, episode and move counts. The Courses page's Browse section reads it. Nothing
+  band, the curriculum `level` (or null), `series` (or null) and `tags`,
+  coach, learner side, published date, episode and move counts. The Courses
+  page's Browse section reads it. Nothing
   about the creator is sent: their display name defaults to their email's
   local part. Skip-auth entries in `values.yaml` (asserted by
   `deploy/helm/test.sh`); nginx serves `/learn/*` through its SPA fallback,
@@ -1434,6 +1460,21 @@ Decided with the owner:
   course takes the creator's next place at its rating; the Details card
   changes either. Browse and the studio sort by it; Browse groups the
   courses under their rating.
+- **Series** (Phase 133). `series: { name, position, total?, module? }` puts
+  a course in a series of the creator's (the courses of one owner with the
+  same `name`): "Chess From Zero, lesson 7 of 14". It is set on create
+  (`POST /api/courses`, with `rating`) and on update (the `document` of
+  `PUT …/draft` and `PUT …/document`). Browse in Curriculum order lists a
+  series as its own block before the levels, lessons by `position`, under
+  their `module` headings, each card "Lesson 7 of 14"; Newest ignores series.
+  A lesson page shows "name, lesson n of N · module" under the header with
+  links to the public lessons before and after (`seriesNeighbours`: the
+  nearest lower and higher `position` among the series' `public` courses; an
+  unlisted lesson is never linked). The video's title card carries the same
+  line (`seriesLabel`). `tags` are the creator's diagnostic tags
+  (`hangs-piece`, `no-scan-before-move`): lowercase words joined by hyphens,
+  at most 20 and 40 characters each, in the catalogue item and the document,
+  nothing in the app reads them yet.
 - **Preview as learner** in the editor is the same `CoursePlayer` on the
   draft, each note voiced the first time it plays (browser cache first).
 - The evaluations come from the course's dossier (§5.4, each node's

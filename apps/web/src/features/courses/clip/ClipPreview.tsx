@@ -1,4 +1,4 @@
-import { COACH_PERSONA_INFO, type CourseDocument } from '@freechesscoach/shared';
+import { COACH_PERSONA_INFO, seriesLabel, type CourseDocument } from '@freechesscoach/shared';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { VolumeOffIcon, VolumeOnIcon } from '../../../components/Icon.js';
 import { Modal } from '../../../components/Modal.js';
@@ -163,6 +163,7 @@ function ClipStage(props: {
       playbackRate,
       frame: {
         title: document.title,
+        series: document.series ? seriesLabel(document.series) : null,
         persona: document.coachPersona,
         coachName: COACH_PERSONA_INFO[document.coachPersona].label,
         orientation: document.learnerSide,

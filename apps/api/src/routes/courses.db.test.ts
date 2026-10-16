@@ -144,6 +144,37 @@ describe('course routes', () => {
     await app.close();
   });
 
+  test('a lesson of three games, each from its own [FEN], takes a rating of 100, a series and tags on create and on update', async () => {
+    const app = await creatorApp();
+    const game = (fen: string, moves: string): string => `[FEN "${fen}"]\n\n${moves} *`;
+    const pgn = [game('4k3/8/8/8/8/8/8/R3K3 w - - 0 1', '1. Ra8+ Kd7'), game('7k/8/8/8/8/8/8/K2N4 w - - 0 1', '1. Nc3 Kg7'), game('4k3/4p3/8/8/8/8/8/4K3 b - - 0 1', '1... e5')].join('\n\n');
+    const series = { name: 'Chess From Zero', position: 1, total: 14, module: 'The pieces' };
+    const intake = { pgn, kind: 'lesson', learnerSide: 'white', coachPersona: 'general', direction: 'The board and how to win', rating: 100, series, tags: ['cannot-read-square'] };
+
+    expect((await app.inject({ method: 'POST', url: '/api/courses', payload: { ...intake, rating: 99 } })).statusCode).toBe(400);
+    const created = await app.inject({ method: 'POST', url: '/api/courses', payload: intake });
+    expect(created.statusCode).toBe(201);
+    const course = created.json<CourseResponse>();
+    expect(course.document).toMatchObject({ level: { rating: 100, order: 1 }, levelBand: 'novice', series, tags: ['cannot-read-square'] });
+    expect(course.document.nodes.filter((node) => node.parentId === null).map((node) => node.startFen)).toEqual(['4k3/8/8/8/8/8/8/R3K3 w - - 0 1', '7k/8/8/8/8/8/8/K2N4 w - - 0 1', '4k3/4p3/8/8/8/8/8/4K3 b - - 0 1']);
+    expect(course.document.lines).toHaveLength(3);
+
+    // Update: the series and tags are the document's.
+    const update = { ...course.document, series: { ...series, position: 2 }, tags: ['hangs-piece', 'no-scan-before-move'] };
+    expect((await app.inject({ method: 'PUT', url: `/api/courses/${course.id}/draft`, payload: { document: update } })).statusCode).toBe(204);
+    expect((await app.inject({ method: 'GET', url: `/api/courses/${course.id}` })).json<CourseResponse>().document).toMatchObject({ series: { position: 2 }, tags: ['hangs-piece', 'no-scan-before-move'] });
+    // A tree edit is still refused, now that the start of an example is part of it.
+    const moved = course.document.nodes.map((node, index) => (index === 2 ? { ...node, startFen: '4k3/8/8/8/8/8/8/R3K3 w - - 0 1' } : node));
+    expect((await app.inject({ method: 'PUT', url: `/api/courses/${course.id}/draft`, payload: { document: { ...course.document, nodes: moved } } })).statusCode).toBe(400);
+
+    // A document sent straight to the replace route is held to the same floor.
+    const dossier = { learnerSide: 'white', lines: [], nodes: [] };
+    const replace = (rating: number) => app.inject({ method: 'PUT', url: `/api/courses/${course.id}/document`, payload: { pgn, direction: '', dossier, document: { ...update, level: { rating, order: 1 } } } });
+    expect((await replace(99)).statusCode).toBe(400);
+    expect((await replace(100)).statusCode).toBe(200);
+    await app.close();
+  });
+
   test('replace: the studio’s finished course is stored as given, a new tree included, under the same id and address', async () => {
     const app = await creatorApp();
     const course = (await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE })).json<CourseResponse>();

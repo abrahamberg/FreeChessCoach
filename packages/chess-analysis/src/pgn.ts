@@ -162,6 +162,33 @@ export function extractFirstGame(pgn: string): string {
   return pgn.slice(0, secondGameStart).trimEnd();
 }
 
+const HEADER_LINE = /^\s*\[\w+\s+"[^"]*"\]\s*$/;
+
+/**
+ * Every game of a PGN, as texts that keep the PGN's own line numbers (the
+ * lines of the other games are blanked). A game starts at a header line that
+ * follows movetext, so a game without an `[Event]` header splits too: a
+ * lesson's examples, each with its own `[FEN]`.
+ */
+export function splitPgnGames(pgn: string): string[] {
+  const lines = pgn.split('\n');
+  const starts: number[] = [0];
+  let hasMoves = false;
+  lines.forEach((line, index) => {
+    const header = HEADER_LINE.test(line);
+    if (header && hasMoves) {
+      starts.push(index);
+      hasMoves = false;
+    } else if (!header && line.trim() !== '') {
+      hasMoves = true;
+    }
+  });
+  return starts.map((from, game) => {
+    const to = starts[game + 1] ?? lines.length;
+    return lines.map((line, index) => (index >= from && index < to ? line : '')).join('\n');
+  });
+}
+
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }

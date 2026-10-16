@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { z } from 'zod';
 import { bandForRating, videoCaption, videoLine, CourseDocumentSchema, CourseOutlineCallSchema, CourseOutlineSchema, EpisodeScriptSchema, levelCode, ReelScriptSchema, type CourseDocument } from './course.js';
-import { AskCourseCoachRequestSchema } from './course-api.js';
+import { AskCourseCoachRequestSchema, CreateCourseRequestSchema } from './course-api.js';
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -136,5 +136,23 @@ describe('AskCourseCoachRequestSchema', () => {
     const longAnswer = 'Nc6 attacks e5 again. '.repeat(120);
     expect(AskCourseCoachRequestSchema.safeParse(request([{ role: 'user', content: 'Why?' }, { role: 'assistant', content: longAnswer }, { role: 'user', content: 'And then?' }])).success).toBe(true);
     expect(AskCourseCoachRequestSchema.safeParse(request([{ role: 'user', content: 'x'.repeat(2001) }])).success).toBe(false);
+  });
+});
+
+describe('a course for beginners', () => {
+  test('takes a rating from 100 in the intake and the document, a series and tags', () => {
+    const intake = { pgn: '1. e4 *', kind: 'lesson', coachPersona: 'general' };
+    expect(CreateCourseRequestSchema.safeParse({ ...intake, rating: 99 }).success).toBe(false);
+    expect(CreateCourseRequestSchema.safeParse({ ...intake, rating: 100, series: { name: 'Chess From Zero', position: 7, total: 14, module: 'Tactics' }, tags: ['hangs-piece'] }).success).toBe(true);
+
+    const document = { ...minimalDocument(), level: { rating: 100, order: 1 }, series: { name: 'Chess From Zero', position: 7, total: 14 }, tags: ['hangs-piece', 'no-scan-before-move'] };
+    expect(CourseDocumentSchema.safeParse(document).success).toBe(true);
+    expect(CourseDocumentSchema.safeParse({ ...document, level: { rating: 99, order: 1 } }).success).toBe(false);
+  });
+
+  test('refuses a lesson past the series total and a tag that is not a slug', () => {
+    expect(CourseDocumentSchema.safeParse({ ...minimalDocument(), series: { name: 'S', position: 15, total: 14 } }).success).toBe(false);
+    expect(CourseDocumentSchema.safeParse({ ...minimalDocument(), tags: ['Hangs Piece'] }).success).toBe(false);
+    expect(CourseDocumentSchema.safeParse({ ...minimalDocument(), tags: ['a', 'a'] }).success).toBe(false);
   });
 });

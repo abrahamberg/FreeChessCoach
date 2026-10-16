@@ -68,6 +68,12 @@ export interface CourseNodeFacts {
   /** For the skeleton only, never rendered: the mover's win% drop and the game phase. */
   winDrop: number;
   phase: MovePhase | null;
+  /** The creator marked the example "no evaluation" (`@noeval` on this move
+   * or one before it): the position is a teaching setup, not a game, so no
+   * engine verdict is said of it. `before`, `after`, `alternatives`,
+   * `bestInstead` and `mateAhead` are then empty, and the tempting moves
+   * carry no verdict; what the moves do (captures, attacks, checks) stays. */
+  noEvaluation: boolean;
 }
 
 export interface CourseNodeFactsInput {
@@ -79,14 +85,15 @@ export interface CourseNodeFactsInput {
   evalsByFen: ReadonlyMap<string, EngineEval>;
   critical: boolean;
   learnerSide: 'white' | 'black';
+  noEvaluation: boolean;
 }
 
 export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFacts {
-  const { node, move, fenBefore, evalsByFen } = input;
+  const { node, move, fenBefore, evalsByFen, noEvaluation } = input;
   const evalBefore = evalsByFen.get(fenBefore);
   const side = move.mover;
   const opening = resolveOpening(input.linePositionFens.map(positionKey));
-  const after = positionWords(node.fenAfter, evalsByFen.get(node.fenAfter));
+  const after = noEvaluation ? '' : positionWords(node.fenAfter, evalsByFen.get(node.fenAfter));
   const reply = evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan;
   return {
     nodeId: node.id,
@@ -96,18 +103,18 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     moveNumber: Number(fenBefore.split(' ')[5] ?? 1),
     quality: move.quality,
     evalAfterCp: move.evalAfterCp,
-    before: positionWords(fenBefore, evalBefore),
+    before: noEvaluation ? '' : positionWords(fenBefore, evalBefore),
     after,
     inBook: isBookMoveFrom(fenBefore, node.san),
     openingName: opening?.name ?? null,
     bookSiblings: bookMovesForFen(fenBefore).filter((entry) => entry.san !== node.san).map(({ san, name }) => ({ san, name })),
     opens: opened(fenBefore, node.san),
-    mateAhead: (evalsByFen.get(node.fenAfter)?.lines[0]?.mateIn ?? null) !== null,
-    bestInstead: bestInstead(move, node.san, fenBefore),
+    mateAhead: !noEvaluation && (evalsByFen.get(node.fenAfter)?.lines[0]?.mateIn ?? null) !== null,
+    bestInstead: noEvaluation ? null : bestInstead(move, node.san, fenBefore),
     board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, reply), ...replyFork(node.fenAfter, reply), ...repetition(node.fenAfter, input.linePositionFens)],
     tactics: tacticSentences(move, side === input.learnerSide),
     motif: move.tacticOpportunity?.found ? move.tacticOpportunity.type : null,
-    alternatives: alternatives(evalBefore, node),
+    alternatives: noEvaluation ? [] : alternatives(evalBefore, node),
     tempting: [],
     quizEligible: isOnlyMove(evalBefore, node.san, side),
     critical: input.critical,
@@ -115,7 +122,8 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     creatorMarks: node.marks,
     creatorGlyph: node.glyph,
     winDrop: move.drop ?? 0,
-    phase: move.phase ?? null
+    phase: move.phase ?? null,
+    noEvaluation
   };
 }
 

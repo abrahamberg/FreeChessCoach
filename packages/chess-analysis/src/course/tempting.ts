@@ -11,6 +11,7 @@ import type { BoardFact } from '../board-facts/types.js';
 import { cpBand } from '../eval-words.js';
 import { lineWords } from '../board-facts/verdict-words.js';
 import { captureWords, exchangeLoss, lineBalance, settledLine } from '../board-facts/material.js';
+import { courseFenBefore } from './moves.js';
 import type { CourseTree } from './tree.js';
 import { pieceValueOrKing } from '../tactics.js';
 import { toCpWhite, winPctFor } from '../win-probability.js';
@@ -32,7 +33,7 @@ export interface CourseTemptingFacts {
   /** Who takes what over the move and its refutation ("Black takes a pawn;
    * White takes the queen"), so the model never works it out. */
   captures: string;
-  /** The position after the tempting move, in the dossier's words. */
+  /** The position after the tempting move, in the dossier's words; empty in a "no evaluation" example. */
   verdict: string;
   /** The material at the refutation's end ("Black is a queen up"). */
   balance: string;
@@ -80,7 +81,7 @@ export function temptingCandidates(tree: CourseTree, dossier: CourseDossier, kin
     const asked = (facts.critical || facts.quizEligible || (everyLearnerMove && facts.side === dossier.learnerSide)) && (everyLearnerMove || !facts.san.endsWith('#'));
     const node = byId.get(facts.nodeId);
     if (!asked || !node) return [];
-    const fenBefore = node.parentId ? (byId.get(node.parentId)?.fenAfter ?? tree.startFen) : tree.startFen;
+    const fenBefore = courseFenBefore(byId, tree.startFen, node);
     const solving = everyLearnerMove && facts.side === dossier.learnerSide;
     const ranked = new Set([facts.san, ...(solving ? [] : [...(facts.bestInstead ? [facts.bestInstead.san] : []), ...facts.alternatives.map((line) => line.san)])]);
     return movesWorthTrying(fenBefore)
@@ -168,9 +169,9 @@ export function withTempting(dossier: CourseDossier, candidates: TemptingCandida
       refutation,
       after: boardFacts(candidate.fen, answer.moveSan),
       captures: captureWords(candidate.fenBefore, [candidate.san, ...refutation]),
-      verdict: lineWords(answer, evalAfter),
+      verdict: facts.noEvaluation ? '' : lineWords(answer, evalAfter),
       balance: lineBalance(candidate.fenBefore, [candidate.san, ...refutation]),
-      notTheAnswer: candidate.solving ? notTheAnswer(facts.side, evalBefore, evalAfter) : null,
+      notTheAnswer: candidate.solving && !facts.noEvaluation ? notTheAnswer(facts.side, evalBefore, evalAfter) : null,
       evalAfterCp: cpAfter,
       quality: classifySeverity({ drop, beforeWin, afterWin, cpBefore, cpAfter, mover: facts.side })
     });

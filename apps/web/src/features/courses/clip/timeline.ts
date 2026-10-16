@@ -3,7 +3,7 @@ import { temptingEvalKey, videoCaption, videoLine, type MoveQuality, type Course
 import { moveSound } from '../../../sounds/move-sounds.js';
 import { courseMoveSound, type CourseEvals } from '../player/course-move-list.js';
 import { moveLabel as sanLabel } from '@freechesscoach/chess-analysis';
-import { climaxNode, moveLabel } from '../courseEdits.js';
+import { climaxNode, fenBefore, moveLabel } from '../courseEdits.js';
 import { checkedKing, type CheckedKing } from '../../board/checked-king.js';
 import { clipSoundLengthMs, type ClipSound } from './clip-sounds.js';
 
@@ -146,16 +146,24 @@ function leadShare(why: string, moves: number): number {
   return Math.min(0.5, Math.max(even / 2, words(sentences[0]!) / words(why)));
 }
 
-/** The board after `node`, or the start. */
-export function boardAt(document: CourseDocument, node: CourseNode | null, evals?: CourseEvals): Pick<ClipSegment, 'fen' | 'lastMove' | 'moveLabel' | 'king' | 'rated'> {
-  const rated = node ? evals?.[node.id] : undefined;
+type Board = Pick<ClipSegment, 'fen' | 'lastMove' | 'moveLabel' | 'king' | 'rated'>;
+
+/** The board after `node`, or the course's start. */
+export function boardAt(document: CourseDocument, node: CourseNode | null, evals?: CourseEvals): Board {
+  if (!node) return boardOfPosition(document.startFen);
+  const rated = evals?.[node.id];
   return {
-    ...checkedKing(node?.fenAfter ?? document.startFen),
+    ...checkedKing(node.fenAfter),
     ...(rated ? { rated } : {}),
-    fen: node?.fenAfter ?? document.startFen,
-    lastMove: node ? { from: node.uci.slice(0, 2), to: node.uci.slice(2, 4) } : null,
-    moveLabel: node ? moveLabel(document, node) : null
+    fen: node.fenAfter,
+    lastMove: { from: node.uci.slice(0, 2), to: node.uci.slice(2, 4) },
+    moveLabel: moveLabel(document, node)
   };
+}
+
+/** A position with no move just played: an example's start. */
+export function boardOfPosition(fen: string): Board {
+  return { ...checkedKing(fen), fen, lastMove: null, moveLabel: null };
 }
 
 /** The moves after `from` up to, not including, `to`, when `to` is further
@@ -203,6 +211,11 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
   const out = new SegmentWriter();
   let shown: CourseNode | null = null;
   const board = (node: CourseNode | null) => boardAt(document, node, options.evals);
+  /** The board before `node` is played: its parent's, or, at an example's first move, that example's start. */
+  const boardBefore = (node: CourseNode): Board => {
+    const parent = node.parentId ? byId.get(node.parentId) : undefined;
+    return parent ? board(parent) : boardOfPosition(fenBefore(document, node));
+  };
   const spokenLength = (key: string, has: boolean): { key: string | null; length: number } => {
     const spoken = has ? audioMs(key) : undefined;
     return spoken === undefined ? { key: null, length: timing.silentBeatMs } : { key, length: spoken + timing.gapMs };
@@ -233,11 +246,12 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
     }
     // The scene first: what is going on, said over the position, before the question.
     const scene = episode.quiz.scene.trim() ? spokenLength(`quiz-scene:${episode.id}`, true) : null;
-    if (scene) out.push({ kind: 'beat', ...board(before ?? null), arrows: [], caption: '', audioKey: scene.key, pauseMs: 0, ...marksFor(episode.quiz.scene, board(before ?? null).fen, scene.key ? audioMs(scene.key) : undefined) }, scene.length);
+    const shownBefore = boardBefore(answer);
+    if (scene) out.push({ kind: 'beat', ...shownBefore, arrows: [], caption: '', audioKey: scene.key, pauseMs: 0, ...marksFor(episode.quiz.scene, shownBefore.fen, scene.key ? audioMs(scene.key) : undefined) }, scene.length);
     const key = `quiz:${episode.id}`;
     const spoken = episode.quiz.prompt.trim() ? audioMs(key) : undefined;
     const length = (spoken === undefined ? 0 : spoken + timing.gapMs) + timing.quizPauseMs;
-    out.push({ kind: 'quiz', ...board(before ?? null), arrows: [], caption: episode.quiz.prompt, audioKey: spoken === undefined ? null : key, pauseMs: timing.quizPauseMs }, length);
+    out.push({ kind: 'quiz', ...shownBefore, arrows: [], caption: episode.quiz.prompt, audioKey: spoken === undefined ? null : key, pauseMs: timing.quizPauseMs }, length);
   };
 
   // A trap's film runs its line without a detour (the owner's note,
@@ -246,20 +260,20 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
   const trap = document.kind === 'trap';
   const sideRoads: (() => void)[] = [];
   const temptingMoves = (episode: CourseEpisode, ply: CoursePly, node: CourseNode): void => {
-    const before = node.parentId ? (byId.get(node.parentId) ?? null) : null;
-    const learners = sideToMove(before?.fenAfter ?? document.startFen) === document.learnerSide;
+    const learners = sideToMove(fenBefore(document, node)) === document.learnerSide;
     if (trap && learners) return;
-    if (trap) sideRoads.push(() => playTempting(episode, ply, before));
-    else playTempting(episode, ply, before);
+    if (trap) sideRoads.push(() => playTempting(episode, ply, node));
+    else playTempting(episode, ply, node);
   };
-  const playTempting = (episode: CourseEpisode, ply: CoursePly, before: CourseNode | null): void => {
+  const playTempting = (episode: CourseEpisode, ply: CoursePly, node: CourseNode): void => {
+    const startFen = fenBefore(document, node);
     (ply.tempting ?? []).forEach((tempting, index) => {
-      const played = playOut(before?.fenAfter ?? document.startFen, [tempting.san, ...(tempting.refutation ?? [])]);
+      const played = playOut(startFen, [tempting.san, ...(tempting.refutation ?? [])]);
       const first = played[0];
       if (!first) return;
       const key = `tempting:${episode.id}:${ply.nodeId}:${index}`;
       const spoken = spokenLength(key, Boolean(tempting.why.trim()));
-      const marks = marksFor(tempting.why, before?.fenAfter ?? document.startFen, spoken.key ? audioMs(key) : undefined);
+      const marks = marksFor(tempting.why, startFen, spoken.key ? audioMs(key) : undefined);
       // The moves play while the coach tells them, not after: a long "why"
       // over a still board was hard to follow (the owner, 2026-10-12). The
       // arrow stays for the opening question, the line's first sentence, and
@@ -271,14 +285,14 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
       const step = Math.max(timing.moveMs, Math.floor((spoken.length * (1 - leadShare(tempting.why, played.length))) / played.length));
       const lead = Math.max(timing.moveMs, spoken.length - step * played.length);
       out.push(
-        { kind: 'tempting', ...board(before), moveLabel: first.label, arrows: [{ from: first.from, to: first.to, kind: 'threat' }], caption: `${tempting.san}?`, audioKey: spoken.key, pauseMs: 0, ...marks },
+        { kind: 'tempting', ...boardBefore(node), moveLabel: first.label, arrows: [{ from: first.from, to: first.to, kind: 'threat' }], caption: `${tempting.san}?`, audioKey: spoken.key, pauseMs: 0, ...marks },
         lead
       );
       played.forEach((move, at) => {
         const sound = sounds ? (at === 0 ? 'bad' : moveSound({ san: move.san, mover: move.mover, learnerSide: document.learnerSide })) : null;
         out.push({ kind: 'move', fen: move.fen, ...checkedKing(move.fen), lastMove: { from: move.from, to: move.to }, moveLabel: move.label, arrows: [], caption: at === 0 ? `${tempting.san}?` : '', audioKey: null, pauseMs: 0, sound, ...ratedAt(at) }, step);
       });
-      out.push({ kind: 'move', ...board(before), arrows: [], caption: '', audioKey: null, pauseMs: 0 }, timing.backMs);
+      out.push({ kind: 'move', ...boardBefore(node), arrows: [], caption: '', audioKey: null, pauseMs: 0 }, timing.backMs);
     });
   };
 
@@ -286,11 +300,11 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
   // before the move and plays the line while the coach says it.
   const lineOff = (episode: CourseEpisode, ply: CoursePly, node: CourseNode): void => {
     const before = node.parentId ? (byId.get(node.parentId) ?? null) : null;
-    const played = playOut(before?.fenAfter ?? document.startFen, ply.playOut ?? []);
+    const played = playOut(fenBefore(document, node), ply.playOut ?? []);
     const spoken = spokenLength(`clip:${episode.id}:${ply.nodeId}`, Boolean(videoLine(ply)));
     const step = Math.max(timing.moveMs, Math.round(spoken.length / (played.length + 1)));
     const caption = videoCaption(ply);
-    out.push({ kind: 'beat', ...board(before), arrows: [], caption, audioKey: spoken.key, pauseMs: 0, sound: sounds ? 'whoosh' : null }, step);
+    out.push({ kind: 'beat', ...boardBefore(node), arrows: [], caption, audioKey: spoken.key, pauseMs: 0, sound: sounds ? 'whoosh' : null }, step);
     // The safe line is the engine's best from here: the evaluation before it holds along it.
     const held = before ? options.evals?.[before.id] : undefined;
     const rated: Pick<ClipSegment, 'rated'> = held ? { rated: { cp: held.cp, quality: 'best' } } : {};

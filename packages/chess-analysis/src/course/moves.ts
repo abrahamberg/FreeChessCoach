@@ -1,8 +1,7 @@
-import type { CourseNode } from '@freechesscoach/shared';
-
-/** The position a course move is played from: its parent's, or the course's start. */
-export function courseFenBefore(byId: ReadonlyMap<string, CourseNode>, startFen: string, node: CourseNode): string {
-  return (node.parentId ? byId.get(node.parentId)?.fenAfter : undefined) ?? startFen;
+/** The position a course move is played from: its parent's, else (a root
+ * move) the start of its own example, else the course's start. */
+export function courseFenBefore(byId: ReadonlyMap<string, { fenAfter: string }>, startFen: string, node: { parentId: string | null; startFen?: string }): string {
+  return (node.parentId ? byId.get(node.parentId)?.fenAfter : undefined) ?? node.startFen ?? startFen;
 }
 
 /** Who moves in this position. */

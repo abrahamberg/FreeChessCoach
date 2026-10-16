@@ -1,4 +1,4 @@
-import { moveLabel, verifyCourseEpisode, verifyCourseFrame, verifyCourseReel, type CourseVerifyProblem } from '@freechesscoach/chess-analysis';
+import { courseFenBefore, moveLabel, verifyCourseEpisode, verifyCourseFrame, verifyCourseReel, type CourseVerifyProblem } from '@freechesscoach/chess-analysis';
 import { courseVideos, REEL_WARNINGS, type CourseCheckProblem, type CourseDocument, type CourseResponse, type PublishCheckResponse, type PublishCourseRequest } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as courseAudioRepo from '../../db/repositories/course-audio.js';
@@ -30,8 +30,7 @@ export function draftCheckProblems(document: CourseDocument, row: coursesRepo.Co
   const moveOf = (nodeId: string | null): string | null => {
     const node = nodeId ? byId.get(nodeId) : undefined;
     if (!node) return null;
-    const parent = node.parentId ? byId.get(node.parentId) : undefined;
-    return moveLabel(parent ? parent.fenAfter : document.startFen, node.san);
+    return moveLabel(courseFenBefore(byId, document.startFen, node), node.san);
   };
   const listed = (episodeId: string, episode: string, problems: CourseVerifyProblem[]): CourseCheckProblem[] =>
     problems.map((problem) => ({ episodeId, episode, nodeId: problem.nodeId, move: moveOf(problem.nodeId), message: problem.message }));

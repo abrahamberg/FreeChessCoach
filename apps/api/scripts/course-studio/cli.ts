@@ -20,7 +20,9 @@
  * writes `<slug>.import.js` to run in the production tab.
  *
  * An intake file is the create request: { pgn, kind, direction, rating,
- * learnerSide, coachPersona, videos }. Relative paths are from where npm was
+ * learnerSide, coachPersona, videos, series, tags }. A `lesson` or `tactics`
+ * pgn of several games (up to 6), each with its [FEN], is several examples;
+ * `@noeval` on an example's first move says no engine verdict about it. Relative paths are from where npm was
  * started. The engine and the api are the dev stack's (--engine-url, default
  * http://localhost:8081; --api, default http://localhost:3000).
  */

@@ -53,10 +53,10 @@ export function findByIdForOwner(db: Kysely<Database>, id: string, ownerId: stri
 
 /** A course anyone with the link may see: unlisted or public, with a
  * published copy. Drafts and removed courses are not found. */
-export function findPublishedBySlug(db: Kysely<Database>, slug: string): Promise<Pick<CourseRow, 'id' | 'slug' | 'publishedDocument' | 'publishedAt' | 'dossier'> | undefined> {
+export function findPublishedBySlug(db: Kysely<Database>, slug: string): Promise<Pick<CourseRow, 'id' | 'ownerId' | 'slug' | 'publishedDocument' | 'publishedAt' | 'dossier'> | undefined> {
   return db
     .selectFrom('courses')
-    .select(['id', 'slug', 'publishedDocument', 'publishedAt', 'dossier'])
+    .select(['id', 'ownerId', 'slug', 'publishedDocument', 'publishedAt', 'dossier'])
     .where('slug', '=', slug)
     .where('status', 'in', ['unlisted', 'public'])
     .where('publishedDocument', 'is not', null)
@@ -79,6 +79,8 @@ export interface CatalogRow {
   moves: number;
   level: { rating: number; order: number } | null;
   diagnosisCodes: string[];
+  series: { name: string; position: number; total?: number; module?: string } | null;
+  tags: string[];
 }
 
 /** docs/courses.md §9: `public` courses with a published copy, newest first
@@ -106,7 +108,9 @@ export function listPublic(
       sql<number>`jsonb_array_length(published_document->'episodes')`.as('episodes'),
       sql<number>`jsonb_array_length(published_document->'nodes')`.as('moves'),
       sql<{ rating: number; order: number } | null>`published_document->'level'`.as('level'),
-      sql<string[]>`coalesce(published_document->'diagnosisCodes', '[]'::jsonb)`.as('diagnosisCodes')
+      sql<string[]>`coalesce(published_document->'diagnosisCodes', '[]'::jsonb)`.as('diagnosisCodes'),
+      sql<CatalogRow['series']>`published_document->'series'`.as('series'),
+      sql<string[]>`coalesce(published_document->'tags', '[]'::jsonb)`.as('tags')
     ])
     .where('status', '=', 'public')
     .where('publishedDocument', 'is not', null)
@@ -124,6 +128,27 @@ export function listPublic(
       .offset(options.offset ?? 0);
   }
   return query.orderBy('publishedAt', 'desc').orderBy('id', 'desc').limit(options.limit).execute() as Promise<CatalogRow[]>;
+}
+
+export interface SeriesEntry {
+  slug: string;
+  title: string;
+  position: number;
+}
+
+/** The owner's public courses in the series called `name`, in order: what
+ * the lesson pages' next and previous links are taken from. */
+export function listPublicInSeries(db: Kysely<Database>, ownerId: string, name: string): Promise<SeriesEntry[]> {
+  return db
+    .selectFrom('courses')
+    .select(['slug', sql<string>`published_document->>'title'`.as('title'), sql<number>`(published_document->'series'->>'position')::int`.as('position')])
+    .where('ownerId', '=', ownerId)
+    .where('status', '=', 'public')
+    .where('publishedDocument', 'is not', null)
+    .where(sql<boolean>`published_document->'series'->>'name' = ${name}`)
+    .orderBy(sql`(published_document->'series'->>'position')::int`)
+    .orderBy('slug')
+    .execute();
 }
 
 /** How many of the owner's courses sit at this level (Phase 90's curriculum). */

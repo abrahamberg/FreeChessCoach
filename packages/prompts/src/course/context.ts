@@ -1,4 +1,4 @@
-import { courseNodeAncestry, type CourseDossier, type CourseSkeleton, type CourseTreeNode, type ReelCandidate } from '@freechesscoach/chess-analysis';
+import { courseFenBefore, courseNodeAncestry, type CourseDossier, type CourseSkeleton, type CourseTreeNode, type ReelCandidate } from '@freechesscoach/chess-analysis';
 import type { CoachPersona, CourseKind, CourseLine, CourseVideos, RatingBand } from '@freechesscoach/shared';
 import { courseBudget } from './budget.js';
 import { buildCoursePlaybook } from './playbooks.js';
@@ -30,7 +30,7 @@ export interface CoursePromptContext {
   levelBand: RatingBand;
   direction: string;
   startFen: string;
-  nodes: readonly Pick<CourseTreeNode, 'id' | 'parentId' | 'san' | 'fenAfter' | 'lineId'>[];
+  nodes: readonly Pick<CourseTreeNode, 'id' | 'parentId' | 'san' | 'fenAfter' | 'lineId' | 'startFen'>[];
   lines: readonly CourseLine[];
   dossier: CourseDossier;
   skeleton: CourseSkeleton | null;
@@ -80,7 +80,7 @@ export function nodeLabel(context: CoursePromptContext, nodeId: string): string 
   const byId = new Map(context.nodes.map((node) => [node.id, node]));
   const node = byId.get(nodeId);
   if (!node) return nodeId;
-  const fenBefore = (node.parentId ? byId.get(node.parentId)?.fenAfter : undefined) ?? context.startFen;
+  const fenBefore = courseFenBefore(byId, context.startFen, node);
   return `${nodeId} (${moveText(fenBefore, node.san, true)})`;
 }
 
@@ -89,7 +89,7 @@ export function lineMovetext(context: CoursePromptContext, leafNodeId: string): 
   const path = courseNodeAncestry(new Map(context.nodes.map((node) => [node.id, node])), leafNodeId);
   return path
     .map((node, index) => {
-      const fenBefore = index === 0 ? context.startFen : (path[index - 1]?.fenAfter ?? context.startFen);
+      const fenBefore = index === 0 ? (node.startFen ?? context.startFen) : (path[index - 1]?.fenAfter ?? context.startFen);
       return moveText(fenBefore, node.san, index === 0);
     })
     .join(' ');

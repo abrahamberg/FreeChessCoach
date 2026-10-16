@@ -48,5 +48,5 @@ function sameList<T>(a: T[], b: T[], key: (item: T) => string): boolean {
 
 function nodeKey(node: CourseNode): string {
   const arrows = node.arrows.map((arrow: CourseArrow) => `${arrow.from}${arrow.to}${arrow.kind}`).join(',');
-  return [node.id, node.parentId, node.san, node.uci, node.fenAfter, node.lineId, node.comment, arrows, node.marks.join(','), node.glyph].join('|');
+  return [node.id, node.parentId, node.san, node.uci, node.fenAfter, node.lineId, node.comment, arrows, node.marks.join(','), node.glyph, node.startFen ?? ''].join('|');
 }

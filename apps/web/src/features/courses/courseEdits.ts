@@ -50,7 +50,7 @@ export function findNode(document: CourseDocument, nodeId: string | null | undef
 /** The position a node's move is played from. */
 export function fenBefore(document: CourseDocument, node: CourseNode): string {
   const parent = findNode(document, node.parentId);
-  return parent?.fenAfter ?? document.startFen;
+  return parent?.fenAfter ?? node.startFen ?? document.startFen;
 }
 
 /** "6.Bc3" / "6…Bb4", read off the position before the move. */

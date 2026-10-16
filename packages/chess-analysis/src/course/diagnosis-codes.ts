@@ -1,6 +1,7 @@
 import type { DiagnosisCodeId } from '@freechesscoach/shared';
 import { motifToCode } from '../diagnostics/motif-to-code.js';
 import type { CourseDossier } from './dossier.js';
+import { courseFenBefore } from './moves.js';
 import type { CourseTree } from './tree.js';
 
 /**
@@ -17,7 +18,7 @@ export function courseDiagnosisCodes(tree: CourseTree, dossier: CourseDossier): 
   for (const facts of dossier.nodes) {
     const node = byId.get(facts.nodeId);
     if (!node || facts.side !== dossier.learnerSide || !facts.motif) continue;
-    const fenBefore = (node.parentId ? byId.get(node.parentId)?.fenAfter : tree.startFen) ?? tree.startFen;
+    const fenBefore = courseFenBefore(byId, tree.startFen, node);
     const code = motifToCode(facts.motif, { fenBefore, moveSan: node.san });
     if (code && !codes.includes(code)) codes.push(code);
   }

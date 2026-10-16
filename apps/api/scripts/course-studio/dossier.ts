@@ -1,4 +1,4 @@
-import { courseGaps, moveLabel, positionWords, type CourseGap } from '@freechesscoach/chess-analysis';
+import { courseFenBefore, courseGaps, moveLabel, positionWords, type CourseGap } from '@freechesscoach/chess-analysis';
 import type { EngineBackend } from '../../src/services/engine/engine-backend.js';
 import type { CourseIntake } from '../../src/services/courses/course-drafts.js';
 import type { GenerationInputs } from '../../src/services/courses/generation-inputs.js';
@@ -33,8 +33,7 @@ async function gapLines(inputs: GenerationInputs, engine: EngineBackend): Promis
   const after = (gap: CourseGap): string => {
     const node = gap.afterNodeId ? byId.get(gap.afterNodeId) : undefined;
     if (!node) return 'at the start';
-    const parent = node.parentId ? byId.get(node.parentId) : undefined;
-    return `after ${moveLabel(parent?.fenAfter ?? inputs.tree.startFen, node.san, '...')} (${node.id})`;
+    return `after ${moveLabel(courseFenBefore(byId, inputs.tree.startFen, node), node.san, '...')} (${node.id})`;
   };
   return (Object.keys(REASONS) as CourseGap['reason'][]).flatMap((reason) => {
     const rows = gaps.flatMap((gap, index) => {

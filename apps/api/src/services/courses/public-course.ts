@@ -26,7 +26,18 @@ export async function publicCourse(db: Kysely<Database>, slug: string, store?: A
       return file && store ? [[`${note.episodeId}:${note.nodeId}`, `${store.publicUrl}/${file.objectKey}`]] : [];
     })
   );
-  return { slug: row.slug, publishedAt: row.publishedAt.toISOString(), document, noteAudio, evals: courseEvals(document, row.dossier) };
+  return { slug: row.slug, publishedAt: row.publishedAt.toISOString(), document, noteAudio, evals: courseEvals(document, row.dossier), seriesNeighbours: await seriesNeighbours(db, row.ownerId, row.slug, document) };
+}
+
+/** The public lessons just before and after this one in its series; null at
+ * the ends and for a course in no series. */
+async function seriesNeighbours(db: Kysely<Database>, ownerId: string, slug: string, document: CourseDocument): Promise<PublicCourseResponse['seriesNeighbours']> {
+  const { series } = document;
+  if (!series) return { previous: null, next: null };
+  const others = (await coursesRepo.listPublicInSeries(db, ownerId, series.name)).filter((entry) => entry.slug !== slug);
+  const previous = others.filter((entry) => entry.position < series.position).at(-1) ?? null;
+  const next = others.find((entry) => entry.position > series.position) ?? null;
+  return { previous, next };
 }
 
 /** Each of the course's moves' evaluation and quality, from its engine pass
@@ -37,7 +48,8 @@ export function courseEvals(document: CourseDocument, dossier: CourseDossier | n
   // By id and move: after a tree is replaced, the published copy keeps the
   // old tree until the next publish, and the dossier is already the new one's.
   const sans = new Map(document.nodes.map((node) => [node.id, node.san]));
-  const nodes = (dossier?.nodes ?? []).filter((facts) => sans.get(facts.nodeId) === facts.san);
+  // No evaluation is shown for an example the creator marked "no evaluation".
+  const nodes = (dossier?.nodes ?? []).filter((facts) => sans.get(facts.nodeId) === facts.san && !facts.noEvaluation);
   return Object.fromEntries([
     ...nodes.map((facts) => [facts.nodeId, { cp: facts.evalAfterCp, quality: facts.quality }] as const),
     // A dossier from before the tempting moves kept their evaluation has none.
@@ -80,7 +92,9 @@ export async function courseCatalogue(db: Kysely<Database>, query: CourseCatalog
         episodes: row.episodes,
         moves: row.moves,
         level: row.level ?? null,
-        diagnosisCodes: row.diagnosisCodes
+        diagnosisCodes: row.diagnosisCodes,
+        series: row.series,
+        tags: row.tags
       })
     ),
     nextCursor:
