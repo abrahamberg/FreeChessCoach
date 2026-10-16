@@ -1813,7 +1813,7 @@ A YouTube lesson with a story, built on the course's episodes.
 - **A line off the tree** (`playOut`, the trap's safe line): the board goes
   back to before the move and plays the line while the coach says it, the
   moves spread over the line's audio.
-- **Chapters**: one card per chapter (its title, 2 s), then its episodes.
+- **Chapters**: one card per chapter (its title, read by the coach; at least 2 s and until the reading and its gap end, audio key `chapter:{chapter}`), then its episodes.
 - **The creator's pace** (§5.6, M2): `@fast` moves play in `fastMoveMs` and
   stay silent, `@slow` moves hold `slowHoldMs` after their line
   (`CLIP_TIMING`, `clip/timeline.ts`; the reel's own are in §13.3).

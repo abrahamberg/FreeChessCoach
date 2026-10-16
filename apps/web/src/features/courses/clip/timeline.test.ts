@@ -168,11 +168,19 @@ describe('buildVideoTimeline (§13.4)', () => {
     const timeline = buildVideoTimeline({ document, audioMs: () => 1000, timing: TIMING, sounds: { evals: {}, lengthMs: () => 0 } });
     const cards = timeline.segments.filter((segment) => segment.kind === 'chapter' || segment.kind === 'outro');
     expect(cards.map((segment) => [segment.kind, segment.caption, segment.sound, segment.audioKey])).toEqual([
-      ['chapter', 'The setup', 'whoosh', null],
-      ['chapter', 'The bait', 'whoosh', null],
+      ['chapter', 'The setup', 'whoosh', 'chapter:c1'],
+      ['chapter', 'The bait', 'whoosh', 'chapter:c2'],
       ['outro', 'Would you take the pawn?', null, 'video:outro']
     ]);
     expect(timeline.segments.at(-1)?.kind).toBe('end');
+  });
+
+  test('a chapter card stays until its name has been read', () => {
+    const document = trap([episode('e1', 'setup', [clip('n2', 'The gambit.')])]);
+    document.chapters = [{ id: 'c1', title: 'The setup', lineId: 'l1', episodeIds: ['e1'] }];
+    const card = (ms: number) => buildVideoTimeline({ document, audioMs: (key) => (key === 'chapter:c1' ? ms : 1000), timing: TIMING }).segments.find((segment) => segment.kind === 'chapter');
+    expect(card(5000)).toMatchObject({ audioKey: 'chapter:c1', end: 5010 });
+    expect(card(500)).toMatchObject({ end: 2000 });
   });
 
   // The owner (2026-10-12): a long line said before anything moved was hard to follow.

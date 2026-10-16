@@ -5,7 +5,7 @@ import type { TtsClient } from '../../../tts/tts-client.js';
 
 /** One sentence group the coach says: a clip beat or a course note. */
 export interface CourseSpeech {
-  /** `beat:<episodeId>:<index>`, `quiz-scene:<episodeId>`, `quiz:<episodeId>` (the clip's quiz
+  /** `chapter:<chapterId>` (the card's title), `beat:<episodeId>:<index>`, `quiz-scene:<episodeId>`, `quiz:<episodeId>` (the clip's quiz
    * prompt) or `note:<episodeId>:<nodeId>`. */
   key: string;
   text: string;
@@ -42,7 +42,9 @@ export const KOKORO_ONLY = 'Courses are voiced by Kokoro only: in the browser or
 export function courseSpeeches(document: CourseDocument): CourseSpeech[] {
   const said = (key: string, text: string | undefined): CourseSpeech[] => (text?.trim() ? [{ key, text }] : []);
   const reel = document.reel;
+  const opened = new Map(document.chapters.flatMap((chapter) => (chapter.episodeIds[0] ? [[chapter.episodeIds[0], chapter] as const] : [])));
   return [...said('video:hook', document.video?.hook), ...document.episodes.flatMap((episode) => [
+    ...said(`chapter:${opened.get(episode.id)?.id}`, opened.get(episode.id)?.title),
     ...episode.plies.flatMap((ply) =>
       ply.video
         ? [

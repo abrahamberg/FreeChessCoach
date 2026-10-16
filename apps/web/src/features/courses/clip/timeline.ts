@@ -44,7 +44,7 @@ export const CLIP_TIMING = {
   endCardMs: 3000,
   /** The quiz countdown after its prompt (CONFIG.courses.quizPauseSeconds). */
   quizPauseMs: 3000,
-  /** A chapter's card (§13.4). */
+  /** A chapter's card (§13.4), at least; the coach reading its name can make it longer. */
   chapterMs: 2000,
   /** The board back where it was after a tempting move is played out. */
   backMs: 500
@@ -185,11 +185,11 @@ export function movePaceMs(node: CourseNode, moveMs: number, fastMoveMs: number,
 }
 
 /** The episodes in chapter order, with their chapter. */
-function chapteredEpisodes(document: CourseDocument): { chapter: string | null; episode: CourseEpisode }[] {
+function chapteredEpisodes(document: CourseDocument): { chapter: { id: string; title: string } | null; episode: CourseEpisode }[] {
   const byId = new Map(document.episodes.map((episode) => [episode.id, episode]));
   const ordered = document.chapters.flatMap((chapter) => chapter.episodeIds.flatMap((id, index) => {
     const episode = byId.get(id);
-    return episode ? [{ chapter: index === 0 ? chapter.title : null, episode }] : [];
+    return episode ? [{ chapter: index === 0 ? { id: chapter.id, title: chapter.title } : null, episode }] : [];
   }));
   return ordered.length ? ordered : document.episodes.map((episode) => ({ chapter: null, episode }));
 }
@@ -317,7 +317,10 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
 
   for (const { chapter, episode } of chapteredEpisodes(document)) {
     if (chapter !== null) {
-      out.push({ kind: 'chapter', ...board(shown), moveLabel: null, lastMove: null, arrows: [], caption: chapter, audioKey: null, pauseMs: 0, sound: sounds ? 'whoosh' : null }, timing.chapterMs);
+      // The coach reads the chapter's name; the card stays until he has finished it.
+      const key = `chapter:${chapter.id}`;
+      const spoken = audioMs(key) === undefined ? null : spokenLength(key, true);
+      out.push({ kind: 'chapter', ...board(shown), moveLabel: null, lastMove: null, arrows: [], caption: chapter.title, audioKey: spoken?.key ?? null, pauseMs: 0, sound: sounds ? 'whoosh' : null }, Math.max(timing.chapterMs, spoken?.length ?? 0));
       cut = false;
     }
     if (SIDE_ROAD_ROLES.has(episode.role)) sideRoads.splice(0).forEach((play) => play());
