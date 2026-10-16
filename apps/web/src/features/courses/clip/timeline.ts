@@ -3,7 +3,7 @@ import { temptingEvalKey, videoCaption, videoLine, type MoveQuality, type Course
 import { moveSound } from '../../../sounds/move-sounds.js';
 import { courseMoveSound, type CourseEvals } from '../player/course-move-list.js';
 import { moveLabel as sanLabel } from '@freechesscoach/chess-analysis';
-import { moveLabel } from '../courseEdits.js';
+import { climaxNode, moveLabel } from '../courseEdits.js';
 import { checkedKing, type CheckedKing } from '../../board/checked-king.js';
 import { clipSoundLengthMs, type ClipSound } from './clip-sounds.js';
 
@@ -215,7 +215,7 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
   const hook = document.video?.hook.trim();
   let cut = false;
   if (hook) {
-    const climax = byId.get(document.reel?.climaxNodeId ?? document.lines[0]?.leafNodeId ?? '') ?? null;
+    const climax = climaxNode(document) ?? null;
     const spoken = spokenLength('video:hook', true);
     const shownBoard = board(climax);
     const marks = marksFor(hook, shownBoard.fen, audioMs('video:hook'));

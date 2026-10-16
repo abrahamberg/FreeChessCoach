@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { StackedSessionBody } from '../../session/StackedSessionBody.js';
 import '../../../styles/board-bottom-bar.css';
 import '../../review/GameReviewPage.css';
 import '../../session/SessionPage.css';
@@ -20,10 +21,10 @@ export interface CourseBoardLayoutProps {
   bottomBar?: ReactNode;
 }
 
-/** docs/courses.md §11: a course stage on the app's board layout, Game
- * Review's (GameReviewPage.tsx) and its classes. Desktop: the explorer
- * column, the board column, the coach column. Phone: the coach on top, the
- * board edge to edge, the strip, and a bottom bar. */
+/** docs/courses.md §11: a course stage on the app's board layouts. Desktop:
+ * Game Review's three columns (explorer, board, coach). Phone: the stacked
+ * body every board view there shares (StackedSessionBody: the coach card, the
+ * board edge to edge, a pinned bottom bar), with the strip under the board. */
 export function CourseBoardLayout({ isDesktop, episodes, explorer, board, coach, strip, bottomBar }: CourseBoardLayoutProps): ReactNode {
   if (isDesktop) {
     return (
@@ -38,14 +39,19 @@ export function CourseBoardLayout({ isDesktop, episodes, explorer, board, coach,
     );
   }
   return (
-    <>
-      <div className={bottomBar ? 'game-review-body mobile course-layout has-course-bar' : 'game-review-body mobile course-layout'}>
-        {episodes && <div className="course-layout__episodes course-layout__episodes--row">{episodes}</div>}
-        <div className="course-layout__coach">{coach}</div>
-        <div className="session-board-column">{board}</div>
-        {strip}
-      </div>
-      {bottomBar && <div className="board-bottom-bar course-bottom-bar">{bottomBar}</div>}
-    </>
+    <StackedSessionBody
+      card={coach}
+      board={
+        <>
+          {episodes && <div className="course-layout__episodes course-layout__episodes--row">{episodes}</div>}
+          <div className="session-board-column">
+            {board}
+            {strip}
+          </div>
+        </>
+      }
+      footer={bottomBar}
+      footerKind="course"
+    />
   );
 }

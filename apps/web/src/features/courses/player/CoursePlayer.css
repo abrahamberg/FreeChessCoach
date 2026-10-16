@@ -101,53 +101,12 @@
   box-shadow: none;
 }
 
-/* Phone: the coach fills the gap between the header and the board, like
- * Game Review's note card; a long note scrolls inside it. */
-.game-review-body.mobile .course-layout__coach {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-}
-
-.game-review-body.mobile .course-layout__coach > * {
-  flex: 1 1 auto;
-}
-
-.game-review-body.mobile .course-pane .chat-pane__header {
-  padding: 8px 12px;
-}
-
-.game-review-body.mobile .course-pane .coach-avatar-image--header {
-  width: 36px;
-}
-
-.game-review-body.mobile .course-pane__body {
-  padding: 12px;
-}
-
-.game-review-body.mobile.has-course-bar {
-  padding-bottom: calc(64px + env(safe-area-inset-bottom));
-}
-
-/* The board's size budget on a phone. Game Review reserves 27.5rem for its
- * note card, strip and report ribbon; a course has the header (56px), the
- * coach (at least 7.5rem), the strip and the bottom bar (64px), so the board
- * gets more of the screen and the coach gives way first. */
-.game-review-body.mobile.course-layout .session-board-column .coach-board-frame {
-  width: min(calc(100% - 2rem), max(8rem, calc(100vh - 21rem)));
-  width: min(calc(100% - 2rem), max(8rem, calc(100svh - 21rem)));
-}
-
-.game-review-body.mobile.course-layout .course-layout__coach {
-  min-height: 7.5rem;
-}
-
 /* Phone touch targets: at least 44px (design-improvements.md). */
 .course-layout__episodes--row .course-chip {
   min-height: 44px;
 }
 
-.game-review-body.mobile .course-pane__note .coach-voice-button {
+.session-body.mobile .course-pane__note .coach-voice-button {
   width: 44px;
   height: 44px;
   margin: -12px -12px -12px -4px;
@@ -162,6 +121,8 @@
 .course-layout__strip {
   flex: 0 0 auto;
   min-width: 0;
+  /* Held open before the first move, so the board does not resize as it arrives. */
+  min-height: 3.25rem;
 }
 
 .game-review-body.desktop.course-layout .session-board-column {
@@ -173,12 +134,12 @@
   margin: 0;
 }
 
-.course-bottom-bar .course-player__nav {
+.board-bottom-bar--course .course-player__nav {
   margin: 0;
   padding: 8px 12px;
 }
 
-.course-bottom-bar .course-player__nav button {
+.board-bottom-bar--course .course-player__nav button {
   min-height: 44px;
 }
 
@@ -714,15 +675,6 @@
   display: none;
 }
 
-.game-review-body.mobile .course-pane .chat-pane__header {
-  gap: var(--space-2);
-}
-
-.game-review-body.mobile .course-pane .chat-pane__voice-toggle {
-  width: 40px;
-  height: 40px;
-}
-
 .ask-coach__header p {
   margin: 0;
 }
@@ -1003,4 +955,124 @@
 
 .course-player__tempting strong {
   color: var(--color-text);
+}
+
+/* A short message over the board: the success mark, or the name of the line starting. */
+.course-board-host {
+  position: relative;
+}
+
+.board-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.board-flash__success {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: var(--color-success);
+  color: #fff;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.3);
+  animation: board-flash-pop 1000ms ease-out both;
+}
+
+.board-flash__line {
+  max-width: 80%;
+  padding: 10px 20px;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.72);
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-align: center;
+  animation: board-flash-fade 1000ms ease-out both;
+}
+
+@keyframes board-flash-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  25% { transform: scale(1.1); opacity: 1; }
+  45% { transform: scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes board-flash-fade {
+  0% { opacity: 0; }
+  20%, 75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-flash__success,
+  .board-flash__line {
+    animation: none;
+  }
+}
+
+.board-flash__wrong {
+  background: #c62828;
+}
+
+.course-coach-card__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.session-body.mobile .course-drill__line .meta {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* The portrait smaller than the other board views': the note is what a
+ * course's card is for, and it gets the rows the portrait gives back. */
+.course-coach-card .coach-card__avatar :is(.coach-avatar-image, .bot-avatar-image, .user-avatar-initials) {
+  width: 44px;
+  height: 44px;
+}
+
+.course-coach-card__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+/* One header row: portrait, what this is, then "ask" as a round portrait and the voice toggle. */
+.course-coach-card .coach-card__header {
+  flex-wrap: nowrap;
+}
+
+.course-coach-card .course-pane__footer--header {
+  margin-left: 0;
+}
+
+.course-coach-card .ask-coach__open {
+  font-size: 0;
+  gap: 0;
+  padding: 4px;
+  min-height: 40px;
+  width: 40px;
+  justify-content: center;
+}
+
+/* Phone: the shared stacked body reserves room for a chat's pills row; a
+ * course has none, so its board may be taller. */
+.session-body.mobile.stacked--course .session-board-column .coach-board-frame {
+  width: min(calc(100% - 2rem), max(8rem, calc(100vh - 24.5rem)));
+  width: min(calc(100% - 2rem), max(8rem, calc(100svh - 24.5rem)));
 }

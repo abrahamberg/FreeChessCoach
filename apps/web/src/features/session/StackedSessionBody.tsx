@@ -19,10 +19,11 @@ export interface StackedSessionBodyProps {
    * once a report exists post-game; Review uses its own markup rather than
    * this component). Picks both the bottom-bar modifier class and how much
    * bottom padding the stack reserves, since a chat row and a collapsed
-   * report ribbon are genuinely different heights. Defaults to 'composer',
+   * report ribbon are genuinely different heights ('course': a course's
+   * Previous/Next bar, as tall as the composer). Defaults to 'composer',
    * the only kind this component rendered before Play vs Bot grew a report
    * sheet of its own. */
-  footerKind?: 'composer' | 'report';
+  footerKind?: 'composer' | 'report' | 'course';
 }
 
 /** The mobile stacked layout GameReviewPage's Review page landed on first —
@@ -35,7 +36,7 @@ export interface StackedSessionBodyProps {
 export function StackedSessionBody({ card, board, footer, footerKind = 'composer' }: StackedSessionBodyProps): ReactNode {
   const hasFooterClass = footerKind === 'report' ? 'has-report-sheet' : 'has-composer';
   return (
-    <div className={footer ? `session-body mobile stacked ${hasFooterClass}` : 'session-body mobile stacked'}>
+    <div className={footer ? `session-body mobile stacked stacked--${footerKind} ${hasFooterClass}` : 'session-body mobile stacked'}>
       {card}
       {board}
       {footer && <div className={`board-bottom-bar board-bottom-bar--${footerKind}`}>{footer}</div>}

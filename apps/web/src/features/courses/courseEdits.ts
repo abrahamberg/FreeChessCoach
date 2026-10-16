@@ -36,6 +36,12 @@ export function episodeNodeIds(document: CourseDocument, episode: CourseEpisode)
   return [episode.endNodeId];
 }
 
+/** Where the course pays off: the reel's climax, else the end of the main
+ * line. The video's hook and a hook episode both show this board. */
+export function climaxNode(document: CourseDocument): CourseNode | undefined {
+  return findNode(document, document.reel?.climaxNodeId ?? document.lines[0]?.leafNodeId);
+}
+
 /** The node with this id, if the document has it. */
 export function findNode(document: CourseDocument, nodeId: string | null | undefined): CourseNode | undefined {
   return nodeId ? document.nodes.find((candidate) => candidate.id === nodeId) : undefined;

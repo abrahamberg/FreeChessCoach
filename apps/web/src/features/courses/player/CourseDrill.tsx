@@ -22,8 +22,11 @@ import { CoachBoard } from '../../board/CoachBoard.js';
 import { LineMoveExplorer } from '../../board/LineMoveExplorer.js';
 import { MoveStrip } from '../../board/MoveStrip.js';
 import { toBoardMarks } from '../courseArrows.js';
+import { useProfileCoachVoice } from '../../../hooks/useProfileCoachVoice.js';
+import { translateChessNotationForSpeech } from '../../../tts/sanToSpokenText.js';
 import { playBoardSound } from '../../../sounds/board-sounds.js';
 import { moveSound } from '../../../sounds/move-sounds.js';
+import { BoardFlash, LINE_FLASH_MS, SUCCESS_FLASH_MS } from './BoardFlash.js';
 import { CourseBoardLayout } from './CourseBoardLayout.js';
 import { CoursePane } from './CoursePane.js';
 import { STAGE_LABELS } from './CourseStageBar.js';
@@ -69,6 +72,12 @@ const NO_EVALS: CourseEvals = {};
 /** Pause before a move the learner does not play is made for them. */
 const AUTO_MOVE_MS = 600;
 
+/** A wrong move stays on the board, crossed out, this long before the piece goes back. */
+const WRONG_MOVE_SHOW_MS = 1100;
+
+/** The right move stays on the board this long, with the success mark, before the drill goes on. */
+const RIGHT_MOVE_PAUSE_MS = 2500;
+
 const MODE_INTRO: Record<Drill['mode'], string> = {
   learner_side: 'Play your side; the other side’s moves are played for you.',
   find_move: 'Find the move in each position.',
@@ -91,7 +100,8 @@ interface RoundResult {
  * round until each is known, and saves nothing. The drill asks their side
  * with no arrows, the full drill both sides; there the first try at each
  * move counts for the review schedule. Any other move is a miss, said at
- * once with the piece back where it was: no engine runs here, the course's
+ * once, the piece shown on its square with a ✗ for a moment and then put
+ * back: no engine runs here, the course's
  * move is the answer, and the course's own word on the move tried (a
  * tempting move's "why") is said when it has one.
  */
@@ -315,38 +325,80 @@ function DrillRun({ resume, onAt, document, stage, drill, introText, arrowKeys, 
   });
   const [firstTries, setFirstTries] = useState<Map<string, { san: string; correct: boolean }>>(new Map());
   /** The move just tried that is not the course's, and the course's own
-   * word on it when it has one. The piece is already back. */
+   * word on it when it has one. The piece is shown
+   * crossed out for a moment (`tried`), then put back. */
   const [wrong, setWrong] = useState<{ san: string; why: string | null } | null>(null);
   /** The last two moves played, across episodes (the move log). */
   const [history, setHistory] = useState<{ step: CourseDrillStep; episodeId: string }[]>([]);
   /** The line the learner has played a move of, so a line's heading says "done with …" only until then. */
   const [movedIn, setMovedIn] = useState(-1);
+  /** A right move is on the board for a moment before the drill goes on. */
+  const [pausing, setPausing] = useState(false);
+  /** The line just started, named over the board for a second; the drill waits. */
+  const [announced, setAnnounced] = useState<number | null>(null);
+  const lastAnnounced = useRef<string | null>(null);
+  const pauseTimer = useRef<number | undefined>(undefined);
+  const triedTimer = useRef<number | undefined>(undefined);
+  useEffect(
+    () => () => {
+      window.clearTimeout(pauseTimer.current);
+      window.clearTimeout(triedTimer.current);
+    },
+    []
+  );
+  /** The wrong move just tried: the board shows it with a ✗, then puts the piece back. */
+  const [tried, setTried] = useState<string | null>(null);
 
   const episode = drill.episodes[at.episode];
   const step = episode?.steps[at.step];
   const done = !episode;
   const lastPlayed = episode && at.step > 0 ? episode.steps[at.step - 1] : undefined;
-  const fen = step ? step.fenBefore : (lastPlayed?.node.fenAfter ?? '');
+  const fen = step ? (pausing ? step.node.fenAfter : (tried ?? step.fenBefore)) : (lastPlayed?.node.fenAfter ?? '');
   const asked = drill.episodes.flatMap((each) => each.steps.filter((each) => each.asked));
+
+  /** The coach reads the note on a move as it comes in (the app's own voice, when the learner has it on). */
+  const voice = useProfileCoachVoice(document.coachPersona);
+  const speak = (nodeId: string): void => {
+    if (!voice.autoplayEnabled) return;
+    const text = document.episodes.flatMap((each) => each.plies).find((ply) => ply.nodeId === nodeId && ply.text.trim())?.text.trim();
+    if (text) voice.play(`course:${nodeId}`, translateChessNotationForSpeech(text));
+    else voice.stop();
+  };
 
   const advance = (): void => {
     setWrong(null);
     if (!episode) return;
     if (step?.asked) setMovedIn(at.episode);
+    // Said when it shows: a practice move's note is on screen while its arrow is, so it was read then.
+    if (step && !(step.asked && arrowKeys.has(step.key))) speak(step.node.id);
     if (step) setHistory((prev) => [...prev.slice(-1), { step, episodeId: episode.episodeId }]);
     if (at.step + 1 < episode.steps.length) setAt({ episode: at.episode, step: at.step + 1 });
     else setAt({ episode: at.episode + 1, step: 0 });
   };
 
+  // A new line is named over the board before its first move.
+  const lineTitle = drillLine(document, episode?.episodeId)?.title ?? null;
+  useEffect(() => {
+    if (!lineTitle || lineTitle === lastAnnounced.current) return;
+    lastAnnounced.current = lineTitle;
+    setAnnounced(at.episode);
+  }, [lineTitle, at.episode]);
+  const announcing = announced === at.episode && lineTitle !== null && drill.episodes.length > 1;
+
   // A move the learner does not play is made for them.
   useEffect(() => {
-    if (!step || step.asked) return;
+    if (!step || step.asked || announcing) return;
     const timer = window.setTimeout(() => {
       knock(step.node.san, false);
       advance();
     }, AUTO_MOVE_MS);
     return () => window.clearTimeout(timer);
-  }, [at.episode, at.step, step?.asked]);
+  }, [at.episode, at.step, step?.asked, announcing]);
+
+  // Practice: the note on the move to play shows with its arrow, and is read as it comes in.
+  useEffect(() => {
+    if (step?.asked && arrowKeys.has(step.key) && !announcing) speak(step.node.id);
+  }, [at.episode, at.step, announcing]);
 
   const firstTry = (correct: boolean): void => {
     if (!step || firstTries.has(step.key)) return;
@@ -354,17 +406,23 @@ function DrillRun({ resume, onAt, document, stage, drill, introText, arrowKeys, 
     onResult({ key: step.key, san: step.node.san, correct });
   };
 
-  const onMove = (san: string, _fenAfter: string, uci: string): void => {
-    if (!step?.asked) return;
+  const onMove = (san: string, fenAfter: string, uci: string): void => {
+    if (!step?.asked || pausing || announcing || tried) return;
     knock(san, true);
     if (uci === step.node.uci) {
       firstTry(true);
-      advance();
+      setPausing(true);
+      pauseTimer.current = window.setTimeout(() => {
+        setPausing(false);
+        advance();
+      }, RIGHT_MOVE_PAUSE_MS);
       return;
     }
     // Any other move is wrong: no engine, the course's move is the answer.
-    // The board never took the move, so the piece is back where it was.
+    // The piece stays on its square with a ✗ for a moment, then goes back.
     firstTry(false);
+    setTried(fenAfter);
+    triedTimer.current = window.setTimeout(() => setTried(null), WRONG_MOVE_SHOW_MS);
     playBoardSound('bad');
     const plain = (move: string): string => move.replace(/[+#?!]+$/, '');
     const tempting = lines.find((ply) => ply.nodeId === step.node.id)?.tempting?.find((each) => plain(each.san) === plain(san));
@@ -380,7 +438,7 @@ function DrillRun({ resume, onAt, document, stage, drill, introText, arrowKeys, 
   }, [at.episode, at.step, done]);
   if (done) return null;
 
-  const waiting = Boolean(step?.asked);
+  const waiting = Boolean(step?.asked) && !pausing && !announcing && !tried;
   const hinted = Boolean(step && arrowKeys.has(step.key));
   const hint = waiting && step && hinted ? toBoardMarks([practiceArrow(step.node)]) : null;
   // The course's line on each move: what practice says a move does.
@@ -414,7 +472,7 @@ function DrillRun({ resume, onAt, document, stage, drill, introText, arrowKeys, 
     thisLine && drill.episodes.length > 1 ? (
       <div className="course-drill__line">
         {change?.done && movedIn !== at.episode && <p className="course-drill__line-done">Done with {change.done}. Now: {change.now}</p>}
-        <p className="course-drill__line-title">{thisLine.title}</p>
+        {isDesktop && <p className="course-drill__line-title">{thisLine.title}</p>}
         {thisLine.note && <p className="meta">{thisLine.note}</p>}
       </div>
     ) : null;
@@ -427,7 +485,7 @@ function DrillRun({ resume, onAt, document, stage, drill, introText, arrowKeys, 
           <li key={each.title} aria-current={each.current ? 'step' : undefined} className={each.done >= each.total ? 'course-drill__lines-done' : undefined}>
             <span>{each.title}</span>
             <span className="meta">
-              {each.done} of {each.total}
+              {each.done}/{each.total}
             </span>
           </li>
         ))}
@@ -439,7 +497,7 @@ function DrillRun({ resume, onAt, document, stage, drill, introText, arrowKeys, 
       {/* In practice only the sequence matters, not which episode it is. */}
       {roundLabel ? `${roundLabel} · ` : ''}
       {stage !== 'practice' && drill.episodes.length > 1 ? `Line ${at.episode + 1} of ${drill.episodes.length} · ` : ''}
-      {firstTries.size} of {asked.length} moves
+      {firstTries.size}/{asked.length}
     </span>
   );
   const stop = (
@@ -448,14 +506,16 @@ function DrillRun({ resume, onAt, document, stage, drill, introText, arrowKeys, 
     </button>
   );
   const nav = (
-    <div className="course-player__nav">
-      {status}
-      {stop}
-    </div>
+    <div className="course-player__nav">{status}</div>
   );
 
   const coach = (
-    <CoursePane persona={document.coachPersona}>
+    <CoursePane
+      persona={document.coachPersona}
+      sound={voice.enabled ? { on: voice.autoplayEnabled, onChange: voice.setAutoplayEnabled } : undefined}
+      compact={!isDesktop}
+      title={thisLine && drill.episodes.length > 1 ? thisLine.title : undefined}
+    >
       {lineHeading}
       {/* The move to play first: on a phone the pane shows only a few lines. */}
       {step && (
@@ -520,7 +580,10 @@ function DrillRun({ resume, onAt, document, stage, drill, introText, arrowKeys, 
       }
       board={
         <>
-          <div className="session-board-row">
+          <div className="session-board-row course-board-host">
+            {pausing && <BoardFlash content={{ kind: 'success' }} ms={SUCCESS_FLASH_MS} />}
+            {tried && <BoardFlash content={{ kind: 'wrong' }} ms={SUCCESS_FLASH_MS} />}
+            {announcing && lineTitle && <BoardFlash content={{ kind: 'line', title: lineTitle }} ms={LINE_FLASH_MS} onDone={() => setAnnounced(null)} />}
             <CoachBoard
               fen={fen}
               orientation={document.learnerSide}
@@ -536,8 +599,8 @@ function DrillRun({ resume, onAt, document, stage, drill, introText, arrowKeys, 
       }
       coach={coach}
       strip={
-        line && lineMoves.length > 0 ? (
-          <div className="course-layout__strip">
+        <div className="course-layout__strip">
+          {line && lineMoves.length > 0 && (
             <MoveStrip
               sanMoves={lineMoves}
               classifiedMoves={[]}
@@ -548,8 +611,8 @@ function DrillRun({ resume, onAt, document, stage, drill, introText, arrowKeys, 
               start={line.start}
               dimmedThroughPly={line.leadIn}
             />
-          </div>
-        ) : undefined
+          )}
+        </div>
       }
       bottomBar={nav}
     />

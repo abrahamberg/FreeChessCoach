@@ -15,6 +15,9 @@ vi.mock('../../board/CoachBoard.js', () => ({
   }
 }));
 
+const voice = vi.hoisted(() => ({ play: vi.fn(), stop: vi.fn(), autoplayEnabled: true, setAutoplayEnabled: vi.fn(), enabled: true }));
+vi.mock('../../../hooks/useProfileCoachVoice.js', () => ({ useProfileCoachVoice: () => voice }));
+
 const tree = parseCourseTree('1. d4 e5 2. dxe5 Nc6 *');
 const [d4, e5, dxe5, nc6] = tree.nodes;
 const document: CourseDocument = {
@@ -29,8 +32,9 @@ function handlers() {
 
 /** The learner's move to find is up (the highlighted row of the move log). */
 const findPrompt = async () => {
-  // The opponent's auto-move waits 600 ms; step past it instead of sitting through it.
-  await act(() => vi.advanceTimersByTimeAsync(700));
+  // A right move stays 2.5 s, a new line is named for 1 s and the opponent's auto-move waits 600 ms:
+  // step past them instead of sitting through them.
+  await act(() => vi.advanceTimersByTimeAsync(4200));
   return waitFor(
     () => {
       const row = window.document.querySelector('.move-log__row--current');
@@ -64,8 +68,10 @@ describe('CourseDrill', () => {
     expect(await findPrompt()).toBeTruthy();
     await act(async () => board.play('Nf6', 'irrelevant', 'g8f6'));
     expect(screen.getByRole('status').textContent).toBe('Nf6 is not it. Try again.');
+    await act(() => vi.advanceTimersByTimeAsync(1200));
     expect(screen.getByTestId('board').dataset.fen).toBe(dxe5!.fenAfter);
     await act(async () => board.play('Nf6', 'irrelevant', 'g8f6'));
+    await act(() => vi.advanceTimersByTimeAsync(1200));
     fireEvent.click(await screen.findByRole('button', { name: 'Show the move' }));
     expect(record).toHaveBeenCalledTimes(2);
     expect(record).toHaveBeenLastCalledWith([{ key: courseDrillKey(dxe5!.fenAfter, nc6!.uci), san: 'Nc6', courseSlug: 'englund-aaaaaaaaaaaa', correct: false }]);
@@ -75,13 +81,57 @@ describe('CourseDrill', () => {
   });
 
   // The owner (2026-10-12): no engine here; any other move is just not it.
+  test('a right move stays on the board with a success mark for a moment before the drill goes on', async () => {
+    render(<CourseDrill document={document} stage="drill" {...handlers()} />);
+    await findPrompt();
+    act(() => board.play('e5', e5!.fenAfter, e5!.uci));
+    expect(screen.getByLabelText('Correct')).toBeTruthy();
+    expect(screen.getByTestId('board').dataset.fen).toBe(e5!.fenAfter);
+    await act(() => vi.advanceTimersByTimeAsync(1100));
+    expect(screen.queryByLabelText('Correct')).toBeNull();
+    await act(() => vi.advanceTimersByTimeAsync(1500));
+    await findPrompt();
+    expect(screen.getByRole('list', { name: 'Last moves' }).textContent).toContain('1…e5');
+  });
+
+  test('a wrong move stays on the board crossed out for a moment, then the piece goes back', async () => {
+    render(<CourseDrill document={document} stage="drill" {...handlers()} />);
+    await findPrompt();
+    const before = screen.getByTestId('board').dataset.fen;
+    await act(async () => board.play('d5', 'wrong-fen', 'd7d5'));
+    expect(screen.getByTestId('board').dataset.fen).toBe('wrong-fen');
+    expect(screen.getByLabelText('Not the move')).toBeTruthy();
+    await act(() => vi.advanceTimersByTimeAsync(1200));
+    expect(screen.getByTestId('board').dataset.fen).toBe(before);
+    expect(screen.queryByLabelText('Not the move')).toBeNull();
+  });
+
+  test('practice reads the note of the move to play as it comes in, while its arrow shows', async () => {
+    voice.play.mockClear();
+    render(<CourseDrill document={document} stage="practice" {...handlers()} />);
+    await findPrompt();
+    expect(voice.play).toHaveBeenCalledWith(`course:${e5!.id}`, 'The gambit.');
+  });
+
+  test('a move in the note is read as words, not as letters ("Bxf2+" as bishop takes f2, check)', async () => {
+    const withMove = { ...document.episodes[0]!, plies: [{ nodeId: e5!.id, text: 'Then Bxf2+ wins.', arrows: [], course: true, video: false }] };
+    voice.play.mockClear();
+    render(<CourseDrill document={{ ...document, episodes: [withMove] }} stage="practice" {...handlers()} />);
+    await findPrompt();
+    const spoken = String(voice.play.mock.calls[0]?.[1]);
+    expect(spoken).not.toContain('Bxf2+');
+    expect(spoken.toLowerCase()).toContain('check');
+  });
+
   test("another move, however good, is not the course's: the course's own word on it is said when it has one; the preview saves nothing", async () => {
     const episode = { ...document.episodes[0]!, drillNodeIds: [e5!.id], plies: [{ nodeId: e5!.id, text: 'The gambit.', arrows: [], course: true, video: false, tempting: [{ san: 'd5', why: 'That is another opening.' }] }] };
     render(<CourseDrill document={{ ...document, episodes: [episode] }} stage="drill" {...handlers()} />);
     expect(await findPrompt()).toBeTruthy();
     await act(async () => board.play('d5', 'irrelevant', 'd7d5'));
     expect(screen.getByRole('status').textContent).toBe('d5 is not it. That is another opening.');
+    await act(() => vi.advanceTimersByTimeAsync(1200));
     await act(async () => board.play('e5', e5!.fenAfter, e5!.uci));
+    await act(() => vi.advanceTimersByTimeAsync(2600));
     expect(await screen.findByText('0 of 1 right first time.', undefined, { timeout: 3000 })).toBeTruthy();
   });
 
@@ -95,10 +145,12 @@ describe('CourseDrill', () => {
     const play = async (san: string, fenAfter: string, uci: string) => {
       await findPrompt();
       await act(async () => board.play(san, fenAfter, uci));
+      await act(() => vi.advanceTimersByTimeAsync(2600));
     };
     const miss = async () => {
       await findPrompt();
       await act(async () => board.play('Nf6', 'irrelevant', 'g8f6'));
+        await act(() => vi.advanceTimersByTimeAsync(1200));
       fireEvent.click(await screen.findByRole('button', { name: 'Show the move' }));
     };
     const nextRound = () => fireEvent.click(screen.getByRole('button', { name: 'Next round' }));
@@ -183,6 +235,7 @@ describe('CourseDrill', () => {
     render(<CourseDrill document={split} stage="practice" {...handlers()} />);
     await findPrompt();
     act(() => board.play('e5', e5!.fenAfter, e5!.uci));
+    await act(() => vi.advanceTimersByTimeAsync(2600));
     // Episode 2 begins with 2.dxe5 played for you; the log still has 1…e5.
     await waitFor(() => expect(screen.getByRole('list', { name: 'Last moves' }).textContent).toMatch(/You 2…Nc6.*Opponent 2\.dxe5.*You 1…e5/), { timeout: 2000 });
     expect(screen.queryByText(/Line \d of/)).toBeNull();

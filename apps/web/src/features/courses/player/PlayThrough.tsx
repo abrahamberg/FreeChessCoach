@@ -8,6 +8,7 @@ import { LineMoveExplorer } from '../../board/LineMoveExplorer.js';
 import { MoveStrip, moveStripIndexToPly, plyToMoveStripIndex } from '../../board/MoveStrip.js';
 import { toBoardMarks } from '../courseArrows.js';
 import { AskCoachPanel, AskCoachSignIn } from './AskCoachPanel.js';
+import { BoardFlash, LINE_FLASH_MS } from './BoardFlash.js';
 import { QuizAsking } from './QuizAsking.js';
 import { CourseBoardLayout } from './CourseBoardLayout.js';
 import { CoursePane } from './CoursePane.js';
@@ -16,6 +17,8 @@ import { STAGE_LABELS } from './CourseStageBar.js';
 import { boardSoundLengthMs, playBoardSound } from '../../../sounds/board-sounds.js';
 import { readMoveSoundsEnabled } from '../../../sounds/move-sounds-setting.js';
 import { courseMoveList, courseMoveSound, type CourseEvals } from './course-move-list.js';
+import { drillLine } from './drill-line.js';
+import { climaxNode } from '../courseEdits.js';
 import { episodeWalk, stepView } from './course-steps.js';
 import type { useNoteAudio } from './useNoteAudio.js';
 import { YouTubeClip } from './YouTubeClip.js';
@@ -58,12 +61,14 @@ export function PlayThrough({ document, evals, audio, ask, isDesktop, start, onP
     onPlace(index, 0);
   };
 
+  // A phone keeps only the clips here: the episodes go by with Next, and the card names the one you are on.
+  const chips = isDesktop && document.episodes.length > 1;
   const episodes =
-    document.episodes.length > 1 || clips ? (
+    chips || clips ? (
       <nav className="course-player__episodes" aria-label="Episodes">
         {links.youtube && <ClipButton link={links.youtube} title={document.title} label="Watch the video" vertical={false} />}
         {reel && <ClipButton link={reel} title={document.title} label="Watch the reel" vertical />}
-        {document.episodes.length > 1 &&
+        {chips &&
           document.episodes.map((each, index) => (
             <button
               key={each.id}
@@ -166,6 +171,10 @@ interface EpisodeViewProps {
 
 function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop, startStep, onStep, nextLabel, onDone }: EpisodeViewProps): ReactNode {
   const walk = useMemo(() => episodeWalk(document, episode), [document, episode]);
+  // The line this episode belongs to, named over the board as it opens.
+  const title = drillLine(document, episode.id)?.title ?? null;
+  const before = document.episodes[document.episodes.findIndex((each) => each.id === episode.id) - 1];
+  const lineName = document.episodes.length > 1 && title !== (before ? drillLine(document, before.id)?.title : null) ? title : null;
   const [step, setStep] = useState(() => Math.min(startStep, walk.moves.length));
   /** The furthest step seen: the move list and graph grow as the learner
    * goes, like a game, so they never show a move (a quiz answer) early. */
@@ -176,7 +185,10 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
    * it when it has one. No engine: the piece is back, the question stands. */
   const [wrong, setWrong] = useState<{ san: string; why: string | null } | null>(null);
 
-  const view = stepView(episode, walk, step);
+  // A hook episode says where the course ends up, so its board is the climax, as the video's hook shows it.
+  const climax = episode.role === 'hook' ? climaxNode(document) : undefined;
+  const stepped = stepView(episode, walk, step);
+  const view = climax ? { ...stepped, fen: climax.fenAfter, arrows: [] } : stepped;
   const tempting = view.note ? (episode.plies.find((each) => each.nodeId === view.move?.id)?.tempting ?? []) : [];
   const quiz = episode.quiz;
   const answer = walk.quizAt === null ? null : walk.moves[walk.quizAt];
@@ -186,7 +198,7 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
   const marks = toBoardMarks(asking ? [] : view.arrows);
   // The move on the board, as the course's film shows it: its squares lit
   // and the engine's badge on the square it landed on.
-  const played = view.move;
+  const played = climax ?? view.move;
   const lastMove = played ? [played.uci.slice(0, 2), played.uci.slice(2, 4)].map((square) => ({ square, color: 'var(--last-move)' })) : [];
   const playedQuality = played ? evals[played.id]?.quality : undefined;
 
@@ -260,8 +272,9 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
 
   const board = (
     <>
-      <div className="session-board-row">
-        {hasEvals && <EvalBar ply={ply} classifiedMoves={rated} orientation={document.learnerSide} />}
+      <div className="session-board-row course-board-host">
+        {startStep === 0 && lineName && <BoardFlash content={{ kind: 'line', title: lineName }} ms={LINE_FLASH_MS} />}
+        {hasEvals && !climax && <EvalBar ply={ply} classifiedMoves={rated} orientation={document.learnerSide} />}
         <CoachBoard
           fen={view.fen}
           orientation={document.learnerSide}
@@ -284,6 +297,8 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
       persona={document.coachPersona}
       sound={{ on: audio.soundOn, onChange: audio.setSoundOn }}
       footerInHeader={!isDesktop}
+      compact={!isDesktop}
+      title={[roleLabel(episode.role), view.move && !climax ? view.move.san : null].filter(Boolean).join(' · ')}
       footer={
         // Not while the quiz asks: the coach knows the course's answer.
         asking ? null : ask === 'sign-in' ? (
@@ -293,7 +308,7 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
         ) : null
       }
     >
-      {view.move && <p className="course-player__move">{view.move.san}</p>}
+      {view.move && !climax && isDesktop && <p className="course-player__move">{view.move.san}</p>}
       {revealed && <p className="course-player__reveal">{solvedLine(solved, answer?.san)} {quiz.reveal}</p>}
       {view.note ? (
         <p className="course-pane__note">
@@ -351,8 +366,8 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
       board={board}
       coach={coach}
       strip={
-        sanMoves.length > 0 ? (
-          <div className="course-layout__strip">
+        <div className="course-layout__strip">
+          {sanMoves.length > 0 && (
             <MoveStrip
               sanMoves={sanMoves}
               classifiedMoves={rated}
@@ -363,8 +378,8 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
               start={list.start}
               dimmedThroughPly={list.leadIn}
             />
-          </div>
-        ) : undefined
+          )}
+        </div>
       }
       bottomBar={nav}
     />
