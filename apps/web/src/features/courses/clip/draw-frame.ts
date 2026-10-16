@@ -266,6 +266,7 @@ function drawBoard(ctx: CanvasRenderingContext2D, input: FrameInput, x: number, 
   }
   if (input.segment.king) drawCheckedKing(ctx, input, at(input.segment.king.square), square);
   for (const name of input.segment.king?.shut ?? []) drawShutSquare(ctx, at(name), square);
+  drawCoordinates(ctx, at, square, flipped);
   for (const [name, code] of piecesOf(input.segment.fen)) {
     const image = input.assets.pieces.get(code);
     const [sx, sy] = at(name);
@@ -297,6 +298,32 @@ function drawBoard(ctx: CanvasRenderingContext2D, input: FrameInput, x: number, 
       drawArrow(ctx, fx + square / 2, fy + square / 2, tx + square / 2, ty + square / 2, square, COLORS.arrows.idea, alpha * 0.85);
     }
   }
+}
+
+/** Square names as the app's board shows them: the ranks down the left-hand
+ * file, the files along the bottom rank, each in the other square colour. */
+function drawCoordinates(ctx: CanvasRenderingContext2D, at: (name: string) => [number, number], square: number, flipped: boolean): void {
+  const pad = square * 0.06;
+  ctx.save();
+  ctx.font = `700 ${Math.round(square * 0.2)}px ${FONT}`;
+  for (let index = 0; index < 8; index++) {
+    const file = flipped ? 7 - index : index;
+    const rank = flipped ? index : 7 - index;
+    const left = String.fromCharCode(97 + (flipped ? 7 : 0));
+    const bottomRank = flipped ? 8 : 1;
+    const colorOf = (f: number, r: number): string => ((r + f) % 2 === 0 ? COLORS.light : COLORS.dark);
+    const [rx, ry] = at(`${left}${rank + 1}`);
+    ctx.fillStyle = colorOf(left.charCodeAt(0) - 97, rank);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(String(rank + 1), rx + pad, ry + pad);
+    const [fx, fy] = at(`${String.fromCharCode(97 + file)}${bottomRank}`);
+    ctx.fillStyle = colorOf(file, bottomRank - 1);
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(String.fromCharCode(97 + file), fx + square - pad, fy + square - pad);
+  }
+  ctx.restore();
 }
 
 /** The move's quality on the corner of the square it landed on, as the
