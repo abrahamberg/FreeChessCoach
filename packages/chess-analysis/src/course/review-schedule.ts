@@ -54,7 +54,8 @@ export const COURSE_DRILL_MODE: Record<CourseKind, CourseDrillMode> = {
   tactics: 'find_move',
   puzzle: 'learner_side',
   master_game: 'guess_move',
-  endgame: 'learner_side'
+  endgame: 'learner_side',
+  lesson: 'find_move'
 };
 
 /** Which side's moves are asked: the learner's own until the full drill,

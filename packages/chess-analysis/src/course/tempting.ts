@@ -1,5 +1,5 @@
 import { Chess, type PieceSymbol } from 'chess.js';
-import type { CourseKind, EngineEval, MoveQuality } from '@freechesscoach/shared';
+import { asksEveryLearnerMove, type CourseKind, type EngineEval, type MoveQuality } from '@freechesscoach/shared';
 import { classifySeverity } from '../classify-severity.js';
 import { CONFIG } from '../config.js';
 import { saidMateIn } from '../mate-count.js';
@@ -75,7 +75,7 @@ export interface TemptingCandidate {
 export function temptingCandidates(tree: CourseTree, dossier: CourseDossier, kind: CourseKind | null): TemptingCandidate[] {
   const byId = new Map(tree.nodes.map((node) => [node.id, node]));
   // An endgame's technique is precise: every move of it is weighed.
-  const everyLearnerMove = kind === 'puzzle' || kind === 'tactics' || kind === 'endgame';
+  const everyLearnerMove = kind !== null && asksEveryLearnerMove(kind);
   return dossier.nodes.flatMap((facts) => {
     const asked = (facts.critical || facts.quizEligible || (everyLearnerMove && facts.side === dossier.learnerSide)) && (everyLearnerMove || !facts.san.endsWith('#'));
     const node = byId.get(facts.nodeId);

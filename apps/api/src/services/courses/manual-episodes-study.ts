@@ -1,4 +1,4 @@
-import { ownMoves, type CourseLineGame, type EndgameSkeleton, type MasterGameSkeleton, type PuzzleSkeleton, type TacticsSkeleton } from '@freechesscoach/chess-analysis';
+import { ownMoves, type CourseLineGame, type EndgameSkeleton, type LessonSkeleton, type MasterGameSkeleton, type PuzzleSkeleton, type TacticsSkeleton } from '@freechesscoach/chess-analysis';
 import type { CourseChapter } from '@freechesscoach/shared';
 import { findMoveQuiz, noteworthy, type EpisodeBuilder } from './manual-notes.js';
 
@@ -76,8 +76,8 @@ export function puzzleChapters(skeleton: PuzzleSkeleton, lines: CourseLineGame[]
 }
 
 /** §6.3 tactics: concept, one chapter per example (easiest first, as the
- * skeleton orders them), then scan. */
-export function tacticsChapters(skeleton: TacticsSkeleton, lines: CourseLineGame[], builder: EpisodeBuilder): CourseChapter[] {
+ * skeleton orders them), then scan; a lesson ends on a recap instead. */
+export function tacticsChapters(skeleton: TacticsSkeleton | LessonSkeleton, lines: CourseLineGame[], builder: EpisodeBuilder): CourseChapter[] {
   const firstLine = lines[0];
   if (!firstLine) return [];
   const conceptNode = skeleton.examples[0]?.nodeId ?? firstLine.nodeIds[0];
@@ -108,11 +108,17 @@ export function tacticsChapters(skeleton: TacticsSkeleton, lines: CourseLineGame
   });
   const lastExample = skeleton.examples[skeleton.examples.length - 1];
   const scanNode = lastExample?.nodeId ?? conceptNode;
+  const lesson = skeleton.kind === 'lesson';
   chapters.push({
     id: `c${chapters.length + 1}`,
-    title: 'What to scan for',
+    title: lesson ? 'Recap' : 'What to scan for',
     lineId: lastExample?.lineId ?? firstLine.lineId,
-    episodeIds: builder.add({ role: 'scan', focus: 'scan: the three things to look for in your own games', nodeIds: scanNode ? [scanNode] : [], noteNodeIds: [] })
+    episodeIds: builder.add({
+      role: lesson ? 'recap' : 'scan',
+      focus: lesson ? 'recap: the idea in one breath, and what to practise next' : 'scan: the three things to look for in your own games',
+      nodeIds: scanNode ? [scanNode] : [],
+      noteNodeIds: []
+    })
   });
   return chapters;
 }

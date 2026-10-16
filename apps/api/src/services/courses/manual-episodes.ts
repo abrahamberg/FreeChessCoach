@@ -33,7 +33,7 @@ function chaptersFor(input: ManualEpisodesInput, builder: EpisodeBuilder): Cours
   const lineNames = new Map(input.document.lines.map((line) => [line.id, line.name]));
   const lineNotes = new Map(input.document.lines.flatMap((line) => (line.note ? [[line.id, line.note] as const] : [])));
   if (skeleton.kind === 'trap') return trapChapters(skeleton, lines, learner, lineNames, lineNotes, builder);
-  if (skeleton.kind === 'tactics') return tacticsChapters(skeleton, lines, builder);
+  if (skeleton.kind === 'tactics' || skeleton.kind === 'lesson') return tacticsChapters(skeleton, lines, builder);
   if (skeleton.kind === 'master_game') return masterGameChapters(skeleton, lines, learner, lineNames, builder);
   if (skeleton.kind === 'puzzle') return puzzleChapters(skeleton, lines, builder);
   if (skeleton.kind === 'endgame') return endgameChapters(skeleton, lines, builder);

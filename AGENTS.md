@@ -11,13 +11,10 @@ into a course (a lesson on the board, a YouTube video and a reel).
 
 ## Docs — read only what your task names
 
-- `docs/plan.md` — the plan being built now: Phases 130–133, the content
-  studio (`../chess-content-studio`) writes courses itself. Phases 130–132.1
-  are built: the `course:studio` tools on the app's own engine and dossier,
-  a course filled through the API with no AI call, export to production.
-  Open: the studio's first course with them (132.2) and a new course kind,
-  `position`, learn from a position (133). Work one task at a time and read
-  only that task's **Read:** files.
+- `docs/plan.md` — the content studio plan, Phases 130–132, all built: the
+  `course:studio` tools on the app's own engine and dossier, a course filled
+  through the API with no AI call, export to production, the studio's
+  instructions. Only its "Left open" list remains.
 - `docs/review-audit-plan.md` — the review audit's plan (Phases 120–127) and
   the shipped coach progress memory (Phases 128–129). The audit checks Game
   Review's move notes and the course dossier sentence by sentence on real

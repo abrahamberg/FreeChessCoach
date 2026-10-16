@@ -20,5 +20,10 @@ export const COURSE_KIND_INFO: Record<CourseKind, { label: string; summary: stri
     label: 'Endgame',
     summary: 'A position and its technique, like the Lucena.',
     example: 'The Lucena position: build a bridge. Show why only one move keeps the win.'
+  },
+  lesson: {
+    label: 'Lesson',
+    summary: 'Any topic, from a few examples: how a piece moves, a pattern, a plan.',
+    example: 'How the knight moves, for complete beginners. Start with the easiest squares; end on a fork.'
   }
 };

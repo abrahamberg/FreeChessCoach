@@ -25,6 +25,8 @@ function kindPlaybook(context: CoursePromptContext, budget: CourseBudget): strin
       return masterGamePlaybook(context);
     case 'endgame':
       return endgamePlaybook(context, context.skeleton?.kind === 'endgame' ? context.skeleton : null);
+    case 'lesson':
+      return lessonPlaybook(context);
   }
 }
 
@@ -36,7 +38,8 @@ const VIDEO_PLAYBOOK: Record<CoursePromptContext['kind'], string> = {
   tactics: 'the cue first, then each example with the tempting moves and why they fail.',
   puzzle: 'the thinking method: at every learner move, the checks, captures and threats in that order, which look right, why they fail, then the move.',
   master_game: 'a storytelling recap: the players (headers only), the turning points, and at each the tempting moves and why the master avoided them.',
-  endgame: 'the goal and the one idea that decides it, then the technique move by move with the moves that spoil it, and each defensive try with its answer.'
+  endgame: 'the goal and the one idea that decides it, then the technique move by move with the moves that spoil it, and each defensive try with its answer.',
+  lesson: 'the idea in plain words, then each example with the tempting moves and why they fail, then the recap.'
 };
 
 const REEL_PLAYBOOK: Record<CoursePromptContext['kind'], string> = {
@@ -45,7 +48,8 @@ const REEL_PLAYBOOK: Record<CoursePromptContext['kind'], string> = {
   tactics: 'the clearest example, as a puzzle.',
   puzzle: 'the position and the question ("White to play. Mate in 3." or "White to play and win."), then the solution.',
   master_game: 'the single brilliant move, blunder or finish, never a summary of the game.',
-  endgame: 'one only move of the technique, as a puzzle ("White to play and win", "Black to play and draw"); with no only move, the point the technique builds to, played as a highlight.'
+  endgame: 'one only move of the technique, as a puzzle ("White to play and win", "Black to play and draw"); with no only move, the point the technique builds to, played as a highlight.',
+  lesson: 'the clearest example, as a puzzle.'
 };
 
 function productsPlaybook(context: CoursePromptContext): string {
@@ -64,6 +68,7 @@ export function episodeRange(context: CoursePromptContext): string {
     case 'opening':
       return `one chapter per line (${context.lines.length}), plus one episode per trap and the recap`;
     case 'tactics':
+    case 'lesson':
       return String(tacticExampleCount(context) + 2);
     case 'puzzle':
       return String(puzzleLearnerMoves(context).length + 2);
@@ -376,7 +381,7 @@ function wrongMoves(context: CoursePromptContext, ids: readonly string[]): strin
 }
 
 function tacticExampleCount(context: CoursePromptContext): number {
-  return context.skeleton?.kind === 'tactics' && context.skeleton.examples.length ? context.skeleton.examples.length : context.lines.length;
+  return (context.skeleton?.kind === 'tactics' || context.skeleton?.kind === 'lesson') && context.skeleton.examples.length ? context.skeleton.examples.length : context.lines.length;
 }
 
 function tacticsPlaybook(context: CoursePromptContext, skeleton: Extract<CourseSkeleton, { kind: 'tactics' }> | null): string {
@@ -403,6 +408,19 @@ function tacticsPlaybook(context: CoursePromptContext, skeleton: Extract<CourseS
 3. scan — the three things to scan for in their own games.
 Each reveal names the cue again, so by the end the learner has seen the pattern
 ${times}.`;
+}
+
+/** A general lesson: any topic the creator names, from how a piece moves to a
+ * pattern, taught by a few examples in a row. */
+function lessonPlaybook(context: CoursePromptContext): string {
+  const count = tacticExampleCount(context);
+  return `KIND: LESSON, ${count === 1 ? '1 example' : `${count} examples, easiest first`}. The topic is the creator's direction; teach that and nothing wider.
+1. concept — the idea in two or three plain sentences, for the course's level, and what
+   to look for on the board. Use only what the examples' board facts show.
+2. One episode per example: the position, the quiz (only at quiz-eligible
+   nodes), the reveal, and why it works. Each example adds one thing the
+   last did not.
+3. recap — the idea in one breath, and one thing to practise in a real game.`;
 }
 
 /** Phase 103: a position and its technique, taught as a strong player

@@ -53,6 +53,11 @@ export interface TacticsSkeleton {
   examples: { lineId: string; nodeId: string; startNodeId: string; motif: TacticMotifType | null; depth: number }[];
 }
 
+/** A general lesson: the same examples as a tactics course, on any topic. */
+export interface LessonSkeleton extends Omit<TacticsSkeleton, 'kind'> {
+  kind: 'lesson';
+}
+
 export interface MasterGameSkeleton {
   kind: 'master_game';
   criticalNodeIds: string[];
@@ -99,7 +104,7 @@ export interface EndgameSkeleton {
   wrongNodeIds: string[];
 }
 
-export type CourseSkeleton = TrapSkeleton | OpeningSkeleton | TacticsSkeleton | MasterGameSkeleton | PuzzleSkeleton | EndgameSkeleton;
+export type CourseSkeleton = TrapSkeleton | OpeningSkeleton | TacticsSkeleton | MasterGameSkeleton | PuzzleSkeleton | EndgameSkeleton | LessonSkeleton;
 
 export interface CourseSkeletonInput {
   kind: CourseKind;
@@ -115,6 +120,7 @@ export function buildCourseSkeleton(input: CourseSkeletonInput): CourseSkeleton 
   const lineFacts = (line: CourseLineGame): CourseNodeFacts[] => line.nodeIds.flatMap((id) => facts.get(id) ?? []);
   if (input.kind === 'trap') return trapSkeleton(input, lineFacts);
   if (input.kind === 'tactics') return tacticsSkeleton(input.lines, lineFacts, input.dossier.learnerSide);
+  if (input.kind === 'lesson') return { ...tacticsSkeleton(input.lines, lineFacts, input.dossier.learnerSide), kind: 'lesson' };
   if (input.kind === 'endgame') {
     const line = input.lines[0];
     return line ? endgameSkeleton(input, line.lineId, lineFacts(line)) : null;

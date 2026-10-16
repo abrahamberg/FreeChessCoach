@@ -3,9 +3,13 @@ import { COACH_PERSONAS, RATING_BANDS } from './constants.js';
 import { DiagnosisCodeIdSchema } from './diagnosis/catalog-types.js';
 
 /** docs/courses.md §3. The creator picks the kind; the AI never guesses it. */
-export const COURSE_KINDS = ['trap', 'opening', 'tactics', 'puzzle', 'master_game', 'endgame'] as const;
+export const COURSE_KINDS = ['trap', 'opening', 'tactics', 'puzzle', 'master_game', 'endgame', 'lesson'] as const;
 export const CourseKindSchema = z.enum(COURSE_KINDS);
 export type CourseKind = z.infer<typeof CourseKindSchema>;
+
+/** Kinds whose learner moves are all asked, as a puzzle's are, and whose
+ * reel is a puzzle: the examples of a theme, a lesson or an endgame. */
+export const asksEveryLearnerMove = (kind: CourseKind): boolean => kind === 'puzzle' || kind === 'tactics' || kind === 'endgame' || kind === 'lesson';
 
 /** docs/courses.md §9: `removed` is set only by the moderator script. */
 export const COURSE_STATUSES = ['draft', 'unlisted', 'public', 'removed'] as const;
@@ -291,7 +295,8 @@ export const COURSE_ROLES: Record<CourseKind, readonly string[]> = {
   tactics: ['concept', 'example', 'scan'],
   puzzle: ['question', 'solve', 'recap'],
   master_game: ['intro', 'moves', 'moment', 'variation'],
-  endgame: ['goal', 'technique', 'defence', 'recap']
+  endgame: ['goal', 'technique', 'defence', 'recap'],
+  lesson: ['concept', 'example', 'recap']
 };
 
 /** The outline call's answer (docs/courses.md §6.4). Fields the model may

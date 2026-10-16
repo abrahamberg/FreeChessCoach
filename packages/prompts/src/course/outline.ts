@@ -165,6 +165,7 @@ function renderCandidates(context: CoursePromptContext, skeleton: CourseSkeleton
         `traps: ${skeleton.traps.length ? skeleton.traps.map((trap) => `${label(trap.blunderNodeId)} answered by ${label(trap.answerNodeId)}`).join('; ') : 'none'}`
       ].join('\n');
     case 'tactics':
+    case 'lesson':
       return `examples, easiest first: ${
         skeleton.examples.map((example) => `${example.lineId} at ${label(example.nodeId)}${example.startNodeId === example.nodeId ? '' : `, starting from ${label(example.startNodeId)}`} (${example.motif ?? 'motif not detected'}, ${example.depth} plies)`).join('; ') || 'none'
       }`;

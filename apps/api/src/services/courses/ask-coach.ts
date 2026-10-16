@@ -104,7 +104,8 @@ const KIND_WORDS: Record<CourseKind, string> = {
   puzzle: 'a puzzle',
   trap: 'a trap',
   master_game: 'a master game',
-  endgame: 'an endgame'
+  endgame: 'an endgame',
+  lesson: 'a lesson'
 };
 
 const CHECK_MOVES_DESCRIPTION =

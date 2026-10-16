@@ -70,6 +70,7 @@ playbook (§6.3), its own checks (§7) and its own drill mode (§11).
 | `puzzle` | A position (`[FEN]`) and its solution, e.g. mate in 3 | Every learner move is a quiz; the checks, captures and threats at each | both |
 | `master_game` | One full game, with the annotator's variations | Every move explained, Logical-Chess style; guess the move at critical moments; each variation is a `variation` episode | the video |
 | `endgame` | A position (`[FEN]`) and its technique, sidelines for the defender's tries | The goal and the idea, the technique with its only moves as quizzes, each defence | both |
+| `lesson` | Any topic, in 1–6 examples (a line or a `[FEN]` each): how a piece moves, a pattern, a plan, one narrow theme | The idea, then examples easiest first, quiz each, a recap. A `tactics` course without the motif: the topic is only the direction | both |
 
 What each kind's video and reel show: §13.2.
 
@@ -234,6 +235,7 @@ Example directions shown in the form:
 - opening: "Caro-Kann Advance for club players, main line plus the three sidelines in the PGN."
 - puzzle: "Smothered mate in 2. Teach checks, captures, threats."
 - tactics: "Knight forks. Start with the easiest; teach what tells you a fork is there."
+- lesson: "How the knight moves, for complete beginners. Start with the easiest squares; end on a fork."
 - master_game: "Capablanca's endgame technique. Explain every Black move for 1200s."
 
 ### 5.4 The dossier
@@ -1629,6 +1631,7 @@ A standalone reel is a **highlight** or a **puzzle** (§13.3).
 | `tactics` | 1–6 positions with their solutions, one motif | the cue, then each example, the tempting moves and why they fail | puzzle: the clearest example | both |
 | `master_game` | a full game | a storytelling recap: the players (headers only), the turning points, the tempting moves at each | highlight: the single brilliant move, blunder or finish | video |
 | `puzzle` | a position (`[FEN]`) and its solution, e.g. mate in 3 | the thinking method: at each move, the checks, captures and threats, which look right, why they fail, then the move | puzzle: "White to play. Mate in 3." | both |
+| `lesson` | 1–6 examples of one topic | the idea, then each example, the tempting moves and why they fail, the recap | puzzle: the clearest example | both |
 | `endgame` | a position (`[FEN]`) and its technique, sidelines for the defence | the goal and the idea, the technique move by move with the moves that spoil it, each defensive try | puzzle: one only move ("White to play and win") | both |
 
 `puzzle` checks: the PGN has a `[FEN]`; the learner is the side to move;

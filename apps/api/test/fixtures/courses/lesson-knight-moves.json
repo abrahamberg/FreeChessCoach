@@ -1,0 +1,8 @@
+{
+  "kind": "lesson",
+  "levelBand": "novice",
+  "coachPersona": "commander",
+  "learnerSide": "white",
+  "direction": "How the knight moves, for complete beginners: it jumps in an L, over pieces, and it can fork two pieces at once.",
+  "pgn": "[Event \"Knight moves\"]\n[SetUp \"1\"]\n[FEN \"4k3/8/8/8/3N4/8/8/4K3 w - - 0 1\"]\n\n1. Nc6 Kd7 2. Ne5+ Ke7 *"
+}

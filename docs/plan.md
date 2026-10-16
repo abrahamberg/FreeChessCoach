@@ -1,4 +1,4 @@
-# FreeChessCoach — The content studio writes the course itself (Phases 130–133)
+# FreeChessCoach — The content studio writes the course itself (Phases 130–132)
 
 Written 2026-10-14. The plan before this one (the review audit, Phases
 120–127, and the coach's progress memory, Phases 128–129) moved to
@@ -44,10 +44,8 @@ point of the lesson and has no variation. Checked on the stored row:
    reach the studio the day it merges.
 3. The long video and the course have no time pressure: they take every
    branch that matters. The reel takes one line.
-4. A new kind of lesson, "learn from a position": the owner gives a FEN
-   (often a middlegame, not an official endgame) and the lesson teaches how
-   to think there, with as many tries as it needs. The two sides may carry
-   names.
+4. A general kind, `lesson` (built 2026-10-16), for any topic from a few
+   examples: a position the owner gives, how a piece moves, a pattern.
 
 ## What already exists and is reused as-is (verified in code, 2026-10-14)
 
@@ -198,76 +196,7 @@ itself; the app's AI is the fallback), the two agents use `explore`;
 
 ### Task 132.2 — The Stafford Gambit again, as the first test
 
-**Read:** `../chess-content-studio/playbooks/authoring.md`.
-
-For the studio's next run, not for this repo.
-
-- [ ] The playbook end to end on the Stafford Gambit on dev: the king's
-      three answers to the bishop sacrifice are in the tree, and the brief
-      records the decision on `6... Nxe4` against `6... Bxf2+`.
-- [ ] `check` says "no problems". Note how long research, writing and
-      fixing took, against the 2026-10-13 run.
-- [ ] What the tools did not give goes in `state.json` `appRequests`.
-- [ ] The owner watches the dev course before it is exported.
-
----
-
-## Phase 133 — A new kind: `position` (learn from a position)
-
-The owner's example (2026-10-14): `4r2k/3Q2pp/p7/3pq3/8/7P/PP4PK/8 w - - 2 38`.
-Not a puzzle (one answer, no sidelines) and not an endgame (often a
-middlegame, no single technique): a category of its own. The lesson is how
-to think: what each side threatens, which moves to look at, why the tempting
-ones fail, what holds. No spec round (owner, 2026-10-14): build it small.
-Until it exists the studio can make such a lesson as kind `endgame` (a
-`[FEN]`, a main line, sidelines), which gives it the wrong roles.
-
-### Task 133.1 — The kind
-
-**Read:** `docs/courses.md` §3, §5.5, and §6.3's `endgame` playbook only;
-`packages/chess-analysis/src/course/skeleton-endgame.ts` (the model);
-`apps/api/src/db/migrations/0023_course_kind_endgame.ts`.
-
-**Files** (every place that names a kind, verified 2026-10-14):
-`packages/shared/src/course.ts` (`COURSE_KINDS`, `defaultCourseVideos`);
-`apps/api/src/db/migrations/0026_course_kind_position.ts` (new);
-`packages/chess-analysis/src/course/skeleton.ts`, `skeleton-position.ts`
-(new), `learner-side.ts`, `tempting.ts` (`everyLearnerMove`),
-`reel-candidates.ts`, `outline-check.ts`;
-`apps/api/src/services/courses/course-drafts.ts`, `manual-episodes.ts`,
-`generate-outline.ts`, `generation.ts`;
-`packages/prompts/src/course/playbooks.ts`, `outline.ts`;
-`apps/web/src/features/courses/courseKinds.ts`, `CourseIntakePage.tsx`;
-`docs/courses.md` §3, §5.5, §6.3; one golden fixture.
-
-- [ ] **Input:** a `[FEN]`, a main line (the best play) and sidelines: the
-      learner's tempting tries and the opponent's other replies. The learner
-      is the side to move unless the form says otherwise.
-- [ ] **Names:** `[White "…"]` / `[Black "…"]` name the sides in the text.
-      A real name only when the position is from that real game; an invented
-      name is fine. No names: "White" and "Black".
-- [ ] **Roles**, in order: `position` (material, the kings, each side's
-      threat), `candidates` (the quiz: which moves would you look at, and
-      what must you check first), `try` (one per tempting sideline), `answer`
-      (the main line), `rule` (the two or three thinking habits that carry
-      to other games).
-- [ ] Failing test first: `buildCourseSkeleton` on a small position course
-      gives the five roles in order, the try under `try`.
-- [ ] The migration replaces the `kind` CHECK, as 0023 does.
-      `buildManualEpisodes` lays out the roles (the path the studio fills);
-      the playbook says what each role is for (`dossier` prints it, so the
-      studio writes from it). Reuse `threatens`, `materialBalance` and the
-      board facts.
-- [ ] One golden fixture; re-record the snapshot and explain the new lines
-      in the commit body; `npm run docs:prompts`.
-
-Commit: `feat(courses): the position kind — learn from a position`
-
-### Task 133.2 — The owner's position, as the first lesson
-
-For the studio. Research the FEN with `explore --replies` along every
-forcing line before writing a move of the PGN; the lesson's subject is what
-the research shows. The owner watches it on dev before it is exported.
+Status: done (owner, 2026-10-16).
 
 ---
 

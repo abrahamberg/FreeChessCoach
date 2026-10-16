@@ -3,7 +3,7 @@ import { bandForRating, COURSE_KINDS, defaultCourseVideos, type CoachPersona, ty
 import { useMemo, useState, type ComponentType, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { describeApiError } from '../../api/client.js';
-import { ArrowLeftIcon, BookIcon, FlagIcon, type IconProps, KnightIcon, LightbulbIcon, PawnIcon, SearchIcon } from '../../components/Icon.js';
+import { ArrowLeftIcon, BoardIcon, BookIcon, FlagIcon, type IconProps, KnightIcon, LightbulbIcon, PawnIcon, SearchIcon } from '../../components/Icon.js';
 import { useProfile } from '../../hooks/useProfile.js';
 import { MiniBoard } from '../board/MiniBoard.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
@@ -31,7 +31,8 @@ const KIND_ICONS: Record<CourseKind, ComponentType<IconProps>> = {
   tactics: LightbulbIcon,
   puzzle: SearchIcon,
   master_game: KnightIcon,
-  endgame: PawnIcon
+  endgame: PawnIcon,
+  lesson: BoardIcon
 };
 
 /** docs/courses.md §5.3: only what the AI can't infer, in four steps: the

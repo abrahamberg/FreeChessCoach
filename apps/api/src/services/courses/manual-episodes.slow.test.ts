@@ -54,6 +54,13 @@ describe('buildManualEpisodes', () => {
     expect(episodes[2]?.drillNodeIds).toEqual(['n15', 'n17']);
   });
 
+  test('lesson: the idea first and a recap last, as a tactics course ends on its scan', async () => {
+    const { chapters, episodes } = await manual('[FEN "4r1k1/5ppp/8/8/8/8/5PPP/2R1R1K1 w - - 0 1"]\n\n1. Rxe8# *', 'lesson', 'white');
+    const roles = episodes.map((episode) => episode.role);
+    expect([roles[0], roles[roles.length - 1]]).toEqual(['concept', 'recap']);
+    expect(chapters.map((chapter) => chapter.title)[0]).toBe('The idea');
+  });
+
   test('the creator\'s section notes become the focus of the line and its sidelines', async () => {
     const { episodes } = await manual('Exchange:\n# why the pawn is given\n1. e4 c6 2. d4 d5\n---\nAdvance:\n# the plan against 2...d6\n2... d6 3. Nc3', 'opening', 'black');
     expect(episodes.map((episode) => episode.focus)).toEqual(['line: why the pawn is given', 'deviation: the plan against 2...d6', expect.stringContaining('recap')]);

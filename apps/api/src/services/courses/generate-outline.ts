@@ -1,6 +1,6 @@
 import { checkCourseOutline, courseNodePath, episodeKeyMoves } from '@freechesscoach/chess-analysis';
 import { buildCourseOutlineMessages, courseBudget } from '@freechesscoach/prompts';
-import { CourseOutlineCallSchema, courseVideos, defaultCourseBudget, type CourseDocument, type CourseEpisode, type CourseOutline, type CourseWarning } from '@freechesscoach/shared';
+import { asksEveryLearnerMove, CourseOutlineCallSchema, courseVideos, defaultCourseBudget, type CourseDocument, type CourseEpisode, type CourseOutline, type CourseWarning } from '@freechesscoach/shared';
 import { ValidationError } from '../../lib/errors.js';
 import type { CourseModelCall, GenerationInputs } from './generation-inputs.js';
 
@@ -56,7 +56,7 @@ export function withProducts(inputs: GenerationInputs, outline: CourseOutline): 
     if (picked && outline.reel && allowed(outline.reel.style, picked.styles)) reel = outline.reel;
     else {
       const first = candidates[0]!;
-      const puzzle = (inputs.document.kind === 'puzzle' || inputs.document.kind === 'tactics' || inputs.document.kind === 'endgame') && first.styles.includes('puzzle');
+      const puzzle = asksEveryLearnerMove(inputs.document.kind) && first.styles.includes('puzzle');
       reel = { candidate: first.id, style: puzzle ? 'puzzle' : 'highlight' };
     }
   }
