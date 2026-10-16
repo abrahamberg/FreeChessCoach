@@ -21,7 +21,7 @@ export interface AppShellProps {
 // 2026-09-28; its nav place went to Courses (docs/courses.md §11).
 const NAV_DESTINATIONS = [
   { to: '/games', label: 'Games', Icon: BoardIcon },
-  { to: '/courses', label: 'Courses', Icon: BookIcon },
+  { to: '/learn', label: 'Courses', Icon: BookIcon },
   { to: '/progress', label: 'Progress', Icon: TrendingUpIcon },
   { to: '/stats', label: 'Stats', Icon: BarChartIcon }
 ];
@@ -32,7 +32,7 @@ const NAV_DESTINATIONS = [
 // tab bar on top of that would cost the board vertical space it needs more
 // than a second nav layer, and turns the brand/primary-nav links into an
 // easy accidental tap away from a live game.
-const BOARD_ROUTE_PREFIXES = ['/session/', '/bot-session/', '/practice/', '/review/', '/courses/'];
+const BOARD_ROUTE_PREFIXES = ['/session/', '/bot-session/', '/practice/', '/review/'];
 const DEMO_BOARD_ROUTE_PREFIXES = ['/demo/session/', '/demo/bot-session/', '/demo/practice/', '/demo/review/'];
 
 function isBoardRoute(pathname: string): boolean {

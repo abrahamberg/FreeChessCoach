@@ -1,14 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { shouldRetryQuery } from './api/client.js';
 import { AppShell } from './components/AppShell.js';
 import { TunnelTakeoverGate } from './components/TunnelTakeoverGate.js';
 import { CourseEditorPage } from './features/courses/CourseEditorPage.js';
 import { CourseIntakePage } from './features/courses/CourseIntakePage.js';
 import { CoursesPage } from './features/courses/CoursesPage.js';
-import { CoursePage } from './features/courses/learn/CoursePage.js';
-import { CoursesHomePage } from './features/courses/learn/CoursesHomePage.js';
+import { LearnHomePage } from './features/courses/learn/LearnHomePage.js';
 import { LearnPage } from './features/courses/player/LearnPage.js';
 import { FindGamesPage } from './features/games/FindGamesPage.js';
 import { GamesPage } from './features/games/GamesPage.js';
@@ -67,6 +66,13 @@ function GameReviewRoute(): ReactNode {
   return <GameReviewPage key={gameId} />;
 }
 
+/** A course's one address is `/learn/:slug`; it knows by itself whether the learner is signed in. */
+function CourseRedirect(): ReactNode {
+  const { slug = '' } = useParams<{ slug: string }>();
+  const { search } = useLocation();
+  return <Navigate to={`/learn/${slug}${search}`} replace />;
+}
+
 function StudioEditRedirect(): ReactNode {
   const { id = '' } = useParams<{ id: string }>();
   return <Navigate to={`/studio/${id}/edit`} replace />;
@@ -78,6 +84,7 @@ export function App(): ReactNode {
       <BrowserRouter basename={getDemoRuntime() ? DEMO_BASENAME : undefined}>
         <Routes>
           {/* Public, no login (docs/courses.md §9): outside the shell, which needs a user. */}
+          <Route path="/learn" element={<LearnHomePage />} />
           {!getDemoRuntime() && <Route path="/learn/:slug" element={<LearnPage />} />}
           <Route path="*" element={<AppRoutes />} />
         </Routes>
@@ -116,8 +123,8 @@ export function AppRoutes(): ReactNode {
             <Route path="/dashboard" element={<Navigate to="/progress" replace />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/courses" element={<CoursesHomePage />} />
-            <Route path="/courses/:slug" element={<CoursePage />} />
+            <Route path="/courses" element={<Navigate to="/learn" replace />} />
+            <Route path="/courses/:slug" element={<CourseRedirect />} />
             {/* The creator's pages were under /courses until 2026-09-28. */}
             <Route path="/courses/new" element={<Navigate to="/studio/new" replace />} />
             <Route path="/courses/:id/edit" element={<StudioEditRedirect />} />

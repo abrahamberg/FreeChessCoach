@@ -504,8 +504,8 @@ tactics, puzzle, master game.
   practice, drill, both sides. Signed in, `course_progress` keeps the spaced
   review per position + move and `course_enrollments` the stage and place;
   signed out, both live in the browser and are imported on sign-in.
-  `/courses` is the learner's page (Learning, Browse, Learned) and
-  `/courses/:slug` the player inside the shell; the Games page shows
+  `/learn` is the courses page (Browse for everyone; Learning and Learned signed in; `/courses` redirects) and
+  `/learn/:slug` the one player, signed in or not (`/courses/:slug` redirects to it); the Games page shows
   unfinished courses in Continue and due moves in "Due today". Ask my coach
   (`POST /api/course-questions`) is a stateless streamed turn with the
   learner's own AI setup. Deleting an account deletes its courses, progress

@@ -10,28 +10,30 @@ import { shortDate } from '../../games/gameDisplay.js';
 import { useCourseEnrollments } from '../../games/useCourseEnrollments.js';
 import { useCourseReviewsDue } from '../../games/useCourseReviewsDue.js';
 import { BAND_LABELS } from '../../settings/BandSelect.js';
+import { useCourseProgressStore } from '../player/useCourseProgressStore.js';
 import { COURSE_KIND_INFO } from '../courseKinds.js';
 import { useCourseCatalogue, type CatalogueSort } from './useCourseCatalogue.js';
 import { SortControl, levelGroups } from './course-sort.js';
 import '../../games/GameCard.css';
 import '../../games/GamesPage.css';
 import '../../games/RailCard.css';
-import './CoursesHomePage.css';
+import './LearnHomePage.css';
 
 type DueCourse = CourseReviewDueResponse['courses'][number];
 
-/** docs/courses.md §9, §11: `/courses`, the learner's courses in the Games
- * page's style. Learning (started, unfinished; can be removed), Browse (the
- * public catalogue by kind, marking courses already learning or learned) and
- * Learned (finished, with moves due for review). */
-export function CoursesHomePage(): ReactNode {
+/** docs/courses.md §9, §11: `/learn`, the courses, for everyone, in the Games
+ * page's style. Browse (the public catalogue by kind) is always there. Signed
+ * in, it also has Learning (started, unfinished; can be removed) and Learned
+ * (finished, with moves due for review), and marks the courses in Browse. */
+export function LearnHomePage(): ReactNode {
   const queryClient = useQueryClient();
   const [kind, setKind] = useState<CourseKind | null>(null);
   const [sort, setSort] = useState<CatalogueSort>('curriculum');
-  const enrollments = useCourseEnrollments();
+  const signedIn = useCourseProgressStore()?.signedIn ?? false;
+  const enrollments = useCourseEnrollments(signedIn);
   const catalogue = useCourseCatalogue(kind, sort);
   const browse = catalogue.data?.pages.flatMap((page) => page.items) ?? [];
-  const due = useCourseReviewsDue().data?.courses ?? [];
+  const due = useCourseReviewsDue(signedIn).data?.courses ?? [];
   const remove = useMutation({
     mutationFn: (slug: string) => apiDelete(`/api/course-enrollments/${encodeURIComponent(slug)}`),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['course-enrollments'] })
@@ -45,21 +47,28 @@ export function CoursesHomePage(): ReactNode {
 
   return (
     <div className="page courses-home">
-      <h1>Courses</h1>
+      <header className="courses-home__top">
+        <h1>Courses</h1>
+        <a href="/" className="courses-home__brand">
+          {signedIn ? 'Back to the app' : 'FreeChessCoach'}
+        </a>
+      </header>
 
-      <section aria-label="Learning" className="games-page__section">
-        <h2 className="games-page__section-heading">Learning</h2>
-        {enrollments.isError && <p className="games-page__empty">{describeApiError(enrollments.error) ?? 'Could not load your courses.'}</p>}
-        {remove.isError && <p className="games-page__empty">{describeApiError(remove.error) ?? 'Could not remove the course.'}</p>}
-        {enrollments.isSuccess && !learning.length && <p className="courses-home__empty">No courses started yet. Pick one below; your place is kept as you go.</p>}
-        {learning.length > 0 && (
-          <HorizontalScroller label="Courses you are learning">
-            {learning.map((course) => (
-              <CourseContinueCard key={course.slug} course={course} onRemove={(slug) => remove.mutate(slug)} />
-            ))}
-          </HorizontalScroller>
-        )}
-      </section>
+      {signedIn && (
+        <section aria-label="Learning" className="games-page__section">
+          <h2 className="games-page__section-heading">Learning</h2>
+          {enrollments.isError && <p className="games-page__empty">{describeApiError(enrollments.error) ?? 'Could not load your courses.'}</p>}
+          {remove.isError && <p className="games-page__empty">{describeApiError(remove.error) ?? 'Could not remove the course.'}</p>}
+          {enrollments.isSuccess && !learning.length && <p className="courses-home__empty">No courses started yet. Pick one below; your place is kept as you go.</p>}
+          {learning.length > 0 && (
+            <HorizontalScroller label="Courses you are learning">
+              {learning.map((course) => (
+                <CourseContinueCard key={course.slug} course={course} onRemove={(slug) => remove.mutate(slug)} />
+              ))}
+            </HorizontalScroller>
+          )}
+        </section>
+      )}
 
       <section aria-label="Browse" className="games-page__section">
         <div className="courses-home__browse-header">
@@ -110,24 +119,26 @@ export function CoursesHomePage(): ReactNode {
         )}
       </section>
 
-      <section aria-label="Learned" className="games-page__section">
-        <h2 className="games-page__section-heading">Learned</h2>
-        {!learned.length && <p className="courses-home__empty">Courses you finish land here, with their moves to review.</p>}
-        {learned.length > 0 && (
-          <HorizontalScroller label="Courses you have learned">
-            {learned.map((course) => (
-              <LearnedCard key={course.slug} course={course} due={dueBySlug.get(course.slug)} />
-            ))}
-          </HorizontalScroller>
-        )}
-      </section>
+      {signedIn && (
+        <section aria-label="Learned" className="games-page__section">
+          <h2 className="games-page__section-heading">Learned</h2>
+          {!learned.length && <p className="courses-home__empty">Courses you finish land here, with their moves to review.</p>}
+          {learned.length > 0 && (
+            <HorizontalScroller label="Courses you have learned">
+              {learned.map((course) => (
+                <LearnedCard key={course.slug} course={course} due={dueBySlug.get(course.slug)} />
+              ))}
+            </HorizontalScroller>
+          )}
+        </section>
+      )}
     </div>
   );
 }
 
 function CatalogueCard({ course, status }: { course: CourseCatalogItem; status?: string }): ReactNode {
   return (
-    <Link to={`/courses/${encodeURIComponent(course.slug)}`} className="card courses-home__course">
+    <Link to={`/learn/${encodeURIComponent(course.slug)}`} className="card courses-home__course">
       <span className="rail-card__top">
         <span className="rail-card__chip">
           <BookIcon width={16} height={16} />
@@ -155,7 +166,7 @@ function LearnedCard({ course, due }: { course: CourseEnrollment; due?: DueCours
           Learned
         </span>
       </div>
-      <Link to={`/courses/${encodeURIComponent(course.slug)}`} className="rail-card__title rail-card__title-wrap courses-home__title-link">
+      <Link to={`/learn/${encodeURIComponent(course.slug)}`} className="rail-card__title rail-card__title-wrap courses-home__title-link">
         {course.title}
       </Link>
       <span className="rail-card__meta">
@@ -166,7 +177,7 @@ function LearnedCard({ course, due }: { course: CourseEnrollment; due?: DueCours
         <span className="game-card__spacer" />
         {due && (
           <Link
-            to={`/courses/${encodeURIComponent(course.slug)}?stage=drill`}
+            to={`/learn/${encodeURIComponent(course.slug)}?stage=drill`}
             className="game-card__icon-action game-card__icon-action--primary"
             title="Drill"
             aria-label={`Drill ${course.title}`}

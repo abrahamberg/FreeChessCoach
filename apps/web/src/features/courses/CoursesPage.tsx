@@ -13,7 +13,7 @@ import '../games/GameCard.css';
 import '../games/DeleteGameButton.css';
 import '../games/GamesPage.css';
 import '../games/RailCard.css';
-import './learn/CoursesHomePage.css';
+import './learn/LearnHomePage.css';
 import './CoursesPage.css';
 
 type Filter = 'all' | 'drafts' | 'published';

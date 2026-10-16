@@ -142,3 +142,16 @@
   display: block;
   margin: var(--space-4) auto 0;
 }
+
+.courses-home__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.courses-home__brand {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  text-decoration: none;
+}

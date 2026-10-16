@@ -6,8 +6,9 @@ import { importBrowserProgress, localToday } from '../courses/player/course-prog
 /** docs/courses.md §11: courses with moves due today, in the learner's own
  * day. Drills done before signing in are moved to the account first, so
  * they count here too. */
-export function useCourseReviewsDue() {
+export function useCourseReviewsDue(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ['course-reviews-due'],
     queryFn: async ({ signal }) => {
       await importBrowserProgress().catch(() => undefined);

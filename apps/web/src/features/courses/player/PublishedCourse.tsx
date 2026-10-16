@@ -2,6 +2,7 @@ import { COURSE_STAGES, type CourseStage } from '@freechesscoach/chess-analysis'
 import { PublicCourseResponseSchema } from '@freechesscoach/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, type ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ApiError, apiGet } from '../../../api/client.js';
 import { CoursePlayer } from './CoursePlayer.js';
 import { useCourseProgressStore } from './useCourseProgressStore.js';
@@ -9,19 +10,18 @@ import { useCourseProgressStore } from './useCourseProgressStore.js';
 export interface PublishedCourseProps {
   slug: string;
   startStage?: CourseStage;
-  /** Where "no course here" points: the site for the public page, the
-   * Courses page inside the app. */
-  home: ReactNode;
-  /** The header's back button. */
-  back: { label: string; onBack: () => void };
-  /** Inside the signed-in app (the account menu in the header). */
-  inApp?: boolean;
 }
 
 /** docs/courses.md §9: a published course in the player, fetched by its
- * slug. `/learn/:slug` shows it on its own; `/courses/:slug` in the app. */
-export function PublishedCourse({ slug, startStage, home, back, inApp = false }: PublishedCourseProps): ReactNode {
+ * slug, at `/learn/:slug` for everyone. Signed in, the learner gets the rest
+ * (their saved progress, review, Ask my coach, the account menu, a way back
+ * to their Courses); signed out, the same course works from this browser. */
+export function PublishedCourse({ slug, startStage }: PublishedCourseProps): ReactNode {
+  const navigate = useNavigate();
   const progress = useCourseProgressStore();
+  const signedIn = progress?.signedIn ?? false;
+  const home = <Link to="/learn">All courses</Link>;
+  const back = { label: 'Back to Courses', onBack: () => navigate('/learn') };
   const course = useQuery({
     queryKey: ['public-course', slug],
     queryFn: ({ signal }) => apiGet(`/api/public/courses/${encodeURIComponent(slug)}`, PublicCourseResponseSchema, signal)
@@ -56,7 +56,7 @@ export function PublishedCourse({ slug, startStage, home, back, inApp = false }:
       startStage={startStage}
       evals={course.data.evals}
       back={back}
-      inApp={inApp}
+      inApp={signedIn}
     />
   );
 }

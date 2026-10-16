@@ -1382,8 +1382,10 @@ Decided with the owner:
   tempting moves there, its "why" is said in place of "Have another look."
   The last
   episode's button is "Practice ›", which opens the takeaways on their own
-  Remember screen first. In the app, `/courses/:slug` is the same player in
-  the signed-in shell (a board route: its own header, no top bar).
+  Remember screen first. There is one address,
+  `/learn/:slug`, for everyone: the player checks for a signed-in user and
+  adds the account menu, saved progress and a way back to Courses.
+  `/courses/:slug` redirects to it.
 - Learners never make audio: it is made once, in the creator's browser, when
   they publish (§8). Each file has its own key in the bucket
   (`courses/<slug>/audio/<uuid>.mp3`, made at upload and never reused), so a
@@ -1546,7 +1548,7 @@ The player saves as the learner moves (debounced) and reopens there;
 "Start over" (the header's menu) resets it. Unfinished courses join the
 Games page's Continue rail, mixed with game sessions by last activity.
 
-**The Courses page** (`/courses`, `features/courses/learn/`): Learning
+**The Courses page** (`/learn`, `features/courses/learn/`, public; `/courses` redirects to it; Learning and Learned show only signed in): Learning
 (unfinished, with the stage and a remove button), Browse (the §9
 catalogue, sorted Curriculum (the default, grouped by rating, each card with
 its level code) or Newest, kind filter pills, a Learning/Learned badge) and Learned
@@ -1598,7 +1600,7 @@ short" model (a course and one clip recorded in two shapes) and the kinds
 
 | Product | Where it lives | Job | Length |
 |---|---|---|---|
-| **Course** | our board (`/courses/:slug`, `/learn/:slug`) | Teach. Holds everything: every episode, every note, the tempting moves and why they fail, the quizzes and the drills. | as long as the lesson |
+| **Course** | our board (`/learn/:slug`) | Teach. Holds everything: every episode, every note, the tempting moves and why they fail, the quizzes and the drills. | as long as the lesson |
 | **Video** (long clip) | YouTube, 16:9 | Build trust and subscribers: storytelling commentary, stops on every important move, weighs the moves that look right and says why they are not. | 5–15 min |
 | **Reel** (short clip) | YouTube Shorts, Instagram Reels, TikTok, 9:16 | Reach: one idea, or one puzzle, that stops the scroll. | 30–45 s |
 
