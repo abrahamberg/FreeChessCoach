@@ -47,12 +47,12 @@ export function LearnHomePage(): ReactNode {
 
   return (
     <div className="page courses-home">
-      <header className="courses-home__top">
-        <h1>Courses</h1>
-        <a href="/" className="courses-home__brand">
-          {signedIn ? 'Back to the app' : 'FreeChessCoach'}
-        </a>
-      </header>
+      <h1>Courses</h1>
+      {!signedIn && (
+        <p className="courses-home__signin">
+          Free for everyone. <a href="/oauth2/start?rd=/learn">Sign in</a> to keep your place on every device and get the moves you missed back for review.
+        </p>
+      )}
 
       {signedIn && (
         <section aria-label="Learning" className="games-page__section">

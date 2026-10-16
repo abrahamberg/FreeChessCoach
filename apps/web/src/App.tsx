@@ -8,6 +8,7 @@ import { CourseEditorPage } from './features/courses/CourseEditorPage.js';
 import { CourseIntakePage } from './features/courses/CourseIntakePage.js';
 import { CoursesPage } from './features/courses/CoursesPage.js';
 import { LearnHomePage } from './features/courses/learn/LearnHomePage.js';
+import { useCourseProgressStore } from './features/courses/player/useCourseProgressStore.js';
 import { LearnPage } from './features/courses/player/LearnPage.js';
 import { FindGamesPage } from './features/games/FindGamesPage.js';
 import { GamesPage } from './features/games/GamesPage.js';
@@ -66,6 +67,27 @@ function GameReviewRoute(): ReactNode {
   return <GameReviewPage key={gameId} />;
 }
 
+/** Every route but the public course page. `/learn`, the courses list, is
+ * the one the app and a visitor share: a signed-in learner gets it inside the
+ * app (its top bar, tabs and account menu), a visitor in the same frame with
+ * "Sign in". */
+function AppEntry(): ReactNode {
+  const { pathname } = useLocation();
+  return pathname === '/learn' && !getDemoRuntime() ? <LearnGate /> : <AppRoutes />;
+}
+
+function LearnGate(): ReactNode {
+  const progress = useCourseProgressStore();
+  if (!progress) return <p className="meta">Loading…</p>;
+  return progress.signedIn ? (
+    <AppRoutes />
+  ) : (
+    <AppShell guest>
+      <LearnHomePage />
+    </AppShell>
+  );
+}
+
 /** A course's one address is `/learn/:slug`; it knows by itself whether the learner is signed in. */
 function CourseRedirect(): ReactNode {
   const { slug = '' } = useParams<{ slug: string }>();
@@ -84,9 +106,8 @@ export function App(): ReactNode {
       <BrowserRouter basename={getDemoRuntime() ? DEMO_BASENAME : undefined}>
         <Routes>
           {/* Public, no login (docs/courses.md §9): outside the shell, which needs a user. */}
-          <Route path="/learn" element={<LearnHomePage />} />
           {!getDemoRuntime() && <Route path="/learn/:slug" element={<LearnPage />} />}
-          <Route path="*" element={<AppRoutes />} />
+          <Route path="*" element={<AppEntry />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
@@ -123,6 +144,7 @@ export function AppRoutes(): ReactNode {
             <Route path="/dashboard" element={<Navigate to="/progress" replace />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/learn" element={<LearnHomePage />} />
             <Route path="/courses" element={<Navigate to="/learn" replace />} />
             <Route path="/courses/:slug" element={<CourseRedirect />} />
             {/* The creator's pages were under /courses until 2026-09-28. */}

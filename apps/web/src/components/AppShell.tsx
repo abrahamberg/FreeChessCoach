@@ -15,6 +15,10 @@ import './AppShell.css';
 
 export interface AppShellProps {
   children: ReactNode;
+  /** A visitor who is not signed in (the public courses list): the same top
+   * bar and page frame, with "Sign in" where the account menu is, and none of
+   * what needs an account (the engine status, the tab bar, the notices). */
+  guest?: boolean;
 }
 
 // Play (with the coach or a bot) starts from the Games page since
@@ -48,11 +52,11 @@ function isBoardRoute(pathname: string): boolean {
  * favor of its own page-level back button. Below the desktop breakpoint the
  * primary nav also appears as a bottom tab bar — that one also hides on a
  * board route. */
-export function AppShell({ children }: AppShellProps): ReactNode {
+export function AppShell({ children, guest = false }: AppShellProps): ReactNode {
   const isDesktop = useIsDesktop();
   const { pathname } = useLocation();
-  const showGlobalNav = !isBoardRoute(pathname);
-  const showBottomTabBar = showGlobalNav && !isDesktop;
+  const showGlobalNav = guest || !isBoardRoute(pathname);
+  const showBottomTabBar = !guest && showGlobalNav && !isDesktop;
 
   return (
     <PageMenuProvider>
@@ -61,11 +65,11 @@ export function AppShell({ children }: AppShellProps): ReactNode {
          * bot-session/review) hides the top bar but still wants the nudge
          * toward full screen, arguably more than any other page. */}
         {/* An install nudge for an app the demo visitor has not signed into would only cover the demo notice. */}
-        {!getDemoRuntime() && <FullscreenPrompt />}
+        {!getDemoRuntime() && !guest && <FullscreenPrompt />}
         <DemoBanner />
-        {showGlobalNav && <TopBar isDesktop={isDesktop} />}
-        <ChessApiPauseNotice />
-        <RateLimitNotice />
+        {showGlobalNav && (guest ? <GuestTopBar /> : <TopBar isDesktop={isDesktop} />)}
+        {!guest && <ChessApiPauseNotice />}
+        {!guest && <RateLimitNotice />}
         <main className="app-shell__content">{children}</main>
         {showBottomTabBar && <BottomTabBar />}
       </div>
@@ -79,6 +83,25 @@ function Brand(): ReactNode {
       <img src="/brand/logo.png" alt="" className="app-shell__mark" width="30" height="30" />
       <span className="app-shell__wordmark">FreeChessCoach</span>
     </NavLink>
+  );
+}
+
+/** The top bar for a visitor who is not signed in: the logo, and a way in. */
+function GuestTopBar(): ReactNode {
+  return (
+    <header className="app-shell__topbar">
+      <div className="app-shell__topbar-inner">
+        <a href="/" className="app-shell__brand" title="FreeChessCoach">
+          <img src="/brand/logo.png" alt="" className="app-shell__mark" width="30" height="30" />
+          <span className="app-shell__wordmark">FreeChessCoach</span>
+        </a>
+        <div className="app-shell__topbar-end">
+          <a className="btn-primary" href="/oauth2/start?rd=/learn">
+            Sign in
+          </a>
+        </div>
+      </div>
+    </header>
   );
 }
 
