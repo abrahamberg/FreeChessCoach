@@ -20,6 +20,7 @@ describe('chooseNativeVoice', () => {
   test('tells "Female" from "Male" in Google voice names', () => {
     const google = [voice('Google UK English Male', 'en-GB', false), voice('Google UK English Female', 'en-GB', false)];
     expect(chooseNativeVoice('huntress', google).voice?.name).toBe('Google UK English Female');
+    expect(chooseNativeVoice('witch', google).voice?.name).toBe('Google UK English Female');
     expect(chooseNativeVoice('commander', google).voice?.name).toBe('Google UK English Male');
   });
 

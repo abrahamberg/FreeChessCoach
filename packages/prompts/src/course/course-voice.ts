@@ -11,7 +11,8 @@ const CLIP_EXAMPLES: Record<CoachPersona, [string, string]> = {
   huntress: ['The king looks safe. It is not. Watch the corner.', 'One quiet move, and now they are the prey.'],
   shark: ['Bro took the free pawn. Free? Sheesh. Watch this.', 'He thinks he is winning. He is cooked. No cap.'],
   sunzi: ['The strong move waits. Patience first, then the strike.', 'See the terrain as it is. The open file decides this game.'],
-  gambler: ['Everybody at this table grabs the pawn. Bro, that is the bluff.', "I'm telling you, push the chips in. The king has nowhere to run."]
+  gambler: ['Everybody at this table grabs the pawn. Bro, that is the bluff.', "I'm telling you, push the chips in. The king has nowhere to run."],
+  witch: ['Give him a pawn. Watch what he gives back.', 'Shh. Let him think he is winning. The spell is already cast.']
 };
 
 /** `general` has no chat voice by design; a course still needs one. */

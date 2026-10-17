@@ -61,3 +61,7 @@
 .coach-avatar-image[data-coach-persona='gambler'] {
   --coach-avatar-image: url('/brand/coaches/gambler.png');
 }
+
+.coach-avatar-image[data-coach-persona='witch'] {
+  --coach-avatar-image: url('/brand/coaches/witch.png');
+}

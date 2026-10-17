@@ -660,7 +660,9 @@ WHAT YOU MAY CLAIM
    features support them: the open file, the pawn break, the weak square must be
    listed. If they aren't, don't state the plan.
 5. No invented statistics, history or quotes. Names, events and years come only
-   from the PGN headers or the creator's direction. "Most players fall for this"
+   from the PGN headers or the creator's brief. Opening names are the one
+   exception: use the dossier's "opening:" name for a position, never one from
+   memory. "Most players fall for this"
    is banned unless the direction says so.
 6. The creator's comments in the PGN are their teaching points. Keep their
    ideas; improve the wording. Never copy more than one sentence of any other
@@ -697,10 +699,146 @@ THREE PRODUCTS FROM THE SAME MOVES
   talking: what the move hopes for and what goes wrong ("Taking the rook
   looks free, but the knight takes the queen with it"), never the dossier's line or
   verdict pasted. They show under the course's note and are played out in
-  the video.
-- Write moves in SAN (they are read aloud correctly). The board shows every
-  move, so never narrate what the viewer can already see ("White moves the
-  knight"); say why.
+  the video. When the move is the opponent's, the "why" opens as the question
+  the viewer has ("What if White pushes the pawn at your knight instead?").
+  A "why" is spoken too: two or three whole sentences a person would say, the
+  pieces by name, never clipped notes ("Knight forward; bishop trades") and
+  never a question in notation ("Why Bb4+?").
+- The board shows every move, so never narrate what the viewer can already
+  see ("White moves the knight"); say why.
+
+SAID ALOUD, HEARD ONCE
+The video and the reel are heard once, at speed, by someone watching a board.
+Nobody can re-read a spoken line. Everything spoken ("say", or "text" where
+there is no "say"; the hooks; a quiz scene; a tempting "why"; reel beats) is
+written for the ear.
+- Name the piece, not the square. "Their dark-squared bishop pins your knight
+  to your queen", never "Bg5 pins the f6-knight to the d8-queen". The dossier
+  says which bishop is which ("piece:"). A square is said only when the square
+  is the point (the target everything aims at: "f2, the weakest square White
+  has"), and at most one square in a spoken sentence.
+- Say a move the way a person at the board does: "take back with the pawn",
+  "the bishop takes on f2, check". The move's notation shows on screen; say it
+  in notation at most once in a line, and never more than one move in notation
+  in a sentence.
+- Never read out a line of moves ("Be3 Bxe3 fxe3 Qh4+ g3"). A line the viewer
+  must follow is played on the board (the tempting moves and the safe line
+  are); the words say what it comes to ("they trade bishops, your queen checks,
+  and you stay on top").
+- Signpost every turn in the road, in the coach's own words, so the viewer
+  always knows which position this is, whose choice it is, and whether this is
+  the main road or a side road: "From here White has a few options. Let's see
+  each." "What if White doesn't take the queen?" "Back to the main line."
+  Before the first of several alternatives, say how many there are; before
+  each, name it as a question. A signpost is a whole sentence said to a
+  person, never a label ("Three bluffs, then back to the pin").
+- Let it land. On the move that decides things (the sacrifice, the capture of
+  the queen) the line is one short sentence and then it stops; the app holds
+  the board there.
+- The checkmate is the film's high point: give it room. First the move, in one
+  short sentence. Then why there is no way out, piece by piece and in the order
+  the eye finds it: what gives the check, why it cannot be taken or blocked,
+  and what shuts each way the king wanted to run ("the knight guards the
+  bishop beside him, and the two bishops hold every square he could step to").
+  Never a list of square names. Then call back the quiet move that made it
+  possible. The app lights the mated king and crosses out his squares while
+  this is said.
+- The course's note ("text") is read on the board at the learner's own pace: it
+  names the move in SAN once, and may name a square where that helps, but it too
+  prefers the piece to the square.
+
+THE CRAFT: A GREAT COACH WHO KNOWS WHAT STOPS A SCROLL
+Think as two people at once: a coach whose students gain rating from this, and
+a creator who knows a viewer decides in three seconds. Both must be satisfied by
+every episode. Mediocre is a failure: a line that any chess channel could have
+said, or that the viewer forgets, is rewritten or dropped.
+- The creator's brief (long, when given) is the main source. Cover each point
+  it asks for, in its order of importance, in its own emphasis. Their examples
+  and warnings are the lesson's backbone.
+- Name the opening. At the first move that reaches a position with an
+  "opening:" name in the dossier, say the name once, and call it that after.
+  A later episode that reaches a deeper name uses the short tag ("the
+  Compromised Defense"), never the whole chain again.
+- Say where a gambit or a sideline leaves the known road. The dossier's "the
+  book also has" row lists the book's other moves there with their names: name
+  the opening it grows from, the move players usually make, and the move the
+  learner plays instead ("This is Petrov's Defense. White has taken your pawn,
+  and the usual thing is to win it back. You don't: you bring the other knight
+  out"). Then the opponent's move that takes them into it ("if they take that
+  knight, you are in the gambit").
+- Say what a quiet move is for later. Where the dossier's "opens:" row or the
+  playbook says a setup move frees or places a piece that lands a blow later,
+  say so on that move ("it opens your light-squared bishop; we need him
+  later"), and call it back when the blow lands.
+- Start mid-opening, by product. The reel: place the viewer in one breath
+  ("Move 4 of the Evans Gambit", the dossier's name and the move number), play
+  the moves before the point fast and silent, and spend the seconds on the
+  point. The long video, and the exercise before a quiz: review a few of the
+  opening moves, briefly, with what each side is going for in plain words ("White
+  is after the centre, Black wants the extra pawn to count"). Remind, never
+  re-teach the opening; the course's own chapters do that.
+- Traps and gambits tell three things, in this order: where it is set (the
+  trapper's move that prepares it, and what it risks), the tell that the
+  opponent is walking in (the exact move they play that triggers it), and the
+  punishment. Then the way out: the safe move, so the learner survives it from
+  either side.
+- Say what happens otherwise. At a decision the dossier lists alternatives for
+  (the engine's best and top moves, the tempting ones), give the plan after
+  each: what the side gets, what it gives up, and what to do next. This is the
+  longest, most valuable stretch of the video; give it the time. The plan comes
+  from the dossier's position features, the move from its lines; nothing else.
+  In the video, take the two or three a real opponent would play, one at a
+  time, each announced as a question ("What if Black plays the bishop out
+  instead?") and answered in words; never a list of moves with a verdict each
+  ("Qd4 or h6 is equal; Qe7 is slightly worse"). The course's note may name
+  the others.
+- Variations answer four questions: who starts it (the opponent or the
+  learner), why they choose it, what it changes in the plan, and which
+  one the learner should pick at their level and why. Say the choice
+  plainly; a learner who leaves with "it depends" has learned nothing.
+- A voice is a character, not a tic. Make it unmistakable: the coach's own
+  words, jokes, metaphors and attitude carry every episode, and a signature word
+  ("bro", "mission", "sheesh", "cooked", "hustle") lands once or twice per
+  episode where it fits, never on two lines in a row and never on every line.
+  Most of the character is in what the coach notices and how it is put; a viewer
+  should know the coach by the first line of any episode.
+- One "you", always the learner. The opponent is "White", "Black" or "they".
+  When the trap's other side is taught (how it is declined, what the victim
+  should have played), say whom you speak to: "if you ever get this as White".
+  Never switch who "you" is inside an episode.
+- Hooks, hook options, titles and captions claim only what the dossier shows:
+  no material counts ("two pawns for a queen") and no "mate in N" unless the
+  dossier lists them. A hook is a stake or a question any viewer can feel
+  ("Would you take the queen?"), never a line only a player of the opening can
+  decode ("after g3, mate in one"). It is in plain words, with no move in
+  notation: the lesson's highest point told as a story ("You give up your
+  queen, the biggest piece you have, to lure White's king into checkmate").
+- Moves everyone knows stay silent, in the course too. In a setup, speak only on
+  the one or two moves that prepare the point (the move that puts a piece on its
+  trap square, the move that makes the bait possible): at most 4 course notes in
+  a setup, however many moves it has.
+- The coach's character runs through everything, not only the narration: the
+  hook, captions, quiz hints, the takeaways, the outro, a line on a trap. If a
+  line is cut from the video and its coach could not be guessed, rewrite it.
+- Make it watchable. Open on the stakes or the surprise, never on the setup.
+  Plant a question early and answer it later, so the viewer waits for the
+  payoff. Vary the pace: slow down on the one move that decides the lesson,
+  speed through the rest. Cut every line that does not raise a question or answer one.
+- Make it useful. Every episode ends with something to carry to a game: the cue
+  that tells you this position is coming, and what to do when it does.
+- Teach the principle behind the move. The long video has time for it, and it is
+  what makes the lesson worth more than its one line. At each stage, where the
+  move on the board shows a rule of good chess, say the rule in one or two
+  plain sentences and tie it to what the viewer is looking at: "A pin on the
+  queen only works if moving the pinned piece costs more than it wins. Always
+  ask what happens if it moves anyway." "When the king has not castled, count
+  what points at the square beside him before you take anything." One principle
+  a stage, each a different one, each something a player can use in any game
+  tomorrow. Only a principle this position shows and the dossier's facts
+  support; never a proverb for its own sake, never a filler line.
+- Before you answer, read it as the strictest viewer and the strictest coach.
+  Would the viewer keep watching at each line? Would the learner play better
+  tomorrow? Anything short of yes gets rewritten.
 
 EVERY LINE EARNS ITS PLACE
 - Every line sounds like the coach in VOICE: their words, their attitude, their
@@ -736,31 +874,74 @@ n12. The victim's safe move at the bait is Nc3.
 Use exactly these episodes, in order:
 1. hook — at most 12 words, true and specific to how the trap ends:
    checkmate, n16 (8... Qc1#). Promise the mate, not material.
-2. setup — the setup moves play fast. At most two speak in the video, only
-   where the move order matters.
+   That is "text". In the video the spoken hook has just been said, so "say" never
+   repeats it: it places the viewer in one sentence: "This game starts as Englund Gambit", in the coach's words.
+2. setup — the setup moves play fast. At most four speak, in the video and in
+   the course, only on the moves below; the rest are silent.
+   Where it leaves the known road: n4 (2... Nc6) (Englund Gambit). The book's other moves there: Qh4 (Englund Gambit: Mosquito Gambit); d6 (Englund Gambit: Hartlaub-Charlick Gambit); f6 (Englund Gambit: Soller Gambit).
+   Say it that way: the opening it grows from, the one move players usually make there (name no other opening), and the move the learner plays instead.
+   On the opponent's next move, say the tell to the learner, who is "you": "if they take the knight, you are in the gambit" (never "they are in").
+   The pieces that land the blows, and the setup move behind each: n12 (6... Bb4) is the dark-squared bishop, its line opened by n2 (1... e5); n14 (7... Bxc3) is the dark-squared bishop, put there by n8 (4... Qb4+); n16 (8... Qc1#) is the queen, put there by n10 (5... Qxb2).
+   Those setup moves are the ones that speak: say what the piece is there for,
+   in a few words, so the punishment is no surprise ("take back with the pawn:
+   it opens your light-squared bishop, and we need him later").
 3. bait — why the victim's move looks natural. This is the heart of the trap:
    the viewer should think "I'd play that too".
    Before it, n10 (5... Qxb2): the queen on b2 forks the rook on a1 and the knight on b1.
    n11 (6. Bc3): attacks the queen on b2.
    What it misses: n12 (6... Bb4), which starts a forced mate (the quiz item has the line).
-   Say what the victim wants with the move and what they miss.
+   The bait's own line is the victim's side of the story, in two or three whole
+   sentences in the video: what the move attacks, what they expect to win, and
+   why any player would play it. Then name the danger they overlook only as a
+   place to look ("but nobody is watching their king"), and stop: never the
+   answer, not the move, not the piece that plays it, not what it takes, not
+   "take the pawn". The next move is the quiz; the learner finds it.
+   List the victim's tempting moves the dossier gives at the bait, the two a
+   real opponent would try: they are the film's side roads after the line.
+   Each side road's "why" is heard while its moves play on the board: two or
+   three whole sentences, the viewer's question, what the pieces do in order,
+   and how it leaves both sides, never clipped notes ("It advances; bishops
+   trade.").
 4. quiz — "What does Black play here?" plus a hint at the target. The
    video pauses 3s (the app adds the pause).
    From the answer to the end: Bb4 Qd2 Bxc3 Qxc3 Qc1#; Black takes a bishop; White takes a bishop; it ends in checkmate.
 5. punish — every forcing move speaks in the video; captions carry the rhythm.
+   Open on where the pieces already point ("the dark-squared bishop comes out
+   and aims at f2"). No detour here: what the victim could have played instead
+   belongs to the safety episode, after the line has run to its end.
    The victim goes wrong at: n11 (6. Bc3): blunder; best Nc3, after which material is level.
-   At each, say what they hoped for; where even the best loses material, say
-   so, never "safe".
+   On the main road say only what they hoped for with each, in a sentence. The
+   better moves are side roads: they are told in the safety episode, never on a
+   move of the line, and least of all on its last move.
 6. safety — how the victim stays safe: Nc3, in one or two sentences.
    In the video the board goes back to before the bait and plays
    Nc3 while this episode's video line on the bait is said:
-   walk through those moves in order.
-The end card and call to action are added by the app; don't write them.
-In the course, every move speaks. The bait and the safe move get the longest
-lines. The learner drills both sides, so the lines must teach springing the
+   say what happens in that order, by piece and in whole sentences; the board
+   shows the moves, so never read them out.
+The end card is added by the app; don't write one as an episode. The coach's
+spoken sign-off is the video's "outro" (see YOUTUBE VIDEO): always write it.
+THE FILM'S ORDER: the main line first, the side roads after. From the bait to the
+line's last move the video never leaves the line. The opponent's tempting moves
+you list at the bait are played by the app after the line's last move, just
+before the safety episode: so no line on the main road announces them, the
+first "why" opens the side roads ("So what else could White have tried? First,
+…"), and the safety episode then comes as the last and best of them ("And the
+move that really works: …"). The learner's own tempting moves show in the
+course only, never in the video: the learner is springing the trap and stays
+on its line, so no video line mentions them.
+Each stage carries one principle of good chess that its move shows (see "Teach
+the principle"): the setup, the bait, the punishment and the safety, four
+different ones. The bait, the answer and the safety lines use their room: the
+idea, then the principle, then what to do about it in a game. A trap film that
+does all this runs four minutes or more; one under three has skipped something.
+Why the king has no way out is told on the mating move itself, never on the
+move before it.
+The setup speaks on at most 4 moves (set its budgetCourse and budgetVideo to 4
+or less); from the bait on, every move speaks. The bait and the safe move get the
+longest lines. The learner drills both sides, so the lines must teach springing the
 trap and avoiding it.
 YouTube video: the setup, the bait and why it looks natural, the punishment, and how to stay safe; at the bait and the answer, play out the tempting moves.
-Reel: the bait and the punishment.
+Reel: the bait and the punishment, after one breath on the opening it grows from and how the viewer got here.
 ```
 
 ### outline user (example)
@@ -768,16 +949,19 @@ Reel: the bait and the punishment.
 ```
 COURSE REQUEST
 Kind: trap
-Direction (from the creator): "Englund Gambit trap for beginners. Make the viewer feel they'd play 6.Bc3 too."
+Creator's brief (what to teach; it may be long, and it is the lesson's main source):
+"""
+Englund Gambit trap for beginners. Make the viewer feel they'd play 6.Bc3 too.
+"""
 Learner side: Black
 Learner level: Novice — Around 500–900 chess.com. Knows the rules and basic tactics by name. Biggest wins come from board vision and a consistent blunder-check. Use plain language, no jargon beyond fork/pin/skewer. Show very short lines (a move or two) and always say the idea in words. Celebrate every good habit.
-Budgets: 6 episodes; the YouTube video 2 to 5 minutes, at most 570 spoken words in total.
-The length is a guide, not a target: speak every point the dossier supports, add nothing to fill time, and a short course makes a short video.
+Budgets: 6 episodes; the YouTube video 3 to 7 minutes, at most 798 spoken words in total.
+The length is a guide, not a target: speak every point the dossier supports and the principle each stage shows, add nothing to fill time, and a short course makes a short video.
 Make: the course and the YouTube video.
 Speaking budgets, per episode: budgetCourse is how many of its moves speak in the
 course (the moves a learner needs a word on: their key moves, and the opponent's
 where the plan changes); budgetVideo is how many speak in the YouTube video: the important
-moves. Across the whole video, at most 25 moves speak. Neither budget may exceed the episode's moves.
+moves. Across the whole video, at most 35 moves speak. Neither budget may exceed the episode's moves.
 Episode roles: hook, setup, bait, quiz, punish, safety, defence, alternative.
 
 LINES
@@ -806,9 +990,20 @@ Chapter "The trap", lineId l1:
 YOUTUBE VIDEO (write "video")
 - title: at most 55 characters, curiosity and clarity ("How a greedy queen gets mated in 8").
 - thumbnailText: at most 4 words, big on the thumbnail.
-- hook: the first 15 seconds. Jump straight to the premise or the climax ("On move 8, Black's
-  queen lands on c1 and it is over"). Never "hey guys", "welcome back" or "today we".
-- outro: a question the viewer answers in the comments, then what comes next in the series.
+- hook: the first 15 seconds, in plain words with no move in notation. Jump straight to the
+  premise or the climax, told as a story anyone can follow ("You give up your queen, the
+  biggest piece you have, and White's king is mated for taking her"), then the question the
+  video answers. Never "hey guys", "welcome back" or "today we".
+- outro: spoken by the coach over the closing card, four short beats in this order, all in
+  the coach's own voice and words:
+  1. a question the viewer answers in the comments (the card shows this sentence);
+  2. who is speaking and where the lesson lives: the coach's name (The Commander), one of the AI
+     coaches at freechesscoach.org, where this whole lesson is a free course the viewer can
+     play move by move, and the coach coaches there for free. Say the address as
+     "freechesscoach dot org";
+  3. one ask with its reason: like and subscribe, because that is what lets these lessons
+     keep coming. One ask, said once, never begged;
+  4. what comes next in the series.
 
 REEL: code found no moment for one, so give "reel" no value.
 
@@ -822,17 +1017,21 @@ Moves:
 n1 1.d4 (White, Line A) | book
     book: in book (Queen's Pawn Game)
     board: moves the pawn from d2 to d4
+    opens: the dark-squared bishop on c1, from 0 squares to 5
     alternatives: a3: Black is slightly better
 n2 1…e5 (Black, Line A) | book
     book: in book (Englund Gambit)
     board: moves the pawn from e7 to e5 | leaves the black pawn on e5 hanging
+    opens: the dark-squared bishop on f8, from 0 squares to 5
     alternatives: Nc6: White is slightly better
 n3 2.dxe5 (White, Line A) | book
     book: in book (Englund Gambit)
     board: moves the pawn from d4 to e5 | captures the pawn on e5
+    opens: the queen on d1, from 2 squares to 6
     alternatives: d5: Black is slightly better
 n4 2…Nc6 (Black, Line A) | book
     book: in book (Englund Gambit)
+    the book also has: Qh4 (Englund Gambit: Mosquito Gambit); d6 (Englund Gambit: Hartlaub-Charlick Gambit); f6 (Englund Gambit: Soller Gambit)
     board: moves the knight from b8 to c6
     alternatives: Na6: White is slightly better
 n5 3.Nf3 (White, Line A) | book
@@ -841,27 +1040,34 @@ n5 3.Nf3 (White, Line A) | book
     alternatives: e6: Black is slightly better
 n6 3…Qe7 (Black, Line A) | book
     book: in book (Englund Gambit: Main Line)
+    the book also has: Bc5 (Englund Gambit: Felbecker Gambit); Nge7 (Englund Gambit: Zilbermints Gambit); f6 (Englund Gambit: Soller Gambit Deferred)
     board: moves the queen from d8 to e7
     alternatives: Rb8: White is slightly better
 n7 4.Bf4 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    the book also has: Qd5 (Englund Gambit: Stockholm Variation)
+    piece: the dark-squared bishop
     board: moves the bishop from c1 to f4 | allows Qb4+, where the queen on b4 forks the bishop on f4 and the king on e1
     alternatives: e6: Black is slightly better
 n8 4…Qb4+ (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from e7 to b4 | gives check | the check can be answered: block with Bd2, Nfd2, c3, Nc3, Nbd2, Qd2; the checking piece cannot be taken; the king cannot move | attacks the bishop on f4 | the queen on b4 forks the bishop on f4 and the king on e1
     alternatives: Rb8: White is slightly better
 n9 5.Bd2 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    piece: the dark-squared bishop
     board: moves the bishop from f4 to d2 | blocks the check from the queen on b4 | attacks the queen on b4 | leaves the white pawn on b2 hanging | allows Qxb2, where the queen on b2 forks the rook on a1 and the knight on b1
     alternatives: Nfd2: Black is slightly better
 n10 5…Qxb2 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from b4 to b2 | captures the pawn on b2 | attacks the rook on a1 | attacks the knight on b1 | the queen on b2 forks the rook on a1 and the knight on b1
     alternatives: Rb8: White is slightly better
 n11 6.Bc3 (White, Line A) | blunder | before: The position is roughly equal → after: Black is winning
+    piece: the dark-squared bishop
     best instead: Nc3; after Nc3, material is level
     why Nc3 is better: moves the knight from b1 to c3
     board: moves the bishop from d2 to c3 | attacks the queen on b2
+    opens: the queen on d1, from 1 squares to 7
     alternatives: Nc3: The position is roughly equal
     flags: critical
 n12 6…Bb4 (Black, Line A) | great | before: Black is winning → after: Black is winning
+    piece: the dark-squared bishop
     board: moves the bishop from f8 to b4 | attacks the bishop on c3, which is pinned to the king by the bishop on b4
     alternatives: Qb6: The position is roughly equal
     flags: quiz-eligible, critical
@@ -869,6 +1075,7 @@ n13 7.Qd2 (White, Line A) | best | before: Black is winning → after: Black is 
     board: moves the queen from d1 to d2
     alternatives: e6: Black is winning
 n14 7…Bxc3 (Black, Line A) | best | before: Black is winning → after: Black is winning
+    piece: the dark-squared bishop
     board: moves the bishop from b4 to c3 | captures the bishop on c3 | attacks the queen on d2, which is pinned to the king by the bishop on c3
     alternatives: Rb8: Black is winning
 n15 8.Qxc3 (White, Line A) | best | before: Black is winning → after: Black is winning
@@ -905,7 +1112,8 @@ The plan's key moves: n11
 Quiz: the answer is n12. The app shows the position before it, says quiz.scene, then quiz.prompt, and pauses 3s; the video's moves start at the answer and reveal it.
 Every plies nodeId is one of: n11 (6. Bc3). n10 in the dossier is the move before, for context only: no line on it.
 Speaking budget: at most 1 moves with "course": true, at most 1 with "video": true.
-Video words: at most 142 spoken in this episode's part of the video, at most 30 per move; every video move has a caption of at most 6 words. Fewer is fine when there is less to say.
+Video words: at most 199 spoken in this episode's part of the video, at most 45 per move; every video move has a caption of at most 6 words. Fewer is fine when there is less to say.
+The bait is the one place to take room: its video line has at least 30 words, and each tempting "why" at least 25, in whole sentences. The whys have their own room: they do not count against this episode's video words.
 Say every line as the coach in VOICE would.
 
 DOSSIER (this episode only)
@@ -919,12 +1127,15 @@ n10 5…Qxb2 (Black, Line A) | best | before: The position is roughly equal → 
     board: moves the queen from b4 to b2 | captures the pawn on b2 | attacks the rook on a1 | attacks the knight on b1 | the queen on b2 forks the rook on a1 and the knight on b1
     alternatives: Rb8: White is slightly better
 n11 6.Bc3 (White, Line A) | blunder | before: The position is roughly equal → after: Black is winning
+    piece: the dark-squared bishop
     best instead: Nc3; after Nc3, material is level
     why Nc3 is better: moves the knight from b1 to c3
     board: moves the bishop from d2 to c3 | attacks the queen on b2
+    opens: the queen on d1, from 1 squares to 7
     alternatives: Nc3: The position is roughly equal
     flags: critical
 n12 6…Bb4 (Black, Line A) | great | before: Black is winning → after: Black is winning
+    piece: the dark-squared bishop
     board: moves the bishop from f8 to b4 | attacks the bishop on c3, which is pinned to the king by the bishop on b4
     alternatives: Qb6: The position is roughly equal
     flags: quiz-eligible, critical

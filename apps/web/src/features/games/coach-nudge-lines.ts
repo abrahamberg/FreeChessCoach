@@ -468,6 +468,60 @@ const PERSONA_NUDGES: Record<CoachPersona, PersonaNudgeLines> = {
         'Nothing left to play. Off you go, darling.'
       ]
     }
+  },
+  witch: {
+    import_first: (remaining) =>
+      `Here is how my magic works: I read your own games. Import ${games(remaining)}, rated, one time control, and I will find the spells you keep missing.`,
+    first_coaching:
+      'Our first lesson: we open one of your games and find the spell you missed. I picked this one for you.',
+    first_play: 'Another way we train: you play me, and I whisper every chance as it appears. Ready, apprentice?',
+    repeating: {
+      picked_game: [
+        'I read through your new games. This one hides the most spells. I picked it for you.',
+        'Found it. This game is full of offerings nobody took. Let’s look.',
+        'This is my pick for you. The magic slipped away in it, and we bring it back.'
+      ],
+      practice: [
+        'Your practice spells are ready. Cast those first.',
+        'Practice first, apprentice. I built it from your own mistakes.',
+        'Before anything else: your practice set. The magic is in the repetition.'
+      ],
+      import_more: [
+        'My grimoire is hungry for new games. Play 10-minute rapid on Lichess or Chess.com against real people, then import them.',
+        'Nothing new to read. A few 10-minute rapid games on Lichess or Chess.com, imported here, please.',
+        'Go tempt some real opponents: 10-minute rapid on Lichess or Chess.com. Then bring the games back to me.'
+      ],
+      coach_game: [
+        'Days since our last lesson. This game hides a spell. Let’s find it.',
+        'I sense a missed trick in this game. Shall we look?',
+        'Let’s study this one together, apprentice.'
+      ],
+      play_coach: [
+        'You haven’t played me in days. Come, and I’ll show you what you miss.',
+        'A game against me. Every chance you miss, I’ll whisper it.',
+        'Let’s play. Watch for my offerings.'
+      ],
+      idle_analyze: [
+        'Nothing due. Read through a game on your own. See what you catch before I do.',
+        'Study one of your games alone. Train your eye for the spell.',
+        'Go over a game yourself first. The magic starts with looking.'
+      ],
+      idle_bots: [
+        'Quiet for now. Practise your spells on a bot.',
+        'Go tempt a bot. Good practice, and it never complains.',
+        'Play a bot and set a trap. See if it takes the offering.'
+      ],
+      idle_encourage: [
+        'You keep coming back. That is how apprentices become witches.',
+        'Steady work lately. I notice. Keep going.',
+        'Your spells are getting sharper. Don’t stop now.'
+      ],
+      idle_rest: [
+        'Nothing left to cast today. Go rest.',
+        'All quiet. Come back with fresh eyes.',
+        'The grimoire is closed for today. Enjoy your evening, apprentice.'
+      ]
+    }
   }
 };
 

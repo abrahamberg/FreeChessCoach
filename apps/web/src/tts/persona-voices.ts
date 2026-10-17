@@ -26,13 +26,14 @@ export interface KokoroPersonaVoice {
  * bm_george); bm_fable reads as a young man, so it voices no one. */
 export const PERSONA_VOICES: Record<CoachPersona, KokoroPersonaVoice> = {
   general: { voice: 'am_michael', speed: PERSONA_SPEECH_SPEED.general },
-  general_female: { voice: 'af_heart', speed: PERSONA_SPEECH_SPEED.general_female },
+  general_female: { voice: 'af_sky', speed: PERSONA_SPEECH_SPEED.general_female },
   commander: { voice: 'am_onyx', speed: PERSONA_SPEECH_SPEED.commander },
   scholar: { voice: 'bm_lewis', speed: PERSONA_SPEECH_SPEED.scholar },
-  huntress: { voice: 'af_bella', speed: PERSONA_SPEECH_SPEED.huntress },
+  huntress: { voice: 'af_sarah', speed: PERSONA_SPEECH_SPEED.huntress },
   shark: { voice: 'am_puck', speed: PERSONA_SPEECH_SPEED.shark },
   sunzi: { voice: 'bm_george', speed: PERSONA_SPEECH_SPEED.sunzi },
-  gambler: { voice: 'am_fenrir', speed: PERSONA_SPEECH_SPEED.gambler, pitch: 0.9 }
+  gambler: { voice: 'am_fenrir', speed: PERSONA_SPEECH_SPEED.gambler, pitch: 0.9 },
+  witch: { voice: 'af_bella', speed: PERSONA_SPEECH_SPEED.witch }
 };
 
 /** The speed to ask Kokoro for, compensating for `pitch` (see above). */

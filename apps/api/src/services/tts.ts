@@ -76,6 +76,15 @@ export const PERSONA_VOICES: Record<CoachPersona, PersonaVoice> = {
     instructions:
       'A seasoned man in his fifties with a low, deep, slightly weathered and smoky voice. Charismatic, smooth and theatrical card-table showman who has seen it all. Relaxed but teasing, confident delivery with a roguish grin in the voice.',
     speed: 1.09
+  },
+  // Not shimmer: with this direction it measures ~145 Hz (138–151 over four
+  // takes), lower than marin's ~190. sage holds ~178 Hz (154–186); distinct
+  // from marin (Huntress) and coral (general_female).
+  witch: {
+    voice: 'sage',
+    instructions:
+      'A young woman of about twenty-five with a smooth, velvety, warm feminine voice in the middle range, with a smile in it. Teasing, conspiratorial and amused, as if letting the listener in on a secret. Unhurried, relaxed pace; she drops almost to a whisper just before the key move. Never shouts, never rushes. Playful mischief, not seductive or breathy.',
+    speed: 1.05
   }
 };
 

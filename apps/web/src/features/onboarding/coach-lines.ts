@@ -91,6 +91,13 @@ const PERSONA_VOICES: Record<CoachPersona, PersonaVoice> = {
     picked: 'Bold choice. I like you.',
     habits: 'Here’s the only bet that always pays: showing up.',
     goodbye: 'All in!'
+  },
+  witch: {
+    hello: 'Welcome, apprentice. A quick setup, then the spells.',
+    preview: 'I teach traps as spells. You offer a piece, they get greedy, they lose.',
+    picked: 'Good choice. I knew you would.',
+    habits: 'Now, how we make the magic stick.',
+    goodbye: 'Ready. Let’s go find your first spell.'
   }
 };
 

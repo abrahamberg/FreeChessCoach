@@ -25,7 +25,8 @@ export const NATIVE_PERSONA_VOICES: Record<CoachPersona, NativePersonaVoice> = {
   huntress: { gender: 'female', lang: 'en-US', rate: 1.1, pitch: 1.1 },
   shark: { gender: 'male', lang: 'en-US', rate: 1.2, pitch: 1.15 },
   sunzi: { gender: 'male', lang: 'en-GB', rate: 0.85, pitch: 0.8 },
-  gambler: { gender: 'male', lang: 'en-US', rate: 1, pitch: 0.85 }
+  gambler: { gender: 'male', lang: 'en-US', rate: 1, pitch: 0.85 },
+  witch: { gender: 'female', lang: 'en-US', rate: 1.05, pitch: 1.0 }
 };
 
 /** Web Speech voices carry no gender, only a name, so gender is read off

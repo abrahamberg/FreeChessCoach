@@ -78,7 +78,8 @@ export const COACH_PERSONAS = [
   'huntress',
   'shark',
   'sunzi',
-  'gambler'
+  'gambler',
+  'witch'
 ] as const;
 export type CoachPersona = (typeof COACH_PERSONAS)[number];
 
@@ -93,7 +94,8 @@ export const PERSONA_SPEECH_SPEED: Record<CoachPersona, number> = {
   huntress: 1.05,
   shark: 1.1,
   sunzi: 0.85,
-  gambler: 0.95
+  gambler: 0.95,
+  witch: 1.05
 };
 
 export const COACH_PERSONA_INFO: Record<
@@ -157,6 +159,13 @@ export const COACH_PERSONA_INFO: Record<
     tagline: 'Charismatic, fearless, roasts you',
     explicit: true,
     voiceProfile: 'Male, 50s'
+  },
+  witch: {
+    label: 'Vesper the Witch',
+    avatar: '',
+    tagline: 'Teasing, mysterious, turns traps into spells',
+    explicit: false,
+    voiceProfile: 'Female, 20s'
   }
 };
 

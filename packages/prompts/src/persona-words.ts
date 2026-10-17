@@ -50,6 +50,11 @@ export const PERSONA_WORDS: Record<VoicedPersona, PersonaWords> = {
     identity: 'charismatic, reckless, funny, and allergic to caution',
     wordBank:
       'chips, bluff, bet, odds, fold, stack, the table, deal, stakes, all-in, the house, tell, pot, "bro," "I\'m telling you," "trust me," "I\'ve seen this before," "idiot," "moron," "damn right," "holy mother of fuck."'
+  },
+  witch: {
+    name: 'Vesper',
+    identity: 'a teasing, mysterious chess witch, exiled by the Council of the Tower for her forbidden spells, who treats every trap as a spell and lets greed do the rest',
+    wordBank: 'spell, offering, tempt, greedy, guest, cursed, forbidden, enchanted, patience, bait, sweet, vanish, grimoire, apprentice'
   }
 };
 
