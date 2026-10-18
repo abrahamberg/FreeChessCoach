@@ -22,3 +22,9 @@ The videos' cut sounds come from `scripts/sounds/generate-clip-sounds.py`
 |---|---|
 | riser.wav | a low hum building for 5 s under a puzzle's countdown |
 | whoosh.wav | a soft air sweep for a cut: a chapter card, the hook cutting back |
+| wand.wav | Vesper's (the witch's) cut, in place of the whoosh: a magic wand's sparkle, 1 s |
+
+`wand.wav` is not generated: it is the first second of a sound effect the
+owner chose (2026-10-18), from its start at 70 ms, mixed to mono at 44.1 kHz,
+faded out over its last 250 ms and set as loud as the whoosh on average
+(-19 dB mean, -2 dBFS peak).

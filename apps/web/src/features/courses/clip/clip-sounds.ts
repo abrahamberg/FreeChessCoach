@@ -1,15 +1,26 @@
+import type { CoachPersona } from '@freechesscoach/shared';
 import { boardSoundBuffers, boardSoundLengthMs } from '../../../sounds/board-sounds.js';
 import type { BoardSound } from '../../../sounds/move-sounds.js';
 
-/** docs/courses.md §13.8: the board sounds, plus the videos' two cut sounds
- * (scripts/sounds/generate-clip-sounds.py). */
-export type ClipSound = BoardSound | 'riser' | 'whoosh';
+/** docs/courses.md §13.8: the board sounds, plus the videos' cut sounds
+ * (scripts/sounds/generate-clip-sounds.py; `wand` is the first second of a
+ * sound the owner chose, apps/web/public/sounds/README.md). */
+export type ClipSound = BoardSound | 'riser' | 'whoosh' | 'wand';
 
-const CUT_SOUNDS = { riser: 5000, whoosh: 450 } as const;
+const CUT_SOUNDS = { riser: 5000, whoosh: 450, wand: 1000 } as const;
+
+/** A coach's own sound for a cut, in place of the whoosh (the owner,
+ * 2026-10-18: Vesper's wand first; the other coaches to follow). */
+const COACH_CUTS: Partial<Record<CoachPersona, ClipSound>> = { witch: 'wand' };
+
+/** The sound of a cut (a chapter card, a jump back) in `persona`'s video. */
+export function cutSoundOf(persona: CoachPersona): ClipSound {
+  return COACH_CUTS[persona] ?? 'whoosh';
+}
 
 /** How long a sound lasts, in ms: a voice waits for a board sound. */
 export function clipSoundLengthMs(sound: ClipSound): number {
-  return sound === 'riser' || sound === 'whoosh' ? CUT_SOUNDS[sound] : boardSoundLengthMs(sound);
+  return sound in CUT_SOUNDS ? CUT_SOUNDS[sound as keyof typeof CUT_SOUNDS] : boardSoundLengthMs(sound as BoardSound);
 }
 
 let loaded: Promise<Record<ClipSound, AudioBuffer>> | null = null;
