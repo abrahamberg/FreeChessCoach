@@ -1,28 +1,44 @@
-import { bandForRating, COURSE_KINDS, levelCode, type CourseCatalogItem, type CourseEnrollment, type CourseKind, type CourseReviewDueResponse } from '@freechesscoach/shared';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
-import { apiDelete, describeApiError } from '../../../api/client.js';
-import { HorizontalScroller } from '../../../components/HorizontalScroller.js';
-import { BookIcon, CheckIcon, PlaySmallIcon } from '../../../components/Icon.js';
-import { CourseContinueCard } from '../../games/CourseContinueCard.js';
-import { shortDate } from '../../games/gameDisplay.js';
-import { useCourseEnrollments } from '../../games/useCourseEnrollments.js';
-import { useCourseReviewsDue } from '../../games/useCourseReviewsDue.js';
-import { BAND_LABELS } from '../../settings/BandSelect.js';
-import { useCourseProgressStore } from '../player/useCourseProgressStore.js';
-import { COURSE_KIND_INFO } from '../courseKinds.js';
-import { useCourseCatalogue, type CatalogueSort } from './useCourseCatalogue.js';
-import { SortControl, levelGroups } from './course-sort.js';
-import { splitSeries } from './series-sections.js';
-import { upNext, type UpNextItem } from './up-next.js';
-import { useProfile } from '../../../hooks/useProfile.js';
-import '../../games/GameCard.css';
-import '../../games/GamesPage.css';
-import '../../games/RailCard.css';
-import './LearnHomePage.css';
+import {
+  bandForRating,
+  COURSE_KINDS,
+  levelCode,
+  type CourseCatalogItem,
+  type CourseEnrollment,
+  type CourseKind,
+  type CourseReviewDueResponse,
+} from "@freechesscoach/shared";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
+import { apiDelete, describeApiError } from "../../../api/client.js";
+import { HorizontalScroller } from "../../../components/HorizontalScroller.js";
+import {
+  BookIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  PlaySmallIcon,
+} from "../../../components/Icon.js";
+import { CourseContinueCard } from "../../games/CourseContinueCard.js";
+import { shortDate } from "../../games/gameDisplay.js";
+import { useCourseEnrollments } from "../../games/useCourseEnrollments.js";
+import { useCourseReviewsDue } from "../../games/useCourseReviewsDue.js";
+import { BAND_LABELS } from "../../settings/BandSelect.js";
+import { useCourseProgressStore } from "../player/useCourseProgressStore.js";
+import { COURSE_KIND_INFO } from "../courseKinds.js";
+import {
+  useCourseCatalogue,
+  type CatalogueSort,
+} from "./useCourseCatalogue.js";
+import { SortControl, levelGroups } from "./course-sort.js";
+import { splitSeries } from "./series-sections.js";
+import { upNext, type UpNextItem } from "./up-next.js";
+import { useProfile } from "../../../hooks/useProfile.js";
+import "../../games/GameCard.css";
+import "../../games/GamesPage.css";
+import "../../games/RailCard.css";
+import "./LearnHomePage.css";
 
-type DueCourse = CourseReviewDueResponse['courses'][number];
+type DueCourse = CourseReviewDueResponse["courses"][number];
 
 /** docs/courses.md §9, §11: `/learn`, the courses, for everyone, in the Games
  * page's style. Browse (the public catalogue by kind) is always there. Signed
@@ -31,23 +47,30 @@ type DueCourse = CourseReviewDueResponse['courses'][number];
 export function LearnHomePage(): ReactNode {
   const queryClient = useQueryClient();
   const [kind, setKind] = useState<CourseKind | null>(null);
-  const [sort, setSort] = useState<CatalogueSort>('curriculum');
+  const [sort, setSort] = useState<CatalogueSort>("curriculum");
   const signedIn = useCourseProgressStore()?.signedIn ?? false;
   const enrollments = useCourseEnrollments(signedIn);
   const catalogue = useCourseCatalogue(kind, sort);
   const browse = catalogue.data?.pages.flatMap((page) => page.items) ?? [];
   const due = useCourseReviewsDue(signedIn).data?.courses ?? [];
   const band = useProfile().data?.ratingBand ?? null;
-  const everything = useCourseCatalogue(null, 'curriculum').data?.pages.flatMap((page) => page.items) ?? [];
+  const everything =
+    useCourseCatalogue(null, "curriculum").data?.pages.flatMap(
+      (page) => page.items,
+    ) ?? [];
   const remove = useMutation({
-    mutationFn: (slug: string) => apiDelete(`/api/course-enrollments/${encodeURIComponent(slug)}`),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['course-enrollments'] })
+    mutationFn: (slug: string) =>
+      apiDelete(`/api/course-enrollments/${encodeURIComponent(slug)}`),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: ["course-enrollments"] }),
   });
 
   const items = enrollments.data?.items ?? [];
   const learning = items.filter((item) => item.completedAt === null);
   const learned = items.filter((item) => item.completedAt !== null);
-  const status = new Map(items.map((item) => [item.slug, item.completedAt ? 'Learned' : 'Learning']));
+  const status = new Map(
+    items.map((item) => [item.slug, item.completedAt ? "Learned" : "Learning"]),
+  );
   const next = upNext({ catalogue: everything, enrollments: items, due, band });
   const dueBySlug = new Map(due.map((course) => [course.slug, course]));
 
@@ -56,20 +79,40 @@ export function LearnHomePage(): ReactNode {
       <h1>Courses</h1>
       {!signedIn && (
         <p className="courses-home__signin">
-          Free for everyone. <a href="/oauth2/start?rd=/learn">Sign in</a> to keep your place on every device and get the moves you missed back for review.
+          Free for everyone. <a href="/oauth2/start?rd=/learn">Sign in</a> to
+          keep your place on every device and get the moves you missed back for
+          review.
         </p>
       )}
 
       {signedIn && (
         <section aria-label="Learning" className="games-page__section">
           <h2 className="games-page__section-heading">Learning</h2>
-          {enrollments.isError && <p className="games-page__empty">{describeApiError(enrollments.error) ?? 'Could not load your courses.'}</p>}
-          {remove.isError && <p className="games-page__empty">{describeApiError(remove.error) ?? 'Could not remove the course.'}</p>}
-          {enrollments.isSuccess && !learning.length && <p className="courses-home__empty">No courses started yet. Pick one below; your place is kept as you go.</p>}
+          {enrollments.isError && (
+            <p className="games-page__empty">
+              {describeApiError(enrollments.error) ??
+                "Could not load your courses."}
+            </p>
+          )}
+          {remove.isError && (
+            <p className="games-page__empty">
+              {describeApiError(remove.error) ?? "Could not remove the course."}
+            </p>
+          )}
+          {enrollments.isSuccess && !learning.length && (
+            <p className="courses-home__empty">
+              No courses started yet. Pick one below; your place is kept as you
+              go.
+            </p>
+          )}
           {learning.length > 0 && (
             <HorizontalScroller label="Courses you are learning">
               {learning.map((course) => (
-                <CourseContinueCard key={course.slug} course={course} onRemove={(slug) => remove.mutate(slug)} />
+                <CourseContinueCard
+                  key={course.slug}
+                  course={course}
+                  onRemove={(slug) => remove.mutate(slug)}
+                />
               ))}
             </HorizontalScroller>
           )}
@@ -81,87 +124,148 @@ export function LearnHomePage(): ReactNode {
           <h2 className="games-page__section-heading">Up next</h2>
           <ul className="courses-home__next">
             {[...next.todo, ...next.coming].map((each, index) => (
-              <UpNextRow key={each.slug} item={each} coming={index >= next.todo.length} />
+              <UpNextRow
+                key={each.slug}
+                item={each}
+                coming={index >= next.todo.length}
+              />
             ))}
           </ul>
         </section>
       )}
 
-      <details className="games-page__section courses-home__browse">
-        <summary className="games-page__section-heading">Browse all courses</summary>
+      <section
+        aria-label="Browse all courses"
+        className="games-page__section courses-home__browse"
+      >
         <div className="courses-home__browse-header">
-          <h2 className="games-page__section-heading">Browse</h2>
+          <h2 className="games-page__section-heading">Browse all courses</h2>
           <SortControl value={sort} onChange={setSort} />
         </div>
-        <div className="courses-home__filters" role="group" aria-label="Kind of course">
-          <button type="button" className="courses-home__filter" aria-pressed={kind === null} onClick={() => setKind(null)}>
+        <div
+          className="courses-home__filters"
+          role="group"
+          aria-label="Kind of course"
+        >
+          <button
+            type="button"
+            className="courses-home__filter"
+            aria-pressed={kind === null}
+            onClick={() => setKind(null)}
+          >
             All
           </button>
           {COURSE_KINDS.map((each) => (
-            <button key={each} type="button" className="courses-home__filter" aria-pressed={kind === each} onClick={() => setKind(each)}>
+            <button
+              key={each}
+              type="button"
+              className="courses-home__filter"
+              aria-pressed={kind === each}
+              onClick={() => setKind(each)}
+            >
               {COURSE_KIND_INFO[each].label}
             </button>
           ))}
         </div>
         {catalogue.isPending && <p className="courses-home__empty">Loading…</p>}
-        {catalogue.isError && <p className="courses-home__empty">{describeApiError(catalogue.error) ?? 'Could not load the courses.'}</p>}
+        {catalogue.isError && (
+          <p className="courses-home__empty">
+            {describeApiError(catalogue.error) ?? "Could not load the courses."}
+          </p>
+        )}
         {catalogue.isSuccess && !browse.length && (
-          <p className="courses-home__empty">{kind ? `No public ${COURSE_KIND_INFO[kind].label.toLowerCase()} courses yet.` : 'No public courses yet.'}</p>
+          <p className="courses-home__empty">
+            {kind
+              ? `No public ${COURSE_KIND_INFO[kind].label.toLowerCase()} courses yet.`
+              : "No public courses yet."}
+          </p>
         )}
         {browse.length > 0 &&
-          (sort === 'curriculum' ? (
-            [
-              ...splitSeries(browse).sections.map((section) => (
-                <div key={`series:${section.name}`} className="courses-home__level">
-                  <h3 className="courses-home__level-heading">{section.name}</h3>
-                  {section.modules.map((group) => (
-                    <div key={group.module ?? 'none'}>
-                      {group.module && <h4 className="courses-home__module-heading">{group.module}</h4>}
-                      <div className="courses-home__grid">
-                        {group.items.map((course) => (
-                          <CatalogueCard key={course.slug} course={course} status={status.get(course.slug)} />
+          (sort === "curriculum" ? (
+            <div className="courses-home__groups">
+              {(() => {
+                const { sections, others } = splitSeries(browse);
+                return [
+                  ...sections.map((section, index) => {
+                    const lessons = section.modules.flatMap(
+                      (group) => group.items,
+                    );
+                    return (
+                      <CourseGroup
+                        key={`series:${section.name}`}
+                        title={section.name}
+                        tag="Series"
+                        courses={lessons}
+                        status={status}
+                        defaultOpen={index === 0}
+                      >
+                        {section.modules.map((group) => (
+                          <div key={group.module ?? "none"}>
+                            {group.module && (
+                              <h4 className="courses-home__module-heading">
+                                {group.module}
+                              </h4>
+                            )}
+                            <CourseGrid courses={group.items} status={status} />
+                          </div>
                         ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )),
-              ...levelGroups(splitSeries(browse).others).map((group) => (
-              <div key={group.rating ?? 'none'} className="courses-home__level">
-                <h3 className="courses-home__level-heading">
-                  {group.rating === null ? 'Other courses' : `${group.rating}`}
-                  {group.rating !== null && <span className="meta"> · {BAND_LABELS[bandForRating(group.rating)]}</span>}
-                </h3>
-                <div className="courses-home__grid">
-                  {group.items.map((course) => (
-                    <CatalogueCard key={course.slug} course={course} status={status.get(course.slug)} />
-                  ))}
-                </div>
-              </div>
-              ))
-            ]
-          ) : (
-            <div className="courses-home__grid">
-              {browse.map((course) => (
-                <CatalogueCard key={course.slug} course={course} status={status.get(course.slug)} />
-              ))}
+                      </CourseGroup>
+                    );
+                  }),
+                  ...levelGroups(others).map((group, index) => (
+                    <CourseGroup
+                      key={group.rating ?? "none"}
+                      title={
+                        group.rating === null
+                          ? "Other courses"
+                          : `${group.rating}`
+                      }
+                      tag={
+                        group.rating === null
+                          ? undefined
+                          : BAND_LABELS[bandForRating(group.rating)]
+                      }
+                      courses={group.items}
+                      status={status}
+                      defaultOpen={sections.length === 0 && index === 0}
+                    >
+                      <CourseGrid courses={group.items} status={status} />
+                    </CourseGroup>
+                  )),
+                ];
+              })()}
             </div>
+          ) : (
+            <CourseGrid courses={browse} status={status} />
           ))}
         {catalogue.hasNextPage && (
-          <button type="button" className="btn-secondary courses-home__more" disabled={catalogue.isFetchingNextPage} onClick={() => void catalogue.fetchNextPage()}>
-            {catalogue.isFetchingNextPage ? 'Loading…' : 'More courses'}
+          <button
+            type="button"
+            className="btn-secondary courses-home__more"
+            disabled={catalogue.isFetchingNextPage}
+            onClick={() => void catalogue.fetchNextPage()}
+          >
+            {catalogue.isFetchingNextPage ? "Loading…" : "More courses"}
           </button>
         )}
-      </details>
+      </section>
 
       {signedIn && (
         <section aria-label="Learned" className="games-page__section">
           <h2 className="games-page__section-heading">Learned</h2>
-          {!learned.length && <p className="courses-home__empty">Courses you finish land here, with their moves to review.</p>}
+          {!learned.length && (
+            <p className="courses-home__empty">
+              Courses you finish land here, with their moves to review.
+            </p>
+          )}
           {learned.length > 0 && (
             <HorizontalScroller label="Courses you have learned">
               {learned.map((course) => (
-                <LearnedCard key={course.slug} course={course} due={dueBySlug.get(course.slug)} />
+                <LearnedCard
+                  key={course.slug}
+                  course={course}
+                  due={dueBySlug.get(course.slug)}
+                />
               ))}
             </HorizontalScroller>
           )}
@@ -171,44 +275,167 @@ export function LearnHomePage(): ReactNode {
   );
 }
 
-function UpNextRow({ item, coming }: { item: UpNextItem; coming: boolean }): ReactNode {
+function CourseGrid({
+  courses,
+  status,
+}: {
+  courses: readonly CourseCatalogItem[];
+  status: Map<string, string>;
+}): ReactNode {
   return (
-    <li className={coming ? 'courses-home__next-row courses-home__next-row--coming' : 'courses-home__next-row'}>
-      <Link to={`/learn/${encodeURIComponent(item.slug)}${item.action.startsWith('Review') ? '?stage=drill' : ''}`} className="courses-home__title-link">
+    <div className="courses-home__grid">
+      {courses.map((course) => (
+        <CatalogueCard
+          key={course.slug}
+          course={course}
+          status={status.get(course.slug)}
+        />
+      ))}
+    </div>
+  );
+}
+
+/** One collapsible card of the catalogue: a series or a rating level, with how
+ * many of its courses there are and how many the learner has finished. */
+function CourseGroup({
+  title,
+  tag,
+  courses,
+  status,
+  defaultOpen,
+  children,
+}: {
+  title: string;
+  tag?: string;
+  courses: readonly CourseCatalogItem[];
+  status: Map<string, string>;
+  defaultOpen: boolean;
+  children: ReactNode;
+}): ReactNode {
+  const learned = courses.filter(
+    (course) => status.get(course.slug) === "Learned",
+  ).length;
+  const count = courses.length === 1 ? "1 course" : `${courses.length} courses`;
+  return (
+    <details className="card courses-group" open={defaultOpen}>
+      <summary className="courses-group__summary">
+        <span className="courses-group__icon" aria-hidden="true">
+          <BookIcon width={18} height={18} />
+        </span>
+        <span className="courses-group__text">
+          <h3 className="courses-group__title">{title}</h3>
+          <span className="courses-group__meta">
+            {tag && `${tag} · `}
+            {count}
+            {learned > 0 && ` · ${learned} learned`}
+          </span>
+        </span>
+        <ChevronDownIcon
+          className="courses-group__chevron"
+          width={18}
+          height={18}
+        />
+      </summary>
+      <div className="courses-group__body">{children}</div>
+    </details>
+  );
+}
+
+function UpNextRow({
+  item,
+  coming,
+}: {
+  item: UpNextItem;
+  coming: boolean;
+}): ReactNode {
+  return (
+    <li
+      className={
+        coming
+          ? "courses-home__next-row courses-home__next-row--coming"
+          : "courses-home__next-row"
+      }
+    >
+      <Link
+        to={`/learn/${encodeURIComponent(item.slug)}${item.action.startsWith("Review") ? "?stage=drill" : ""}`}
+        className="courses-home__title-link"
+      >
         {item.title}
       </Link>
-      {item.action && <span className={coming ? 'meta' : 'badge badge--primary'}>{item.action}</span>}
+      {item.action && (
+        <span className={coming ? "meta" : "badge badge--primary"}>
+          {item.action}
+        </span>
+      )}
     </li>
   );
 }
 
-function CatalogueCard({ course, status }: { course: CourseCatalogItem; status?: string }): ReactNode {
+function CatalogueCard({
+  course,
+  status,
+}: {
+  course: CourseCatalogItem;
+  status?: string;
+}): ReactNode {
   return (
-    <Link to={`/learn/${encodeURIComponent(course.slug)}`} className="card courses-home__course">
+    <Link
+      to={`/learn/${encodeURIComponent(course.slug)}`}
+      className="card courses-home__course"
+    >
       <span className="rail-card__top">
         <span className="rail-card__chip">
           <BookIcon width={16} height={16} />
           {COURSE_KIND_INFO[course.kind].label}
         </span>
-        {course.series ? <span className="courses-home__code">{lessonChip(course.series)}</span> : course.level && <span className="courses-home__code">{levelCode(course.level)}</span>}
-        {status && <span className="badge badge--primary courses-home__status">{status}</span>}
+        {course.series ? (
+          <span className="courses-home__code">
+            {lessonChip(course.series)}
+          </span>
+        ) : (
+          course.level && (
+            <span className="courses-home__code">
+              {levelCode(course.level)}
+            </span>
+          )
+        )}
+        {status && (
+          <span className="badge badge--primary courses-home__status">
+            {status}
+          </span>
+        )}
       </span>
-      <span className="rail-card__title rail-card__title-wrap">{course.title}</span>
-      {course.promise && <span className="courses-home__promise">{course.promise}</span>}
+      <span className="rail-card__title rail-card__title-wrap">
+        {course.title}
+      </span>
+      {course.promise && (
+        <span className="courses-home__promise">{course.promise}</span>
+      )}
       <span className="rail-card__meta">
-        {BAND_LABELS[course.levelBand]} · plays {course.learnerSide} · {course.episodes === 1 ? '1 part' : `${course.episodes} parts`}
+        {BAND_LABELS[course.levelBand]} · plays {course.learnerSide} ·{" "}
+        {course.episodes === 1 ? "1 part" : `${course.episodes} parts`}
       </span>
     </Link>
   );
 }
 
 /** "Lesson 7 of 14" on a card; the series' name is its section's heading. */
-function lessonChip(series: NonNullable<CourseCatalogItem['series']>): string {
-  return `Lesson ${series.position}${series.total === undefined ? '' : ` of ${series.total}`}`;
+function lessonChip(series: NonNullable<CourseCatalogItem["series"]>): string {
+  return `Lesson ${series.position}${series.total === undefined ? "" : ` of ${series.total}`}`;
 }
 
-function LearnedCard({ course, due }: { course: CourseEnrollment; due?: DueCourse }): ReactNode {
-  const moves = due ? (due.due === 1 ? '1 move to review' : `${due.due} moves to review`) : null;
+function LearnedCard({
+  course,
+  due,
+}: {
+  course: CourseEnrollment;
+  due?: DueCourse;
+}): ReactNode {
+  const moves = due
+    ? due.due === 1
+      ? "1 move to review"
+      : `${due.due} moves to review`
+    : null;
   return (
     <div className="card rail-card">
       <div className="rail-card__top">
@@ -217,14 +444,29 @@ function LearnedCard({ course, due }: { course: CourseEnrollment; due?: DueCours
           Learned
         </span>
       </div>
-      <Link to={`/learn/${encodeURIComponent(course.slug)}`} className="rail-card__title rail-card__title-wrap courses-home__title-link">
+      <Link
+        to={`/learn/${encodeURIComponent(course.slug)}`}
+        className="rail-card__title rail-card__title-wrap courses-home__title-link"
+      >
         {course.title}
       </Link>
       <span className="rail-card__meta">
-        {course.completedAt && <time dateTime={course.completedAt}>Finished {shortDate(course.completedAt)}</time>}
+        {course.completedAt && (
+          <time dateTime={course.completedAt}>
+            Finished {shortDate(course.completedAt)}
+          </time>
+        )}
       </span>
       <div className="rail-card__actions">
-        <span className={due ? 'badge badge--primary game-card__status' : 'badge game-card__status'}>{moves ?? 'Nothing due'}</span>
+        <span
+          className={
+            due
+              ? "badge badge--primary game-card__status"
+              : "badge game-card__status"
+          }
+        >
+          {moves ?? "Nothing due"}
+        </span>
         <span className="game-card__spacer" />
         {due && (
           <Link

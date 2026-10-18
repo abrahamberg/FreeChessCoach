@@ -33,7 +33,7 @@
   border-color: var(--color-primary);
 }
 
-.courses-home__filter[aria-pressed='true'] {
+.courses-home__filter[aria-pressed="true"] {
   border-color: var(--color-primary);
   background: var(--color-primary-soft);
   color: var(--color-primary-hover);
@@ -114,15 +114,6 @@
   gap: var(--space-2);
 }
 
-.courses-home__level + .courses-home__level {
-  margin-top: var(--space-5);
-}
-
-.courses-home__level-heading {
-  margin: 0 0 var(--space-2);
-  font-size: var(--font-size-md);
-}
-
 .courses-home__code {
   margin-left: auto;
   padding: 2px 8px;
@@ -174,10 +165,86 @@
   color: var(--color-text-secondary);
 }
 
-.courses-home__browse > summary {
-  cursor: pointer;
+.courses-home__groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
-.courses-home__browse[open] > summary {
-  margin-bottom: var(--space-3);
+/* A series or level: a card whose whole header row toggles it. */
+.courses-group {
+  padding: 0;
+  overflow: hidden;
+}
+
+.courses-group__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  cursor: pointer;
+  list-style: none;
+  transition: background 0.15s ease;
+}
+
+.courses-group__summary::-webkit-details-marker {
+  display: none;
+}
+
+.courses-group__summary:hover {
+  background: var(--color-primary-tint);
+}
+
+.courses-group__summary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.courses-group__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.courses-group__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.courses-group__title {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.courses-group__meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.courses-group__chevron {
+  flex: none;
+  color: var(--color-text-muted);
+  transition: transform 150ms ease;
+}
+
+.courses-group[open] .courses-group__chevron {
+  transform: rotate(180deg);
+}
+
+.courses-group__body {
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+}
+
+.courses-group__body .courses-home__module-heading:first-child {
+  margin-top: 0;
 }
