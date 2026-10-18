@@ -6,13 +6,15 @@ interface SettingsSectionProps {
   id?: string;
   label: string;
   title: string;
+  /** Shown before the title. */
+  icon: ReactNode;
   children: ReactNode;
 }
 
 /** One Settings card, collapsed until the user opens it — except when the URL
  * fragment names it, so deep links (engine indicator, "set up AI" prompts)
  * land on an open section. Open state isn't remembered between visits. */
-export function SettingsSection({ id, label, title, children }: SettingsSectionProps): ReactNode {
+export function SettingsSection({ id, label, title, icon, children }: SettingsSectionProps): ReactNode {
   const { hash } = useLocation();
   const isLinked = id !== undefined && hash === `#${id}`;
   const [open, setOpen] = useState(isLinked);
@@ -27,7 +29,10 @@ export function SettingsSection({ id, label, title, children }: SettingsSectionP
     <section id={id} aria-label={label} className="card settings-section">
       <details open={open} onToggle={(event) => setOpen(event.currentTarget.open)}>
         <summary className="settings-section__summary">
-          <h2>{title}</h2>
+          <h2>
+            {icon}
+            {title}
+          </h2>
         </summary>
         <div className="settings-section__body">{children}</div>
       </details>

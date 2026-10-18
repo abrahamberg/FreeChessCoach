@@ -15,6 +15,7 @@ import { EngineFields } from './EngineFields.js';
 import { LinkedAccountsFields } from './LinkedAccountsFields.js';
 import { LlmSetupSection } from './LlmSetupSection.js';
 import { ProfileFields } from './ProfileFields.js';
+import { BoardIcon, CpuIcon, EyeIcon, LightbulbIcon, LockIcon, MessageCircleIcon, PlugIcon, UserIcon, VolumeOnIcon } from '../../components/Icon.js';
 import { SettingsSection } from './SettingsSection.js';
 import { VoiceFields } from './VoiceFields.js';
 import './SettingsPage.css';
@@ -96,11 +97,11 @@ export function SettingsPage(): ReactNode {
       </header>
 
       <div className="settings-page__sections">
-        <SettingsSection label="Profile" title="Profile">
+        <SettingsSection label="Profile" title="Profile" icon={<UserIcon />}>
           <ProfileFields profile={profile} />
         </SettingsSection>
 
-        <SettingsSection label="Coach" title="Coach">
+        <SettingsSection label="Coach" title="Coach" icon={<MessageCircleIcon />}>
           <p>Pick who coaches you. It's cosmetic — every coach gives the same advice, just in a different voice.</p>
           <CoachPersonaSelect
             value={profile.coachPersona}
@@ -108,12 +109,12 @@ export function SettingsPage(): ReactNode {
           />
         </SettingsSection>
 
-        <SettingsSection label="Coach voice" title="Coach voice">
+        <SettingsSection label="Coach voice" title="Coach voice" icon={<VolumeOnIcon />}>
           <p>Have the coach's replies read aloud. Off by default.</p>
           <VoiceFields profile={profile} llmSetup={llmSetup} />
         </SettingsSection>
 
-        <SettingsSection label="Linked accounts" title="Linked accounts">
+        <SettingsSection label="Linked accounts" title="Linked accounts" icon={<PlugIcon />}>
           <p>
             Set these so we can tell which side you played when you import a game — you won&rsquo;t be asked
             again for games from that site.
@@ -121,7 +122,7 @@ export function SettingsPage(): ReactNode {
           <LinkedAccountsFields profile={profile} />
         </SettingsSection>
 
-        <SettingsSection label="Board" title="Board">
+        <SettingsSection label="Board" title="Board" icon={<BoardIcon />}>
           <p>Show dots on the squares a selected piece can legally move to.</p>
           <button type="button" aria-pressed={showLegalMoveDots} onClick={() => setShowLegalMoveDots(true)}>
             Show
@@ -148,17 +149,17 @@ export function SettingsPage(): ReactNode {
           )}
         </SettingsSection>
 
-        <SettingsSection id="settings-engine" label="Engine" title="Engine">
+        <SettingsSection id="settings-engine" label="Engine" title="Engine" icon={<CpuIcon />}>
           <EngineFields profile={profile} />
         </SettingsSection>
 
-        <SettingsSection id="settings-api-keys" label="API keys" title="AI setup">
+        <SettingsSection id="settings-api-keys" label="API keys" title="AI setup" icon={<LightbulbIcon />}>
           <p>Your endpoint and API key are tested, encrypted with your unlock phrase, and kept available only while you are active. We never show the key again.</p>
           <AiSetupHelp />
           <LlmSetupSection status={llmSetup} />
         </SettingsSection>
 
-        <SettingsSection label="Appearance" title="Appearance">
+        <SettingsSection label="Appearance" title="Appearance" icon={<EyeIcon />}>
           <button type="button" aria-pressed={theme === 'light'} onClick={() => setTheme('light')}>
             Light
           </button>
@@ -167,7 +168,7 @@ export function SettingsPage(): ReactNode {
           </button>
         </SettingsSection>
 
-        <SettingsSection label="Account" title="Account">
+        <SettingsSection label="Account" title="Account" icon={<LockIcon />}>
           <p>{profile.email}</p>
           {/* Ends the oauth2-proxy session (architecture §11) and lands back on
            * the public landing page — not a fetch/mutation, so a plain link. */}

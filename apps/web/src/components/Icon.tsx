@@ -458,3 +458,13 @@ export function UnlockIcon(props: IconProps): ReactNode {
     </svg>
   );
 }
+
+export function CpuIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+      <rect x="9.5" y="9.5" width="5" height="5" />
+      <path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3" />
+    </svg>
+  );
+}
