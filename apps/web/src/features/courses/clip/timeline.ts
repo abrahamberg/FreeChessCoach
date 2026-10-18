@@ -5,7 +5,7 @@ import { courseMoveSound, type CourseEvals } from '../player/course-move-list.js
 import { moveLabel as sanLabel } from '@freechesscoach/chess-analysis';
 import { climaxNode, fenBefore, moveLabel } from '../courseEdits.js';
 import { checkedKing, type CheckedKing } from '../../board/checked-king.js';
-import { clipSoundLengthMs, type ClipSound } from './clip-sounds.js';
+import { clipSoundLengthMs, cutSoundOf, type ClipSound } from './clip-sounds.js';
 
 export { checkedKing, type CheckedKing };
 import { speechMarks, type ClipMark } from './speech-marks.js';
@@ -23,8 +23,8 @@ export const PRODUCT_FORMAT: Record<ClipProduct, ClipFormat> = { video: 'landsca
 
 /** How long the pieces of the YouTube video last, in ms. */
 export const CLIP_TIMING = {
-  /** An unnarrated move between lines. */
-  moveMs: 700,
+  /** An unnarrated move between lines (the owner, 2026-10-18: 30% longer). */
+  moveMs: 910,
   /** The same for a move the creator marked `@fast`. */
   fastMoveMs: 350,
   /** How long a move the creator marked `@slow` is held, on top of its own length. */
@@ -63,6 +63,10 @@ export interface ClipSegment {
   fen: string;
   /** The move just played, highlighted on the board. */
   lastMove: { from: string; to: string } | null;
+  /** `lastMove` was played from the board before this segment, here: its
+   * pale arrow shows for the segment's first moments (draw-frame.ts). False
+   * on a board that holds a move already shown, or after a cut. */
+  played?: boolean;
   /** The king in check on this board, lit; `mated` when it is checkmate. */
   king?: CheckedKing;
   /** "6.Bc3", shown with the move; null on cards. */
@@ -124,8 +128,21 @@ export class SegmentWriter {
   clock = 0;
 
   push(segment: NewSegment, length: number): void {
-    this.segments.push({ sound: null, audioOffsetMs: 0, ...segment, start: this.clock, end: this.clock + length });
+    const before = this.segments.at(-1);
+    const played = !!before && !!segment.lastMove && playedFrom(before.fen, segment.lastMove, segment.fen);
+    this.segments.push({ sound: null, audioOffsetMs: 0, ...segment, ...(played ? { played } : {}), start: this.clock, end: this.clock + length });
     this.clock += length;
+  }
+}
+
+/** Whether `move` played on `beforeFen` gives `fen`'s board. */
+function playedFrom(beforeFen: string, move: { from: string; to: string }, fen: string): boolean {
+  if (beforeFen === fen) return false;
+  const placement = fen.split(' ')[0];
+  try {
+    return new Chess(beforeFen).moves({ verbose: true }).some((each) => each.from === move.from && each.to === move.to && each.after.split(' ')[0] === placement);
+  } catch {
+    return false;
   }
 }
 
@@ -207,6 +224,8 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
   const { document, audioMs, timing = CLIP_TIMING, sounds = null } = options;
   const soundOf = (node: CourseNode): ClipSound | null => (sounds ? courseMoveSound(document, sounds.evals, node) : null);
   const soundLength = sounds?.lengthMs ?? clipSoundLengthMs;
+  /** A cut's sound: the whoosh, or the coach's own. */
+  const cutSound = sounds ? cutSoundOf(document.coachPersona) : null;
   const byId = new Map(document.nodes.map((node) => [node.id, node]));
   const out = new SegmentWriter();
   let shown: CourseNode | null = null;
@@ -304,7 +323,9 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
     const spoken = spokenLength(`clip:${episode.id}:${ply.nodeId}`, Boolean(videoLine(ply)));
     const step = Math.max(timing.moveMs, Math.round(spoken.length / (played.length + 1)));
     const caption = videoCaption(ply);
-    out.push({ kind: 'beat', ...boardBefore(node), arrows: [], caption, audioKey: spoken.key, pauseMs: 0, sound: sounds ? 'whoosh' : null }, step);
+    // The cut's sound first, then the coach (the owner, 2026-10-18: they overlapped).
+    const lead = cutSound && spoken.key ? soundLength(cutSound) : 0;
+    out.push({ kind: 'beat', ...boardBefore(node), arrows: [], caption, audioKey: spoken.key, pauseMs: 0, sound: cutSound, audioOffsetMs: lead }, lead + step);
     // The safe line is the engine's best from here: the evaluation before it holds along it.
     const held = before ? options.evals?.[before.id] : undefined;
     const rated: Pick<ClipSegment, 'rated'> = held ? { rated: { cp: held.cp, quality: 'best' } } : {};
@@ -317,16 +338,18 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
 
   for (const { chapter, episode } of chapteredEpisodes(document)) {
     if (chapter !== null) {
-      // The coach reads the chapter's name; the card stays until he has finished it.
+      // The cut's sound, then the coach reads the chapter's name (the owner,
+      // 2026-10-18: not over each other); the card stays until the name is read.
       const key = `chapter:${chapter.id}`;
       const spoken = audioMs(key) === undefined ? null : spokenLength(key, true);
-      out.push({ kind: 'chapter', ...board(shown), moveLabel: null, lastMove: null, arrows: [], caption: chapter.title, audioKey: spoken?.key ?? null, pauseMs: 0, sound: sounds ? 'whoosh' : null }, Math.max(timing.chapterMs, spoken?.length ?? 0));
+      const lead = cutSound && spoken ? soundLength(cutSound) : 0;
+      out.push({ kind: 'chapter', ...board(shown), moveLabel: null, lastMove: null, arrows: [], caption: chapter.title, audioKey: spoken?.key ?? null, pauseMs: 0, sound: cutSound, audioOffsetMs: lead }, Math.max(timing.chapterMs, lead + (spoken?.length ?? 0)));
       cut = false;
     }
     if (SIDE_ROAD_ROLES.has(episode.role)) sideRoads.splice(0).forEach((play) => play());
     if (cut) {
       // The hook's cut back to the start, when no chapter card makes it.
-      out.push({ kind: 'move', ...board(null), arrows: [], caption: '', audioKey: null, pauseMs: 0, sound: sounds ? 'whoosh' : null }, timing.backMs);
+      out.push({ kind: 'move', ...board(null), arrows: [], caption: '', audioKey: null, pauseMs: 0, sound: cutSound }, timing.backMs);
       shown = null;
       cut = false;
     }

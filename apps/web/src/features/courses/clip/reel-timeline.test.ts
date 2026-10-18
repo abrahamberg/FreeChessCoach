@@ -26,11 +26,11 @@ describe('buildReelTimeline (§13.3)', () => {
   test('the hook on the first position, the build-up fast, silence, the climax slowed with the payoff, the call to action, the loop', () => {
     expect(summary(withReel({}))).toEqual([
       ['beat', null, '', null, 2500],
-      ['move', '7.Qd2', '', 'opponent', 500],
+      ['move', '7.Qd2', '', 'opponent', 650],
       ['beat', '7…Bxc3', 'The pin', 'capture', 100 + 1500],
-      ['move', '8.Qxc3', '', 'capture', 500],
+      ['move', '8.Qxc3', '', 'capture', 650],
       ['silence', '8.Qxc3', '', null, 500],
-      ['move', '8…Qc1#', 'Mate in eight', 'check', 500 + 1400],
+      ['move', '8…Qc1#', 'Mate in eight', 'check', 650 + 1400],
       ['cta', null, 'Follow for a trap a day.', null, 2000],
       ['beat', null, '', null, 1700]
     ]);

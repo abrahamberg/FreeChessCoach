@@ -30,6 +30,9 @@ const COLORS = {
   /** A square the coach names, lit while it is said. */
   mark: '#ffd60a',
   arrows: { idea: '#c9762a', threat: '#c0392b', best: '#5b9c6a' } satisfies Record<CourseArrow['kind'], string>,
+  /** The move just played: dotted, under the coach's own arrows; a sky blue
+   * that reads on both squares and against the green of the last move. */
+  moveArrow: '#4ea3f0',
   /** `--quality-*`, the badge on a rated move; the glyph is dark except on
    * the three MoveQualityBadge.css turns white. */
   quality: {
@@ -47,6 +50,11 @@ const COLORS = {
   } satisfies Record<MoveQuality, string>
 };
 const WHITE_GLYPH: readonly MoveQuality[] = ['brilliant', 'miss', 'blunder'];
+/** How long the move just played keeps its arrow (the owner, 2026-10-18):
+ * at most this, or the move's own segment when it is shorter. */
+const MOVE_ARROW_MS = 750;
+/** The arrow fades out over its last this long. */
+const MOVE_ARROW_FADE_MS = 150;
 const FONT = "'Inter Tight', Inter, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
 /** One portrait per coach (public/brand/coaches/<persona>.png), transparent,
@@ -272,6 +280,13 @@ function drawBoard(ctx: CanvasRenderingContext2D, input: FrameInput, x: number, 
     const [sx, sy] = at(name);
     if (image) ctx.drawImage(image, sx, sy, square, square);
   }
+  const playedMs = input.ms - input.segment.start;
+  if (input.segment.played && lastMove && playedMs < MOVE_ARROW_MS) {
+    const [fx, fy] = at(lastMove.from);
+    const [tx, ty] = at(lastMove.to);
+    const alpha = 0.9 * Math.min(1, (MOVE_ARROW_MS - playedMs) / MOVE_ARROW_FADE_MS);
+    drawArrow(ctx, fx + square / 2, fy + square / 2, tx + square / 2, ty + square / 2, square, COLORS.moveArrow, alpha, true);
+  }
   for (const arrow of arrows.filter((each) => each.from !== each.to)) {
     const [fx, fy] = at(arrow.from);
     const [tx, ty] = at(arrow.to);
@@ -438,19 +453,29 @@ export function piecesOf(fen: string): [string, string][] {
   return pieces;
 }
 
-function drawArrow(ctx: CanvasRenderingContext2D, fx: number, fy: number, tx: number, ty: number, square: number, color: string, alpha = 0.85): void {
-  const angle = Math.atan2(ty - fy, tx - fx);
-  const head = square * 0.45;
+/** An arrow from square centre to square centre; `dotted`: a row of dots
+ * and a smaller head, for the move just played. A knight's jump bends: the
+ * long leg first, then the short one (the owner, 2026-10-18). */
+function drawArrow(ctx: CanvasRenderingContext2D, fx: number, fy: number, tx: number, ty: number, square: number, color: string, alpha = 0.85, dotted = false): void {
+  const files = Math.round(Math.abs(tx - fx) / square);
+  const ranks = Math.round(Math.abs(ty - fy) / square);
+  const knight = (files === 1 && ranks === 2) || (files === 2 && ranks === 1);
+  const [cx, cy] = knight ? (files > ranks ? [tx, fy] : [fx, ty]) : [fx, fy];
+  const angle = Math.atan2(ty - cy, tx - cx);
+  const head = square * (dotted ? 0.32 : 0.45);
   const endX = tx - Math.cos(angle) * head * 0.8;
   const endY = ty - Math.sin(angle) * head * 0.8;
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
-  ctx.lineWidth = square * 0.17;
+  ctx.lineWidth = square * (dotted ? 0.13 : 0.17);
   ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  if (dotted) ctx.setLineDash([0, square * 0.2]);
   ctx.beginPath();
   ctx.moveTo(fx, fy);
+  if (knight) ctx.lineTo(cx, cy);
   ctx.lineTo(endX, endY);
   ctx.stroke();
   ctx.beginPath();

@@ -5,8 +5,8 @@ import { boardAt, landingMs, marksFor, movePaceMs, SegmentWriter, type ClipTimel
 
 /** docs/courses.md §13.3, the reel's pace, in ms. */
 export const REEL_TIMING = {
-  /** The build-up: fast, so the board is never still for long. */
-  moveMs: 500,
+  /** The build-up: fast, so the board is never still for long (the owner, 2026-10-18: 30% longer). */
+  moveMs: 650,
   /** The same for a move the creator marked `@fast`, and the hold on a `@slow` one. */
   fastMoveMs: 250,
   slowHoldMs: 1000,
@@ -30,7 +30,7 @@ export const REEL_TIMING = {
 /**
  * §13.3, the reel as timed segments: the spoken hook over the first
  * position (the top band on from frame one), a puzzle's countdown, the
- * build-up at 500 ms a move, half a second of silence, the climax slowed
+ * build-up at 650 ms a move, half a second of silence, the climax slowed
  * with the payoff in the bottom band, the moves after it, the call to
  * action and the loop line. A promo stops before the climax. Code stretches
  * the climax, never the build-up, to reach 30 s.

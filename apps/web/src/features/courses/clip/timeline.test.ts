@@ -126,6 +126,26 @@ describe('buildVideoTimeline (§13.4)', () => {
     ]);
   });
 
+  // The owner (2026-10-18): a pale arrow on each move as it is played.
+  test('a board whose move was just played from the board before is marked played; a held board, a take-back or a cut is not', () => {
+    const bait: CoursePly = { ...clip('n12', 'Bb4 pins it.'), tempting: [{ san: 'Qxc3+', why: 'The queen takes with check.', refutation: ['Nxc3'] }] };
+    const document = trap([episode('e1', 'quiz', [bait]), episode('e2', 'safety', [clip('n11', 'Play Nc3 instead.')])], 'tactics');
+    const segments = buildVideoTimeline({ document, audioMs: () => 1000, timing: TIMING }).segments;
+    const from = segments.findIndex((segment) => segment.kind === 'tempting');
+    // The film opens on 1.d4 already played: no board came before it.
+    expect(segments.slice(0, 2).map((segment) => [segment.moveLabel, segment.played ?? false])).toEqual([['1.d4', false], ['1…e5', true]]);
+    expect(segments.slice(from).map((segment) => [segment.kind, segment.moveLabel, segment.played ?? false])).toEqual([
+      ['tempting', '6…Qxc3+', false],
+      ['move', '6…Qxc3+', true],
+      ['move', '7.Nxc3', true],
+      ['move', '6.Bc3', false],
+      ['beat', '6…Bb4', true],
+      // The safety move is a cut back up the line.
+      ['beat', '6.Bc3', false],
+      ['end', null, false]
+    ]);
+  });
+
   test('a clip move back up the line (the safety move) cuts to it without replaying moves', () => {
     const document = trap([episode('e1', 'punish', [clip('n16', 'Mate.')]), episode('e2', 'safety', [clip('n11', 'Play Nc3 instead.')])]);
     const timeline = buildVideoTimeline({ document, audioMs: () => 1000, timing: TIMING });
@@ -181,6 +201,35 @@ describe('buildVideoTimeline (§13.4)', () => {
     const card = (ms: number) => buildVideoTimeline({ document, audioMs: (key) => (key === 'chapter:c1' ? ms : 1000), timing: TIMING }).segments.find((segment) => segment.kind === 'chapter');
     expect(card(5000)).toMatchObject({ audioKey: 'chapter:c1', end: 5010 });
     expect(card(500)).toMatchObject({ end: 2000 });
+  });
+
+  // The owner (2026-10-18): the whoosh came over the coach reading the name.
+  test('with sounds, the chapter card whooshes first, then the name is read; the card stays for both', () => {
+    const document = trap([episode('e1', 'setup', [clip('n2', 'The gambit.')])]);
+    document.chapters = [{ id: 'c1', title: 'The setup', lineId: 'l1', episodeIds: ['e1'] }];
+    const card = (ms: number) => buildVideoTimeline({ document, audioMs: (key) => (key === 'chapter:c1' ? ms : 1000), timing: TIMING, sounds: { evals: {}, lengthMs: () => 450 } }).segments.find((segment) => segment.kind === 'chapter');
+    expect(card(5000)).toMatchObject({ sound: 'whoosh', audioKey: 'chapter:c1', audioOffsetMs: 450, end: 450 + 5010 });
+    expect(card(1600)).toMatchObject({ audioOffsetMs: 450, end: 2060 });
+    expect(card(500)).toMatchObject({ end: 2000 });
+  });
+
+  // The owner (2026-10-18): Vesper waves her wand where the others whoosh.
+  test("a coach with a cut sound of their own has it in place of the whoosh", () => {
+    const document = trap([episode('e1', 'hook', []), episode('e2', 'setup', [clip('n2', 'The gambit.')])]);
+    document.chapters = [{ id: 'c1', title: 'The setup', lineId: 'l1', episodeIds: ['e2'] }];
+    const cuts = () => buildVideoTimeline({ document, audioMs: () => 1000, timing: TIMING, sounds: { evals: {}, lengthMs: () => 450 } }).segments.filter((segment) => segment.kind === 'chapter').map((segment) => segment.sound);
+    expect(cuts()).toEqual(['whoosh']);
+    document.coachPersona = 'witch';
+    expect(cuts()).toEqual(['wand']);
+  });
+
+  test("with sounds, the safe line's whoosh plays before the coach starts it", () => {
+    const safety: CoursePly = { ...clip('n11', 'Nc3 holds, then Bb4 Rb1.'), playOut: ['Nc3', 'Bb4', 'Rb1'] };
+    const document = trap([episode('e1', 'punish', [clip('n16', 'Mate.')]), episode('e2', 'safety', [safety])]);
+    const segments = buildVideoTimeline({ document, audioMs: () => 2000, timing: TIMING, sounds: { evals: {}, lengthMs: () => 450 } }).segments;
+    const beat = segments.find((segment) => segment.audioKey === 'clip:e2:n11');
+    expect(beat).toMatchObject({ sound: 'whoosh', audioOffsetMs: 450 });
+    expect(beat!.end - beat!.start).toBe(450 + 503);
   });
 
   // The owner (2026-10-12): a long line said before anything moved was hard to follow.
