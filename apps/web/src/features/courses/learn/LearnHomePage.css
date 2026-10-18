@@ -153,3 +153,31 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
+
+.courses-home__next {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.courses-home__next-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.courses-home__next-row--coming {
+  color: var(--color-text-secondary);
+}
+
+.courses-home__browse > summary {
+  cursor: pointer;
+}
+
+.courses-home__browse[open] > summary {
+  margin-bottom: var(--space-3);
+}

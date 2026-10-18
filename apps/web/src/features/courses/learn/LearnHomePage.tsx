@@ -15,6 +15,8 @@ import { COURSE_KIND_INFO } from '../courseKinds.js';
 import { useCourseCatalogue, type CatalogueSort } from './useCourseCatalogue.js';
 import { SortControl, levelGroups } from './course-sort.js';
 import { splitSeries } from './series-sections.js';
+import { upNext, type UpNextItem } from './up-next.js';
+import { useProfile } from '../../../hooks/useProfile.js';
 import '../../games/GameCard.css';
 import '../../games/GamesPage.css';
 import '../../games/RailCard.css';
@@ -35,6 +37,8 @@ export function LearnHomePage(): ReactNode {
   const catalogue = useCourseCatalogue(kind, sort);
   const browse = catalogue.data?.pages.flatMap((page) => page.items) ?? [];
   const due = useCourseReviewsDue(signedIn).data?.courses ?? [];
+  const band = useProfile().data?.ratingBand ?? null;
+  const everything = useCourseCatalogue(null, 'curriculum').data?.pages.flatMap((page) => page.items) ?? [];
   const remove = useMutation({
     mutationFn: (slug: string) => apiDelete(`/api/course-enrollments/${encodeURIComponent(slug)}`),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['course-enrollments'] })
@@ -44,6 +48,7 @@ export function LearnHomePage(): ReactNode {
   const learning = items.filter((item) => item.completedAt === null);
   const learned = items.filter((item) => item.completedAt !== null);
   const status = new Map(items.map((item) => [item.slug, item.completedAt ? 'Learned' : 'Learning']));
+  const next = upNext({ catalogue: everything, enrollments: items, due, band });
   const dueBySlug = new Map(due.map((course) => [course.slug, course]));
 
   return (
@@ -71,7 +76,19 @@ export function LearnHomePage(): ReactNode {
         </section>
       )}
 
-      <section aria-label="Browse" className="games-page__section">
+      {(next.todo.length > 0 || next.coming.length > 0) && (
+        <section aria-label="Up next" className="games-page__section">
+          <h2 className="games-page__section-heading">Up next</h2>
+          <ul className="courses-home__next">
+            {[...next.todo, ...next.coming].map((each, index) => (
+              <UpNextRow key={each.slug} item={each} coming={index >= next.todo.length} />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <details className="games-page__section courses-home__browse">
+        <summary className="games-page__section-heading">Browse all courses</summary>
         <div className="courses-home__browse-header">
           <h2 className="games-page__section-heading">Browse</h2>
           <SortControl value={sort} onChange={setSort} />
@@ -135,7 +152,7 @@ export function LearnHomePage(): ReactNode {
             {catalogue.isFetchingNextPage ? 'Loading…' : 'More courses'}
           </button>
         )}
-      </section>
+      </details>
 
       {signedIn && (
         <section aria-label="Learned" className="games-page__section">
@@ -151,6 +168,17 @@ export function LearnHomePage(): ReactNode {
         </section>
       )}
     </div>
+  );
+}
+
+function UpNextRow({ item, coming }: { item: UpNextItem; coming: boolean }): ReactNode {
+  return (
+    <li className={coming ? 'courses-home__next-row courses-home__next-row--coming' : 'courses-home__next-row'}>
+      <Link to={`/learn/${encodeURIComponent(item.slug)}${item.action.startsWith('Review') ? '?stage=drill' : ''}`} className="courses-home__title-link">
+        {item.title}
+      </Link>
+      {item.action && <span className={coming ? 'meta' : 'badge badge--primary'}>{item.action}</span>}
+    </li>
   );
 }
 
