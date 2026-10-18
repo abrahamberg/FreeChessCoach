@@ -1,4 +1,4 @@
-import { courseNodeAncestry, courseNodePath, renderCourseDossier } from '@freechesscoach/chess-analysis';
+import { CONFIG, courseNodeAncestry, courseNodePath, renderCourseDossier } from '@freechesscoach/chess-analysis';
 import type { CourseReel } from '@freechesscoach/shared';
 import { buildCourseSystemPrompt, lineMovetext, nodeLabel, type CourseMessages, type CoursePromptContext } from './context.js';
 import { episodeDossier, usedOpenersLine } from './episode.js';
@@ -38,7 +38,7 @@ export function buildCourseReelMessages(request: CourseReelRequest): CourseMessa
   const moves = path.map((nodeId) => `${nodeLabel(context, nodeId)}${nodeId === reel.climaxNodeId ? '   <- THE CLIMAX' : ''}`).join('\n');
   const sections = [
     `COURSE\nTitle: ${request.title}\nPromise: ${request.promise}${request.videoTitle ? `\nThe YouTube video: "${request.videoTitle}"` : ''}`,
-    `THE REEL (9:16, 30 to 45 seconds, one idea)
+    `THE REEL (9:16, ${CONFIG.courses.reelSeconds.min} to ${CONFIG.courses.reelSeconds.max} seconds, one idea)
 Style: ${STYLE_TEXT[reel.style]}
 Its moves, from the position before the first:
 ${moves}

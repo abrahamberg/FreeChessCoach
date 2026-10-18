@@ -18,6 +18,10 @@ export interface CourseVerifyProblem {
   nodeId: string | null;
   /** For the creator: "Nd5 in the note on n14 is not in the analysis". */
   message: string;
+  /** A length over its guide (the video's words, the reel's seconds): shown
+   * to the creator, never sent to a repair call, so good content is not cut
+   * to fit (the owner, 2026-10-18). */
+  advisory?: true;
 }
 
 /** Spoken words per video move and per episode in the video (docs/courses.md §6.5). */
@@ -100,7 +104,7 @@ function lengthProblems(episode: CourseEpisode, scope: EpisodeScope, budget: Cou
   }
   const total = video.reduce((sum, ply) => sum + wordCount(videoLine(ply)), 0);
   if (budget && overLength(total, budget.wordsPerEpisode)) {
-    problems.push({ code: 'lengths', nodeId: null, message: `The video has ${total} words here (at most ${budget.wordsPerEpisode})` });
+    problems.push({ code: 'lengths', nodeId: null, message: `The video has ${total} words here (the guide is about ${budget.wordsPerEpisode})`, advisory: true });
   }
   // The planning call's budget: how many moves may speak in each version.
   // A video the plan gave 0 was not planned: the creator may add it by hand,

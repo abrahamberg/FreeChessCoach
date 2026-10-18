@@ -157,7 +157,7 @@ describe('runCourseGeneration', () => {
 
     const sent = prompts();
     expect(sent[0]).toContain('REEL CANDIDATES');
-    expect(sent[7]).toContain('THE REEL (9:16, 30 to 45 seconds, one idea)');
+    expect(sent[7]).toContain('THE REEL (9:16, 30 to 61 seconds, one idea)');
     const row = await coursesRepo.findById(db, id);
     expect(row?.document?.reel).toMatchObject({ style: 'highlight', climaxNodeId: 'n16', hook: script.hook, beats: script.beats });
     expect(row?.document?.video?.title).toBe('A greedy queen, mated in eight');

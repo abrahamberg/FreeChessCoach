@@ -71,7 +71,10 @@ describe('verifyCourseEpisode', () => {
 
   test('rejects a line over its length', () => {
     expect(codes(verify((episode) => (first(episode).caption = 'This caption has far too many words')))).toEqual(['lengths']);
-    expect(codes(verify(() => undefined, { budget: { wordsPerBeat: 10, wordsPerEpisode: 100 } }))).toEqual(['lengths']);
+    const lengths = (budget: CourseVerifyInput['budget']) => verify(() => undefined, { budget }).map((problem) => [problem.code, problem.advisory ?? false]);
+    expect(lengths({ wordsPerBeat: 10, wordsPerEpisode: 100 })).toEqual([['lengths', false]]);
+    // The owner (2026-10-18): a video over its words guide is not cut by a repair.
+    expect(lengths({ wordsPerBeat: 100, wordsPerEpisode: 10 })).toEqual([['lengths', true]]);
   });
 
   test('a quiz scene never names the answer', () => {

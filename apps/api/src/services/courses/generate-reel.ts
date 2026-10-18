@@ -21,8 +21,10 @@ export async function writeReel(inputs: GenerationInputs, document: CourseDocume
   let problems = verify(inputs, document, reel);
   await call.checked?.(label, problems.map((problem) => problem.message));
 
-  if (problems.length > 0) {
-    const retry = { previousOutput: JSON.stringify(first), problems: problems.map((problem) => problem.message) };
+  // A length over its guide alone is no reason to rewrite (advisory).
+  const toRepair = problems.filter((problem) => !problem.advisory);
+  if (toRepair.length > 0) {
+    const retry = { previousOutput: JSON.stringify(first), problems: toRepair.map((problem) => problem.message) };
     const repairLabel = { ...label, repair: true };
     const repaired = await call(buildCourseReelMessages({ ...request, retry }), ReelScriptSchema, repairLabel);
     reel = { ...frame, ...repaired };

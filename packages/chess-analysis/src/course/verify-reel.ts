@@ -16,7 +16,8 @@ const MAX_VIDEO_HOOK_WORDS = 40;
 /** Seconds a reel spends besides its words (§13.3): the climax slowed down
  * with its silence, and the CTA card. */
 const REEL_FIXED_SECONDS = 4;
-const REEL_MOVE_SECONDS = 0.5;
+/** The reel's unnarrated move (web `REEL_TIMING.moveMs`). */
+const REEL_MOVE_SECONDS = 0.65;
 /** The same as the reel's `@fast` move, and the hold on a `@slow` one (web `REEL_TIMING`). */
 const REEL_FAST_SECONDS = 0.25;
 const REEL_SLOW_SECONDS = 1;
@@ -33,7 +34,8 @@ export interface CourseReelVerifyInput {
 }
 
 /** docs/courses.md §13.9, the reel: its lines stay in its span and on the
- * analysis, the bands stay short, the CTA is specific, and it fits 45 s. */
+ * analysis, the bands stay short, the CTA is specific, and its length is
+ * near its guide (advisory). */
 export function verifyCourseReel(input: CourseReelVerifyInput): CourseVerifyProblem[] {
   const { reel } = input;
   const span: CourseEpisode = { id: 'reel', role: 'reel', focus: '', startNodeId: reel.startNodeId, endNodeId: reel.endNodeId, plies: [], drillNodeIds: [] };
@@ -77,7 +79,7 @@ export function verifyCourseReel(input: CourseReelVerifyInput): CourseVerifyProb
   const marksOf = (id: string): readonly string[] => scope.byId.get(id)?.marks ?? [];
   const pace = { fast: scope.path.filter((id) => marksOf(id).includes('fast')).length, slow: scope.path.filter((id) => marksOf(id).includes('slow')).length };
   const seconds = reelSeconds(reel, scope.path.length, pace);
-  if (overLength(seconds, CONFIG.courses.reelSeconds.max)) problems.push({ code: 'reel', nodeId: null, message: `The reel runs about ${Math.round(seconds)} s (at most ${CONFIG.courses.reelSeconds.max}): cut words` });
+  if (overLength(seconds, CONFIG.courses.reelSeconds.max)) problems.push({ code: 'reel', nodeId: null, message: `The reel runs about ${Math.round(seconds)} s (the guide is at most ${CONFIG.courses.reelSeconds.max})`, advisory: true });
 
   return [
     ...problems,

@@ -28,8 +28,10 @@ export async function writeEpisode(
   let problems = verify(inputs, outline, episode);
   await call.checked?.(label, messagesOf(problems));
 
-  if (problems.length > 0) {
-    const retry = { previousOutput: JSON.stringify(first), problems: messagesOf(problems) };
+  // A length over its guide alone is no reason to rewrite (advisory).
+  const toRepair = problems.filter((problem) => !problem.advisory);
+  if (toRepair.length > 0) {
+    const retry = { previousOutput: JSON.stringify(first), problems: messagesOf(toRepair) };
     const repairLabel = { ...label, repair: true };
     const repaired = await call(buildCourseEpisodeMessages({ ...request, retry }), EpisodeScriptSchema, repairLabel);
     episode = toEpisode(inputs, outline, episodeId, repaired);

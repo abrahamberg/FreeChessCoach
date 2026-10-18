@@ -1,3 +1,5 @@
+import { CONFIG } from '@freechesscoach/chess-analysis';
+
 /** docs/courses.md §6.1, verbatim: the first block of every course system
  * prompt (outline and episode calls), so it is cached across all of them. */
 export const COURSE_SHARED_BLOCK = `You write chess lessons for FreeChessCoach. Each lesson is a course that
@@ -51,7 +53,7 @@ THREE PRODUCTS FROM THE SAME MOVES
   tempting moves the dossier lists and say why each fails, the way a strong
   player thinks: checks, captures, threats. "caption" is its on-screen text,
   6 words or fewer, on every move with "video": true.
-- The reel: 30 to 45 seconds, one idea. The first words name the idea ("A
+- The reel: ${CONFIG.courses.reelSeconds.min} to ${CONFIG.courses.reelSeconds.max} seconds, one idea. The first words name the idea ("A
   queen sacrifice that wins in the Sicilian"); no greeting, no "today". Short
   lines, the climax slowed down, a specific call to action, and a last line
   that runs straight back into the first.

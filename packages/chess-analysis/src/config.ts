@@ -582,22 +582,24 @@ export const CONFIG = {
      * cards; scaled by the coach's `PERSONA_SPEECH_SPEED`. */
     wordsPerSecond: 2,
     /** A guide, not a target: a puzzle with little to say runs short, and
-     * the words cap is the top of the range. */
+     * the words cap is the top of the range. The tops are 35% above the
+     * first ones (the owner, 2026-10-18: moves play slower, and good
+     * content is not cut to fit). */
     videoSeconds: {
-      trap: { min: 180, max: 420 },
-      opening: { min: 480, max: 900 },
-      tactics: { min: 300, max: 600 },
-      puzzle: { min: 90, max: 240 },
-      master_game: { min: 480, max: 900 },
-      endgame: { min: 180, max: 480 },
-      lesson: { min: 180, max: 480 }
+      trap: { min: 180, max: 567 },
+      opening: { min: 480, max: 1215 },
+      tactics: { min: 300, max: 810 },
+      puzzle: { min: 90, max: 324 },
+      master_game: { min: 480, max: 1215 },
+      endgame: { min: 180, max: 648 },
+      lesson: { min: 180, max: 648 }
     },
     /** Lengths (video words, the hook, the reel's seconds) may run over by
      * this share before they count as a problem: a 41-word hook against 40
      * is not worth a repair call that may bend the wording. */
     lengthSlack: 0.1,
-    /** §13.3 the reel's length. */
-    reelSeconds: { min: 30, max: 45 },
+    /** §13.3 the reel's length; the top 35% above the first 45 s (the owner, 2026-10-18). */
+    reelSeconds: { min: 30, max: 61 },
     hookWords: 12,
     maxWordsPerBeat: 45,
     quizPauseSeconds: 3,
