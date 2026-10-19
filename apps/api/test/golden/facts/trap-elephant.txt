@@ -8,82 +8,114 @@ Moves:
 n1 1.d4 (White, Line A) | book
     book: in book (Queen's Pawn Game)
     board: moves the pawn from d2 to d4
-    alternatives: e4: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: puts a pawn in the centre on d4 | controls c5 and e5 | prevents e5, a pawn advance | opens the bishop on c1 (from 0 squares to 5)
+    opens: the dark-squared bishop on c1, from 0 squares to 5
+    alternatives: e4 (puts a pawn in the centre on e4; controls d5 and f5; opens the bishop on f1 (from 0 squares to 5)): The position is roughly equal, after c5 Nf3 d6 d4; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after Nf6 c4 e6 d4
 n2 1…d5 (Black, Line A) | book
     book: in book (Queen's Pawn Game)
+    the book also has: c6 (Queen's Pawn Game: Anglo-Slav Opening)
     board: moves the pawn from d7 to d5
-    alternatives: Nf6: The position is roughly equal; d6: White is slightly better
+    ideas: puts a pawn in the centre on d5 | controls c4 and e4 | prevents e4, a pawn advance | opens the bishop on c8 (from 0 squares to 5) | fixes the pawn on d4: it can no longer advance
+    opens: the light-squared bishop on c8, from 0 squares to 5
+    alternatives: Nf6 (develops the knight to f6, its most useful square; controls e4 and d5): The position is roughly equal, after c4 e6 Nc3 Bb4; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after Nc3 Nf6 e4 e5
 n3 2.c4 (White, Line A) | book
     book: in book (Queen's Gambit)
     board: moves the pawn from c2 to c4 | leaves the white pawn on c4 hanging
-    alternatives: Nf3: The position is roughly equal; e3: The position is roughly equal
+    ideas: offers the pawn on c4: it can be taken, and the engine still approves | strikes at the centre: attacks the pawn on d5 | puts pressure on the pawn on d5 | opens the queen on d1 (from 2 squares to 5)
+    opens: the queen on d1, from 2 squares to 5
+    alternatives: Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after e6 Bf4 c5 e3; e3 (controls d4 and f4; supports the centre pawn on d4; opens the bishop on f1 (from 0 squares to 5)): The position is roughly equal, after Nf6 c4 e6 Nf3
 n4 2…e6 (Black, Line A) | book
     book: in book (Queen's Gambit Declined)
+    the book also has: Bf5 (Queen's Gambit Declined: Baltic Defense); Nc6 (Queen's Gambit Declined: Chigorin Defense); Nf6 (Queen's Gambit Declined: Marshall Defense); b5 (Queen's Gambit Declined: Zilbermints Gambit); c5 (Queen's Gambit Declined: Austrian Attack, Salvio Countergambit)
     board: moves the pawn from e7 to e6
-    alternatives: Nf6: The position is roughly equal; c6: The position is roughly equal
+    ideas: controls d5 and f5 | supports the centre pawn on d5 | opens the bishop on f8 (from 0 squares to 5) | shuts in the bishop on c8 (from 5 squares to 1) | defends the pawn on d5, attacked once and now defended twice
+    opens: the dark-squared bishop on f8, from 0 squares to 5; the queen on d8, from 2 squares to 6
+    alternatives: Nf6 (develops the knight to f6, its most useful square; controls e4 and d5; supports the centre pawn on d5): The position is roughly equal, after Nf3 c6 Nc3 dxc4; c6 (takes c6 from the knight, whose natural square it is; controls d5; supports the centre pawn on d5): The position is roughly equal, after e3 Nf6 Bd2 Ne4
 n5 3.Nc3 (White, Line A) | book
     book: in book (Queen's Gambit Declined: Queen's Knight Variation)
     board: moves the knight from b1 to c3 | leaves the white pawn on c4 hanging
-    alternatives: Nf3: The position is roughly equal; cxd5: The position is roughly equal
+    ideas: develops the knight to c3, its most useful square | puts pressure on the pawn on d5 and controls e4 | prepares the pawn's advance to e4, which it now supports
+    alternatives: Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after Be7 Nc3 Nf6 Bf4; cxd5 (puts a pawn in the centre on d5; puts pressure on the pawn on e6 and controls c6; opens the c-file for the rooks (half-open)): The position is roughly equal, after exd5 Nc3 c6 Bf4
 n6 3…Nf6 (Black, Line A) | book
     book: in book (Queen's Gambit Declined: Normal Defense)
+    the book also has: Be7 (Queen's Gambit Declined: Charousek Variation); a6 (Queen's Gambit Declined: Janowski Variation); c5 (Queen's Gambit Declined: Tarrasch Defense); c6 (Queen's Gambit Declined: Semi-Slav, Abrahams Variation)
     board: moves the knight from g8 to f6
-    alternatives: Be7: The position is roughly equal; c6: The position is roughly equal
+    ideas: puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | controls e4 and d5 | supports the centre pawn on d5 | prevents e4, a pawn break | shuts in the queen on d8 (from 6 squares to 3) | defends the pawn on d5, attacked twice and now defended 3 times
+    alternatives: Be7 (develops the bishop to e7; shuts in the queen on d8 (from 6 squares to 2)): The position is roughly equal, after Nf3 Nf6 Bf4 c5; c6 (takes c6 from the knight, whose natural square it is; controls d5; supports the centre pawn on d5): The position is roughly equal, after Nf3 dxc4 a4 Nf6
 n7 4.Bg5 (White, Line A) | book
     book: in book (Queen's Gambit Declined: Modern Variation)
+    the book also has: Bf4 (Queen's Gambit Declined: Harrwitz Attack); Nf3 (Queen's Gambit Declined: Harrwitz Attack, Orthodox Defense); cxd5 (Queen's Gambit Declined: Exchange Variation); e3 (Queen's Gambit Declined: Exchange Variation)
+    piece: the dark-squared bishop
     board: moves the bishop from c1 to g5 | attacks the knight on f6, which is pinned to the queen on d8 by the bishop on g5 | leaves the white pawn on c4 hanging
-    alternatives: cxd5: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: pins the knight on f6 to the queen | develops the bishop to g5
+    alternatives: cxd5 (puts a pawn in the centre on d5; puts pressure on the pawn on e6 and controls c6; opens the c-file for the rooks (half-open)): The position is roughly equal, after exd5 Bg5 Bb4 e3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after c5 Bg5 cxd4 Nxd4
 n8 4…Nbd7 (Black, Line A) | book
     book: in book (Queen's Gambit Declined: Modern Variation, Knight Defense)
+    the book also has: Be7 (Queen's Gambit Declined); c5 (Queen's Gambit Declined: Been-Koomen Variation); c6 (Queen's Gambit Declined: Orthodox Defense, Fianchetto Variation)
     board: moves the knight from b8 to d7
-    alternatives: dxc4: The position is roughly equal; Be7: The position is roughly equal; Bb4: The position is roughly equal
+    ideas: develops the knight to d7 | controls e5 | defends the knight on f6, attacked once and now defended 3 times | prepares the pawn's advance to c5, which it now supports
+    alternatives: dxc4 (controls d3; gives up the centre: the pawn leaves d5; opens the d-file for the rooks (half-open)): The position is roughly equal, after e4 c5 dxc5 Qa5; Be7 (develops the bishop to e7; clears the way to castle kingside): The position is roughly equal, after e3 O-O Nf3 h6; Bb4 (pins the knight on c3 to the king; leaves the knight on c3 without a move; develops the bishop to b4): The position is roughly equal, after cxd5 Qxd5 Bxf6 Qa5
 n9 5.cxd5 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    the book also has: Nf3 (Queen's Gambit Declined: Alekhine Variation); e3 (Queen's Gambit Declined: Capablanca Variation, Anti-Cambridge Springs Variation)
     board: moves the pawn from c4 to d5 | captures the pawn on d5
-    alternatives: Nf3: The position is roughly equal; e3: The position is roughly equal
+    ideas: puts a pawn in the centre on d5 | puts pressure on the pawn on e6 and controls c6 | opens the c-file for the rooks (half-open) | leaves White with doubled pawns on the d-file | takes toward the centre
+    alternatives: Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after Be7 Rc1 dxc4 e4; e3 (controls d4 and f4; supports the centre pawn on d4; opens the queen on d1 (from 7 squares to 11)): The position is roughly equal, after Be7 Rc1 O-O cxd5
 n10 5…exd5 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from e6 to d5 | captures the pawn on d5
-    alternatives: h6: White is slightly better; e5: White is better
+    ideas: puts a pawn in the centre on d5 | controls c4 and e4 | opens the e-file for the rooks (half-open)
+    alternatives: h6 (attacks the bishop on g5, which pins the knight on f6): White is slightly better, after Bxf6 Nxf6 dxe6 Bxe6; e5 (puts a pawn in the centre on e5; strikes at the centre: attacks the pawn on d4; puts pressure on the pawn on d4 and controls f4): White is better, after Nf3 exd4 Nxd4 Bc5
 n11 6.Nxd5 (White, Line A) | blunder | before: The position is roughly equal → after: Black is better
     best instead: e3; after e3 h6 Bf4 Bb4 Bd3 O-O, material is level
     why e3 is better: moves the pawn from e2 to e3
     board: moves the knight from c3 to d5 | captures the pawn on d5 | attacks the knight on f6, which is pinned to the queen on d8 by the bishop on g5 | leaves the white knight on d5 hanging
+    ideas: centralises the knight on d5, which reaches 8 squares
     tactics: They let you win a knight through a free piece with Nxd5 — captures the knight on d5.
-    alternatives: e3: The position is roughly equal; Qc2: The position is roughly equal; Rc1: The position is roughly equal
+    alternatives: e3 (controls d4 and f4; supports the centre pawn on d4; opens the bishop on f1 (from 0 squares to 5)): The position is roughly equal, after h6 Bf4 Bb4 Bd3; Qc2 (brings the queen out to c2; controls e4; clears the way to castle queenside): The position is roughly equal, after c6 e3 Be7 Bd3; Rc1 (puts a rook on the half-open c-file): The position is roughly equal, after c6 e3 Be7 Bd3
     flags: critical
 n12 6…Nxd5 (Black, Line A) | great | before: Black is better → after: Black is better
     board: moves the knight from f6 to d5 | captures the knight on d5
+    ideas: threatens to win the bishop on g5 with Qxg5 | centralises the knight on d5, which reaches 8 squares | prepares the pawn's advance to f6, which it now supports
     tactics: You broke the pin — the knight on f6 is free to move again.
-    alternatives: h6: White is slightly better; c6: White is slightly better
+    alternatives: h6 (attacks the bishop on g5, which pins the knight on f6): White is slightly better, after Bxf6 Nxf6 Nc3 c5; c6 (attacks the knight on d5; attacks the knight on d5 twice, while nothing defends it; controls d5): White is slightly better, after Nc3 Qb6 Bc1 c5
     tempting threat: Nb6? Black's Nb6 moves the knight from d7 to b6 | attacks the knight on d5. White answers Nc3: moves the knight from d5 to c3. Then Bb4 a3. Over the line nothing is taken; at the end White is a pawn up (White is slightly better).
     flags: quiz-eligible, critical
 n13 7.Bxd8 (White, Line A) | best | before: Black is better → after: Black is better
+    piece: the dark-squared bishop
     board: moves the bishop from g5 to d8 | captures the queen on d8
-    alternatives: Bd2: Black is better; Nf3: Black is much better
+    ideas: settles the bishop on d8 on a square by the king that no pawn can cover any more | after the exchange White has a queen and a pawn for a knight
+    alternatives: Bd2: Black is better, after Bb4 Bxb4 Nxb4 a3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): Black is much better, after Qxg5 Nxg5 Bb4+ Qd2
 n14 7…Bb4+ (Black, Line A) | great | before: Black is better → after: Black is better
+    piece: the dark-squared bishop
     board: moves the bishop from f8 to b4 | gives check | the check can be answered: block with Qd2; the checking piece cannot be taken; the king cannot move
+    ideas: develops the bishop to b4 | Black now has 3 pieces developed to 1 piece | clears the way to castle kingside
     tactics: You threw in an in-between move — checks first instead of taking back on d8.
-    alternatives: N7f6: White is much better; Kxd8: White is much better
+    alternatives: N7f6 (moves the knight for the second time while 2 pieces still wait at home; controls e4; opens the bishop on c8 (from 0 squares to 5)): White is much better, after a3 Kxd8 Nf3 Bd6; Kxd8 (Black now has 2 pieces developed to 0 pieces): White is much better, after a3 N7f6 Nf3 Bd6
     flags: quiz-eligible, critical
 n15 8.Qd2 (White, Line A) | forced | before: Black is better → after: Black is better
     board: moves the queen from d1 to d2 | blocks the check from the bishop on b4 | attacks the bishop on b4 | leaves the white bishop on d8 hanging
+    ideas: leaves the queen on d2 pinned to the king | brings the queen out to d2 | clears the way to castle queenside | prepares the pawn's advance to e3, which it now supports
 n16 8…Bxd2+ (Black, Line A) | best | before: Black is better → after: Black is better
+    piece: the dark-squared bishop
     board: moves the bishop from b4 to d2 | captures the queen on d2 | gives check | the check can be answered: no block; take the checking piece with Kxd2; move the king with Kd1
-    alternatives: Kxd8: Black is better; f6: The position is roughly equal
+    ideas: settles the bishop on d2 on a square by the king that no pawn can cover any more | Black now has 3 pieces developed to 1 piece
+    alternatives: Kxd8 (Black now has 3 pieces developed to 0 pieces): Black is better, after e4 Bxd2+ Kxd2 Nb4; f6 (controls e5): The position is roughly equal, after e4 Kxd8 exd5 Re8+
 n17 9.Kxd2 (White, Line A) | best | before: Black is better → after: Black is better
     board: moves the king from e1 to d2 | captures the bishop on d2 | leaves the white bishop on d8 hanging
-    alternatives: Kd1: Black is much better
+    ideas: brings the king toward the centre, a strong piece in the ending | prepares the pawn's advance to e3, which it now supports
+    alternatives: Kd1: Black is much better, after Be3 fxe3 Kxd8 e4
 n18 9…Kxd8 (Black, Line A) | great | before: Black is better → after: Black is better
     board: moves the king from e8 to d8 | captures the bishop on d8
+    ideas: Black now has 2 pieces developed to 0 pieces | after the exchange White has a pawn for a knight
     tactics: You won a bishop through a free piece — captures the bishop on d8.
-    alternatives: f6: The position is roughly equal; N7b6: White is slightly better
+    alternatives: f6 (controls e5): The position is roughly equal, after e4 O-O exd5 Rxd8; N7b6 (moves the knight for the second time while 1 piece still wait at home; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after Bg5 h6 Bh4 Nc4+
     tempting threat: c5? Black's c5 moves the pawn from c7 to c5. White answers Bh4: moves the bishop from d8 to h4 | leaves the white pawn on d4 hanging. Then N7f6 Bxf6 Nxf6. Over the line Black takes a bishop; White takes a knight; at the end White is a pawn up (White is slightly better).
     flags: quiz-eligible, critical
 
 REEL CANDIDATES
-  r1 trap n6–n14, climax n12 [highlight, puzzle, promo]
-  r2 brilliant n8–n16, climax n14 [highlight, puzzle, promo]
-  r3 brilliant n12–n18, climax n18 [highlight, puzzle, promo]
-  r4 swing n5–n13, climax n11 [highlight, promo]
+  r1 trap n4–n14, climax n12 [highlight, puzzle, promo]
+  r2 brilliant n6–n16, climax n14 [highlight, puzzle, promo]
+  r3 brilliant n10–n18, climax n18 [highlight, puzzle, promo]
+  r4 swing n3–n13, climax n11 [highlight, promo]
 
 PLAN
   e1 hook n1–n1
@@ -95,20 +127,21 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.d4: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51)
-    n2 1…d5: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51)
-    n3 2.c4: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51)
-    n4 2…e6: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51)
-    n5 3.Nc3: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51)
-    n6 3…Nf6: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51)
-    n7 4.Bg5: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51)
-    n8 4…Nbd7: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51)
-    n9 5.cxd5: Trades pawns on d5
-    n10 5…exd5: Recaptures the pawn on d5
+    n1 1.d4: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance
+    n2 1…d5: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51); Puts a pawn in the centre on d5; Controls c4 and e4; Prevents e4, a pawn advance
+    n3 2.c4: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51); Offers the pawn on c4: it can be taken, and the engine still approves; Strikes at the centre: attacks the pawn on d5; Puts pressure on the pawn on d5
+    n4 2…e6: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51); Controls d5 and f5; Supports the centre pawn on d5; Opens the bishop on f8 (from 0 squares to 5)
+    n5 3.Nc3: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51); Develops the knight to c3, its most useful square; Puts pressure on the pawn on d5 and controls e4; Prepares the pawn's advance to e4, which it now supports
+    n6 3…Nf6: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51); Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square; Controls e4 and d5
+    n7 4.Bg5: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51); Pins the knight on f6 to the queen; Develops the bishop to g5
+    n8 4…Nbd7: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51); Develops the knight to d7; Controls e5; Defends the knight on f6, attacked once and now defended 3 times
+    n9 5.cxd5: Trades pawns on d5; Puts a pawn in the centre on d5; Puts pressure on the pawn on e6 and controls c6; Opens the c-file for the rooks (half-open)
+    n10 5…exd5: Recaptures the pawn on d5; Puts a pawn in the centre on d5; Controls c4 and e4; Opens the e-file for the rooks (half-open)
     n11 6.Nxd5: Leaves the knight on d5 undefended; Recaptures the pawn on d5; They let you win a knight through a free piece with Nxd5 — captures the knight on d5.; Won a pawn, but it cost the bishop.
-    n12 6…Nxd5: Recaptures the knight on d5; You broke the pin — the knight on f6 is free to move again.
-    n13 7.Bxd8: Wins the queen for the bishop on d8
-    n14 7…Bb4+: You threw in an in-between move — checks first instead of taking back on d8.
-    n16 8…Bxd2+: Wins the queen for the bishop on d2
-    n17 9.Kxd2: Recaptures the bishop on d2
-    n18 9…Kxd8: You won a bishop through a free piece — captures the bishop on d8.
+    n12 6…Nxd5: Recaptures the knight on d5; Threatens to win the bishop on g5 with Qxg5; Centralises the knight on d5, which reaches 8 squares; Prepares the pawn's advance to f6, which it now supports; You broke the pin — the knight on f6 is free to move again.
+    n13 7.Bxd8: Wins the queen for the bishop on d8; Settles the bishop on d8 on a square by the king that no pawn can cover any more; After the exchange White has a queen and a pawn for a knight
+    n14 7…Bb4+: Develops the bishop to b4; Black now has 3 pieces developed to 1 piece; Clears the way to castle kingside; You threw in an in-between move — checks first instead of taking back on d8.
+    n15 8.Qd2: Leaves the queen on d2 pinned to the king; Brings the queen out to d2; Clears the way to castle queenside
+    n16 8…Bxd2+: Wins the queen for the bishop on d2; Settles the bishop on d2 on a square by the king that no pawn can cover any more; Black now has 3 pieces developed to 1 piece
+    n17 9.Kxd2: Recaptures the bishop on d2; Brings the king toward the centre, a strong piece in the ending; Prepares the pawn's advance to e3, which it now supports
+    n18 9…Kxd8: Black now has 2 pieces developed to 0 pieces; After the exchange White has a pawn for a knight; You won a bishop through a free piece — captures the bishop on d8.

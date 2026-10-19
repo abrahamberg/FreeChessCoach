@@ -15,10 +15,24 @@ interface Reach {
   squares: Set<Square>;
 }
 
+/** The last positions' reaches: a move's "before" is the previous move's
+ * "after", and the review asks each several times. Pure, so safe to keep. */
+const REACH_CACHE = new Map<string, Map<Square, Reach> | null>();
+const REACH_CACHE_LIMIT = 256;
+
 /** Where each of `color`'s bishops, rooks and queens can go in `fen`. The
  * side to move is flipped when it is not `color`; null when that is not
  * possible (a check on the board). */
 function sliderReach(fen: string, color: Color): Map<Square, Reach> | null {
+  const key = `${color} ${fen}`;
+  if (REACH_CACHE.has(key)) return REACH_CACHE.get(key) ?? null;
+  const reach = computeSliderReach(fen, color);
+  if (REACH_CACHE.size >= REACH_CACHE_LIMIT) REACH_CACHE.delete(REACH_CACHE.keys().next().value as string);
+  REACH_CACHE.set(key, reach);
+  return reach;
+}
+
+function computeSliderReach(fen: string, color: Color): Map<Square, Reach> | null {
   const turn = fen.split(' ')[1];
   const asked = turn === color ? fen : flipActiveColorFen(fen);
   if (!asked) return null;
@@ -44,7 +58,7 @@ export interface LineChange {
 /** The own sliders whose reach `move` changes, biggest change first, in the
  * direction asked (`'closes'`: loses squares, `'opens'`: gains them). The
  * moved piece itself is not counted, and a slider that was captured is gone. */
-export function lineChanges(fenBefore: string, move: Move, direction: 'closes' | 'opens', side: 'own' | 'enemy' = 'own'): LineChange[] {
+export function lineChanges(fenBefore: string, move: Move, direction: 'closes' | 'opens', side: 'own' | 'enemy' = 'own', limits: { minReach: number; minChange: number } = { minReach: MIN_REACH, minChange: MIN_CHANGE }): LineChange[] {
   const color = side === 'own' ? move.color : move.color === 'w' ? 'b' : 'w';
   const before = sliderReach(fenBefore, color);
   const after = sliderReach(move.after, color);
@@ -55,7 +69,7 @@ export function lineChanges(fenBefore: string, move: Move, direction: 'closes' |
     if (square === move.from || !now) continue;
     const change = direction === 'closes' ? was.squares.size - now.squares.size : now.squares.size - was.squares.size;
     const kept = direction === 'closes' ? was.squares.size : now.squares.size;
-    if (kept < MIN_REACH || change < MIN_CHANGE) continue;
+    if (kept < limits.minReach || change < limits.minChange) continue;
     found.push({ piece: was.piece, square, before: was.squares.size, after: now.squares.size, change });
   }
   // A stable sort: of two equal changes the first found stays first.
@@ -126,7 +140,7 @@ export function pilesOnText(fenBefore: string, move: Move): string | null {
 const PIECE_VALUE_ORDER: readonly PieceSymbol[] = ['p', 'n', 'b', 'r', 'q'];
 
 /** Whether `color`'s two rooks see each other along a rank or file. */
-function rooksConnected(fen: string, color: Color): boolean {
+export function rooksConnected(fen: string, color: Color): boolean {
   const chess = new Chess(fen);
   const rooks = chess.findPiece({ type: 'r', color });
   const [first, second] = rooks;

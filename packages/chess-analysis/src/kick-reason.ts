@@ -5,6 +5,7 @@ import { PIECE_NAMES } from './piece-names.js';
 import { BISHOP_KNIGHT_GAP_CP, see } from './see.js';
 import { pins } from './tactic-pins.js';
 import { PIECE_VALUES } from './tactics.js';
+import type { PieceAt } from './board-facts/types.js';
 
 /**
  * A pawn move that attacks a piece, said on the move itself: "Attacks the
@@ -24,6 +25,15 @@ import { PIECE_VALUES } from './tactics.js';
  * simply won where it stands.
  */
 export function kickReason(fenBefore: string, moveSan: string): string | null {
+  const kick = kickTarget(fenBefore, moveSan);
+  if (!kick) return null;
+  const pinning = kick.pinning ? `, which pins the ${PIECE_NAMES[kick.pinning.piece]} on ${kick.pinning.square}` : '';
+  return `Attacks the ${PIECE_NAMES[kick.target.piece]} on ${kick.target.square}${pinning}`;
+}
+
+/** The piece a pawn move attacks (`kickReason`'s rules), and the own piece
+ * that piece pins, as data. */
+export function kickTarget(fenBefore: string, moveSan: string): { target: PieceAt; pinning: PieceAt | null } | null {
   const before = new Chess(fenBefore);
   const after = new Chess(fenBefore);
   let move: Move;
@@ -51,10 +61,9 @@ export function kickReason(fenBefore: string, moveSan: string): string | null {
     .filter((hit) => hit.by === target.square)
     .flatMap((hit) => {
       const front = after.get(hit.pinned);
-      return front && front.color === move.color && front.type !== 'p' ? [{ square: hit.pinned, type: front.type }] : [];
+      return front && front.color === move.color && front.type !== 'p' ? [{ square: hit.pinned, piece: front.type }] : [];
     })[0];
-  const pinning = pinned ? `, which pins the ${PIECE_NAMES[pinned.type]} on ${pinned.square}` : '';
-  return `Attacks the ${PIECE_NAMES[target.type]} on ${target.square}${pinning}`;
+  return { target: { piece: target.type, square: target.square }, pinning: pinned ?? null };
 }
 
 const KICK_REASON = /^Attacks the \w+ on [a-h][1-8](, which pins the \w+ on [a-h][1-8])?$/;

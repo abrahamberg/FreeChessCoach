@@ -35,6 +35,11 @@ engine's best differed), both on one game, `d690d041` (Black reader, 500 vs 507,
 | Takes a piece nothing defended | "Takes the pawn on e4, which nothing defended" | `freeCaptureText` | best/good captures with no other note; 7 hits on 4 games, all true; recaptures keep their "Recaptures" note |
 | Trapped piece leads a tie | "…win a queen through a trapped piece" | `rank-tactic-claims.ts` `prizeMismatch` | claim whose prize matches the line's win leads |
 
+**2026-10-20:** the move ideas (`docs/move-ideas.md`) now say much of what
+this table's rows covered for fine and book moves (development, open files,
+outposts, pins, kicks, the centre) and add some 60 more; the principle notes
+still speak on costly moves.
+
 ## Pass 3: four more games, 8 agents (2026-10-04)
 
 Games `0a1f`, `34a1`, `9b05`, `d971` (dev DB), 118 entries (83 not-best, 35

@@ -10,102 +10,153 @@ Moves:
 n1 1.e4 (White, English Attack) | book
     book: in book (King's Pawn Game)
     board: moves the pawn from e2 to e4
-    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: puts a pawn in the centre on e4 | controls d5 and f5 | opens the bishop on f1 (from 0 squares to 5)
+    opens: the light-squared bishop on f1, from 0 squares to 5
+    alternatives: d4 (puts a pawn in the centre on d4; controls c5 and e5; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after Nf6 c4 e6 Nc3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after Nf6 c4 e6 d4
 n2 1…c5 (Black, English Attack) | book
     book: in book (Sicilian Defense)
     board: moves the pawn from c7 to c5
-    alternatives: e5: The position is roughly equal; d6: The position is roughly equal
+    ideas: controls d4 | opens the queen on d8 (from 0 squares to 3)
+    alternatives: e5 (puts a pawn in the centre on e5; controls d4 and f4; opens the bishop on f8 (from 0 squares to 5)): The position is roughly equal, after Nf3 Nc6 Nc3 Nf6; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after d4 Nf6 Nc3 e5
 n3 2.Nf3 (White, English Attack) | book
     book: in book (Sicilian Defense)
+    the book also has: Bc4 (Sicilian Defense: Bowdler Attack); Ke2 (Sicilian Defense: King David's Opening); Na3 (Sicilian Defense: Kronberger Variation); Nc3 (Sicilian Defense: Closed); Ne2 (Sicilian Defense: Keres Variation)
     board: moves the knight from g1 to f3
-    alternatives: c3: The position is roughly equal; Ne2: The position is roughly equal
+    ideas: puts the knight on f3, the best defender of a king castled short | develops the knight to f3, its most useful square | controls d4 and e5 | prevents e5, a pawn advance | prepares the pawn's advance to d4, which it now supports
+    alternatives: c3 (takes c3 from the knight, whose natural square it is; controls d4; opens the queen on d1 (from 4 squares to 7)): The position is roughly equal, after d5 exd5 Qxd5 d4; Ne2 (develops the knight to e2; controls d4; shuts in the bishop on f1 (from 5 squares to 0)): The position is roughly equal, after e6 d4 d5 Nbc3
 n4 2…d6 (Black, English Attack) | book
     book: in book (Sicilian Defense: Modern Variations)
+    the book also has: Nc6 (Sicilian Defense: Closed, Anti-Sveshnikov Variation); Nf6 (Sicilian Defense: Nimzowitsch Variation); Qa5 (Sicilian Defense: Mongoose Variation); Qc7 (Sicilian Defense: Quinteros Variation); a6 (Sicilian Defense: O'Kelly Variation)
     board: moves the pawn from d7 to d6
-    alternatives: Nc6: The position is roughly equal; e6: The position is roughly equal
+    ideas: controls c5 and e5 | prevents Ne5, a knight on a strong square | opens the bishop on c8 (from 0 squares to 5) | prepares the pawn's advance to e5, which it now supports
+    opens: the light-squared bishop on c8, from 0 squares to 5
+    alternatives: Nc6 (develops the knight to c6, its most useful square; controls e5 and d4): The position is roughly equal, after d4 cxd4 Nxd4 e5; e6 (controls d5 and f5; opens the queen on d8 (from 3 squares to 7)): The position is roughly equal, after d4 cxd4 Nxd4 Nf6
 n5 3.d4 (White, English Attack) | book
     book: in book (Sicilian Defense)
+    the book also has: Bb5+ (Sicilian Defense: Moscow Variation); Bd3 (Sicilian Defense: Kopec System); b4 (Sicilian Defense: Wing Gambit, Deferred Variation); c3 (Sicilian Defense: Delayed Alapin Variation, Basman-Palatnik Double Gambit); g3 (Sicilian Defense: Kotov Gambit)
     board: moves the pawn from d2 to d4
-    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+    ideas: puts a pawn in the centre on d4 | strikes at the centre: attacks the pawn on c5 | puts pressure on the pawn on c5 and controls e5 | prevents e5, a pawn advance | opens the bishop on c1 (from 0 squares to 5) | prepares the pawn's advance to e5, which it now supports
+    opens: the dark-squared bishop on c1, from 0 squares to 5
+    alternatives: Nc3 (develops the knight to c3, its most useful square; White now has 2 pieces developed to 0 pieces; controls d5 and e4): The position is roughly equal, after e5 Bc4 Be7 d3; Bc4 (develops the bishop to c4; White now has 2 pieces developed to 0 pieces; controls d5): The position is roughly equal, after Nf6 Nc3 a6 d4
 n6 3…cxd4 (Black, English Attack) | book
     book: in book (Sicilian Defense)
+    the book also has: Nf6 (Sicilian Defense: Modern Variations, Anti-Qxd4 Move Order)
     board: moves the pawn from c5 to d4 | captures the pawn on d4
-    alternatives: Nf6: The position is roughly equal; Nd7: White is slightly better
+    ideas: puts a pawn in the centre on d4 | controls c3 and e3 | opens the c-file for the rooks (half-open) | leaves Black with doubled pawns on the d-file | takes toward the centre
+    alternatives: Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after Nc3 cxd4 Nxd4 a6; Nd7 (develops the knight to d7; controls e5; shuts in the bishop on c8 (from 5 squares to 0)): White is slightly better, after c3 a6 Bd3 g6
 n7 4.Nxd4 (White, English Attack) | book
     book: in book (Sicilian Defense)
+    the book also has: Qxd4 (Sicilian Defense: Chekhover Variation); c3 (Sicilian Defense: Modern Variations, Tartakower)
     board: moves the knight from f3 to d4 | captures the pawn on d4
-    alternatives: Bc4: The position is roughly equal; Qxd4: The position is roughly equal
+    ideas: centralises the knight on d4, which reaches 8 squares
+    alternatives: Bc4 (develops the bishop to c4; White now has 2 pieces developed to 0 pieces; controls d5): The position is roughly equal, after Qa5+ Bd2 Qc5 Qe2; Qxd4 (controls e4, d5 and e5; supports the centre pawn on e4; centralises the queen on d4, which reaches 19 squares): The position is roughly equal, after Nc6 Bb5 Bd7 Bxc6
 n8 4…Nf6 (Black, English Attack) | book
     book: in book (Sicilian Defense: Modern Variations, Main Line)
+    the book also has: g6 (Sicilian Defense: Dragon Variation, Accelerated Dragon)
     board: moves the knight from g8 to f6
-    alternatives: e5: The position is roughly equal; g6: White is slightly better
+    ideas: threatens to win the pawn on e4 with Nxe4 | puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | puts pressure on the pawn on e4 and controls d5 | prepares the pawn's advance to d5, which it now supports
+    alternatives: e5 (attacks the knight on d4; puts a pawn in the centre on e5; controls d4 and f4): The position is roughly equal, after Bb5+ Bd7 Bxd7+ Qxd7; g6 (controls f5; opens the bishop on f8 (from 0 squares to 2)): White is slightly better, after Be3 Nf6 f3 Nc6
 n9 5.Nc3 (White, English Attack) | book
     book: in book (Sicilian Defense: Modern Variations, Main Line)
+    the book also has: Bc4 (Sicilian Defense: Modern Variations, Ginsberg Gambit); f3 (Sicilian Defense: Prins Variation)
     board: moves the knight from b1 to c3
-    alternatives: Bc4: The position is roughly equal; Qd3: The position is roughly equal
+    ideas: defends the pawn on e4, which was attacked | develops the knight to c3, its most useful square | controls d5 and e4 | supports the centre pawn on e4
+    alternatives: Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after e6 Nc3 a6 Bb3; Qd3 (brings the queen out to d3; brings the queen out early, with 3 pieces still at home; controls e4): The position is roughly equal, after Nbd7 Nc3 g6 Be2
 n10 5…a6 (Black, English Attack) | book
     book: in book (Sicilian Defense: Najdorf Variation)
+    the book also has: Bd7 (Sicilian Defense: Kupreichik Variation); Nc6 (Sicilian Defense: Classical Variation); e5 (Sicilian Defense: Venice Attack); g6 (Sicilian Defense: Dragon Variation)
     board: moves the pawn from a7 to a6
-    alternatives: e6: White is slightly better; Nc6: White is slightly better
+    ideas: prevents Bb5+, a check
+    alternatives: e6 (controls d5 and f5; shuts in the bishop on c8 (from 5 squares to 1)): White is slightly better, after g4 h6 Be3 a6; Nc6 (develops the knight to c6, its most useful square; controls e5 and d4): White is slightly better, after Bg5 e6 Qd2 a6
 n11 6.Be3 (White, English Attack) | book
     book: in book (Sicilian Defense: Najdorf Variation, English Attack)
+    the book also has: Bc4 (Sicilian Defense: Sozin Attack, Flank Variation); Bd3 (Sicilian Defense: Najdorf Variation, Yates Variation); Be2 (Sicilian Defense: Najdorf Variation, Scheveningen Variation); Bg5 (Sicilian Defense: Najdorf Variation); Rg1 (Sicilian Defense: Najdorf Variation, Petronić Attack)
+    piece: the dark-squared bishop
     board: moves the bishop from c1 to e3
-    alternatives: Bg5: White is slightly better; f3: The position is roughly equal
+    ideas: develops the bishop to e3 | White now has 3 pieces developed to 1 piece
+    alternatives: Bg5 (develops the bishop to g5; White now has 3 pieces developed to 1 piece): White is slightly better, after Nbd7 Be2 Qa5 Qd2; f3 (controls e4; supports the centre pawn on e4; shuts in the queen on d1 (from 6 squares to 3)): The position is roughly equal, after e6 g4 Nfd7 g5
 n12 6…e5 (Black, English Attack) | book
     book: in book (Sicilian Defense: Najdorf Variation, English Attack)
+    the book also has: Ng4 (Sicilian Defense: Najdorf Variation, English Attack, Anti-English); e6 (Sicilian Defense: Scheveningen Variation, English Attack, with Qd2)
     board: moves the pawn from e7 to e5 | attacks the knight on d4
-    alternatives: Ng4: The position is roughly equal; h6: White is slightly better
+    ideas: attacks the knight on d4 | puts a pawn in the centre on e5 | controls d4 and f4 | fixes the pawn on e4: it can no longer advance
+    alternatives: Ng4 (moves the knight for the second time while 3 pieces still wait at home; White now has 3 pieces developed to 1 piece; controls e5): The position is roughly equal, after Bg5 h6 Bh4 g5; h6: White is slightly better, after f3 e5 Nb3 Be7
 n13 7.Nb3 (White, English Attack) | book
     book: in book (Sicilian Defense: Najdorf Variation, English Attack)
     board: moves the knight from d4 to b3
-    alternatives: Nde2: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: takes the attacked knight to safety on b3 | prevents Qa5, a pin | White now has 3 pieces developed to 1 piece | controls d4 | opens the bishop on e3 (from 5 squares to 9)
+    opens: the dark-squared bishop on e3, from 5 squares to 9; the queen on d1, from 8 squares to 11
+    alternatives: Nde2 (White now has 3 pieces developed to 1 piece; controls d4; opens the bishop on e3 (from 5 squares to 9)): The position is roughly equal, after Be6 Qd2 Nc6 O-O-O; Nf3 (White now has 3 pieces developed to 1 piece; puts pressure on the pawn on e5 and controls d4; opens the bishop on e3 (from 5 squares to 9)): The position is roughly equal, after Be7 Bc4 Be6 Bb3
 n14 7…Be6 (Black, English Attack) | book
     book: in book (Sicilian Defense: Najdorf Variation, English Attack)
+    the book also has: Be7 (Sicilian Defense: Najdorf Variation, English Attack)
+    piece: the light-squared bishop
     board: moves the bishop from c8 to e6 | attacks the knight on b3
-    alternatives: Be7: The position is roughly equal; Ng4: The position is roughly equal
+    ideas: develops the bishop to e6 | controls d5 | prepares the pawn's advance to d5, which it now supports
+    alternatives: Be7 (develops the bishop to e7; clears the way to castle kingside): The position is roughly equal, after f3 Be6 Qd2 h5; Ng4 (moves the knight for the second time while 3 pieces still wait at home; White now has 3 pieces developed to 1 piece; controls e5): The position is roughly equal, after Bc1 Be6 f3 Nf6
 n15 8.f3 (White, English Attack) | book
     book: in book (Sicilian Defense: Najdorf Variation, English Attack)
+    the book also has: h3 (Sicilian Defense: Najdorf Variation, English Attack)
     board: moves the pawn from f2 to f3
-    alternatives: h3: White is slightly better; Qd2: The position is roughly equal
+    ideas: prevents Bg4, an attack on a bigger piece | loosens the pawns in front of the king, and the pawn on f3 can become a target | controls e4 | supports the centre pawn on e4 | opens the bishop on e3 (from 9 squares to 11) | shuts in the queen on d1 (from 11 squares to 8) | defends the pawn on e4, attacked once and now defended twice
+    alternatives: h3: White is slightly better, after Be7 Qf3 h5 O-O-O; Qd2 (brings the queen out to d2; clears the way to castle queenside): The position is roughly equal, after Be7 f3 h5 O-O-O
 n16 8…Be7 (Black, English Attack) | best | before: The position is roughly equal → after: The position is roughly equal
+    piece: the dark-squared bishop
     board: moves the bishop from f8 to e7
-    alternatives: h5: The position is roughly equal; Nbd7: White is slightly better
+    ideas: develops the bishop to e7 | clears the way to castle kingside
+    alternatives: h5: The position is roughly equal, after Nd5 Nxd5 exd5 Bf5; Nbd7 (develops the knight to d7; controls e5; supports the centre pawn on e5): White is slightly better, after g4 Nb6 g5 Nh5
 n17 9.Qd2 (White, English Attack) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from d1 to d2
-    alternatives: Be2: The position is roughly equal; a3: The position is roughly equal
+    ideas: brings the queen out to d2 | clears the way to castle queenside
+    alternatives: Be2 (develops the bishop to e2; clears the way to castle kingside): The position is roughly equal, after Nbd7 a4 h5 O-O; a3: The position is roughly equal, after Nbd7 Qd2 Rc8 O-O-O
 n18 9…O-O (Black, English Attack) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: castles kingside
-    alternatives: Nbd7: The position is roughly equal; h5: The position is roughly equal
+    ideas: castles kingside: the king goes to safety and the rook comes to f8
+    alternatives: Nbd7 (develops the knight to d7; controls e5; supports the centre pawn on e5): The position is roughly equal, after g4 b5 g5 b4; h5: The position is roughly equal, after Nd5 Bxd5 exd5 Nbd7
 n19 10.O-O-O (White, English Attack) | best | before: The position is roughly equal → after: The position is roughly equal
     board: castles queenside
-    alternatives: a3: The position is roughly equal; h4: The position is roughly equal
+    ideas: castles queenside: the king goes to safety and the rook comes to d1 | prevents d5, a pawn break | puts a rook on the half-open d-file
+    alternatives: a3: The position is roughly equal, after Nbd7 O-O-O b5 g4; h4 (advances the pawn to h4, toward the enemy king): The position is roughly equal, after Nbd7 O-O-O b5 g4
 n20 10…Nbd7 (Black, English Attack) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from b8 to d7
-    alternatives: b5: The position is roughly equal; Qc7: White is slightly better
+    ideas: develops the knight to d7 | controls e5 | supports the centre pawn on e5
+    alternatives: b5 (controls c4; advances the pawn to b5, toward the enemy king): The position is roughly equal, after g4 Nbd7 a3 Nb6; Qc7 (brings the queen out to c7): White is slightly better, after g4 b5 Kb1 Nbd7
 n21 6.Bg5 (White, Bg5) | book
     book: in book (Sicilian Defense: Najdorf Variation)
+    the book also has: Bc4 (Sicilian Defense: Sozin Attack, Flank Variation); Bd3 (Sicilian Defense: Najdorf Variation, Yates Variation); Be2 (Sicilian Defense: Najdorf Variation, Scheveningen Variation); Be3 (Sicilian Defense: Scheveningen Variation, English Attack, with Qd2); Rg1 (Sicilian Defense: Najdorf Variation, Petronić Attack)
+    piece: the dark-squared bishop
     board: moves the bishop from c1 to g5 | attacks the knight on f6
-    alternatives: Be3: The position is roughly equal; f3: The position is roughly equal
+    ideas: develops the bishop to g5 | White now has 3 pieces developed to 1 piece
+    alternatives: Be3 (develops the bishop to e3; White now has 3 pieces developed to 1 piece): The position is roughly equal, after e5 Nb3 Ng4 Bd2; f3 (controls e4; supports the centre pawn on e4; shuts in the queen on d1 (from 6 squares to 3)): The position is roughly equal, after e6 g4 Nfd7 g5
 n22 6…e6 (Black, Bg5) | book
     book: in book (Sicilian Defense: Najdorf Variation)
+    the book also has: Nbd7 (Sicilian Defense: Najdorf Variation, Ivkov Variation)
     board: moves the pawn from e7 to e6
-    alternatives: Nbd7: The position is roughly equal; Nc6: White is slightly better
+    ideas: leaves the knight on f6 pinned to the queen | controls d5 and f5 | prevents Nf5, a knight on a strong square | shuts in the bishop on c8 (from 5 squares to 1) | prepares the pawn's advance to d5, which it now supports
+    alternatives: Nbd7 (develops the knight to d7; controls e5; shuts in the bishop on c8 (from 5 squares to 0)): The position is roughly equal, after Bc4 h6 Be3 e6; Nc6 (develops the knight to c6, its most useful square; controls e5 and d4): White is slightly better, after Be2 e6 Nxc6 bxc6
 n23 7.f4 (White, Bg5) | book
     book: in book (Sicilian Defense: Najdorf Variation)
     board: moves the pawn from f2 to f4
-    alternatives: Qf3: The position is roughly equal; Qd2: The position is roughly equal
+    ideas: loosens the pawns in front of the king, and the pawn on f4 can become a target | controls e5 | shuts in the bishop on g5 (from 7 squares to 3) | prepares the pawn's advance to e5, which it now supports
+    alternatives: Qf3 (brings the queen out to f3; controls e4; supports the centre pawn on e4): The position is roughly equal, after h6 Be3 e5 Nb3; Qd2 (brings the queen out to d2; clears the way to castle queenside): The position is roughly equal, after Be7 f4 h6 Bh4
 n24 7…Be7 (Black, Bg5) | book
     book: in book (Sicilian Defense: Najdorf Variation)
+    the book also has: Nc6 (Sicilian Defense: Najdorf Variation, Neo-Classical Defense); Qb6 (Sicilian Defense: Najdorf Variation, Poisoned Pawn Accepted); b5 (Sicilian Defense: Najdorf Variation, Polugaevsky Variation)
+    piece: the dark-squared bishop
     board: moves the bishop from f8 to e7
-    alternatives: Qb6: The position is roughly equal; h6: The position is roughly equal
+    ideas: breaks the pin on the knight on f6 | develops the bishop to e7 | defends the knight on f6, attacked once and now defended twice | clears the way to castle kingside
+    alternatives: Qb6 (threatens to win the pawn on b2 with Qxb2; brings the queen out to b6; brings the queen out early, with 3 pieces still at home): The position is roughly equal, after Nb3 Be7 Qd2 Qc7; h6 (attacks the bishop on g5, which pins the knight on f6): The position is roughly equal, after Bxf6 Qxf6 Qd2 Nc6
 n25 8.Qf3 (White, Bg5) | book
     book: in book (Sicilian Defense: Najdorf Variation)
     board: moves the queen from d1 to f3
-    alternatives: Qd3: The position is roughly equal; g3: The position is roughly equal
+    ideas: brings the queen out to f3 | controls e4 | supports the centre pawn on e4 | defends the pawn on e4, attacked once and now defended twice | clears the way to castle queenside
+    alternatives: Qd3 (brings the queen out to d3; controls e4; supports the centre pawn on e4): The position is roughly equal, after Qc7 Bxf6 Bxf6 O-O-O; g3 (controls f4; opens the bishop on f1 (from 5 squares to 7)): The position is roughly equal, after b5 Bg2 Bb7 Qe2
 n26 8…Qc7 (Black, Bg5) | book
     book: in book (Sicilian Defense: Najdorf Variation, Traditional Line)
+    the book also has: h6 (Sicilian Defense: Najdorf Variation, Browne Variation)
     board: moves the queen from d8 to c7 | attacks the knight on c3
-    alternatives: Nbd7: The position is roughly equal; Bd7: White is slightly better
+    ideas: prevents e5, an attack on a bigger piece | brings the queen out to c7
+    alternatives: Nbd7 (develops the knight to d7; controls e5): The position is roughly equal, after Bh4 Qc7 g4 h6; Bd7 (develops the bishop to d7): White is slightly better, after Bc4 Nc6 O-O-O O-O
 
 REEL CANDIDATES
 
@@ -116,35 +167,40 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.e4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
-    n2 1…c5: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
-    n3 2.Nf3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
-    n4 2…d6: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
-    n5 3.d4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
-    n6 3…cxd4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
-    n7 4.Nxd4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
-    n8 4…Nf6: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
-    n9 5.Nc3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
-    n10 5…a6: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
-    n11 6.Be3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
-    n12 6…e5: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
-    n13 7.Nb3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
-    n14 7…Be6: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
-    n15 8.f3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
+    n1 1.e4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…c5: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Controls d4; Opens the queen on d8 (from 0 squares to 3)
+    n3 2.Nf3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square; Controls d4 and e5
+    n4 2…d6: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Controls c5 and e5; Prevents Ne5, a knight on a strong square; Opens the bishop on c8 (from 0 squares to 5)
+    n5 3.d4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Puts a pawn in the centre on d4; Strikes at the centre: attacks the pawn on c5; Puts pressure on the pawn on c5 and controls e5
+    n6 3…cxd4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Puts a pawn in the centre on d4; Controls c3 and e3; Opens the c-file for the rooks (half-open)
+    n7 4.Nxd4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Centralises the knight on d4, which reaches 8 squares
+    n8 4…Nf6: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Threatens to win the pawn on e4 with Nxe4; Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square
+    n9 5.Nc3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Defends the pawn on e4, which was attacked; Develops the knight to c3, its most useful square; Controls d5 and e4
+    n10 5…a6: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Prevents Bb5+, a check
+    n11 6.Be3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Develops the bishop to e3; White now has 3 pieces developed to 1 piece
+    n12 6…e5: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Attacks the knight on d4; Puts a pawn in the centre on e5; Controls d4 and f4
+    n13 7.Nb3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Takes the attacked knight to safety on b3; Prevents Qa5, a pin; White now has 3 pieces developed to 1 piece
+    n14 7…Be6: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Develops the bishop to e6; Controls d5; Prepares the pawn's advance to d5, which it now supports
+    n15 8.f3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Prevents Bg4, an attack on a bigger piece; Loosens the pawns in front of the king, and the pawn on f3 can become a target; Controls e4
+    n16 8…Be7: Develops the bishop to e7; Clears the way to castle kingside
+    n17 9.Qd2: Brings the queen out to d2; Clears the way to castle queenside
+    n18 9…O-O: Castles kingside: the king goes to safety and the rook comes to f8
+    n19 10.O-O-O: Castles queenside: the king goes to safety and the rook comes to d1; Prevents d5, a pawn break; Puts a rook on the half-open d-file
+    n20 10…Nbd7: Develops the knight to d7; Controls e5; Supports the centre pawn on e5
   l2
-    n1 1.e4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
-    n2 1…c5: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
-    n3 2.Nf3: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
-    n4 2…d6: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
-    n5 3.d4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
-    n6 3…cxd4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
-    n7 4.Nxd4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
-    n8 4…Nf6: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
-    n9 5.Nc3: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
-    n10 5…a6: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
-    n21 6.Bg5: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
-    n22 6…e6: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
-    n23 7.f4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
-    n24 7…Be7: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
-    n25 8.Qf3: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
-    n26 8…Qc7: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
+    n1 1.e4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…c5: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Controls d4; Opens the queen on d8 (from 0 squares to 3)
+    n3 2.Nf3: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square; Controls d4 and e5
+    n4 2…d6: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Controls c5 and e5; Prevents Ne5, a knight on a strong square; Opens the bishop on c8 (from 0 squares to 5)
+    n5 3.d4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Puts a pawn in the centre on d4; Strikes at the centre: attacks the pawn on c5; Puts pressure on the pawn on c5 and controls e5
+    n6 3…cxd4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Puts a pawn in the centre on d4; Controls c3 and e3; Opens the c-file for the rooks (half-open)
+    n7 4.Nxd4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Centralises the knight on d4, which reaches 8 squares
+    n8 4…Nf6: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Threatens to win the pawn on e4 with Nxe4; Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square
+    n9 5.Nc3: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Defends the pawn on e4, which was attacked; Develops the knight to c3, its most useful square; Controls d5 and e4
+    n10 5…a6: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Prevents Bb5+, a check
+    n21 6.Bg5: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Develops the bishop to g5; White now has 3 pieces developed to 1 piece
+    n22 6…e6: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Leaves the knight on f6 pinned to the queen; Controls d5 and f5; Prevents Nf5, a knight on a strong square
+    n23 7.f4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Loosens the pawns in front of the king, and the pawn on f4 can become a target; Controls e5; Shuts in the bishop on g5 (from 7 squares to 3)
+    n24 7…Be7: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Breaks the pin on the knight on f6; Develops the bishop to e7; Defends the knight on f6, attacked once and now defended twice
+    n25 8.Qf3: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Brings the queen out to f3; Controls e4; Supports the centre pawn on e4
+    n26 8…Qc7: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Prevents e5, an attack on a bigger piece; Brings the queen out to c7

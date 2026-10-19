@@ -38,8 +38,9 @@ export function reviewMoveTexts(move: ClassifiedMoveDto): { kind: ReviewTextKind
     return text ? [{ kind, text }] : [];
   });
   if (move.quality === 'book') {
-    const theory = move.reasons?.[0];
-    return theory ? [...texts, { kind: 'opening', text: theory }] : texts;
+    // The theory line, then what the book move does (`move-ideas/`).
+    const [theory, ...ideas] = move.reasons ?? [];
+    return theory ? [...texts, { kind: 'opening', text: theory }, ...ideas.map((text) => ({ kind: 'reason' as const, text }))] : texts;
   }
   texts.push(...plainReviewReasons(move, true).map((text) => ({ kind: 'reason' as const, text })));
   const better = betterWasText(move, true);

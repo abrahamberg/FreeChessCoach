@@ -268,6 +268,10 @@ export const CONFIG = {
   /** §11 — deterministic per-move coaching reasons. */
   moveReasons: {
     maxReasons: 2,
+    /** The move ideas (`move-ideas/`) a fine or book move's note adds after
+     * its reasons, and the fault ideas a costly move's note adds. */
+    maxIdeas: 3,
+    maxFaultIdeas: 1,
     centerSwingThreshold: 3,
     mobilityDropThreshold: -8
   },
@@ -571,6 +575,12 @@ export const CONFIG = {
     bookSiblingsShown: 5,
     /** A dossier with more nodes than this is printed compactly. */
     fullBlockNodeLimit: 40,
+    /** The move ideas (`move-ideas/`) printed for a course move, and for each
+     * of the engine's other moves, most telling first. */
+    ideasShown: 8,
+    alternativeIdeasShown: 3,
+    /** Plies of an alternative's own engine line shown beside it. */
+    alternativeLinePlies: 4,
     /** A line's end position is decided when the engine's best line is a
      * forced mate or this many centipawns for one side: its rows are then
      * only the winner's passed pawns (the owner's calibration, 2026-10-01). */

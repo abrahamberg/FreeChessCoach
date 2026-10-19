@@ -8,58 +8,83 @@ Moves:
 n1 1.e4 (White, Line A) | book
     book: in book (King's Pawn Game)
     board: moves the pawn from e2 to e4
-    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: puts a pawn in the centre on e4 | controls d5 and f5 | opens the bishop on f1 (from 0 squares to 5)
+    opens: the light-squared bishop on f1, from 0 squares to 5
+    alternatives: d4 (puts a pawn in the centre on d4; controls c5 and e5; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after Nf6 c4 e6 Nc3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after Nf6 c4 e6 d4
 n2 1…e5 (Black, Line A) | book
     book: in book (King's Pawn Game)
     board: moves the pawn from e7 to e5
-    alternatives: c5: The position is roughly equal; d6: The position is roughly equal
+    ideas: puts a pawn in the centre on e5 | controls d4 and f4 | opens the bishop on f8 (from 0 squares to 5) | fixes the pawn on e4: it can no longer advance
+    opens: the dark-squared bishop on f8, from 0 squares to 5
+    alternatives: c5 (controls d4; opens the queen on d8 (from 0 squares to 3)): The position is roughly equal, after Nf3 d6 c3 Nf6; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after d4 Nf6 Nc3 e5
 n3 2.Nf3 (White, Line A) | book
     book: in book (King's Knight Opening)
     board: moves the knight from g1 to f3
-    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+    ideas: threatens to win the pawn on e5 with Nxe5 | puts the knight on f3, the best defender of a king castled short | develops the knight to f3, its most useful square | puts pressure on the pawn on e5 and controls d4 | prepares the pawn's advance to d4, which it now supports
+    alternatives: Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nc6 Nf3 Nf6 Bb5; Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after Nf6 Nc3 Nc6 d3
 n4 2…Nc6 (Black, Line A) | book
     book: in book (King's Knight Opening: Normal Variation)
     board: moves the knight from b8 to c6
-    alternatives: Nf6: The position is roughly equal; d6: The position is roughly equal
+    ideas: defends the pawn on e5, which was attacked | develops the knight to c6, its most useful square | controls e5 and d4 | supports the centre pawn on e5
+    alternatives: Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after d4 Nxe4 Nxe5 d5; d6 (controls c5 and e5; supports the centre pawn on e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after d4 exd4 Nxd4 Nf6
 n5 3.Bb5 (White, Line A) | book
     book: in book (Ruy Lopez)
+    piece: the light-squared bishop
     board: moves the bishop from f1 to b5 | attacks the knight on c6
-    alternatives: Bc4: The position is roughly equal; d4: The position is roughly equal; Nc3: The position is roughly equal
+    ideas: develops the bishop to b5 | clears the way to castle kingside
+    alternatives: Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after Nf6 Ng5 d5 exd5; d4 (threatens to win the pawn on e5 with dxe5; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 Nxd4 Nf6 Nxc6; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nf6 Bb5 Bb4 O-O
 n6 3…a6 (Black, Line A) | book
     book: in book (Ruy Lopez: Morphy Defense)
+    the book also has: Bb4 (Ruy Lopez: Alapin Defense); Bc5 (Ruy Lopez: Classical Defense, Boden Variation); Be7 (Ruy Lopez: Lucena Variation); Na5 (Ruy Lopez: Pollock Defense); Nb8 (Ruy Lopez: Retreat Variation)
     board: moves the pawn from a7 to a6 | attacks the bishop on b5
-    alternatives: Nf6: The position is roughly equal; g6: White is slightly better
+    ideas: attacks the bishop on b5
+    alternatives: Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after O-O Nxe4 Re1 Nd6; g6 (controls f5; opens the bishop on f8 (from 5 squares to 7)): White is slightly better, after c3 Nf6 O-O Nxe4
 n7 4.Ba4 (White, Line A) | book
     book: in book (Ruy Lopez: Morphy Defense)
+    the book also has: Bxc6 (Ruy Lopez: Exchange Variation)
+    piece: the light-squared bishop
     board: moves the bishop from b5 to a4 | attacks the knight on c6
-    alternatives: Bxc6: The position is roughly equal; Bc4: The position is roughly equal
+    ideas: takes the attacked bishop to safety on a4
+    alternatives: Bxc6 (threatens to win the pawn on e5 with Nxe5; White now has 2 pieces developed to 0 pieces; controls d5 and e4): The position is roughly equal, after dxc6 d4 exd4 Qxd4; Bc4 (controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after Nf6 d3 Bc5 O-O
 n8 4…d6 (Black, Line A) | book
     book: in book (Ruy Lopez: Morphy Defense, Modern Steinitz Defense)
+    the book also has: Bb4 (Ruy Lopez: Morphy Defense, Alapin's Defense Deferred); Bc5 (Ruy Lopez: Morphy Defense, Classical Defense Deferred); Nd4 (Ruy Lopez: Bird's Defense Deferred); Nf6 (Ruy Lopez: Morphy Defense, Anderssen Variation); Nge7 (Ruy Lopez: Morphy Defense, Cozio Defense)
     board: moves the pawn from d7 to d6
-    alternatives: Nf6: The position is roughly equal; Be7: The position is roughly equal; Bd6: White is slightly better
+    ideas: leaves the knight on c6 pinned to the king | controls c5 and e5 | supports the centre pawn on e5 | opens the bishop on c8 (from 0 squares to 5) | shuts in the bishop on f8 (from 5 squares to 1) | defends the pawn on e5, attacked once and now defended twice
+    opens: the light-squared bishop on c8, from 0 squares to 5
+    alternatives: Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after Nc3 Bc5 d3 O-O; Be7 (develops the bishop to e7): The position is roughly equal, after O-O Nf6 Re1 b5; Bd6 (develops the bishop to d6; the bishop on d6 blocks the pawn on d7; controls e5): White is slightly better, after O-O b5 Bb3 Nf6
 n9 5.d4 (White, Line A) | inaccuracy | before: White is slightly better → after: The position is roughly equal
+    the book also has: Bxc6+ (Ruy Lopez: Morphy Defense, Modern Steinitz Defense); Nc3 (Ruy Lopez: Morphy Defense, Modern Steinitz Defense); O-O (Ruy Lopez: Closed, Kecskemet Variation); c3 (Ruy Lopez: Morphy Defense, Modern Steinitz Defense); c4 (Ruy Lopez: Morphy Defense, Modern Steinitz Defense)
     best instead: c3; after c3 Be7 d4 b5 Bc2, material is level
     why c3 is better: moves the pawn from c2 to c3
     board: moves the pawn from d2 to d4
-    alternatives: c3: White is slightly better; O-O: White is slightly better
+    ideas: threatens to win the pawn on e5 with dxe5 | the knight on c6 cannot take it: it is pinned by the bishop on a4 | puts a pawn in the centre on d4 | strikes at the centre: attacks the pawn on e5 | puts pressure on the pawn on e5 and controls c5 | opens the bishop on c1 (from 0 squares to 5)
+    opens: the dark-squared bishop on c1, from 0 squares to 5
+    alternatives: c3 (takes c3 from the knight, whose natural square it is; controls d4; opens the queen on d1 (from 1 squares to 3)): White is slightly better, after Be7 d4 b5 Bc2; O-O (castles kingside: the king goes to safety and the rook comes to f1; White now has 3 pieces developed to 1 piece): White is slightly better, after Nf6 Re1 b5 Bb3
 n10 5…b5 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from b7 to b5 | attacks the bishop on a4
-    alternatives: Bd7: White is slightly better; Bg4: White is slightly better
+    ideas: attacks the bishop on a4 | controls c4 | makes room for the bishop on c8 to fianchetto on b7
+    alternatives: Bd7 (develops the bishop to d7): White is slightly better, after O-O Nxd4 Bxd7+ Qxd7; Bg4 (pins the knight on f3 to the queen; develops the bishop to g4): White is slightly better, after c3 b5 Bc2 exd4
 n11 6.Bb3 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    piece: the light-squared bishop
     board: moves the bishop from a4 to b3
-    alternatives: d5: The position is roughly equal; Bg5: Black is better
+    ideas: takes the attacked bishop to safety on b3 | controls d5 | prevents d5, a pawn break | aims at the pawn on f7, which only the king defends | prepares the pawn's advance to c4, which it now supports
+    alternatives: d5 (attacks the knight on c6; puts a pawn in the centre on d5; controls c6 and e6): The position is roughly equal, after bxa4 dxc6 Ne7 c4; Bg5 (threatens to win the queen on d8 with Bxd8; develops the bishop to g5; White now has 3 pieces developed to 1 piece): Black is better, after f6 Bb3 fxg5 a4
 n12 6…Nxd4 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Ruy Lopez: Morphy Defense, Modern Steinitz Defense)
     board: moves the knight from c6 to d4 | captures the pawn on d4 | attacks the bishop on b3 | attacks the knight on f3
-    alternatives: Nf6: The position is roughly equal; Bg4: White is slightly better
+    ideas: centralises the knight on d4, which reaches 8 squares | posts the knight on d4 on a strong square, supported by the pawn on e5 | prepares the pawn's advance to f5, which it now supports
+    alternatives: Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after c3 Be7 a4 Bg4; Bg4 (pins the knight on f3 to the queen; develops the bishop to g4): White is slightly better, after h3 Bxf3 Qxf3 Nf6
 n13 7.Nxd4 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Ruy Lopez: Morphy Defense, Modern Steinitz Defense)
     board: moves the knight from f3 to d4 | captures the knight on d4
-    alternatives: Bg5: The position is roughly equal; Bd5: Black is slightly better
+    ideas: White now has 2 pieces developed to 0 pieces | centralises the knight on d4, which reaches 8 squares | after exd4 the opponent's pawns are doubled on the d-file | heads for c6, a square no enemy pawn can attack
+    alternatives: Bg5 (threatens to win the queen on d8 with Bxd8; develops the bishop to g5; White now has 3 pieces developed to 1 piece): The position is roughly equal, after Nxf3+ Qxf3 Qd7 a4; Bd5 (threatens to win the rook on a8 with Bxa8; controls e4; supports the centre pawn on e4): Black is slightly better, after c6 Nxd4 cxd5 Nc6
 n14 7…exd4 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Ruy Lopez: Morphy Defense, Modern Steinitz Defense)
     board: moves the pawn from e5 to d4 | captures the knight on d4
-    alternatives: Nf6: White is better; Bb7: White is better
+    ideas: puts a pawn in the centre on d4 | controls c3 and e3 | opens the e-file for the rooks (half-open) | leaves Black with doubled pawns on the d-file | after the exchange Black is a pawn up
+    alternatives: Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): White is better, after Nf3 Bb7 Nfd2 Be7; Bb7 (threatens to win the pawn on e4 with Bxe4; develops the bishop to b7; puts pressure on the pawn on e4 and controls d5): White is better, after Nf3 Nf6 Nfd2 Nxe4
     tempting threat: c5? Black's c5 moves the pawn from c7 to c5 | attacks the knight on d4. White answers Bd5: moves the bishop from b3 to d5 | attacks the rook on a8. Then Qb6 Bxa8. Over the line White takes a rook; at the end White has a rook and a knight for a pawn (White is much better).
     tempting threat: Qh4? Black's Qh4 moves the queen from d8 to h4. White answers Bd5: moves the bishop from b3 to d5 | attacks the rook on a8. Then Rb8 Nc6 Rb7. Over the line nothing is taken; at the end White has a knight for a pawn (White is much better).
     flags: quiz-eligible, critical
@@ -68,47 +93,58 @@ n15 8.Qxd4 (White, Line A) | blunder | before: The position is roughly equal →
     best instead: c3; after c3 dxc3 Nxc3 Bb7 Qh5 Qe7, Black is a pawn up
     why c3 is better: moves the pawn from c2 to c3
     board: moves the queen from d1 to d4 | captures the pawn on d4
-    alternatives: c3: The position is roughly equal; a4: The position is roughly equal; Bd5: The position is roughly equal
+    ideas: controls e4, d5 and e5 | supports the centre pawn on e4 | centralises the queen on d4, which reaches 19 squares | prepares the pawn's advance to e5, which it now supports
+    alternatives: c3 (attacks the pawn on d4 twice, while nothing defends it; takes c3 from the knight, whose natural square it is; strikes at the centre: attacks the pawn on d4): The position is roughly equal, after dxc3 Nxc3 Bb7 Qh5; a4: The position is roughly equal, after Bb7 axb5 axb5 Rxa8; Bd5 (threatens to win the rook on a8 with Bxa8; moves the bishop for the fourth time while 2 pieces still wait at home; controls e4): The position is roughly equal, after Rb8 Bc6+ Bd7 Bxd7+
     flags: critical
 n16 8…c5 (Black, Line A) | great | before: Black is better → after: Black is better
     book: in book (Ruy Lopez: Noah's Ark Trap)
     board: moves the pawn from c7 to c5 | attacks the queen on d4
+    ideas: attacks the queen on d4 | controls d4 | opens the queen on d8 (from 5 squares to 8)
+    opens: the queen on d8, from 5 squares to 8
     tactics: You won a tempo — hits the queen on d4 with a pawn.
-    alternatives: Nf6: The position is roughly equal; Bb7: The position is roughly equal
+    alternatives: Nf6 (develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5; shuts in the queen on d8 (from 5 squares to 2)): The position is roughly equal, after Qd3 Be7 O-O Bb7; Bb7 (develops the bishop to b7; puts pressure on the pawn on e4 and controls d5; fianchettoes the bishop on b7, on the long diagonal): The position is roughly equal, after Qd3 Nf6 Nc3 Be7
     tempting threat: Qf6? Black's Qf6 moves the queen from d8 to f6 | attacks the queen on d4. White answers Qe3: moves the queen from d4 to e3. Then Qh6 Qxh6. Over the line White takes the queen; at the end White is a queen up (White is slightly better).
     flags: quiz-eligible, critical
 n17 9.Qd5 (White, Line A) | inaccuracy | before: Black is better → after: Black is better
     best instead: Qc3; after Qc3 c4 a4 cxb3 axb5, White has a pawn for a bishop
     why Qc3 is better: moves the queen from d4 to c3
     board: moves the queen from d4 to d5 | attacks the rook on a8
-    alternatives: Qc3: Black is better; Qd1: Black is better
+    ideas: threatens mate with Qxf7# | threatens to win the rook on a8 with Qxa8 | takes the attacked queen to safety on d5 | controls d4 | centralises the queen on d5, which reaches 18 squares | prevents f5, a pawn break | aims at the pawn on f7, which only the king defends | shuts in the bishop on b3 (from 5 squares to 2)
+    alternatives: Qc3 (controls d4): Black is better, after c4 a4 cxb3 axb5; Qd1 (controls d4): Black is better, after c4 a4 cxb3 axb5
 n18 9…Be6 (Black, Line A) | great | before: Black is better → after: Black is better
+    piece: the light-squared bishop
     board: moves the bishop from c8 to e6 | attacks the queen on d5
+    ideas: stops the mate threat Qxf7# | threatens to win the queen on d5 with Bxd5 | answers the attack on the rook on a8 with a counter-threat | develops the bishop to e6 | controls d5
     tactics: You saved a hanging piece — saves the rook on a8.
-    alternatives: Ra7: The position is roughly equal; c4: White is better
+    alternatives: Ra7: The position is roughly equal, after c4 Nf6 Qd3 Be7; c4 (attacks the bishop on b3; controls d3): White is better, after Qxa8 Qc7 Bxc4 bxc4
     tempting check: Qa5+? Black's Qa5+ moves the queen from d8 to a5 | gives check | the check can be answered: block with Qd2, c3, Nc3, Nd2, Bd2; the checking piece cannot be taken; move the king with Ke2, Kf1, Kd1. White answers Bd2: moves the bishop from c1 to d2 | blocks the check from the queen on a5 | attacks the queen on a5. Then Qc7 Qxa8 c4. Over the line White takes a rook; at the end White is a rook up (White is better).
     tempting threat: Bb7? Black's Bb7 moves the bishop from c8 to b7 | attacks the queen on d5 | leaves the black bishop on b7 hanging. White answers Qxf7#: moves the queen from d5 to f7 | captures the pawn on f7 | gives checkmate | why it is mate: the king on e8 is checked by the queen on f7; d8, f8 hold its own pieces; d7 and e7 are covered by the queen on f7; the queen on f7 is guarded by the bishop on b3. Over the line White takes a pawn; at the end White is a pawn up (White has a forced mate in 1).
     tempting threat: Nf6? Black's Nf6 moves the knight from g8 to f6 | attacks the queen on d5 | leaves the black rook on a8 hanging. White answers Qxf7#: moves the queen from d5 to f7 | captures the pawn on f7 | gives checkmate | why it is mate: the king on e8 is checked by the queen on f7; d8, f8 hold its own pieces; d7 and e7 are covered by the queen on f7; the queen on f7 is guarded by the bishop on b3. Over the line White takes a pawn; at the end White is a pawn up (White has a forced mate in 1).
     flags: quiz-eligible, critical
 n19 10.Qc6+ (White, Line A) | best | before: Black is better → after: Black is better
     board: moves the queen from d5 to c6 | gives check | the check can be answered: block with Qd7, Bd7; the checking piece cannot be taken; move the king with Ke7 | attacks the rook on a8
-    alternatives: Qb7: Black is better; Qg5: Black is better
+    ideas: takes the attacked queen to safety on c6 | settles the queen on c6 on a square by the king that no pawn can cover any more | keeps the king from castling queenside: c8 is covered | controls d5
+    alternatives: Qb7 (controls d5): Black is better, after c4 Nc3 Qc8 Qxc8+; Qg5 (controls d5): Black is better, after c4 Qxd8+ Rxd8 Be3
 n20 10…Bd7 (Black, Line A) | great | before: Black is better → after: Black is better
+    piece: the light-squared bishop
     board: moves the bishop from e6 to d7 | blocks the check from the queen on c6 | attacks the queen on c6
-    alternatives: Ke7: White is slightly better; Qd7: White is much better
+    ideas: threatens to win the queen on c6 with Bxc6
+    alternatives: Ke7: White is slightly better, after Bxe6 fxe6 a4 b4; Qd7 (threatens to win the queen on c6 with Qxc6; brings the queen out to d7; clears the way to castle queenside): White is much better, after Qxa8+ Ke7 Bxe6 fxe6
     flags: quiz-eligible, critical
 n21 11.Qd5 (White, Line A) | good | before: Black is better → after: Black is better
     board: moves the queen from c6 to d5 | attacks the rook on a8
-    alternatives: Qb7: Black is better; Bxf7+: Black is better
+    ideas: threatens mate with Qxf7# | takes the attacked queen to safety on d5 | controls e5 and d4 | centralises the queen on d5, which reaches 18 squares | aims at the pawn on f7, which only the king defends | shuts in the bishop on b3 (from 5 squares to 2) | opens a line for the opponent's bishop on d7 (from 1 squares to 6) | prepares the pawn's advance to e5, which it now supports
+    alternatives: Qb7 (opens a line for the opponent's bishop on d7 (from 1 squares to 6)): Black is better, after c4 Bxc4 bxc4 Nc3; Bxf7+ (settles the bishop on f7 on a square by the king that no pawn can cover any more): Black is better, after Kxf7 Qd5+ Be6 Qh5+
 n22 11…c4 (Black, Line A) | best | before: Black is better → after: Black is better
     board: moves the pawn from c5 to c4 | attacks the bishop on b3, which is trapped: every square it can reach loses it
-    alternatives: Be6: Black is better; Nh6: White is slightly better
+    ideas: stops the mate threat Qxf7# | attacks the bishop on b3 | controls d3
+    alternatives: Be6 (threatens to win the queen on d5 with Bxd5; moves the bishop for the third time while 2 pieces still wait at home; controls d5): Black is better, after Qc6+ Bd7 Qb7 c4; Nh6 (develops the knight to h6): White is slightly better, after Bxh6 Be6 Bg5 Bxd5
 
 REEL CANDIDATES
-  r1 trap n10–n18, climax n16 [highlight, puzzle, promo]
-  r2 brilliant n8–n16, climax n14 [highlight, puzzle, promo]
-  r3 brilliant n12–n20, climax n18 [highlight, puzzle, promo]
-  r4 brilliant n14–n22, climax n20 [highlight, puzzle, promo]
+  r1 trap n8–n18, climax n16 [highlight, puzzle, promo]
+  r2 brilliant n6–n16, climax n14 [highlight, puzzle, promo]
+  r3 brilliant n10–n20, climax n18 [highlight, puzzle, promo]
+  r4 brilliant n12–n22, climax n20 [highlight, puzzle, promo]
 
 PLAN
   e1 hook n1–n1
@@ -116,23 +152,28 @@ PLAN
   e3 bait n15–n15
   e4 quiz n16–n16 answer=n16
   e5 punish n17–n22
-  e6 safety n15–n15
+  e6 safety n15–n17
 
 REVIEW NOTES
   l1
-    n1 1.e4: Theory — Ruy Lopez: Noah's Ark Trap (C71)
-    n2 1…e5: Theory — Ruy Lopez: Noah's Ark Trap (C71)
-    n3 2.Nf3: Theory — Ruy Lopez: Noah's Ark Trap (C71)
-    n4 2…Nc6: Theory — Ruy Lopez: Noah's Ark Trap (C71)
-    n5 3.Bb5: Theory — Ruy Lopez: Noah's Ark Trap (C71)
-    n6 3…a6: Theory — Ruy Lopez: Noah's Ark Trap (C71)
-    n7 4.Ba4: Theory — Ruy Lopez: Noah's Ark Trap (C71)
-    n8 4…d6: Theory — Ruy Lopez: Noah's Ark Trap (C71)
-    n10 5…b5: Attacks the bishop on a4
-    n13 7.Nxd4: Recaptures the knight on d4
-    n14 7…exd4: Recaptures the knight on d4
-    n15 8.Qxd4: Recaptures the pawn on d4
-    n16 8…c5: You won a tempo — hits the queen on d4 with a pawn.; Won the bishop, giving back a pawn.
-    n18 9…Be6: You saved a hanging piece — saves the rook on a8.; Won the bishop, giving back a pawn.
-    n20 10…Bd7: The only good move
-    n22 11…c4: Attacks the bishop on b3
+    n1 1.e4: Theory — Ruy Lopez: Noah's Ark Trap (C71); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…e5: Theory — Ruy Lopez: Noah's Ark Trap (C71); Puts a pawn in the centre on e5; Controls d4 and f4; Opens the bishop on f8 (from 0 squares to 5)
+    n3 2.Nf3: Theory — Ruy Lopez: Noah's Ark Trap (C71); Threatens to win the pawn on e5 with Nxe5; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
+    n4 2…Nc6: Theory — Ruy Lopez: Noah's Ark Trap (C71); Defends the pawn on e5, which was attacked; Develops the knight to c6, its most useful square; Controls e5 and d4
+    n5 3.Bb5: Theory — Ruy Lopez: Noah's Ark Trap (C71); Develops the bishop to b5; Clears the way to castle kingside
+    n6 3…a6: Theory — Ruy Lopez: Noah's Ark Trap (C71); Attacks the bishop on b5
+    n7 4.Ba4: Theory — Ruy Lopez: Noah's Ark Trap (C71); Takes the attacked bishop to safety on a4
+    n8 4…d6: Theory — Ruy Lopez: Noah's Ark Trap (C71); Leaves the knight on c6 pinned to the king; Controls c5 and e5; Supports the centre pawn on e5
+    n10 5…b5: Attacks the bishop on a4; Controls c4; Makes room for the bishop on c8 to fianchetto on b7
+    n11 6.Bb3: Takes the attacked bishop to safety on b3; Controls d5; Prevents d5, a pawn break
+    n12 6…Nxd4: Centralises the knight on d4, which reaches 8 squares; Posts the knight on d4 on a strong square, supported by the pawn on e5; Prepares the pawn's advance to f5, which it now supports
+    n13 7.Nxd4: Recaptures the knight on d4; White now has 2 pieces developed to 0 pieces; Centralises the knight on d4, which reaches 8 squares; After exd4 the opponent's pawns are doubled on the d-file
+    n14 7…exd4: Recaptures the knight on d4; Puts a pawn in the centre on d4; Controls c3 and e3; Opens the e-file for the rooks (half-open)
+    n15 8.Qxd4: c3 was better: it attacks the pawn on d4
+    n16 8…c5: Controls d4; Opens the queen on d8 (from 5 squares to 8); You won a tempo — hits the queen on d4 with a pawn.; Won the bishop, giving back a pawn.
+    n17 9.Qd5: The queen on d5 gets chased by Be6, a developing move, and has to move again; Qc3 avoids losing the time
+    n18 9…Be6: Stops the mate threat Qxf7#; Threatens to win the queen on d5 with Bxd5; Answers the attack on the rook on a8 with a counter-threat; You saved a hanging piece — saves the rook on a8.; Won the bishop, giving back a pawn.
+    n19 10.Qc6+: Takes the attacked queen to safety on c6; Settles the queen on c6 on a square by the king that no pawn can cover any more; Keeps the king from castling queenside: c8 is covered
+    n20 10…Bd7: The only good move; Threatens to win the queen on c6 with Bxc6
+    n21 11.Qd5: Threatens mate with Qxf7#; Takes the attacked queen to safety on d5; Controls e5 and d4
+    n22 11…c4: Stops the mate threat Qxf7#; Attacks the bishop on b3; Controls d3

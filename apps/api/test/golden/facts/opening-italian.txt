@@ -10,89 +10,133 @@ Moves:
 n1 1.e4 (White, Line A) | book
     book: in book (King's Pawn Game)
     board: moves the pawn from e2 to e4
-    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: puts a pawn in the centre on e4 | controls d5 and f5 | opens the bishop on f1 (from 0 squares to 5)
+    opens: the light-squared bishop on f1, from 0 squares to 5
+    alternatives: d4 (puts a pawn in the centre on d4; controls c5 and e5; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after Nf6 c4 e6 Nc3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after Nf6 c4 e6 d4
 n2 1…e5 (Black, Line A) | book
     book: in book (King's Pawn Game)
     board: moves the pawn from e7 to e5
-    alternatives: c5: The position is roughly equal; d6: The position is roughly equal
+    ideas: puts a pawn in the centre on e5 | controls d4 and f4 | opens the bishop on f8 (from 0 squares to 5) | fixes the pawn on e4: it can no longer advance
+    opens: the dark-squared bishop on f8, from 0 squares to 5
+    alternatives: c5 (controls d4; opens the queen on d8 (from 0 squares to 3)): The position is roughly equal, after Nf3 d6 c3 Nf6; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after d4 Nf6 Nc3 e5
 n3 2.Nf3 (White, Line A) | book
     book: in book (King's Knight Opening)
     board: moves the knight from g1 to f3
-    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+    ideas: threatens to win the pawn on e5 with Nxe5 | puts the knight on f3, the best defender of a king castled short | develops the knight to f3, its most useful square | puts pressure on the pawn on e5 and controls d4 | prepares the pawn's advance to d4, which it now supports
+    alternatives: Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nc6 Nf3 Nf6 Bb5; Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after Nf6 Nc3 Nc6 d3
 n4 2…Nc6 (Black, Line A) | book
     book: in book (King's Knight Opening: Normal Variation)
     board: moves the knight from b8 to c6
-    alternatives: Nf6: The position is roughly equal; d6: The position is roughly equal
+    ideas: defends the pawn on e5, which was attacked | develops the knight to c6, its most useful square | controls e5 and d4 | supports the centre pawn on e5
+    alternatives: Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after d4 Nxe4 Nxe5 d5; d6 (controls c5 and e5; supports the centre pawn on e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after d4 exd4 Nxd4 Nf6
 n5 3.Bc4 (White, Line A) | book
     book: in book (Italian Game)
+    piece: the light-squared bishop
     board: moves the bishop from f1 to c4
-    alternatives: d4: The position is roughly equal; Nc3: The position is roughly equal
+    ideas: develops the bishop to c4 | controls d5 | prevents d5, a pawn break | aims at the pawn on f7, which only the king defends | clears the way to castle kingside
+    alternatives: d4 (threatens to win the pawn on e5 with dxe5; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 Nxd4 Nf6 Nxc6; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nf6 Bb5 Bb4 O-O
 n6 3…Bc5 (Black, Line A) | book
     book: in book (Italian Game: Giuoco Piano)
+    the book also has: Nd4 (Italian Game: Blackburne-Kostić Gambit); d6 (Italian Game: Paris Defense); f5 (Italian Game: Rousseau Gambit); h6 (Italian Game: Anti-Fried Liver Defense)
+    piece: the dark-squared bishop
     board: moves the bishop from f8 to c5
-    alternatives: Nf6: The position is roughly equal; d6: The position is roughly equal
+    ideas: develops the bishop to c5 | controls d4 | prevents d4, a pawn break | aims at the pawn on f2, which only the king defends
+    alternatives: Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after d4 exd4 O-O Bc5; d6 (controls c5 and e5; supports the centre pawn on e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after O-O Be7 Nc3 Nf6
 n7 4.c3 (White, Line A) | book
     book: in book (Italian Game: Classical Variation)
+    the book also has: Bxf7+ (Italian Game: Jerome Gambit); O-O (Italian Game: Classical Variation, Albin Gambit); b4 (Italian Game: Evans Gambit); d3 (Italian Game: Giuoco Pianissimo); d4 (Italian Game: Rosentreter Gambit)
     board: moves the pawn from c2 to c3
-    alternatives: d3: The position is roughly equal; O-O: The position is roughly equal
+    ideas: takes c3 from the knight, whose natural square it is | controls d4 | prevents Nd4, a knight on a strong square | opens the queen on d1 (from 1 squares to 4) | prepares d4, which it now supports | prepares the pawn's advance to d4, which it now supports
+    alternatives: d3 (controls e4; supports the centre pawn on e4; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after Nf6 Nc3 O-O O-O; O-O (castles kingside: the king goes to safety and the rook comes to f1): The position is roughly equal, after Nf6 d3 d6 c3
 n8 4…Nf6 (Black, Line A) | book
     book: in book (Italian Game: Classical Variation)
+    the book also has: Qe7 (Italian Game: Classical Variation, Center Holding Variation); d6 (Italian Game: Classical Variation, La Bourdonnais Variation)
     board: moves the knight from g8 to f6
-    alternatives: Bb6: White is slightly better; d6: White is slightly better
+    ideas: threatens to win the pawn on e4 with Nxe4 | puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | puts pressure on the pawn on e4 and controls d5 | clears the way to castle kingside | prepares the pawn's advance to d5, which it now supports
+    alternatives: Bb6 (moves the bishop for the second time while 2 pieces still wait at home; aims at the pawn on f2, which only the king defends): White is slightly better, after d4 d6 O-O exd4; d6 (controls e5; supports the centre pawn on e5; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after d4 Bb6 dxe5 Qe7
 n9 5.d3 (White, Line A) | book
     book: in book (Italian Game: Classical Variation, Giuoco Pianissimo)
+    the book also has: b4 (Italian Game: Bird's Attack); d4 (Italian Game: Classical Variation, Center Attack)
     board: moves the pawn from d2 to d3
-    alternatives: d4: The position is roughly equal; Qe2: The position is roughly equal
+    ideas: defends the pawn on e4, which was attacked | controls e4 | supports the centre pawn on e4 | opens the bishop on c1 (from 0 squares to 5) | shuts in the bishop on c4 (from 9 squares to 6)
+    opens: the dark-squared bishop on c1, from 0 squares to 5
+    alternatives: d4 (attacks the bishop on c5; attacks the pawn on e5 twice, while it is defended once; puts a pawn in the centre on d4): The position is roughly equal, after exd4 cxd4 Bb4+ Nbd2; Qe2 (brings the queen out to e2; controls e4; supports the centre pawn on e4): The position is roughly equal, after O-O O-O d5 exd5
 n10 5…d6 (Black, Line A) | book
     book: in book (Italian Game: Classical Variation, Giuoco Pianissimo)
+    the book also has: a6 (Italian Game: Classical Variation, Giuoco Pianissimo, with a6); d5 (Italian Game: Classical Variation, with d5)
     board: moves the pawn from d7 to d6
-    alternatives: O-O: The position is roughly equal; Bb6: The position is roughly equal
+    ideas: controls e5 | supports the centre pawn on e5 | opens the bishop on c8 (from 0 squares to 5) | shuts in the bishop on c5 (from 9 squares to 6) | defends the pawn on e5, attacked once and now defended twice
+    opens: the light-squared bishop on c8, from 0 squares to 5
+    alternatives: O-O (castles kingside: the king goes to safety and the rook comes to f8; Black now has 4 pieces developed to 2 pieces): The position is roughly equal, after a4 a5 O-O d6; Bb6 (moves the bishop for the second time while 1 piece still wait at home; aims at the pawn on f2, which only the king defends): The position is roughly equal, after a4 d6 Ba2 a5
 n11 6.O-O (White, Line A) | book
     book: in book (Italian Game: Classical Variation, Giuoco Pianissimo)
+    the book also has: Nbd2 (Italian Game: Classical Variation, Giuoco Pianissimo); b4 (Italian Game: Classical Variation, Giuoco Pianissimo, Albin Variation)
     board: castles kingside
-    alternatives: a4: The position is roughly equal; h3: The position is roughly equal
+    ideas: castles kingside: the king goes to safety and the rook comes to f1
+    alternatives: a4: The position is roughly equal, after a6 O-O Ba7 h3; h3: The position is roughly equal, after a6 O-O h6 d4
 n12 6…O-O (Black, Line A) | book
     book: in book (Italian Game: Classical Variation, Giuoco Pianissimo)
+    the book also has: Bb6 (Italian Game: Classical Variation, Giuoco Pianissimo); a5 (Italian Game: Classical Variation, Giuoco Pianissimo); a6 (Italian Game: Classical Variation, Giuoco Pianissimo); h6 (Italian Game: Classical Variation, Giuoco Pianissimo)
     board: castles kingside
-    alternatives: a5: The position is roughly equal; Bb6: The position is roughly equal; a6: The position is roughly equal
+    ideas: castles kingside: the king goes to safety and the rook comes to f8
+    alternatives: a5: The position is roughly equal, after a4 Bb6 Na3 h6; Bb6 (moves the bishop for the second time while 1 piece still wait at home; aims at the king on g1, through the pawn on f2): The position is roughly equal, after a4 a6 Na3 h6; a6: The position is roughly equal, after d4 Ba7 dxe5 dxe5
 n13 7.Re1 (White, Line A) | book
     book: in book (Italian Game: Classical Variation, Giuoco Pianissimo)
+    the book also has: a4 (Italian Game: Classical Variation, Giuoco Pianissimo, with a4 a5)
     board: moves the rook from f1 to e1
-    alternatives: h3: The position is roughly equal; a4: The position is roughly equal; Nbd2: The position is roughly equal
+    ideas: controls e4 | supports the centre pawn on e4 | brings the rook to the e-file, in the centre where files open first | defends the pawn on e4, attacked once and now defended twice
+    alternatives: h3: The position is roughly equal, after a5 Re1 h6 Nbd2; a4: The position is roughly equal, after a5 h3 Be6 Na3; Nbd2 (develops the knight to d2; controls e4; supports the centre pawn on e4): The position is roughly equal, after h6 a4 a5 h3
 n14 7…a6 (Black, Line A) | book
     book: in book (Italian Game: Classical Variation, Giuoco Pianissimo)
     board: moves the pawn from a7 to a6
-    alternatives: Ng4: The position is roughly equal; Be6: The position is roughly equal; a5: The position is roughly equal
+    alternatives: Ng4 (threatens to win the pawn on f2 with Bxf2+; moves the knight for the second time while 1 piece still wait at home; Black now has 4 pieces developed to 2 pieces): The position is roughly equal, after Re2 Na5 Bb5 c6; Be6 (develops the bishop to e6; Black now has 5 pieces developed to 2 pieces; controls d5): The position is roughly equal, after Bxe6 fxe6 b4 Bb6; a5: The position is roughly equal, after h3 h6 Nbd2 Be6
 n15 8.a4 (White, Line A) | good | before: The position is roughly equal → after: The position is roughly equal
+    the book also has: Bb3 (Italian Game: Classical Variation, Giuoco Pianissimo, Main Line)
     board: moves the pawn from a2 to a4
-    alternatives: Bb3: The position is roughly equal; h3: The position is roughly equal; b4: The position is roughly equal
+    ideas: prevents b5, an attack on a bigger piece
+    alternatives: Bb3 (moves the bishop for the second time while 2 pieces still wait at home; Black now has 4 pieces developed to 2 pieces; aims at the king on g8, through the pawn on f7): The position is roughly equal, after Be6 Nbd2 Bxb3 Qxb3; h3: The position is roughly equal, after h6 d4 Ba7 Bb3; b4 (attacks the bishop on c5; controls c5; opens the bishop on c1 (from 5 squares to 7)): The position is roughly equal, after Ba7 h3 Be6 Nbd2
 n16 3…Nf6 (Black, Line B) | book
     book: in book (Italian Game: Two Knights Defense)
+    the book also has: Nd4 (Italian Game: Blackburne-Kostić Gambit); d6 (Italian Game: Paris Defense); f5 (Italian Game: Rousseau Gambit); h6 (Italian Game: Anti-Fried Liver Defense)
     board: moves the knight from g8 to f6
-    alternatives: Bc5: The position is roughly equal; d6: The position is roughly equal
+    ideas: threatens to win the pawn on e4 with Nxe4 | puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | puts pressure on the pawn on e4 and controls d5 | prepares the pawn's advance to d5, which it now supports
+    alternatives: Bc5 (develops the bishop to c5; controls d4; aims at the pawn on f2, which only the king defends): The position is roughly equal, after c3 Nf6 d4 exd4; d6 (controls c5 and e5; supports the centre pawn on e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after O-O Be7 Nc3 Nf6
 n17 4.d3 (White, Line B) | book
     book: in book (Italian Game: Two Knights Defense, Modern Bishop's Opening)
+    the book also has: Ng5 (Italian Game: Two Knights Defense, Fegatello Attack, Leonhardt Variation); O-O (Italian Game: Giuoco Pianissimo)
     board: moves the pawn from d2 to d3
-    alternatives: d4: The position is roughly equal; Ng5: The position is roughly equal
+    ideas: defends the pawn on e4, which was attacked | controls e4 | supports the centre pawn on e4 | opens the bishop on c1 (from 0 squares to 5) | shuts in the bishop on c4 (from 9 squares to 6)
+    opens: the dark-squared bishop on c1, from 0 squares to 5
+    alternatives: d4 (threatens to win the pawn on e5 with dxe5; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 O-O Nxe4 Re1; Ng5 (threatens to win the pawn on f7 with Nxf7; moves the knight for the second time while 2 pieces still wait at home; controls e4): The position is roughly equal, after d5 exd5 Na5 Bb5+
 n18 4…Be7 (Black, Line B) | book
     book: in book (Italian Game: Two Knights Defense, Modern Bishop's Opening)
+    the book also has: Bc5 (Italian Game: Giuoco Pianissimo, Normal); h6 (Italian Game: Two Knights Defense, Modern Bishop's Opening)
+    piece: the dark-squared bishop
     board: moves the bishop from f8 to e7
-    alternatives: Bc5: The position is roughly equal; h6: The position is roughly equal
+    ideas: develops the bishop to e7 | clears the way to castle kingside | prepares O-O by clearing the way
+    alternatives: Bc5 (develops the bishop to c5; controls d4; aims at the pawn on f2, which only the king defends): The position is roughly equal, after O-O d6 c3 Bb6; h6: The position is roughly equal, after O-O d6 c3 Be7
 n19 5.O-O (White, Line B) | best | before: The position is roughly equal → after: The position is roughly equal
     board: castles kingside
-    alternatives: h3: The position is roughly equal; a4: The position is roughly equal
+    ideas: castles kingside: the king goes to safety and the rook comes to f1
+    alternatives: h3: The position is roughly equal, after d6 c3 h6 d4; a4: The position is roughly equal, after d5 exd5 Nxd5 O-O
 n20 5…O-O (Black, Line B) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: castles kingside
-    alternatives: d6: The position is roughly equal; h6: The position is roughly equal
+    ideas: castles kingside: the king goes to safety and the rook comes to f8
+    alternatives: d6 (controls c5 and e5; supports the centre pawn on e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after a4 O-O h3 h6; h6: The position is roughly equal, after h3 d6 a4 Be6
 n21 6.Re1 (White, Line B) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the rook from f1 to e1
-    alternatives: h3: The position is roughly equal; a4: The position is roughly equal; a3: The position is roughly equal
+    ideas: controls e4 | supports the centre pawn on e4 | brings the rook to the e-file, in the centre where files open first | defends the pawn on e4, attacked once and now defended twice
+    alternatives: h3: The position is roughly equal, after h6 Re1 a6 c3; a4: The position is roughly equal, after d6 h3 Be6 Nc3; a3: The position is roughly equal, after h6 h3 Bc5 Nc3
 n22 6…d6 (Black, Line B) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from d7 to d6
-    alternatives: h6: The position is roughly equal; a6: The position is roughly equal
+    ideas: controls c5 and e5 | supports the centre pawn on e5 | opens the bishop on c8 (from 0 squares to 5) | defends the pawn on e5, attacked once and now defended twice
+    opens: the light-squared bishop on c8, from 0 squares to 5
+    alternatives: h6: The position is roughly equal, after a4 d6 c3 Be6; a6: The position is roughly equal, after c3 d6 a3 h6
 n23 7.c3 (White, Line B) | good | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from c2 to c3
-    alternatives: a4: The position is roughly equal; a3: The position is roughly equal
+    ideas: takes c3 from the knight, whose natural square it is | controls d4 | prevents Nd4, a knight on a strong square | opens the queen on d1 (from 2 squares to 5) | prepares the pawn's advance to d4, which it now supports
+    opens: the queen on d1, from 2 squares to 5
+    alternatives: a4: The position is roughly equal, after h6 c3 Be6 Bxe6; a3: The position is roughly equal, after h6 h3 Re8 Nc3
 
 REEL CANDIDATES
 
@@ -103,26 +147,32 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.e4: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
-    n2 1…e5: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
-    n3 2.Nf3: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
-    n4 2…Nc6: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
-    n5 3.Bc4: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
-    n6 3…Bc5: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
-    n7 4.c3: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
-    n8 4…Nf6: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
-    n9 5.d3: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
-    n10 5…d6: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
-    n11 6.O-O: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
-    n12 6…O-O: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
-    n13 7.Re1: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
+    n1 1.e4: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…e5: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54); Puts a pawn in the centre on e5; Controls d4 and f4; Opens the bishop on f8 (from 0 squares to 5)
+    n3 2.Nf3: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54); Threatens to win the pawn on e5 with Nxe5; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
+    n4 2…Nc6: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54); Defends the pawn on e5, which was attacked; Develops the knight to c6, its most useful square; Controls e5 and d4
+    n5 3.Bc4: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54); Develops the bishop to c4; Controls d5; Prevents d5, a pawn break
+    n6 3…Bc5: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54); Develops the bishop to c5; Controls d4; Prevents d4, a pawn break
+    n7 4.c3: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54); Takes c3 from the knight, whose natural square it is; Controls d4; Prevents Nd4, a knight on a strong square
+    n8 4…Nf6: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54); Threatens to win the pawn on e4 with Nxe4; Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square
+    n9 5.d3: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54); Defends the pawn on e4, which was attacked; Controls e4; Supports the centre pawn on e4
+    n10 5…d6: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54); Controls e5; Supports the centre pawn on e5; Opens the bishop on c8 (from 0 squares to 5)
+    n11 6.O-O: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54); Castles kingside: the king goes to safety and the rook comes to f1
+    n12 6…O-O: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54); Castles kingside: the king goes to safety and the rook comes to f8
+    n13 7.Re1: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54); Controls e4; Supports the centre pawn on e4; Brings the rook to the e-file, in the centre where files open first
     n14 7…a6: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
+    n15 8.a4: Prevents b5, an attack on a bigger piece
   l2
-    n1 1.e4: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55)
-    n2 1…e5: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55)
-    n3 2.Nf3: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55)
-    n4 2…Nc6: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55)
-    n5 3.Bc4: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55)
-    n16 3…Nf6: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55)
-    n17 4.d3: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55)
-    n18 4…Be7: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55)
+    n1 1.e4: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…e5: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55); Puts a pawn in the centre on e5; Controls d4 and f4; Opens the bishop on f8 (from 0 squares to 5)
+    n3 2.Nf3: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55); Threatens to win the pawn on e5 with Nxe5; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
+    n4 2…Nc6: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55); Defends the pawn on e5, which was attacked; Develops the knight to c6, its most useful square; Controls e5 and d4
+    n5 3.Bc4: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55); Develops the bishop to c4; Controls d5; Prevents d5, a pawn break
+    n16 3…Nf6: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55); Threatens to win the pawn on e4 with Nxe4; Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square
+    n17 4.d3: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55); Defends the pawn on e4, which was attacked; Controls e4; Supports the centre pawn on e4
+    n18 4…Be7: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55); Develops the bishop to e7; Clears the way to castle kingside; Prepares O-O by clearing the way
+    n19 5.O-O: Castles kingside: the king goes to safety and the rook comes to f1
+    n20 5…O-O: Castles kingside: the king goes to safety and the rook comes to f8
+    n21 6.Re1: Controls e4; Supports the centre pawn on e4; Brings the rook to the e-file, in the centre where files open first
+    n22 6…d6: Controls c5 and e5; Supports the centre pawn on e5; Opens the bishop on c8 (from 0 squares to 5)
+    n23 7.c3: Takes c3 from the knight, whose natural square it is; Controls d4; Prevents Nd4, a knight on a strong square

@@ -297,6 +297,11 @@ Per node:
   A mate says why, square by square: the checker, the king's squares that
   hold its own pieces, the ones covered and by what, and which adjacent
   attackers are guarded ("the bishop on f7 is guarded by the knight on e5").
+- **Ideas** (`move-ideas/`, `docs/move-ideas.md`): why the move was played,
+  as checked data, most telling first: what it threatens and stops, what it
+  develops, controls, opens, prevents and prepares, what it does to the
+  kings and the pawns ("prevents …Bg4, a pin | loosens the pawns in front of
+  the king"). Built from a study of annotated master games.
 - Tactics (the tactic detectors and `tactic-reason-text.ts`): motifs found,
   missed or allowed at this node, each with its checked sentence. Not the
   review's "you stopped them…" sentences: they are about a move nobody played,
@@ -305,8 +310,10 @@ Per node:
 The principle: the app supplies every chess fact; the model only puts the
 facts it is given into words. When a script states something wrong, the fix is
 a missing or misleading fact here, not a prompt telling the model to be careful.
-- Alternatives: the engine's other top moves and the tempting moves (captures,
-  checks) with verdict words, so "why not X?" is answered from facts. A move
+- Alternatives: the engine's other top moves, each with what it would do
+  (its own ideas) and the engine's line after it, and the tempting moves
+  (captures, checks) with verdict words, so "why not X?" is answered from
+  facts. A move
   that is checkmate lists no other top moves: the mate is the whole
   description.
 - Flags: `quiz-eligible` (one move is clearly best: a win-percentage gap above

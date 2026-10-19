@@ -15,119 +15,180 @@ Moves:
 n1 1.e4 (White, Classical Scotch) | book
     book: in book (King's Pawn Game)
     board: moves the pawn from e2 to e4
-    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: puts a pawn in the centre on e4 | controls d5 and f5 | opens the bishop on f1 (from 0 squares to 5)
+    opens: the light-squared bishop on f1, from 0 squares to 5
+    alternatives: d4 (puts a pawn in the centre on d4; controls c5 and e5; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after d5 c4 dxc4 Nf3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after d5 d4 Nf6 c4
 n2 1…e5 (Black, Classical Scotch) | book
     book: in book (King's Pawn Game)
     board: moves the pawn from e7 to e5
-    alternatives: c5: The position is roughly equal; c6: The position is roughly equal
+    ideas: puts a pawn in the centre on e5 | controls d4 and f4 | opens the bishop on f8 (from 0 squares to 5) | fixes the pawn on e4: it can no longer advance
+    opens: the dark-squared bishop on f8, from 0 squares to 5
+    alternatives: c5 (controls d4; opens the queen on d8 (from 0 squares to 3)): The position is roughly equal, after Nf3 d6 Bb5+ Bd7; c6 (takes c6 from the knight, whose natural square it is; controls d5; opens the queen on d8 (from 0 squares to 3)): The position is roughly equal, after d4 d5 e5 c5
 n3 2.Nf3 (White, Classical Scotch) | book
     book: in book (King's Knight Opening)
     board: moves the knight from g1 to f3
-    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+    ideas: threatens to win the pawn on e5 with Nxe5 | puts the knight on f3, the best defender of a king castled short | develops the knight to f3, its most useful square | puts pressure on the pawn on e5 and controls d4 | prepares the pawn's advance to d4, which it now supports
+    alternatives: Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nf6 Nf3 Nc6 Bb5; Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after Nf6 d3 c6 Nf3
 n4 2…Nc6 (Black, Classical Scotch) | book
     book: in book (King's Knight Opening: Normal Variation)
     board: moves the knight from b8 to c6
-    alternatives: d6: The position is roughly equal; Nf6: The position is roughly equal
+    ideas: defends the pawn on e5, which was attacked | develops the knight to c6, its most useful square | controls e5 and d4 | supports the centre pawn on e5
+    alternatives: d6 (controls c5 and e5; supports the centre pawn on e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after d4 exd4 Qxd4 Nf6; Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after Nxe5 Nxe4 d4 d5
 n5 3.d4 (White, Classical Scotch) | book
     book: in book (Scotch Game)
+    the book also has: Bc4 (Scotch Game: Benima Defense)
     board: moves the pawn from d2 to d4
-    alternatives: Bb5: The position is roughly equal; Bc4: The position is roughly equal; Nc3: The position is roughly equal
+    ideas: threatens to win the pawn on e5 with dxe5 | puts a pawn in the centre on d4 | strikes at the centre: attacks the pawn on e5 | puts pressure on the pawn on e5 and controls c5 | opens the bishop on c1 (from 0 squares to 5)
+    opens: the dark-squared bishop on c1, from 0 squares to 5
+    alternatives: Bb5 (develops the bishop to b5; clears the way to castle kingside): The position is roughly equal, after a6 Ba4 Nf6 O-O; Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after Nf6 Ng5 d5 exd5; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nf6 d4 exd4 Nxd4
 n6 3…exd4 (Black, Classical Scotch) | book
     book: in book (Scotch Game)
+    the book also has: Nxd4 (Scotch Game: Lolli Variation)
     board: moves the pawn from e5 to d4 | captures the pawn on d4
-    alternatives: Nxd4: White is slightly better; d6: White is slightly better
+    ideas: puts a pawn in the centre on d4 | controls c3 and e3 | opens the e-file for the rooks (half-open) | leaves Black with doubled pawns on the d-file
+    alternatives: Nxd4 (centralises the knight on d4, which reaches 8 squares; posts the knight on d4 on a strong square, supported by the pawn on e5): White is slightly better, after Nxd4 exd4 Qxd4 Qf6; d6 (controls c5 and e5; supports the centre pawn on e5; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after d5 Nb8 c4 g6
 n7 4.Nxd4 (White, Classical Scotch) | book
     book: in book (Scotch Game)
+    the book also has: Bb5 (Scotch Game: Relfsson Gambit); Bc4 (Scotch Game: Cochrane Variation); c3 (Scotch Game: Göring Gambit)
     board: moves the knight from f3 to d4 | captures the pawn on d4 | attacks the knight on c6
-    alternatives: Bc4: The position is roughly equal; Bb5: The position is roughly equal
+    ideas: centralises the knight on d4, which reaches 8 squares
+    alternatives: Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after Nf6 e5 d5 Bb5; Bb5 (develops the bishop to b5; clears the way to castle kingside): The position is roughly equal, after Bc5 Nbd2 Nge7 Nb3
 n8 4…Bc5 (Black, Classical Scotch) | book
     book: in book (Scotch Game: Classical Variation)
+    the book also has: Bb4+ (Scotch Game: Malaniuk Variation); Nf6 (Scotch Game: Alekhine Gambit); Nxd4 (Scotch Game: Ghulam-Kassim Variation); Qh4 (Scotch Game)
+    piece: the dark-squared bishop
     board: moves the bishop from f8 to c5 | attacks the knight on d4
-    alternatives: Bb4+: The position is roughly equal; Nf6: The position is roughly equal
+    ideas: threatens to win the knight on d4 with Nxd4 | develops the bishop to c5 | controls d4 | aims at the pawn on f2, through the knight on d4
+    alternatives: Bb4+ (develops the bishop to b4): The position is roughly equal, after c3 Bc5 Be3 Bb6; Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after Nxc6 bxc6 Bd3 d5
 n9 5.Be3 (White, Classical Scotch) | book
     book: in book (Scotch Game: Classical Variation)
+    the book also has: Nb3 (Scotch Game: Potter Variation); Nxc6 (Scotch Game: Classical Variation, Intermezzo Variation)
+    piece: the dark-squared bishop
     board: moves the bishop from c1 to e3
-    alternatives: Nxc6: The position is roughly equal; Nb3: The position is roughly equal
+    ideas: defends the knight on d4, which was attacked | develops the bishop to e3
+    alternatives: Nxc6 (threatens to win the queen on d8 with Nxd8; controls e5 and d4; opens the queen on d1 (from 6 squares to 10)): The position is roughly equal, after Qf6 Qf3 dxc6 Nc3; Nb3 (threatens to win the bishop on c5 with Nxc5; controls d4; opens the queen on d1 (from 6 squares to 10)): The position is roughly equal, after Bb4+ c3 Be7 c4
 n10 5…Qf6 (Black, Classical Scotch) | book
     book: in book (Scotch Game: Classical Variation)
     board: moves the queen from d8 to f6 | attacks the knight on d4
-    alternatives: Bb6: White is slightly better; Bb4+: White is slightly better
+    ideas: threatens to win the knight on d4 with Nxd4 | brings the queen out to f6 | brings the queen out early, with 2 pieces still at home | controls e5 and d4 | defends the knight on c6, attacked once and now defended 3 times
+    alternatives: Bb6 (moves the bishop for the second time while 2 pieces still wait at home): White is slightly better, after Nc3 Nf6 Nxc6 dxc6; Bb4+: White is slightly better, after c3 Be7 c4 Nf6
 n11 6.c3 (White, Classical Scotch) | book
     book: in book (Scotch Game: Classical Variation)
+    the book also has: Nb5 (Scotch Game: Blumenfeld Attack)
     board: moves the pawn from c2 to c3
-    alternatives: Nb5: Black is slightly better; Nxc6: Black is slightly better
+    ideas: defends the knight on d4, which was attacked | prevents Bb4+, a check | takes c3 from the knight, whose natural square it is | opens the queen on d1 (from 7 squares to 10)
+    opens: the queen on d1, from 7 squares to 10
+    alternatives: Nb5 (threatens to win the bishop on c5 with Bxc5; controls d4; opens the queen on d1 (from 7 squares to 11)): Black is slightly better, after Bxe3 fxe3 Qh4+ g3; Nxc6 (threatens to win the bishop on c5 with Bxc5; controls e5 and d4; opens the queen on d1 (from 7 squares to 11)): Black is slightly better, after Bxe3 fxe3 dxc6 Qd4
 n12 6…Nge7 (Black, Classical Scotch) | book
     book: in book (Scotch Game: Classical Variation)
+    the book also has: Qg6 (Scotch Game: Classical Variation, Millennium Variation)
     board: moves the knight from g8 to e7
-    alternatives: d6: The position is roughly equal; Qg6: The position is roughly equal
+    ideas: develops the knight to e7 | controls d5 | prevents Nf5, a knight on a strong square | defends the knight on c6, attacked once and now defended 4 times | clears the way to castle kingside | prepares the pawn's advance to d5, which it now supports
+    alternatives: d6 (controls e5; opens the bishop on c8 (from 0 squares to 5); shuts in the bishop on c5 (from 7 squares to 4)): The position is roughly equal, after Be2 Qg6 O-O Nf6; Qg6 (threatens to win the pawn on e4 with Qxe4; moves the queen for the second time while 2 pieces still wait at home; brings the queen out early, with 2 pieces still at home): The position is roughly equal, after Qe2 Nxd4 cxd4 Bb4+
 n13 7.Bc4 (White, Classical Scotch) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    the book also has: Bb5 (Scotch Game: Paulsen Attack); Nc2 (Scotch Game: Meitner Variation); Qd2 (Scotch Game: Classical Variation, Blackburne Attack)
+    piece: the light-squared bishop
     board: moves the bishop from f1 to c4
-    alternatives: Bb5: The position is roughly equal; Qd2: The position is roughly equal
+    ideas: develops the bishop to c4 | controls d5 | prevents d5, a pawn break | aims at the pawn on f7 | clears the way to castle kingside
+    alternatives: Bb5 (develops the bishop to b5; clears the way to castle kingside): The position is roughly equal, after d6 O-O O-O f4; Qd2 (brings the queen out to d2): The position is roughly equal, after d6 a4 a6 b4
 n14 7…Ne5 (Black, Classical Scotch) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from c6 to e5 | attacks the bishop on c4
-    alternatives: d6: The position is roughly equal; O-O: The position is roughly equal
+    ideas: threatens to win the bishop on c4 with Nxc4 | centralises the knight on e5, which reaches 8 squares | defends the pawn on f7, attacked once and now defended 3 times | prepares the pawn's advance to c6, which it now supports | heads for d3, a square no enemy pawn can attack
+    alternatives: d6 (controls e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after O-O Ne5 Be2 Qg6; O-O (castles kingside: the king goes to safety and the rook comes to f8): The position is roughly equal, after O-O d6 Kh1 Ne5
 n15 8.Be2 (White, Classical Scotch) | best | before: The position is roughly equal → after: The position is roughly equal
+    piece: the light-squared bishop
     board: moves the bishop from c4 to e2
-    alternatives: Bb3: The position is roughly equal; Nd2: The position is roughly equal
+    ideas: takes the attacked bishop to safety on e2 | shuts in the queen on d1 (from 10 squares to 6) | prepares the pawn's advance to c4, which it now supports
+    alternatives: Bb3 (aims at the pawn on f7): The position is roughly equal, after d5 O-O dxe4 Nd2; Nd2 (develops the knight to d2; controls e4; supports the centre pawn on e4): The position is roughly equal, after Qg6 Bf1 d5 f4
 n16 8…Qg6 (Black, Classical Scotch) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from f6 to g6
-    alternatives: d6: The position is roughly equal; h5: The position is roughly equal
+    ideas: threatens to win the pawn on e4 with Qxe4 | moves the queen for the second time while 1 piece still wait at home | puts pressure on the pawn on e4
+    alternatives: d6 (opens the bishop on c8 (from 0 squares to 5); shuts in the queen on f6 (from 13 squares to 9)): The position is roughly equal, after O-O Qg6 f3 d5; h5: The position is roughly equal, after Nd2 d5 O-O Ng4
 n17 4…Nf6 (Black, Schmidt variation) | book
     book: in book (Scotch Game: Schmidt Variation)
+    the book also has: Bb4+ (Scotch Game: Malaniuk Variation); Bc5 (Scotch Game: Blumenfeld Attack); Nxd4 (Scotch Game: Ghulam-Kassim Variation); Qh4 (Scotch Game)
     board: moves the knight from g8 to f6
-    alternatives: Bb4+: The position is roughly equal; Bc5: The position is roughly equal
+    ideas: threatens to win the pawn on e4 with Nxe4 | puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | puts pressure on the pawn on e4 and controls d5 | prepares the pawn's advance to d5, which it now supports
+    alternatives: Bb4+ (develops the bishop to b4): The position is roughly equal, after c3 Bc5 Be3 Bb6; Bc5 (threatens to win the knight on d4 with Nxd4; develops the bishop to c5; controls d4): The position is roughly equal, after Nb3 Bb6 Nc3 Nf6
 n18 5.Nxc6 (White, Schmidt variation) | book
     book: in book (Scotch Game: Schmidt Variation)
+    the book also has: e5 (Scotch Game: Alekhine Gambit)
     board: moves the knight from d4 to c6 | captures the knight on c6 | attacks the queen on d8 | leaves the white pawn on e4 hanging
-    alternatives: Nc3: The position is roughly equal; Qd3: The position is roughly equal
+    ideas: threatens to win the queen on d8 with Nxd8 | removes the knight on c6, the guard of the queen on d8 | controls e5 and d4 | opens the queen on d1 (from 6 squares to 10) | after bxc6 the opponent's pawns are doubled on the c-file
+    opens: the queen on d1, from 6 squares to 10
+    alternatives: Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Bb4 Nxc6 bxc6 Bd3; Qd3 (brings the queen out to d3; brings the queen out early, with 3 pieces still at home; controls e4): The position is roughly equal, after d5 Nxc6 bxc6 exd5
 n19 5…bxc6 (Black, Schmidt variation) | book
     book: in book (Scotch Game: Schmidt Variation)
     board: moves the pawn from b7 to c6 | captures the knight on c6
-    alternatives: dxc6: The position is roughly equal; Nxe4: White is much better
+    ideas: takes the piece that attacked the queen on d8 | controls d5 | opens the b-file for the rooks (half-open) | opens the bishop on c8 (from 0 squares to 2) | leaves Black with doubled pawns on the c-file | leaves Black with an isolated pawn on a7 | takes toward the centre | prepares the pawn's advance to d5, which it now supports
+    alternatives: dxc6 (controls d5; gives up the centre: the pawn leaves d7; opens the d-file for the rooks): The position is roughly equal, after Qxd8+ Kxd8 f3 Be6; Nxe4 (centralises the knight on e4, which reaches 8 squares): White is much better, after Nxd8 Kxd8 f3 Nc5
 n20 6.e5 (White, Schmidt variation) | book
     book: in book (Scotch Game: Mieses Variation)
+    the book also has: Nd2 (Scotch Game: Tartakower Variation)
     board: moves the pawn from e4 to e5 | attacks the knight on f6
-    alternatives: Bd3: The position is roughly equal; Nc3: The position is roughly equal
+    ideas: takes the attacked pawn to safety on e5 | attacks the knight on f6 | puts a pawn in the centre on e5 | controls d6 and f6 | gains space: the pawn on e5 takes a natural square from the knight
+    alternatives: Bd3 (develops the bishop to d3; controls e4; supports the centre pawn on e4): The position is roughly equal, after d5 e5 Nd7 O-O; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Bb4 Bd3 d5 exd5
 n21 6…Qe7 (Black, Schmidt variation) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from d8 to e7
-    alternatives: Ne4: The position is roughly equal; Nd5: White is slightly better
+    ideas: threatens to win the pawn on e5 with Qxe5+ | brings the queen out to e7 | puts pressure on the pawn on e5 | shuts in the bishop on f8 (from 5 squares to 0) | prepares the pawn's advance to d6, which it now supports
+    alternatives: Ne4 (centralises the knight on e4, which reaches 8 squares): The position is roughly equal, after Nd2 Nc5 Nb3 d5; Nd5 (centralises the knight on d5, which reaches 8 squares): White is slightly better, after c4 Nb6 Bd3 d5
 n22 7.Qe2 (White, Schmidt variation) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from d1 to e2
-    alternatives: Qd4: Black is slightly better; f4: Black is slightly better
+    ideas: defends the pawn on e5, which was attacked | brings the queen out to e2 | controls e4 and e5 | supports the centre pawn on e5 | prevents Ne4, a knight on a strong square | shuts in the bishop on f1 (from 5 squares to 0)
+    alternatives: Qd4 (brings the queen out to d4; brings the queen out early, with 3 pieces still at home; controls e4 and e5): Black is slightly better, after d6 Nd2 Nd7 Nc4; f4 (controls e5; supports the centre pawn on e5; shuts in the bishop on c1 (from 5 squares to 2)): Black is slightly better, after d6 Qf3 Bd7 Be2
 n23 7…Nd5 (Black, Schmidt variation) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from f6 to d5
-    alternatives: Ng8: White is slightly better; Kd8: White is better
+    ideas: takes the attacked knight to safety on d5 | centralises the knight on d5, which reaches 8 squares | opens the queen on e7 (from 7 squares to 10) | prepares the pawn's advance to f6, which it now supports
+    opens: the queen on e7, from 7 squares to 10
+    alternatives: Ng8 (opens the queen on e7 (from 7 squares to 10)): White is slightly better, after Nc3 f6 Bf4 fxe5; Kd8: White is better, after exf6 Qxf6 Nc3 Rb8
 n24 8.c4 (White, Schmidt variation) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from c2 to c4 | attacks the knight on d5
-    alternatives: g3: The position is roughly equal; h4: The position is roughly equal
+    ideas: attacks the knight on d5 | controls d5
+    alternatives: g3 (controls f4; opens the bishop on f1 (from 0 squares to 2)): The position is roughly equal, after g6 c4 Ba6 b3; h4: The position is roughly equal, after d6 c4 Nb6 exd6
 n25 8…Ba6 (Black, Schmidt variation) | good | before: The position is roughly equal → after: The position is roughly equal
+    piece: the light-squared bishop
     board: moves the bishop from c8 to a6
-    alternatives: Nb6: The position is roughly equal; Qb4+: The position is roughly equal
+    ideas: develops the bishop to a6 | Black now has 2 pieces developed to 0 pieces | clears the way to castle queenside | prepares O-O-O by clearing the way
+    alternatives: Nb6 (controls d5): The position is roughly equal, after g3 Qe6 b3 Bb4+; Qb4+: The position is roughly equal, after Nd2 Nf4 Qe4 Ne6
 n26 4.Bc4 (White, Scotch Gambit) | book
     book: in book (Scotch Game: Scotch Gambit)
+    the book also has: Bb5 (Scotch Game: Relfsson Gambit); Nxd4 (Scotch Game); c3 (Scotch Game: Göring Gambit)
+    piece: the light-squared bishop
     board: moves the bishop from f1 to c4
-    alternatives: Nxd4: The position is roughly equal; Bb5: The position is roughly equal
+    ideas: develops the bishop to c4 | controls d5 | prevents d5, a pawn break | aims at the pawn on f7, which only the king defends | clears the way to castle kingside
+    alternatives: Nxd4 (centralises the knight on d4, which reaches 8 squares): The position is roughly equal, after Nf6 Nxc6 bxc6 Nc3; Bb5 (develops the bishop to b5; clears the way to castle kingside): The position is roughly equal, after Bc5 Nbd2 Nge7 Nb3
 n27 4…Bc5 (Black, Scotch Gambit) | book
     book: in book (Scotch Game: Haxo Gambit)
+    the book also has: Bb4+ (Scotch Game: Cochrane Variation); Nf6 (Scotch Game: Scotch Gambit, Advance Variation)
+    piece: the dark-squared bishop
     board: moves the bishop from f8 to c5
-    alternatives: Nf6: The position is roughly equal; Bb4+: The position is roughly equal
+    ideas: defends the pawn on d4, which was attacked | develops the bishop to c5 | controls d4 | supports the centre pawn on d4 | aims at the pawn on f2, through the pawn on d4
+    alternatives: Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after e5 d5 Bb5 Ne4; Bb4+ (develops the bishop to b4): The position is roughly equal, after c3 dxc3 O-O Nf6
 n28 5.O-O (White, Scotch Gambit) | book
     book: in book (Scotch Game: Haxo Gambit)
+    the book also has: Ng5 (Scotch Game: Cochrane-Shumov Defense)
     board: castles kingside
-    alternatives: c3: The position is roughly equal; Ng5: The position is roughly equal
+    ideas: castles kingside: the king goes to safety and the rook comes to f1
+    alternatives: c3 (threatens to win the pawn on d4 with cxd4; takes c3 from the knight, whose natural square it is; strikes at the centre: attacks the pawn on d4): The position is roughly equal, after Nf6 e5 d5 Be2; Ng5 (threatens to win the pawn on f7 with Nxf7; moves the knight for the second time while 2 pieces still wait at home; controls e4): The position is roughly equal, after Nh6 Nxf7 Nxf7 Bxf7+
 n29 5…d6 (Black, Scotch Gambit) | book
     book: in book (Scotch Game: Haxo Gambit)
     board: moves the pawn from d7 to d6
-    alternatives: Nf6: The position is roughly equal; Nge7: The position is roughly equal
+    ideas: controls e5 | prevents e5, a pawn advance | opens the bishop on c8 (from 0 squares to 5) | shuts in the bishop on c5 (from 6 squares to 3) | prepares Bg4 by opening the line
+    opens: the light-squared bishop on c8, from 0 squares to 5
+    alternatives: Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after e5 d5 Bb5 Ne4; Nge7 (develops the knight to e7; controls d5; clears the way to castle kingside): The position is roughly equal, after c3 dxc3 Ng5 d5
 n30 6.c3 (White, Scotch Gambit) | book
     book: in book (Scotch Game: Haxo Gambit)
     board: moves the pawn from c2 to c3
-    alternatives: h3: Black is slightly better; Nbd2: Black is slightly better
+    ideas: threatens to win the pawn on d4 with cxd4 | takes c3 from the knight, whose natural square it is | strikes at the centre: attacks the pawn on d4 | puts pressure on the pawn on d4 | prevents Nb4, an invasion | opens the queen on d1 (from 5 squares to 8) | prepares Qb3 by opening the line
+    opens: the queen on d1, from 5 squares to 8
+    alternatives: h3: Black is slightly better, after Nf6 c3 dxc3 Nxc3; Nbd2 (develops the knight to d2; White now has 4 pieces developed to 2 pieces; controls e4): Black is slightly better, after Bb6 a4 a5 Ba2
 n31 6…Nf6 (Black, Scotch Gambit) | inaccuracy | before: Black is slightly better → after: The position is roughly equal
+    the book also has: Bg4 (Scotch Game: Scotch Gambit, Cochrane-Anderssen Variation)
     best instead: Bg4; after Bg4 Qb3 Bxf3 Bxf7+ Kf8 gxf3, White has a bishop for a knight
     why Bg4 is better: moves the bishop from c8 to g4 | attacks the knight on f3, which is pinned to the queen on d1 by the bishop on g4
     board: moves the knight from g8 to f6
-    alternatives: Bg4: Black is slightly better; Qf6: The position is roughly equal; dxc3: The position is roughly equal
+    ideas: threatens to win the pawn on e4 with Nxe4 | puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | puts pressure on the pawn on e4 and controls d5 | shuts in the queen on d8 (from 5 squares to 2) | clears the way to castle kingside | prepares the pawn's advance to d5, which it now supports
+    alternatives: Bg4 (pins the knight on f3 to the queen; develops the bishop to g4): Black is slightly better, after Qb3 Bxf3 Bxf7+ Kf8; Qf6 (brings the queen out to f6; brings the queen out early, with 2 pieces still at home; controls e5 and d4): The position is roughly equal, after Bb5 Bg4 Bxc6+ bxc6; dxc3 (gives up the centre: the pawn leaves d4; opens the bishop on c5 (from 3 squares to 6); leaves Black with doubled pawns on the c-file): The position is roughly equal, after Qb3 Be6 Bxe6 fxe6
 
 REEL CANDIDATES
 
@@ -139,40 +200,49 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.e4: Theory — Scotch Game: Classical Variation (C45)
-    n2 1…e5: Theory — Scotch Game: Classical Variation (C45)
-    n3 2.Nf3: Theory — Scotch Game: Classical Variation (C45)
-    n4 2…Nc6: Theory — Scotch Game: Classical Variation (C45)
-    n5 3.d4: Theory — Scotch Game: Classical Variation (C45)
-    n6 3…exd4: Theory — Scotch Game: Classical Variation (C45)
-    n7 4.Nxd4: Theory — Scotch Game: Classical Variation (C45)
-    n8 4…Bc5: Theory — Scotch Game: Classical Variation (C45)
-    n9 5.Be3: Theory — Scotch Game: Classical Variation (C45)
-    n10 5…Qf6: Theory — Scotch Game: Classical Variation (C45)
-    n11 6.c3: Theory — Scotch Game: Classical Variation (C45)
-    n12 6…Nge7: Theory — Scotch Game: Classical Variation (C45)
-    n14 7…Ne5: Concedes the centre
+    n1 1.e4: Theory — Scotch Game: Classical Variation (C45); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…e5: Theory — Scotch Game: Classical Variation (C45); Puts a pawn in the centre on e5; Controls d4 and f4; Opens the bishop on f8 (from 0 squares to 5)
+    n3 2.Nf3: Theory — Scotch Game: Classical Variation (C45); Threatens to win the pawn on e5 with Nxe5; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
+    n4 2…Nc6: Theory — Scotch Game: Classical Variation (C45); Defends the pawn on e5, which was attacked; Develops the knight to c6, its most useful square; Controls e5 and d4
+    n5 3.d4: Theory — Scotch Game: Classical Variation (C45); Threatens to win the pawn on e5 with dxe5; Puts a pawn in the centre on d4; Strikes at the centre: attacks the pawn on e5
+    n6 3…exd4: Theory — Scotch Game: Classical Variation (C45); Puts a pawn in the centre on d4; Controls c3 and e3; Opens the e-file for the rooks (half-open)
+    n7 4.Nxd4: Theory — Scotch Game: Classical Variation (C45); Centralises the knight on d4, which reaches 8 squares
+    n8 4…Bc5: Theory — Scotch Game: Classical Variation (C45); Threatens to win the knight on d4 with Nxd4; Develops the bishop to c5; Controls d4
+    n9 5.Be3: Theory — Scotch Game: Classical Variation (C45); Defends the knight on d4, which was attacked; Develops the bishop to e3
+    n10 5…Qf6: Theory — Scotch Game: Classical Variation (C45); Threatens to win the knight on d4 with Nxd4; Brings the queen out to f6; Brings the queen out early, with 2 pieces still at home
+    n11 6.c3: Theory — Scotch Game: Classical Variation (C45); Defends the knight on d4, which was attacked; Prevents Bb4+, a check; Takes c3 from the knight, whose natural square it is
+    n12 6…Nge7: Theory — Scotch Game: Classical Variation (C45); Develops the knight to e7; Controls d5; Prevents Nf5, a knight on a strong square
+    n13 7.Bc4: Develops the bishop to c4; Controls d5; Prevents d5, a pawn break
+    n14 7…Ne5: Concedes the centre; Threatens to win the bishop on c4 with Nxc4; Centralises the knight on e5, which reaches 8 squares; Defends the pawn on f7, attacked once and now defended 3 times
+    n15 8.Be2: Takes the attacked bishop to safety on e2; Shuts in the queen on d1 (from 10 squares to 6); Prepares the pawn's advance to c4, which it now supports
+    n16 8…Qg6: Threatens to win the pawn on e4 with Qxe4; Moves the queen for the second time while 1 piece still wait at home; Puts pressure on the pawn on e4
   l2
-    n1 1.e4: Theory — Scotch Game: Mieses Variation (C45)
-    n2 1…e5: Theory — Scotch Game: Mieses Variation (C45)
-    n3 2.Nf3: Theory — Scotch Game: Mieses Variation (C45)
-    n4 2…Nc6: Theory — Scotch Game: Mieses Variation (C45)
-    n5 3.d4: Theory — Scotch Game: Mieses Variation (C45)
-    n6 3…exd4: Theory — Scotch Game: Mieses Variation (C45)
-    n7 4.Nxd4: Theory — Scotch Game: Mieses Variation (C45)
-    n17 4…Nf6: Theory — Scotch Game: Mieses Variation (C45)
-    n18 5.Nxc6: Theory — Scotch Game: Mieses Variation (C45)
-    n19 5…bxc6: Theory — Scotch Game: Mieses Variation (C45)
-    n20 6.e5: Theory — Scotch Game: Mieses Variation (C45)
+    n1 1.e4: Theory — Scotch Game: Mieses Variation (C45); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…e5: Theory — Scotch Game: Mieses Variation (C45); Puts a pawn in the centre on e5; Controls d4 and f4; Opens the bishop on f8 (from 0 squares to 5)
+    n3 2.Nf3: Theory — Scotch Game: Mieses Variation (C45); Threatens to win the pawn on e5 with Nxe5; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
+    n4 2…Nc6: Theory — Scotch Game: Mieses Variation (C45); Defends the pawn on e5, which was attacked; Develops the knight to c6, its most useful square; Controls e5 and d4
+    n5 3.d4: Theory — Scotch Game: Mieses Variation (C45); Threatens to win the pawn on e5 with dxe5; Puts a pawn in the centre on d4; Strikes at the centre: attacks the pawn on e5
+    n6 3…exd4: Theory — Scotch Game: Mieses Variation (C45); Puts a pawn in the centre on d4; Controls c3 and e3; Opens the e-file for the rooks (half-open)
+    n7 4.Nxd4: Theory — Scotch Game: Mieses Variation (C45); Centralises the knight on d4, which reaches 8 squares
+    n17 4…Nf6: Theory — Scotch Game: Mieses Variation (C45); Threatens to win the pawn on e4 with Nxe4; Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square
+    n18 5.Nxc6: Theory — Scotch Game: Mieses Variation (C45); Threatens to win the queen on d8 with Nxd8; Removes the knight on c6, the guard of the queen on d8; Controls e5 and d4
+    n19 5…bxc6: Theory — Scotch Game: Mieses Variation (C45); Takes the piece that attacked the queen on d8; Controls d5; Opens the b-file for the rooks (half-open)
+    n20 6.e5: Theory — Scotch Game: Mieses Variation (C45); Takes the attacked pawn to safety on e5; Attacks the knight on f6; Puts a pawn in the centre on e5
+    n21 6…Qe7: Threatens to win the pawn on e5 with Qxe5+; Brings the queen out to e7; Puts pressure on the pawn on e5
+    n22 7.Qe2: Defends the pawn on e5, which was attacked; Brings the queen out to e2; Controls e4 and e5
+    n23 7…Nd5: Takes the attacked knight to safety on d5; Centralises the knight on d5, which reaches 8 squares; Opens the queen on e7 (from 7 squares to 10)
+    n24 8.c4: Attacks the knight on d5; Controls d5
+    n25 8…Ba6: Develops the bishop to a6; Black now has 2 pieces developed to 0 pieces; Clears the way to castle queenside
   l3
-    n1 1.e4: Theory — Scotch Game: Haxo Gambit (C44)
-    n2 1…e5: Theory — Scotch Game: Haxo Gambit (C44)
-    n3 2.Nf3: Theory — Scotch Game: Haxo Gambit (C44)
-    n4 2…Nc6: Theory — Scotch Game: Haxo Gambit (C44)
-    n5 3.d4: Theory — Scotch Game: Haxo Gambit (C44)
-    n6 3…exd4: Theory — Scotch Game: Haxo Gambit (C44)
-    n26 4.Bc4: Theory — Scotch Game: Haxo Gambit (C44)
-    n27 4…Bc5: Theory — Scotch Game: Haxo Gambit (C44)
-    n28 5.O-O: Theory — Scotch Game: Haxo Gambit (C44)
-    n29 5…d6: Theory — Scotch Game: Haxo Gambit (C44)
-    n30 6.c3: Theory — Scotch Game: Haxo Gambit (C44)
+    n1 1.e4: Theory — Scotch Game: Haxo Gambit (C44); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…e5: Theory — Scotch Game: Haxo Gambit (C44); Puts a pawn in the centre on e5; Controls d4 and f4; Opens the bishop on f8 (from 0 squares to 5)
+    n3 2.Nf3: Theory — Scotch Game: Haxo Gambit (C44); Threatens to win the pawn on e5 with Nxe5; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
+    n4 2…Nc6: Theory — Scotch Game: Haxo Gambit (C44); Defends the pawn on e5, which was attacked; Develops the knight to c6, its most useful square; Controls e5 and d4
+    n5 3.d4: Theory — Scotch Game: Haxo Gambit (C44); Threatens to win the pawn on e5 with dxe5; Puts a pawn in the centre on d4; Strikes at the centre: attacks the pawn on e5
+    n6 3…exd4: Theory — Scotch Game: Haxo Gambit (C44); Puts a pawn in the centre on d4; Controls c3 and e3; Opens the e-file for the rooks (half-open)
+    n26 4.Bc4: Theory — Scotch Game: Haxo Gambit (C44); Develops the bishop to c4; Controls d5; Prevents d5, a pawn break
+    n27 4…Bc5: Theory — Scotch Game: Haxo Gambit (C44); Defends the pawn on d4, which was attacked; Develops the bishop to c5; Controls d4
+    n28 5.O-O: Theory — Scotch Game: Haxo Gambit (C44); Castles kingside: the king goes to safety and the rook comes to f1
+    n29 5…d6: Theory — Scotch Game: Haxo Gambit (C44); Controls e5; Prevents e5, a pawn advance; Opens the bishop on c8 (from 0 squares to 5)
+    n30 6.c3: Theory — Scotch Game: Haxo Gambit (C44); Threatens to win the pawn on d4 with cxd4; Takes c3 from the knight, whose natural square it is; Strikes at the centre: attacks the pawn on d4
+    n31 6…Nf6: Nf6 cuts off the queen on d8, from 5 squares to 2; Bg4 keeps it open

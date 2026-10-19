@@ -7,44 +7,64 @@ Moves:
 n1 1.e4 (White, Line A) | book
     book: in book (King's Pawn Game)
     board: moves the pawn from e2 to e4
-    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: puts a pawn in the centre on e4 | controls d5 and f5 | opens the bishop on f1 (from 0 squares to 5)
+    opens: the light-squared bishop on f1, from 0 squares to 5
+    alternatives: d4 (puts a pawn in the centre on d4; controls c5 and e5; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after Nf6 c4 e6 Nc3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after Nf6 c4 e6 d4
 n2 1…c6 (Black, Line A) | book
     book: in book (Caro-Kann Defense)
     board: moves the pawn from c7 to c6
-    alternatives: e5: The position is roughly equal; c5: The position is roughly equal; d6: The position is roughly equal
+    ideas: takes c6 from the knight, whose natural square it is | controls d5 | opens the queen on d8 (from 0 squares to 3) | prepares the pawn's advance to d5, which it now supports
+    alternatives: e5 (puts a pawn in the centre on e5; controls d4 and f4; opens the bishop on f8 (from 0 squares to 5)): The position is roughly equal, after Nf3 Nc6 Nc3 Nf6; c5 (controls d4; opens the queen on d8 (from 0 squares to 3)): The position is roughly equal, after Nf3 d6 c3 Nf6; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after d4 Nf6 Nc3 e5
 n3 2.d4 (White, Line A) | book
     book: in book (Caro-Kann Defense)
+    the book also has: Bc4 (Caro-Kann Defense: Hillbilly Attack); Nc3 (Caro-Kann Defense); Nf3 (Caro-Kann Defense: Apocalypse Attack); b3 (Caro-Kann Defense: Euwe Attack); b4 (Caro-Kann Defense: Labahn Attack)
     board: moves the pawn from d2 to d4
-    alternatives: c4: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: puts a pawn in the centre on d4 | controls c5 and e5 | prevents e5, a pawn advance | opens the bishop on c1 (from 0 squares to 5)
+    opens: the dark-squared bishop on c1, from 0 squares to 5
+    alternatives: c4 (controls d5; opens the queen on d1 (from 4 squares to 7); shuts in the bishop on f1 (from 5 squares to 2)): The position is roughly equal, after d5 cxd5 cxd5 exd5; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after d5 e5 Bg4 d4
 n4 2…d5 (Black, Line A) | book
     book: in book (Caro-Kann Defense)
+    the book also has: Na6 (Caro-Kann Defense: De Bruycker Defense); Nf6 (Caro-Kann Defense: Masi Variation); f5 (Caro-Kann Defense: Massachusetts Defense)
     board: moves the pawn from d7 to d5
-    alternatives: g6: White is slightly better; d6: White is slightly better
+    ideas: threatens to win the pawn on e4 with dxe4 | puts a pawn in the centre on d5 | strikes at the centre: attacks the pawn on e4 | puts pressure on the pawn on e4 and controls c4 | opens the bishop on c8 (from 0 squares to 5) | fixes the pawn on d4: it can no longer advance
+    opens: the light-squared bishop on c8, from 0 squares to 5
+    alternatives: g6 (controls f5; opens the bishop on f8 (from 0 squares to 2)): White is slightly better, after Nf3 Bg7 Bd3 d6; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after Bd3 g6 Nf3 Nf6
 n5 3.Nc3 (White, Line A) | book
     book: in book (Caro-Kann Defense)
+    the book also has: Bd3 (Caro-Kann Defense: Mieses Attack, Landau Gambit); Be3 (Caro-Kann Defense: Mieses Gambit); Nd2 (Caro-Kann Defense: Edinburgh Variation); Nf3 (Caro-Kann Defense: Ulysses Gambit); e5 (Caro-Kann Defense: Advance Variation)
     board: moves the knight from b1 to c3
-    alternatives: e5: The position is roughly equal; Nd2: The position is roughly equal
+    ideas: defends the pawn on e4, which was attacked | develops the knight to c3, its most useful square | puts pressure on the pawn on d5 and controls e4 | supports the centre pawn on e4
+    alternatives: e5 (puts a pawn in the centre on e5; controls d6 and f6; gains space: the pawn on e5 takes a natural square from the knight): The position is roughly equal, after Bf5 g4 Bd7 c4; Nd2 (develops the knight to d2; controls e4; supports the centre pawn on e4): The position is roughly equal, after dxe4 Nxe4 Nf6 Qd3
 n6 3…dxe4 (Black, Line A) | book
     book: in book (Caro-Kann Defense)
+    the book also has: Nf6 (Caro-Kann Defense: Campomanes Attack); b5 (Caro-Kann Defense: Gurgenidze Counterattack); g6 (Caro-Kann Defense: Gurgenidze System)
     board: moves the pawn from d5 to e4 | captures the pawn on e4
-    alternatives: g6: White is slightly better; h6: White is slightly better
+    ideas: puts a pawn in the centre on e4 | controls d3 and f3 | opens the d-file for the rooks (half-open) | opens the queen on d8 (from 5 squares to 7) | leaves Black with doubled pawns on the e-file
+    alternatives: g6 (controls f5; opens the bishop on f8 (from 0 squares to 2)): White is slightly better, after e5 f6 h4 Bg7; h6: White is slightly better, after Nf3 Bg4 exd5 cxd5
 n7 4.Nxe4 (White, Line A) | book
     book: in book (Caro-Kann Defense: Main Line)
+    the book also has: Bc4 (Caro-Kann Defense: von Hennig Gambit); f3 (Caro-Kann Defense: Rasa-Studier Gambit)
     board: moves the knight from c3 to e4 | captures the pawn on e4
-    alternatives: Nge2: The position is roughly equal; g4: Black is slightly better
+    ideas: centralises the knight on e4, which reaches 8 squares
+    alternatives: Nge2 (develops the knight to e2; White now has 2 pieces developed to 0 pieces; controls d4): The position is roughly equal, after Nf6 Ng3 Bg4 Be2; g4 (controls f5; opens the bishop on f1 (from 5 squares to 7)): Black is slightly better, after e5 Nxe4 exd4 Ne2
 n8 4…Nd7 (Black, Line A) | book
     book: in book (Caro-Kann Defense: Karpov Variation)
+    the book also has: Bf5 (Caro-Kann Defense: Classical Variation); Nf6 (Caro-Kann Defense: Alekhine Gambit); h6 (Caro-Kann Defense: Finnish Variation)
     board: moves the knight from b8 to d7
-    alternatives: Nf6: The position is roughly equal; Bf5: The position is roughly equal
+    ideas: develops the knight to d7 | controls e5 | shuts in the bishop on c8 (from 5 squares to 0) | prepares the pawn's advance to e5, which it now supports
+    alternatives: Nf6 (threatens to win the knight on e4 with Nxe4; develops the knight to f6, its most useful square; controls e4 and d5): The position is roughly equal, after Nxf6+ exf6 c3 Bd6; Bf5 (threatens to win the knight on e4 with Bxe4; develops the bishop to f5; controls e4): The position is roughly equal, after Ng3 Bg6 Nf3 Nf6
 n9 5.Qe2 (White, Line A) | good | before: White is slightly better → after: The position is roughly equal
+    the book also has: Bc4 (Caro-Kann Defense: Karpov Variation, Smyslov Variation); Nf3 (Caro-Kann Defense: Karpov Variation, Modern Variation, Kasparov Attack); Ng5 (Caro-Kann Defense: Karpov Variation, Modern Main Line)
     board: moves the queen from d1 to e2
-    alternatives: Nf3: White is slightly better; Bd3: The position is roughly equal; Ng3: The position is roughly equal
+    ideas: threatens mate with Nd6# | brings the queen out to e2 | shuts in the bishop on f1 (from 5 squares to 0)
+    alternatives: Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): White is slightly better, after Ngf6 Ng3 e6 Bd3; Bd3 (develops the bishop to d3; aims at the pawn on h7, through the knight on e4): The position is roughly equal, after Ngf6 Ng3 e5 Nf3; Ng3 (moves the knight for the third time while 3 pieces still wait at home; controls e4): The position is roughly equal, after h5 Ne4 e5 Nf3
 n10 5…Ngf6 (Black, Line A) | blunder | before: The position is roughly equal → after: White has a forced mate in 1
     best instead: Ndf6; after Ndf6 c3 Nxe4 Qxe4 Nf6 Qe5, material is level
     why Ndf6 is better: moves the knight from d7 to f6 | attacks the knight on e4
     board: moves the knight from g8 to f6 | attacks the knight on e4
+    ideas: puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | controls e4 and d5
     tactics: They let you deliver checkmate with Nd6# — mates the king on e8, smothered by its own pieces.
-    alternatives: Ndf6: The position is roughly equal; Qc7: The position is roughly equal; e6: White is slightly better
+    alternatives: Ndf6 (threatens to win the pawn on d4 with Qxd4; moves the knight for the second time while 3 pieces still wait at home; controls e4 and d5): The position is roughly equal, after c3 Nxe4 Qxe4 Nf6; Qc7 (brings the queen out to c7; controls e5): The position is roughly equal, after Nf3 Ngf6 Nc3 e6; e6 (controls d5 and f5; opens the bishop on f8 (from 0 squares to 5)): White is slightly better, after Nf3 Be7 Bf4 Ngf6
     tempting threat: f5? Black's f5 moves the pawn from f7 to f5 | attacks the knight on e4. White answers Nd6#: moves the knight from e4 to d6 | gives checkmate | why it is mate: the king on e8 is checked by the knight on d6; d7, d8, e7, f8 hold its own pieces; f7 is covered by the knight on d6. Over the line nothing is taken; at the end material is level (White has a forced mate in 1).
     tempting threat: Qb6? Black's Qb6 moves the queen from d8 to b6. White answers Nd6+: moves the knight from e4 to d6 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8 | attacks the bishop on c8 | the knight on d6 forks the bishop on c8 and the king on e8. Then Kd8 Nxf7+ Ke8. Over the line White takes a pawn; at the end White is a pawn up (White is much better).
     tempting threat: c5? Black's c5 moves the pawn from c6 to c5. White answers Nd6#: moves the knight from e4 to d6 | gives checkmate | why it is mate: the king on e8 is checked by the knight on d6; d7, d8, e7, f7, f8 hold its own pieces. Over the line nothing is taken; at the end material is level (White has a forced mate in 1).
@@ -55,8 +75,8 @@ n11 6.Nd6# (White, Line A) | great | before: White has a forced mate in 1 → af
     flags: quiz-eligible, critical
 
 REEL CANDIDATES
-  r1 mate n5–n11, climax n11 [highlight, puzzle, promo]
-  r2 swing n4–n11, climax n10 [highlight, promo]
+  r1 mate n3–n11, climax n11 [highlight, puzzle, promo]
+  r2 swing n2–n11, climax n10 [highlight, promo]
 
 PLAN
   e1 hook n1–n1
@@ -67,13 +87,14 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.e4: Theory — Caro-Kann Defense: Karpov Variation (B17)
-    n2 1…c6: Theory — Caro-Kann Defense: Karpov Variation (B17)
-    n3 2.d4: Theory — Caro-Kann Defense: Karpov Variation (B17)
-    n4 2…d5: Theory — Caro-Kann Defense: Karpov Variation (B17)
-    n5 3.Nc3: Theory — Caro-Kann Defense: Karpov Variation (B17)
-    n6 3…dxe4: Theory — Caro-Kann Defense: Karpov Variation (B17)
-    n7 4.Nxe4: Theory — Caro-Kann Defense: Karpov Variation (B17)
-    n8 4…Nd7: Theory — Caro-Kann Defense: Karpov Variation (B17)
+    n1 1.e4: Theory — Caro-Kann Defense: Karpov Variation (B17); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…c6: Theory — Caro-Kann Defense: Karpov Variation (B17); Takes c6 from the knight, whose natural square it is; Controls d5; Opens the queen on d8 (from 0 squares to 3)
+    n3 2.d4: Theory — Caro-Kann Defense: Karpov Variation (B17); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance
+    n4 2…d5: Theory — Caro-Kann Defense: Karpov Variation (B17); Threatens to win the pawn on e4 with dxe4; Puts a pawn in the centre on d5; Strikes at the centre: attacks the pawn on e4
+    n5 3.Nc3: Theory — Caro-Kann Defense: Karpov Variation (B17); Defends the pawn on e4, which was attacked; Develops the knight to c3, its most useful square; Puts pressure on the pawn on d5 and controls e4
+    n6 3…dxe4: Theory — Caro-Kann Defense: Karpov Variation (B17); Puts a pawn in the centre on e4; Controls d3 and f3; Opens the d-file for the rooks (half-open)
+    n7 4.Nxe4: Theory — Caro-Kann Defense: Karpov Variation (B17); Centralises the knight on e4, which reaches 8 squares
+    n8 4…Nd7: Theory — Caro-Kann Defense: Karpov Variation (B17); Develops the knight to d7; Controls e5; Shuts in the bishop on c8 (from 5 squares to 0)
+    n9 5.Qe2: Threatens mate with Nd6#; Brings the queen out to e2; Shuts in the bishop on f1 (from 5 squares to 0)
     n10 5…Ngf6: They let you deliver checkmate with Nd6# — mates the king on e8, smothered by its own pieces.
     n11 6.Nd6#: You delivered checkmate — mates the king on e8, smothered by its own pieces.

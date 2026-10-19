@@ -46,6 +46,10 @@ into a course (a lesson on the board, a YouTube video and a reel).
   `tactic-detectors/lichess-puzzle-validation.test.ts` the recall floors: a
   detector change moves all three, ceilings only go down, floors only go up.
   `tactic-detectors/README.md` is the short how-to for adding a motif.
+- `docs/move-ideas.md` — the "why" of a move (`move-ideas/`): the ideas
+  Game Review's notes and the course dossier say, and how well they cover
+  annotated master games. Read it before touching `move-ideas/` or
+  `move-reason-ideas.ts`.
 - `docs/marketing-demo.md` — the public marketing pages (`/tour`, `/guide`,
   `/keys`, `/openai-key`), the seeded demo players, the screenshots, and the
   offline demo at `/demo`. Read it before touching `apps/web/public/*.html`,

@@ -14,15 +14,18 @@ n7 4.Nf3 (White, Line A) | inaccuracy | before: White is slightly better → aft
     best instead: exd5; after exd5 exd5 dxc5 d4, White is a pawn up
     why exd5 is better: moves the pawn from e4 to d5 | captures the pawn on d5
     board: moves the knight from g1 to f3
-    alternatives: exd5: White is slightly better; Bb5+: White is slightly better; dxc5: White is slightly better
+    ideas: puts the knight on f3, the best defender of a king castled short | develops the knight to f3, its most useful square | White now has 2 pieces developed to 0 pieces | controls d4 and e5 | supports the centre pawn on d4 | shuts in the queen on d1 (from 6 squares to 3) | defends the pawn on d4, attacked once and now defended twice
+    alternatives: exd5 (puts a pawn in the centre on d5; puts pressure on the pawn on e6 and controls c6; opens the e-file for the rooks (half-open)): White is slightly better, after exd5 dxc5 d4; Bb5+ (develops the bishop to b5; White now has 2 pieces developed to 0 pieces): White is slightly better, after Nc6 exd5 exd5; dxc5 (threatens to win the pawn on d5 with exd5; controls d6; gives up the centre: the pawn leaves d4): White is slightly better, after d4 Nb5 Nc6
 n8 4…Nc6 (Black, Line A) | good
 n9 5.exd5 (White, Line A) | best
 n10 5…exd5 (Black, Line A) | best
 n11 6.Be2 (White, Line A) | inaccuracy | before: White is slightly better → after: The position is roughly equal
+    piece: the light-squared bishop
     best instead: Bb5; after Bb5 Nf6 O-O Bd6, material is level
     why Bb5 is better: moves the bishop from f1 to b5 | attacks the knight on c6, which is pinned to the king by the bishop on b5
     board: moves the bishop from f1 to e2
-    alternatives: Bb5: White is slightly better; dxc5: White is slightly better; Be3: The position is roughly equal
+    ideas: develops the bishop to e2 | White now has 3 pieces developed to 1 piece | clears the way to castle kingside
+    alternatives: Bb5 (pins the knight on c6 to the king; leaves the knight on c6 without a move; develops the bishop to b5): White is slightly better, after Nf6 O-O Bd6; dxc5 (threatens to win the pawn on d5 with Nxd5; controls d6; gives up the centre: the pawn leaves d4): White is slightly better, after Bxc5 Nxd5 Be6; Be3 (develops the bishop to e3; White now has 3 pieces developed to 1 piece; controls d4): The position is roughly equal, after Bg4 Be2 c4
 n12 6…Nf6 (Black, Line A) | good
 n13 7.O-O (White, Line A) | best
 n14 7…Be7 (Black, Line A) | excellent
@@ -34,19 +37,24 @@ n19 10.Nd4 (White, Line A) | inaccuracy | before: White is slightly better → a
     best instead: Be3; after Be3 Ng4 Bd4 Nf6, White is a pawn up
     why Be3 is better: moves the bishop from g5 to e3 | keeps the pawn on c5 safe: the bishop on e3 now defends it
     board: moves the knight from f3 to d4 | attacks the knight on c6 | attacks the bishop on e6 | leaves the white pawn on c5 hanging
-    alternatives: Be3: White is slightly better; Na4: White is slightly better; Qd3: The position is roughly equal
+    ideas: centralises the knight on d4, which reaches 8 squares | opens the bishop on e2 (from 4 squares to 7) | puts the knight on d4 on an outpost no pawn can attack | blockades the pawn on d5
+    opens: the light-squared bishop on e2, from 4 squares to 7
+    alternatives: Be3 (controls d4): White is slightly better, after Ng4 Bd4 Nf6; Na4: White is slightly better, after Qa5 b3 h6; Qd3 (brings the queen out to d3; controls e4; connects the rooks): The position is roughly equal, after Re8 Be3 Ng4
 n20 10…Bxc5 (Black, Line A) | best
 n21 11.Nxe6 (White, Line A) | excellent
 n22 11…fxe6 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from f7 to e6 | captures the knight on e6
+    ideas: takes the piece that attacked the queen on d8 | loosens the pawns in front of the king, and the pawn on e6 can become a target | controls d5 and f5 | supports the centre pawn on d5 | opens the f-file for the rooks (half-open) | defends the pawn on d5, attacked twice and now defended 3 times | after the exchange White has a bishop for a knight | takes toward the centre
     tactics: You saved a hanging piece — saves the queen on d8.
-    alternatives: Bxf2+: White is better; Qd6: White is much better
+    alternatives: Bxf2+ (settles the bishop on f2 on a square by the king that no pawn can cover any more): White is better, after Rxf2 fxe6 Bxf6; Qd6 (attacks the knight on e6 twice, while nothing defends it; brings the queen out to d6; controls e5): White is much better, after Nxf8 Bd4 Bd3
     flags: quiz-eligible, critical
 n23 12.Bg4 (White, Line A) | inaccuracy | before: The position is roughly equal → after: The position is roughly equal
+    piece: the light-squared bishop
     best instead: Kh1; after Kh1 Bd4 Bd3, White has a bishop for a knight
     why Kh1 is better: moves the king from g1 to h1
     board: moves the bishop from e2 to g4
-    alternatives: Kh1: The position is roughly equal; a3: The position is roughly equal; Bh4: The position is roughly equal
+    ideas: threatens to win the pawn on e6 with Bxe6+
+    alternatives: Kh1: The position is roughly equal, after Bd4 Bd3 Bxc3; a3: The position is roughly equal, after h6 Bh4 Ne7; Bh4 (pins the knight on f6 to the queen; keeps the pin on the knight on f6): The position is roughly equal, after a6 Kh1 Qc7
 n24 12…Qd6 (Black, Line A) | good
 n25 13.Bh3 (White, Line A) | best
 n26 13…Rae8 (Black, Line A) | excellent
@@ -58,20 +66,23 @@ n31 16.Rad1 (White, Line A) | inaccuracy | before: The position is roughly equal
     best instead: a3; after a3 Ba5 Ne4, material is level
     why a3 is better: moves the pawn from a2 to a3 | attacks the bishop on b4
     board: moves the rook from a1 to d1
-    alternatives: a3: The position is roughly equal; Qe2: The position is roughly equal
+    ideas: puts a rook on the half-open d-file | lines up queen and rook on the d-file
+    alternatives: a3 (attacks the bishop on b4, which pins the knight on c3): The position is roughly equal, after Ba5 Ne4 Bxd2; Qe2 (controls e4 and e5): The position is roughly equal, after Bxc3 bxc3 Qc5
 n32 16…Qc5 (Black, Line A) | best
 n33 17.Qe2 (White, Line A) | best
 n34 17…Bxc3 (Black, Line A) | best
 n35 18.bxc3 (White, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from b2 to c3 | captures the bishop on c3
-    alternatives: Rb1: Black is much better; Kh1: Black is much better
+    ideas: controls d4 | opens the b-file for the rooks (half-open) | leaves White with doubled pawns on the c-file | leaves White with an isolated pawn on a2, c3 and c2 | after the exchange White has a bishop for a knight | takes toward the centre
+    alternatives: Rb1: Black is much better, after Be5 g3 Qf8; Kh1: Black is much better, after Bxb2 c4 Bd4
     tempting threat: b4? White's b4 moves the pawn from b2 to b4 | attacks the queen on c5 | leaves the white pawn on b4 hanging. Black answers Nxb4: moves the knight from c6 to b4 | captures the pawn on b4. Then Rb1 Qe7 Qd1. Over the line Black takes a pawn; at the end Black is a knight and a pawn up (Black is much better).
     flags: quiz-eligible
 n36 18…Qxc3 (Black, Line A) | inaccuracy | before: The position is roughly equal → after: The position is roughly equal
     best instead: Na5; after Na5 Rd3 Nc4 Rfd1, White has a bishop for a knight
     why Na5 is better: moves the knight from c6 to a5
     board: moves the queen from c5 to c3 | captures the pawn on c3 | attacks the bishop on h3 | the queen stops guarding d5, where Rxd5 follows
-    alternatives: Na5: The position is roughly equal; g6: The position is roughly equal; Re7: The position is roughly equal
+    ideas: controls e5 | blockades the pawn on c2 | prepares Nd4, which it now supports | prepares the pawn's advance to e5, which it now supports
+    alternatives: Na5: The position is roughly equal, after Rd3 Nc4 Rfd1; g6 (controls f5): The position is roughly equal, after Rd3 b5 g3; Re7: The position is roughly equal, after Rd3 Qc4 a3
     flags: critical
 n37 19.Rxd5 (White, Line A) | best
 n38 19…Nd4 (Black, Line A) | best
@@ -79,37 +90,42 @@ n39 20.Qh5 (White, Line A) | blunder | before: The position is roughly equal →
     best instead: Qe4; after Qe4 Rf4 Qe5 h6, White has a bishop for a knight
     why Qe4 is better: moves the queen from e2 to e4 | attacks the knight on d4 | keeps the pawn on c2 safe: the queen on e4 now defends it
     board: moves the queen from e2 to h5 | attacks the rook on e8 | leaves the white pawn on c2 hanging
-    alternatives: Qe4: The position is roughly equal; Qe5: Black is better
+    ideas: threatens to win the rook on e8 with Qxe8+ | takes the attacked queen to safety on h5 | brings the queen into the attack: it bears on 2 squares around the king | takes the queen on e2 away from the defence of its own king | defends the rook on d5, attacked once and now defended once
+    alternatives: Qe4 (threatens to win the knight on d4 with Rxd4; controls d4; centralises the queen on e4, which reaches 17 squares): The position is roughly equal, after Rf4 Qe5 h6; Qe5 (threatens to win the knight on d4 with Rxd4; pins the knight on d4 to the queen; controls d4): Black is better, after Nf3+ gxf3 Qxf3
     flags: critical
 n40 20…Ref8 (Black, Line A) | great | before: Black is better → after: Black is better
     board: moves the rook from e8 to f8
+    ideas: takes the attacked rook to safety on f8 | puts a rook on the half-open f-file | doubles the rooks on the f-file
     tactics: You moved the target out of reach — moves the rook off e8, out of reach.
-    alternatives: g6: The position is roughly equal; exd5: The position is roughly equal
+    alternatives: g6 (attacks the queen on h5; controls f5): The position is roughly equal, after Qe5 exd5 Qxe8+; exd5 (puts a pawn in the centre on d5; controls c4 and e4; opens the e-file for the rooks): The position is roughly equal, after Qxe8+ Rf8 Be6+
     flags: quiz-eligible, critical
 n41 21.Re5 (White, Line A) | mistake | before: Black is better → after: Black is much better
     best instead: Rxd4; after Rxd4 Qxd4 Qe2 e5, White has a bishop for a rook
     why Rxd4 is better: moves the rook from d5 to d4 | captures the knight on d4 | leaves the white rook on d4 hanging | leaves the white pawn on c2 hanging
     board: moves the rook from d5 to e5 | leaves the white pawn on c2 hanging
-    alternatives: Rxd4: Black is better; Rd1: Black is much better
+    ideas: takes the attacked rook to safety on e5 | controls d5 and e4 | puts a rook on the half-open e-file | puts the rook on e5 on an outpost no pawn can attack | blockades the pawn on e6
+    alternatives: Rxd4 (controls e4 and d5; opens the queen on h5 (from 13 squares to 17)): Black is better, after Qxd4 Qe2 e5; Rd1 (threatens to win the knight on d4 with R5xd4; controls d4; puts a rook on the open d-file): Black is much better, after exd5 Qxd5+ Kh8
 n42 21…Rh6 (Black, Line A) | best
 n43 22.Qg5 (White, Line A) | good
 n44 22…Rxh3 (Black, Line A) | inaccuracy | before: Black is much better → after: Black is better
     best instead: Rg6; after Rg6 Qe3 Nf3+ Kh1, White has a bishop for a knight
     why Rg6 is better: moves the rook from h6 to g6 | attacks the queen on g5
     board: moves the rook from h6 to h3 | captures the bishop on h3
-    alternatives: Rg6: Black is much better; Qc7: Black is slightly better
+    ideas: after the exchange Black is a knight up
+    alternatives: Rg6 (threatens to win the queen on g5 with Rxg5): Black is much better, after Qe3 Nf3+ Kh1; Qc7 (controls e5): Black is slightly better, after Re3 Nf3+ gxf3
     tempting capture: Nxc2? Black's Nxc2 moves the knight from d4 to c2 | captures the pawn on c2. White answers Bxe6+: moves the bishop from h3 to e6 | captures the pawn on e6 | gives check | the check can be answered: block with Rf7; take the checking piece with Rxe6; move the king with Kh8. Then Kh8 Rc5 Qb4. Over the line Black takes a pawn; White takes a pawn; at the end White has a bishop for a knight (White is slightly better).
     tempting capture: Qxc2? Black's Qxc2 moves the queen from c3 to c2 | captures the pawn on c2. White answers Bg4: moves the bishop from h3 to g4 | leaves the white pawn on a2 hanging. Then Rg6 Qh4 h6. Over the line Black takes a pawn; at the end White has a bishop for a knight and a pawn (Black is slightly better).
     flags: critical
 n45 23.Rc5 (White, Line A) | best
 n46 23…Qg3 (Black, Line A) | best | before: Black is much better → after: Black is much better
     board: moves the queen from c3 to g3 | attacks the queen on g5
-    alternatives: Qb2: Black is much better; Qb4: Black is better
+    ideas: threatens mate with Qxh2# | sacrifices the queen on g3: it can be taken, and the engine still approves | threatens to win the pawn on h2 with Rxh2 | brings the queen into the attack: it bears on 3 squares around the king | controls e5 | aims at the pawn on h2, which only the king defends | shuts in the rook on h3 (from 8 squares to 4) | prepares the pawn's advance to e5, which it now supports
+    alternatives: Qb2 (threatens to win the pawn on a2 with Qxa2; opens the rook on h3 (from 8 squares to 11)): Black is much better, after Qd2 Ra3 Rc4; Qb4 (opens the rook on h3 (from 8 squares to 11)): Black is better, after Rc7 Ne2+ Kh1
 
 REEL CANDIDATES
-  r1 brilliant n16–n24, climax n22 [highlight, puzzle, promo]
-  r2 brilliant n29–n37, climax n35 [highlight, puzzle, promo]
-  r3 brilliant n34–n42, climax n40 [highlight, puzzle, promo]
+  r1 brilliant n14–n24, climax n22 [highlight, puzzle, promo]
+  r2 brilliant n27–n37, climax n35 [highlight, puzzle, promo]
+  r3 brilliant n32–n42, climax n40 [highlight, puzzle, promo]
 
 PLAN
   e1 intro n1–n1
@@ -122,24 +138,47 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.d4: Theory — French Defense: Marshall Gambit (C10)
-    n2 1…e6: Theory — French Defense: Marshall Gambit (C10)
-    n3 2.e4: Theory — French Defense: Marshall Gambit (C10)
-    n4 2…d5: Theory — French Defense: Marshall Gambit (C10)
-    n5 3.Nc3: Theory — French Defense: Marshall Gambit (C10)
-    n6 3…c5: Theory — French Defense: Marshall Gambit (C10)
-    n9 5.exd5: Trades pawns on d5
-    n10 5…exd5: Recaptures the pawn on d5
-    n17 9.dxc5: Trades pawns on c5
-    n19 10.Nd4: Concedes the centre
-    n21 11.Nxe6: Trades the knight for the bishop on e6
-    n22 11…fxe6: Recaptures the knight on e6; You saved a hanging piece — saves the queen on d8.
+    n1 1.d4: Theory — French Defense: Marshall Gambit (C10); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance
+    n2 1…e6: Theory — French Defense: Marshall Gambit (C10); Controls d5 and f5; Opens the bishop on f8 (from 0 squares to 5)
+    n3 2.e4: Theory — French Defense: Marshall Gambit (C10); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n4 2…d5: Theory — French Defense: Marshall Gambit (C10); Threatens to win the pawn on e4 with dxe4; Puts a pawn in the centre on d5; Strikes at the centre: attacks the pawn on e4
+    n5 3.Nc3: Theory — French Defense: Marshall Gambit (C10); Defends the pawn on e4, which was attacked; Develops the knight to c3, its most useful square; Puts pressure on the pawn on d5 and controls e4
+    n6 3…c5: Theory — French Defense: Marshall Gambit (C10); Strikes at the centre: attacks the pawn on d4; Puts pressure on the pawn on d4; Opens the queen on d8 (from 6 squares to 9)
+    n7 4.Nf3: exd5 was better: it takes the pawn on d5
+    n8 4…Nc6: Develops the knight to c6, its most useful square; Puts pressure on the pawn on d4 and controls e5; Prepares the pawn's advance to e5, which it now supports
+    n9 5.exd5: Trades pawns on d5; Threatens to win the knight on c6 with dxc6; Puts a pawn in the centre on d5; Puts pressure on the pawn on e6 and controls c6
+    n10 5…exd5: Recaptures the pawn on d5; Puts a pawn in the centre on d5; Controls c4 and e4; Opens the e-file for the rooks
+    n11 6.Be2: Bb5 was better: it develops the bishop and pins the knight on c6 to the king
+    n12 6…Nf6: Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square; Controls e4 and d5
+    n13 7.O-O: Castles kingside: the king goes to safety and the rook comes to f1; White now has 4 pieces developed to 2 pieces; Prepares Re1 by clearing the way
+    n14 7…Be7: Develops the bishop to e7; Clears the way to castle kingside
+    n15 8.Bg5: Develops the bishop to g5; White now has 5 pieces developed to 3 pieces
+    n16 8…O-O: Castles kingside: the king goes to safety and the rook comes to f8
+    n17 9.dxc5: Trades pawns on c5; Controls d6; Gives up the centre: the pawn leaves d4; Opens the d-file for the rooks (half-open)
+    n18 9…Be6: Develops the bishop to e6; Controls d5; Supports the centre pawn on d5
+    n19 10.Nd4: Leaves the pawn on c5 where it can be won; Be3 defends it; Concedes the centre
+    n20 10…Bxc5: Threatens to win the knight on d4 with Nxd4; Leaves the knight on f6 pinned to the queen; Controls d4
+    n21 11.Nxe6: Trades the knight for the bishop on e6; Threatens to win the queen on d8 with Nxd8; Brings the knight into the attack: it bears on 2 squares around the king; Controls d4
+    n22 11…fxe6: Recaptures the knight on e6; Loosens the pawns in front of the king, and the pawn on e6 can become a target; Controls d5 and f5; Supports the centre pawn on d5; You saved a hanging piece — saves the queen on d8.
+    n24 12…Qd6: Defends the pawn on e6, which was attacked; Breaks the pin on the knight on f6; Brings the queen out to d6
+    n26 13…Rae8: Brings the rook to the e-file, in the centre where files open first; Shuts in the rook on f8 (from 5 squares to 1); Defends the pawn on e6, attacked once and now defended twice
+    n27 14.Qd2: Connects the rooks; Defends the pawn on f2, attacked once and now defended 3 times; Prepares the pawn's advance to f4, which it now supports
     n28 14…Bb4: Pins the knight on c3 to the queen
-    n29 15.Bxf6: Trades the bishop for the knight on f6
-    n30 15…Rxf6: Recaptures the bishop on f6
-    n35 18.bxc3: Recaptures the bishop on c3
+    n29 15.Bxf6: Trades the bishop for the knight on f6; Removes the knight on f6, a defender of the king; Controls e5 and d4; Aims at the pawn on g7, which only the king defends
+    n30 15…Rxf6: Recaptures the bishop on f6; Defends the pawn on e6, attacked once and now defended 3 times
+    n31 16.Rad1: a3 was better: it attacks the bishop on b4
+    n32 16…Qc5: Prevents Nb5, an attack on a bigger piece; Controls d4; Aims at the king on g1, through the pawn on f2
+    n33 17.Qe2: Breaks the pin on the knight on c3; Controls e4 and e5; Prevents Ne5, a knight on a strong square
+    n34 17…Bxc3: Threatens to win the pawn on b2 with Bxb2; Controls d4 and e5; Puts the bishop on the long diagonal
+    n35 18.bxc3: Recaptures the bishop on c3; Controls d4; Opens the b-file for the rooks (half-open); Leaves White with doubled pawns on the c-file
     n36 18…Qxc3: Recaptures the pawn on c3
-    n38 19…Nd4: Concedes the centre
-    n39 20.Qh5: Leaves the pawn on c2 undefended
-    n40 20…Ref8: You moved the target out of reach — moves the rook off e8, out of reach.; Won the rook, giving back a knight.
+    n37 19.Rxd5: Controls e5; Opens the rook on f1 (from 1 squares to 5); Leaves Black with an isolated pawn on e6
+    n38 19…Nd4: Concedes the centre; Threatens to win the queen on e2 with Nxe2+; Prevents Qb5, a pin; Attacks the pawn on c2 twice, while it is defended once
+    n39 20.Qh5: Leaves the pawn on c2 undefended; Takes the queen on e2 away from the defence of its own king
+    n40 20…Ref8: Takes the attacked rook to safety on f8; Puts a rook on the half-open f-file; Doubles the rooks on the f-file; You moved the target out of reach — moves the rook off e8, out of reach.; Won the rook, giving back a knight.
+    n41 21.Re5: Rxd4 was better: it takes the knight on d4
+    n42 21…Rh6: Threatens to win the queen on h5 with Rxh5; Opens the rook on f8 (from 6 squares to 11)
+    n43 22.Qg5: Takes the attacked queen to safety on g5; Prepares the pawn's advance to f4, which it now supports
     n44 22…Rxh3: Leaves the rook on h3 where it can be won
+    n45 23.Rc5: Threatens to win the queen on c3 with Rxc3; Controls e5
+    n46 23…Qg3: Threatens mate with Qxh2#; Sacrifices the queen on g3: it can be taken, and the engine still approves; Threatens to win the pawn on h2 with Rxh2

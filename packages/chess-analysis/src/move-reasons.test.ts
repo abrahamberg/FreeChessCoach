@@ -194,7 +194,8 @@ describe('a note a tactic card may replace only fills a free slot', () => {
   };
 
   test('with no other reason it is the note', () => {
-    expect(notes('Qd4', 'best')).toEqual(['The only winning move: the next best, Kd7, loses the queen']);
+    // The move's ideas (`move-ideas/`) follow it.
+    expect(notes('Qd4', 'best')[0]).toBe('The only winning move: the next best, Kd7, loses the queen');
   });
 
   test('on the move that missed it, it stands in for the mobility note', () => {

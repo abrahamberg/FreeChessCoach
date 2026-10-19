@@ -10,95 +10,136 @@ Moves:
 n1 1.d4 (White, Classical) | book
     book: in book (Queen's Pawn Game)
     board: moves the pawn from d2 to d4
-    alternatives: e4: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: puts a pawn in the centre on d4 | controls c5 and e5 | prevents e5, a pawn advance | opens the bishop on c1 (from 0 squares to 5)
+    opens: the dark-squared bishop on c1, from 0 squares to 5
+    alternatives: e4 (puts a pawn in the centre on e4; controls d5 and f5; opens the bishop on f1 (from 0 squares to 5)): The position is roughly equal, after c5 Nf3 d6 d4; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after Nf6 c4 e6 d4
 n2 1…Nf6 (Black, Classical) | book
     book: in book (Indian Defense)
     board: moves the knight from g8 to f6
-    alternatives: d5: The position is roughly equal; d6: White is slightly better
+    ideas: puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | controls e4 and d5 | prevents e4, a pawn advance
+    alternatives: d5 (puts a pawn in the centre on d5; controls c4 and e4; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after c4 e6 Nc3 Nf6; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after Nc3 Nf6 e4 e5
 n3 2.c4 (White, Classical) | book
     book: in book (Indian Defense: Normal Variation)
+    the book also has: Bf4 (Indian Defense: Accelerated London System); Nd2 (Indian Defense: Lazard Gambit); d5 (Indian Defense: Pawn Push Variation); e4 (Indian Defense: Omega Gambit); f3 (Indian Defense: Gedult Attack)
     board: moves the pawn from c2 to c4
-    alternatives: Nf3: The position is roughly equal; Bf4: The position is roughly equal
+    ideas: controls d5 | prevents Nd5, a knight on a strong square | opens the queen on d1 (from 2 squares to 5) | prepares the pawn's advance to d5, which it now supports
+    opens: the queen on d1, from 2 squares to 5
+    alternatives: Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after e6 c4 b6 e3; Bf4 (develops the bishop to f4; controls e5): The position is roughly equal, after e6 e3 c5 Nf3
 n4 2…g6 (Black, Classical) | book
     book: in book (Indian Defense: West Indian Defense)
+    the book also has: b5 (Indian Defense: Pyrenees Gambit); e5 (Indian Defense: Budapest Gambit); g5 (Indian Defense: Medusa Gambit)
     board: moves the pawn from g7 to g6
-    alternatives: e6: The position is roughly equal; c6: The position is roughly equal
+    ideas: loosens the pawns in front of the king: no pawn can cover h6 any more | controls f5 | opens the bishop on f8 (from 0 squares to 2) | prepares Bg7 by clearing the way | makes room for the bishop on f8 to fianchetto on g7
+    alternatives: e6 (controls d5 and f5; opens the bishop on f8 (from 0 squares to 5)): The position is roughly equal, after Nf3 b6 e3 Bb4+; c6 (takes c6 from the knight, whose natural square it is; controls d5; opens the queen on d8 (from 0 squares to 3)): The position is roughly equal, after e3 e6 Nf3 Be7
 n5 3.Nc3 (White, Classical) | book
     book: in book (King's Indian Defense)
     board: moves the knight from b1 to c3
-    alternatives: Nf3: The position is roughly equal; f3: The position is roughly equal
+    ideas: develops the knight to c3, its most useful square | controls d5 and e4 | prevents Ne4, a knight on a strong square | prepares the pawn's advance to d5, which it now supports
+    alternatives: Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after Bg7 Nc3 d5 cxd5; f3 (takes f3 from the knight, whose natural square it is; controls e4): The position is roughly equal, after Bg7 e4 d6 Nc3
 n6 3…Bg7 (Black, Classical) | book
     book: in book (King's Indian Defense)
+    piece: the dark-squared bishop
     board: moves the bishop from f8 to g7
-    alternatives: d5: The position is roughly equal; d6: White is slightly better
+    ideas: develops the bishop to g7 | fianchettoes the bishop on g7, on the long diagonal | clears the way to castle kingside
+    alternatives: d5 (threatens to win the pawn on c4 with dxc4; puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on c4): The position is roughly equal, after Nf3 Bg7 cxd5 Nxd5; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after e4 Bg7 Nf3 O-O
 n7 4.e4 (White, Classical) | book
     book: in book (King's Indian Defense: Normal Variation)
     board: moves the pawn from e2 to e4
-    alternatives: Nf3: The position is roughly equal; Bg5: The position is roughly equal
+    ideas: puts a pawn in the centre on e4 | controls d5 and f5 | prevents d5, a pawn break | opens the queen on d1 (from 5 squares to 9) | prepares the pawn's advance to d5, which it now supports
+    opens: the queen on d1, from 5 squares to 9
+    alternatives: Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after d5 Qb3 c6 cxd5; Bg5 (develops the bishop to g5): The position is roughly equal, after h6 Bd2 d5 cxd5
 n8 4…d6 (Black, Classical) | book
     book: in book (King's Indian Defense: Normal Variation)
     board: moves the pawn from d7 to d6
-    alternatives: O-O: White is slightly better; c5: White is slightly better
+    ideas: controls c5 and e5 | opens the bishop on c8 (from 0 squares to 5) | prepares the pawn's advance to c5, which it now supports
+    opens: the light-squared bishop on c8, from 0 squares to 5
+    alternatives: O-O (castles kingside: the king goes to safety and the rook comes to f8; Black now has 3 pieces developed to 1 piece): White is slightly better, after Bg5 d6 Qd2 c5; c5 (strikes at the centre: attacks the pawn on d4; puts pressure on the pawn on d4; opens the queen on d8 (from 0 squares to 3)): White is slightly better, after dxc5 Qa5 Bd3 Qxc5
 n9 5.Nf3 (White, Classical) | book
     book: in book (King's Indian Defense: Normal Variation, Rare Defenses)
+    the book also has: Be2 (King's Indian Defense: Averbakh Variation); Bg5 (King's Indian Defense: Accelerated Averbakh Variation); Nge2 (King's Indian Defense: Kramer Variation); f4 (King's Indian Defense: Four Pawns Attack); g3 (King's Indian Defense: Normal Variation, Deferred Fianchetto)
     board: moves the knight from g1 to f3
-    alternatives: Be2: White is slightly better; h3: White is slightly better
+    ideas: puts the knight on f3, the best defender of a king castled short | develops the knight to f3, its most useful square | controls d4 and e5 | supports the centre pawn on d4 | prevents e5, a pawn break | shuts in the queen on d1 (from 9 squares to 6) | prepares the pawn's advance to e5, which it now supports
+    alternatives: Be2 (develops the bishop to e2; shuts in the queen on d1 (from 9 squares to 5)): White is slightly better, after O-O Be3 c5 d5; h3: White is slightly better, after O-O Nf3 e5 d5
 n10 5…O-O (Black, Classical) | book
     book: in book (King's Indian Defense: Normal Variation, Rare Defenses)
     board: castles kingside
-    alternatives: Bg4: White is slightly better; a5: White is slightly better
+    ideas: castles kingside: the king goes to safety and the rook comes to f8
+    alternatives: Bg4 (pins the knight on f3 to the queen; develops the bishop to g4): White is slightly better, after Be2 O-O O-O e5; a5: White is slightly better, after Bf4 O-O h3 a4
 n11 6.Be2 (White, Classical) | book
     book: in book (King's Indian Defense: Orthodox Variation)
+    the book also has: Be3 (King's Indian Defense: Larsen Variation); Bg5 (King's Indian Defense: Zinnowitz Variation)
+    piece: the light-squared bishop
     board: moves the bishop from f1 to e2
-    alternatives: h3: The position is roughly equal; Bf4: The position is roughly equal
+    ideas: develops the bishop to e2 | clears the way to castle kingside | prepares O-O by clearing the way
+    alternatives: h3: The position is roughly equal, after e5 d5 Nh5 g3; Bf4 (develops the bishop to f4; controls e5): The position is roughly equal, after Bg4 Be2 Bxf3 Bxf3
 n12 6…e5 (Black, Classical) | book
     book: in book (King's Indian Defense: Orthodox Variation)
+    the book also has: Na6 (King's Indian Defense: Kazakh Variation); Nbd7 (King's Indian Defense: Orthodox Variation, Positional Defense, Closed Line)
     board: moves the pawn from e7 to e5
-    alternatives: a5: White is slightly better; Nbd7: White is slightly better
+    ideas: offers the pawn on e5: it can be taken, and the engine still approves | puts a pawn in the centre on e5 | strikes at the centre: attacks the pawn on d4 | puts pressure on the pawn on d4 and controls f4 | fixes the pawn on e4: it can no longer advance | prepares Qe7 by clearing the way
+    alternatives: a5: White is slightly better, after Be3 e5 O-O exd4; Nbd7 (develops the knight to d7; controls e5; shuts in the bishop on c8 (from 5 squares to 0)): White is slightly better, after Be3 e5 O-O exd4
 n13 7.O-O (White, Classical) | book
     book: in book (King's Indian Defense: Orthodox Variation)
+    the book also has: Be3 (King's Indian Defense: Orthodox Variation, Gligoric-Taimanov System); d5 (King's Indian Defense: Petrosian Variation); dxe5 (King's Indian Defense: Exchange Variation)
     board: castles kingside
-    alternatives: Be3: White is slightly better; d5: White is slightly better
+    ideas: castles kingside: the king goes to safety and the rook comes to f1
+    alternatives: Be3 (develops the bishop to e3; controls d4; supports the centre pawn on d4): White is slightly better, after Qe7 d5 Ng4 Bg5; d5 (puts a pawn in the centre on d5; controls c6 and e6): White is slightly better, after a5 h3 Nh5 g3
 n14 7…Nc6 (Black, Classical) | book
     book: in book (King's Indian Defense: Orthodox Variation, Aronin-Taimanov Defense)
+    the book also has: Na6 (King's Indian Defense: Orthodox Variation, Glek Defense); Nbd7 (King's Indian Defense: Orthodox Variation); a5 (King's Indian Defense: Orthodox Variation, Ukrainian Defense); c6 (King's Indian Defense: Orthodox Variation, Donner Defense)
     board: moves the knight from b8 to c6
-    alternatives: exd4: The position is roughly equal; Re8: White is slightly better; b6: White is slightly better
+    ideas: defends the pawn on e5, which was attacked | develops the knight to c6, its most useful square | puts pressure on the pawn on d4 and controls e5 | supports the centre pawn on e5
+    alternatives: exd4 (threatens to win the knight on c3 with dxc3; puts a pawn in the centre on d4; controls c3 and e3): The position is roughly equal, after Nxd4 Nc6 Be3 Nd7; Re8 (controls e5; supports the centre pawn on e5; brings the rook to the e-file, in the centre where files open first): White is slightly better, after d5 a5 Be3 Na6; b6 (controls c5; opens the bishop on c8 (from 5 squares to 7)): White is slightly better, after Be3 a5 dxe5 dxe5
 n15 8.d5 (White, Classical) | book
     book: in book (King's Indian Defense: Orthodox Variation, Aronin-Taimanov Defense)
     board: moves the pawn from d4 to d5 | attacks the knight on c6
-    alternatives: Be3: The position is roughly equal; dxe5: The position is roughly equal
+    ideas: attacks the knight on c6 | puts a pawn in the centre on d5 | controls c6 and e6
+    alternatives: Be3 (develops the bishop to e3; controls d4; supports the centre pawn on d4): The position is roughly equal, after Ng4 Bg5 f6 Bh4; dxe5 (threatens to win the knight on f6 with exf6; puts a pawn in the centre on e5; puts pressure on the pawn on d6 and controls f6): The position is roughly equal, after dxe5 Qxd8 Nxd8 Bd1
 n16 8…Ne7 (Black, Classical) | book
     book: in book (King's Indian Defense: Orthodox Variation, Aronin-Taimanov Defense)
     board: moves the knight from c6 to e7
-    alternatives: Nb8: White is slightly better; Nd4: White is slightly better
+    ideas: takes the attacked knight to safety on e7 | puts pressure on the pawn on d5 | prepares c6 by clearing the way | prepares the pawn's advance to c6, which it now supports
+    alternatives: Nb8: White is slightly better, after Be3 Nbd7 Nd2 a5; Nd4 (centralises the knight on d4, which reaches 8 squares; puts the knight on d4 on an outpost no pawn can attack, supported by the pawn on e5): White is slightly better, after Nxd4 exd4 Qxd4 Nd7
 n17 9.Ne1 (White, Classical) | book
     book: in book (King's Indian Defense: Orthodox Variation, Classical System)
+    the book also has: Bd2 (King's Indian Defense: Orthodox Variation, Korchnoi Attack); Nd2 (King's Indian Defense: Orthodox Variation, Modern System); b4 (King's Indian Defense: Orthodox Variation, Bayonet Attack)
     board: moves the knight from f3 to e1
-    alternatives: b4: White is slightly better; Re1: White is slightly better; Be3: White is slightly better
+    ideas: moves the knight for the second time while 1 piece still wait at home
+    alternatives: b4 (controls c5; opens the bishop on c1 (from 5 squares to 7)): White is slightly better, after c6 a4 cxd5 cxd5; Re1 (brings the rook to the e-file, in the centre where files open first): White is slightly better, after b6 a3 h6 b4; Be3 (develops the bishop to e3; controls d4): White is slightly better, after Ng4 Bc1 f5 c5
 n18 9…Nd7 (Black, Classical) | book
     book: in book (King's Indian Defense: Orthodox Variation, Classical System)
     board: moves the knight from f6 to d7
-    alternatives: a5: White is slightly better; b6: White is slightly better
+    ideas: moves the knight for the second time while 1 piece still wait at home | controls e5 | supports the centre pawn on e5 | shuts in the bishop on c8 (from 5 squares to 0) | prepares f5 by opening the line
+    alternatives: a5: White is slightly better, after Nd3 Nd7 f3 b6; b6 (controls c5; opens the bishop on c8 (from 5 squares to 7)): White is slightly better, after Nd3 a5 Be3 Nd7
 n19 7.d5 (White, Petrosian) | book
     book: in book (King's Indian Defense: Petrosian Variation)
+    the book also has: Be3 (King's Indian Defense: Orthodox Variation, Gligoric-Taimanov System); O-O (King's Indian Defense: Orthodox Variation); dxe5 (King's Indian Defense: Exchange Variation)
     board: moves the pawn from d4 to d5
-    alternatives: Be3: White is slightly better; O-O: White is slightly better
+    ideas: puts a pawn in the centre on d5 | controls c6 and e6
+    alternatives: Be3 (develops the bishop to e3; controls d4; supports the centre pawn on d4): White is slightly better, after Qe7 d5 Ng4 Bg5; O-O (castles kingside: the king goes to safety and the rook comes to f1): White is slightly better, after exd4 Nxd4 Nc6 Be3
 n20 7…a5 (Black, Petrosian) | book
     book: in book (King's Indian Defense: Petrosian Variation, Stein Defense)
+    the book also has: Nbd7 (King's Indian Defense: Petrosian Variation, Keres Defense)
     board: moves the pawn from a7 to a5
-    alternatives: Na6: White is slightly better; Kh8: White is slightly better
+    alternatives: Na6 (develops the knight to a6): White is slightly better, after Nd2 c6 Nb3 Ne8; Kh8: White is slightly better, after h3 Na6 g4 Ng8
 n21 8.Bg5 (White, Petrosian) | good | before: The position is roughly equal → after: The position is roughly equal
+    piece: the dark-squared bishop
     board: moves the bishop from c1 to g5 | attacks the knight on f6, which is pinned to the queen on d8 by the bishop on g5
-    alternatives: h3: The position is roughly equal; Be3: The position is roughly equal
+    ideas: pins the knight on f6 to the queen | develops the bishop to g5
+    alternatives: h3: The position is roughly equal, after Na6 Bg5 Nc5 Qc2; Be3 (develops the bishop to e3; controls d4): The position is roughly equal, after Na6 Nd2 Nd7 Nb3
 n22 8…h6 (Black, Petrosian) | good | before: The position is roughly equal → after: White is slightly better
     board: moves the pawn from h7 to h6 | attacks the bishop on g5
-    alternatives: Na6: The position is roughly equal; Qe8: White is slightly better
+    ideas: attacks the bishop on g5, which pins the knight on f6 | loosens the pawns in front of the king, and the pawn on h6 can become a target
+    alternatives: Na6 (develops the knight to a6): The position is roughly equal, after h3 h6 Be3 Nh5; Qe8 (brings the queen out to e8; controls e5; supports the centre pawn on e5): White is slightly better, after Nd2 Nfd7 g4 Nc5
 n23 9.Bh4 (White, Petrosian) | good | before: White is slightly better → after: The position is roughly equal
+    piece: the dark-squared bishop
     board: moves the bishop from g5 to h4 | attacks the knight on f6, which is pinned to the queen on d8 by the bishop on h4
-    alternatives: Be3: White is slightly better; Bd2: The position is roughly equal
+    ideas: takes the attacked bishop to safety on h4 | pins the knight on f6 to the queen | keeps the pin on the knight on f6
+    alternatives: Be3 (controls d4): White is slightly better, after Ng4 Bd2 Nf6 h3; Bd2 (shuts in the queen on d1 (from 8 squares to 5)): The position is roughly equal, after Na6 h3 Nc5 Qc2
 n24 9…Na6 (Black, Petrosian) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from b8 to a6
-    alternatives: g5: The position is roughly equal; Nbd7: The position is roughly equal
+    ideas: develops the knight to a6
+    alternatives: g5 (attacks the bishop on h4; controls f4): The position is roughly equal, after Bg3 Nh5 h4 Nf4; Nbd7 (develops the knight to d7; controls e5; supports the centre pawn on e5): The position is roughly equal, after Nd2 Nc5 f3 Bd7
 
 REEL CANDIDATES
 
@@ -109,38 +150,40 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.d4: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n2 1…Nf6: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n3 2.c4: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n4 2…g6: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n5 3.Nc3: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n6 3…Bg7: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n7 4.e4: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n8 4…d6: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n9 5.Nf3: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n10 5…O-O: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n11 6.Be2: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n12 6…e5: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n13 7.O-O: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n14 7…Nc6: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n15 8.d5: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n16 8…Ne7: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n17 9.Ne1: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
-    n18 9…Nd7: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n1 1.d4: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance
+    n2 1…Nf6: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square; Controls e4 and d5
+    n3 2.c4: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Controls d5; Prevents Nd5, a knight on a strong square; Opens the queen on d1 (from 2 squares to 5)
+    n4 2…g6: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Loosens the pawns in front of the king: no pawn can cover h6 any more; Controls f5; Opens the bishop on f8 (from 0 squares to 2)
+    n5 3.Nc3: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Develops the knight to c3, its most useful square; Controls d5 and e4; Prevents Ne4, a knight on a strong square
+    n6 3…Bg7: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Develops the bishop to g7; Fianchettoes the bishop on g7, on the long diagonal; Clears the way to castle kingside
+    n7 4.e4: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Puts a pawn in the centre on e4; Controls d5 and f5; Prevents d5, a pawn break
+    n8 4…d6: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Controls c5 and e5; Opens the bishop on c8 (from 0 squares to 5); Prepares the pawn's advance to c5, which it now supports
+    n9 5.Nf3: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square; Controls d4 and e5
+    n10 5…O-O: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Castles kingside: the king goes to safety and the rook comes to f8
+    n11 6.Be2: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Develops the bishop to e2; Clears the way to castle kingside; Prepares O-O by clearing the way
+    n12 6…e5: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Offers the pawn on e5: it can be taken, and the engine still approves; Puts a pawn in the centre on e5; Strikes at the centre: attacks the pawn on d4
+    n13 7.O-O: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Castles kingside: the king goes to safety and the rook comes to f1
+    n14 7…Nc6: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Defends the pawn on e5, which was attacked; Develops the knight to c6, its most useful square; Puts pressure on the pawn on d4 and controls e5
+    n15 8.d5: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Attacks the knight on c6; Puts a pawn in the centre on d5; Controls c6 and e6
+    n16 8…Ne7: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Takes the attacked knight to safety on e7; Puts pressure on the pawn on d5; Prepares c6 by clearing the way
+    n17 9.Ne1: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Moves the knight for the second time while 1 piece still wait at home
+    n18 9…Nd7: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Moves the knight for the second time while 1 piece still wait at home; Controls e5; Supports the centre pawn on e5
   l2
-    n1 1.d4: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
-    n2 1…Nf6: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
-    n3 2.c4: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
-    n4 2…g6: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
-    n5 3.Nc3: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
-    n6 3…Bg7: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
-    n7 4.e4: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
-    n8 4…d6: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
-    n9 5.Nf3: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
-    n10 5…O-O: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
-    n11 6.Be2: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
-    n12 6…e5: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
-    n19 7.d5: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
+    n1 1.d4: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance
+    n2 1…Nf6: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92); Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square; Controls e4 and d5
+    n3 2.c4: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92); Controls d5; Prevents Nd5, a knight on a strong square; Opens the queen on d1 (from 2 squares to 5)
+    n4 2…g6: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92); Loosens the pawns in front of the king: no pawn can cover h6 any more; Controls f5; Opens the bishop on f8 (from 0 squares to 2)
+    n5 3.Nc3: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92); Develops the knight to c3, its most useful square; Controls d5 and e4; Prevents Ne4, a knight on a strong square
+    n6 3…Bg7: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92); Develops the bishop to g7; Fianchettoes the bishop on g7, on the long diagonal; Clears the way to castle kingside
+    n7 4.e4: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92); Puts a pawn in the centre on e4; Controls d5 and f5; Prevents d5, a pawn break
+    n8 4…d6: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92); Controls c5 and e5; Opens the bishop on c8 (from 0 squares to 5); Prepares the pawn's advance to c5, which it now supports
+    n9 5.Nf3: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92); Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square; Controls d4 and e5
+    n10 5…O-O: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92); Castles kingside: the king goes to safety and the rook comes to f8
+    n11 6.Be2: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92); Develops the bishop to e2; Clears the way to castle kingside; Prepares O-O by clearing the way
+    n12 6…e5: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92); Offers the pawn on e5: it can be taken, and the engine still approves; Puts a pawn in the centre on e5; Strikes at the centre: attacks the pawn on d4
+    n19 7.d5: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92); Puts a pawn in the centre on d5; Controls c6 and e6
     n20 7…a5: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
-    n21 8.Bg5: Pins the knight on f6 to the queen
-    n22 8…h6: Attacks the bishop on g5, which pins the knight on f6
+    n21 8.Bg5: Pins the knight on f6 to the queen; Develops the bishop to g5
+    n22 8…h6: Attacks the bishop on g5, which pins the knight on f6; Loosens the pawns in front of the king, and the pawn on h6 can become a target
+    n23 9.Bh4: Takes the attacked bishop to safety on h4; Pins the knight on f6 to the queen; Keeps the pin on the knight on f6
+    n24 9…Na6: Develops the knight to a6

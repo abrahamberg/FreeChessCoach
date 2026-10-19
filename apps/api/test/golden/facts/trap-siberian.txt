@@ -7,84 +7,117 @@ Moves:
 n1 1.e4 (White, Line A) | book
     book: in book (King's Pawn Game)
     board: moves the pawn from e2 to e4
-    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: puts a pawn in the centre on e4 | controls d5 and f5 | opens the bishop on f1 (from 0 squares to 5)
+    opens: the light-squared bishop on f1, from 0 squares to 5
+    alternatives: d4 (puts a pawn in the centre on d4; controls c5 and e5; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after Nf6 c4 e6 Nc3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after Nf6 c4 e6 d4
 n2 1…c5 (Black, Line A) | book
     book: in book (Sicilian Defense)
     board: moves the pawn from c7 to c5
-    alternatives: e5: The position is roughly equal; d6: The position is roughly equal
+    ideas: controls d4 | opens the queen on d8 (from 0 squares to 3)
+    alternatives: e5 (puts a pawn in the centre on e5; controls d4 and f4; opens the bishop on f8 (from 0 squares to 5)): The position is roughly equal, after Nf3 Nc6 Nc3 Nf6; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after d4 Nf6 Nc3 e5
 n3 2.d4 (White, Line A) | book
     book: in book (Sicilian Defense: Smith-Morra Gambit)
+    the book also has: Bc4 (Sicilian Defense: Bowdler Attack); Ke2 (Sicilian Defense: King David's Opening); Na3 (Sicilian Defense: Kronberger Variation); Nc3 (Sicilian Defense: Closed); Ne2 (Sicilian Defense: Keres Variation)
     board: moves the pawn from d2 to d4
-    alternatives: c3: The position is roughly equal; Ne2: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: threatens to win the pawn on c5 with dxc5 | puts a pawn in the centre on d4 | strikes at the centre: attacks the pawn on c5 | puts pressure on the pawn on c5 and controls e5 | prevents e5, a pawn advance | opens the bishop on c1 (from 0 squares to 5)
+    opens: the dark-squared bishop on c1, from 0 squares to 5
+    alternatives: c3 (takes c3 from the knight, whose natural square it is; controls d4; opens the queen on d1 (from 4 squares to 7)): The position is roughly equal, after d5 exd5 Qxd5 d4; Ne2 (develops the knight to e2; controls d4; shuts in the bishop on f1 (from 5 squares to 0)): The position is roughly equal, after e6 d4 d5 Nbc3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after Nc6 c3 d5 exd5
 n4 2…cxd4 (Black, Line A) | book
     book: in book (Sicilian Defense: Smith-Morra Gambit)
     board: moves the pawn from c5 to d4 | captures the pawn on d4
-    alternatives: e6: White is slightly better; d5: White is slightly better
+    ideas: puts a pawn in the centre on d4 | controls c3 and e3 | opens the c-file for the rooks (half-open) | leaves Black with doubled pawns on the d-file | after the exchange Black is a pawn up | takes toward the centre
+    alternatives: e6 (controls d5 and f5; opens the queen on d8 (from 3 squares to 7)): White is slightly better, after d5 Nf6 Nc3 a6; d5 (threatens to win the pawn on e4 with dxe4; puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on e4): White is slightly better, after exd5 Nf6 Nf3 Nxd5
 n5 3.c3 (White, Line A) | book
     book: in book (Sicilian Defense: Smith-Morra Gambit)
+    the book also has: Nf3 (Sicilian Defense: Morphy Gambit); Qxd4 (Sicilian Defense: Coles Sicilian Gambit); f4 (Sicilian Defense: Halasz Gambit)
     board: moves the pawn from c2 to c3
-    alternatives: Nf3: The position is roughly equal; Qxd4: The position is roughly equal
+    ideas: attacks the pawn on d4 twice, while nothing defends it | takes c3 from the knight, whose natural square it is | strikes at the centre: attacks the pawn on d4 | puts pressure on the pawn on d4 | opens the queen on d1 (from 7 squares to 10)
+    opens: the queen on d1, from 7 squares to 10
+    alternatives: Nf3 (attacks the pawn on d4 twice, while nothing defends it; develops the knight to f3, its most useful square; puts pressure on the pawn on d4 and controls e5): The position is roughly equal, after e5 c3 Nc6 cxd4; Qxd4 (controls e4, d5 and e5; supports the centre pawn on e4; centralises the queen on d4, which reaches 20 squares): The position is roughly equal, after Nc6 Qa4 Nf6 Nc3
 n6 3…dxc3 (Black, Line A) | book
     book: in book (Sicilian Defense: Smith-Morra Gambit Accepted)
+    the book also has: Nf6 (Sicilian Defense: Smith-Morra Gambit Declined, Alapin Formation); Qa5 (Sicilian Defense: Smith-Morra Gambit Declined, Wing Formation); d3 (Sicilian Defense: Smith-Morra Gambit Declined, Dubois Variation); d5 (Sicilian Defense: Smith-Morra Gambit Declined, Scandinavian Formation); e5 (Sicilian Defense: Smith-Morra Gambit Declined, Center Formation)
     board: moves the pawn from d4 to c3 | captures the pawn on c3
-    alternatives: e5: The position is roughly equal; d5: The position is roughly equal
+    ideas: gives up the centre: the pawn leaves d4 | opens a line for the opponent's queen on d1 (from 10 squares to 13)
+    alternatives: e5 (puts a pawn in the centre on e5; controls d4 and f4; supports the centre pawn on d4): The position is roughly equal, after Nf3 Nf6 cxd4 Nxe4; d5 (threatens to win the pawn on e4 with dxe4; puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on e4): The position is roughly equal, after exd5 Qxd5 cxd4 e5
 n7 4.Nxc3 (White, Line A) | book
     book: in book (Sicilian Defense: Smith-Morra Gambit Accepted)
+    the book also has: Nf3 (Sicilian Defense: Smith-Morra Gambit Accepted, Danish Variation)
     board: moves the knight from b1 to c3 | captures the pawn on c3
-    alternatives: Nf3: Black is slightly better; Bc4: Black is slightly better
+    ideas: controls d5 and e4 | supports the centre pawn on e4 | after the exchange Black is a pawn up
+    alternatives: Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; shuts in the queen on d1 (from 13 squares to 10)): Black is slightly better, after cxb2 Bxb2 e6 Bc4; Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): Black is slightly better, after cxb2 Bxb2 Nc6 Nf3
 n8 4…Nc6 (Black, Line A) | book
     book: in book (Sicilian Defense: Smith-Morra Gambit Accepted)
+    the book also has: d6 (Sicilian Defense: Smith-Morra Gambit Accepted, Chicago Defense); e6 (Sicilian Defense: Smith-Morra Gambit Accepted, Finegold Defense); g6 (Sicilian Defense: Smith-Morra Gambit Accepted, Fianchetto Defense)
     board: moves the knight from b8 to c6
-    alternatives: e6: The position is roughly equal; d6: The position is roughly equal
+    ideas: develops the knight to c6, its most useful square | controls e5 and d4 | prevents e5, a pawn advance | heads for d4, a square no enemy pawn can attack
+    alternatives: e6 (controls d5 and f5; opens the bishop on f8 (from 0 squares to 5)): The position is roughly equal, after Be2 d6 Nf3 Nc6; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after Nf3 e6 Bf4 Nc6
 n9 5.Nf3 (White, Line A) | book
     book: in book (Sicilian Defense: Smith-Morra Gambit Accepted)
+    the book also has: Bc4 (Sicilian Defense: Smith-Morra Gambit Accepted, Chicago Defense)
     board: moves the knight from g1 to f3
-    alternatives: Bc4: The position is roughly equal; Bb5: The position is roughly equal
+    ideas: puts the knight on f3, the best defender of a king castled short | develops the knight to f3, its most useful square | controls d4 and e5 | prevents Ne5, a knight on a strong square | shuts in the queen on d1 (from 13 squares to 10) | prepares the pawn's advance to e5, which it now supports
+    alternatives: Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after a6 Nf3 b5 Bd3; Bb5 (develops the bishop to b5): The position is roughly equal, after Nf6 Nf3 a6 Bxc6
 n10 5…e6 (Black, Line A) | book
     book: in book (Sicilian Defense: Smith-Morra Gambit Accepted)
+    the book also has: d6 (Sicilian Defense: Smith-Morra Gambit Accepted, Classical Formation); g6 (Sicilian Defense: Smith-Morra Gambit Accepted, Fianchetto Defense)
     board: moves the pawn from e7 to e6
-    alternatives: d6: The position is roughly equal; g6: The position is roughly equal
+    ideas: controls d5 and f5 | prevents Nd5, a knight on a strong square | opens the bishop on f8 (from 0 squares to 5) | prepares the pawn's advance to d5, which it now supports
+    opens: the dark-squared bishop on f8, from 0 squares to 5; the queen on d8, from 3 squares to 7
+    alternatives: d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after Bc4 e6 Qe2 Nf6; g6 (controls f5; opens the bishop on f8 (from 0 squares to 2)): The position is roughly equal, after Bb5 Bg7 O-O d6
 n11 6.Bc4 (White, Line A) | book
     book: in book (Sicilian Defense: Smith-Morra Gambit Accepted)
+    piece: the light-squared bishop
     board: moves the bishop from f1 to c4
-    alternatives: Bb5: The position is roughly equal; Bf4: The position is roughly equal
+    ideas: develops the bishop to c4 | White now has 3 pieces developed to 1 piece | controls d5 | aims at the pawn on f7, through the pawn on e6 | clears the way to castle kingside
+    alternatives: Bb5 (develops the bishop to b5; White now has 3 pieces developed to 1 piece; clears the way to castle kingside): The position is roughly equal, after a6 Bxc6 bxc6 O-O; Bf4 (develops the bishop to f4; White now has 3 pieces developed to 1 piece; controls e5): The position is roughly equal, after Bb4 Bc4 Nf6 e5
 n12 6…Qc7 (Black, Line A) | book
     book: in book (Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation)
+    the book also has: Bb4 (Sicilian Defense: Smith-Morra Gambit Accepted, Pin Defense); Bc5 (Sicilian Defense: Smith-Morra Gambit Accepted, Morphy Defense); a6 (Sicilian Defense: Smith-Morra Gambit Accepted, Morphy Defense Deferred); d6 (Sicilian Defense: Smith-Morra Gambit Accepted, Chicago Defense)
     board: moves the queen from d8 to c7
-    alternatives: a6: The position is roughly equal; Bb4: The position is roughly equal; Nge7: The position is roughly equal
+    ideas: brings the queen out to c7 | controls e5 | prevents e5, a pawn advance | prepares the pawn's advance to d6, which it now supports
+    alternatives: a6: The position is roughly equal, after Qe2 Nge7 Bb3 b5; Bb4 (pins the knight on c3 to the king; leaves the knight on c3 without a move; develops the bishop to b4): The position is roughly equal, after O-O Nge7 a3 Bxc3; Nge7 (develops the knight to e7; controls d5; shuts in the bishop on f8 (from 5 squares to 0)): The position is roughly equal, after Be3 a6 a4 Ng6
 n13 7.O-O (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    the book also has: Qe2 (Sicilian Defense: Smith-Morra Gambit Accepted, Larsen Defense)
     board: castles kingside
-    alternatives: Qe2: The position is roughly equal; Bd2: The position is roughly equal
+    ideas: castles kingside: the king goes to safety and the rook comes to f1 | White now has 4 pieces developed to 1 piece | defends the pawn on h2, attacked once and now defended twice | prepares Re1 by clearing the way
+    alternatives: Qe2 (brings the queen out to e2; controls e4; supports the centre pawn on e4): The position is roughly equal, after a6 O-O Bc5 e5; Bd2 (develops the bishop to d2; White now has 4 pieces developed to 1 piece; shuts in the queen on d1 (from 10 squares to 6)): The position is roughly equal, after a6 O-O Bc5 e5
 n14 7…Nf6 (Black, Line A) | inaccuracy | before: The position is roughly equal → after: White is slightly better
     best instead: a6; after a6 Re1 Bd6 Bg5 Nge7 Rc1, Black is a pawn up
     why a6 is better: moves the pawn from a7 to a6
     board: moves the knight from g8 to f6
-    alternatives: a6: The position is roughly equal; Be7: The position is roughly equal; Bb4: White is slightly better
+    ideas: puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | White now has 4 pieces developed to 2 pieces | puts pressure on the pawn on e4 and controls d5 | defends the pawn on d7, attacked once and now defended 4 times | prepares the pawn's advance to d5, which it now supports
+    alternatives: a6: The position is roughly equal, after Re1 Bd6 Bg5 Nge7; Be7 (develops the bishop to e7; White now has 4 pieces developed to 2 pieces): The position is roughly equal, after Nb5 Qb8 e5 a6; Bb4 (develops the bishop to b4; White now has 4 pieces developed to 2 pieces): White is slightly better, after Bd2 a6 Re1 Nge7
     tempting threat: d5? Black's d5 moves the pawn from d7 to d5 | attacks the bishop on c4. White answers exd5: moves the pawn from e4 to d5 | captures the pawn on d5 | attacks the knight on c6. Then exd5 Nxd5 Qd8. Over the line Black takes a pawn; White takes two pawns; at the end material is level (White is much better).
     flags: critical
 n15 8.Qe2 (White, Line A) | inaccuracy | before: White is slightly better → after: The position is roughly equal
     best instead: Re1; after Re1 Ng4 h3 Nge5 Bf4, Black is a pawn up
     why Re1 is better: moves the rook from f1 to e1
     board: moves the queen from d1 to e2
-    alternatives: Re1: White is slightly better; Nb5: White is slightly better; Bg5: The position is roughly equal
+    ideas: brings the queen out to e2 | controls e4 | supports the centre pawn on e4 | defends the pawn on e4, attacked once and now defended twice | prepares Rd1 by clearing the way
+    alternatives: Re1 (controls e4; supports the centre pawn on e4; brings the rook to the e-file, in the centre where files open first): White is slightly better, after Ng4 h3 Nge5 Bf4; Nb5 (threatens to win the queen on c7 with Nxc7+; moves the knight for the second time while 1 piece still wait at home; White now has 4 pieces developed to 2 pieces): White is slightly better, after Qb8 e5 Ng4 Bf4; Bg5 (develops the bishop to g5; White now has 5 pieces developed to 2 pieces): The position is roughly equal, after Be7 Re1 d6 Nb5
 n16 8…Ng4 (Black, Line A) | inaccuracy | before: The position is roughly equal → after: White is slightly better
     book: in book (Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap)
     best instead: d6; after d6 Rd1 a6 Bf4 Be7 Rac1, Black is a pawn up
     why d6 is better: moves the pawn from d7 to d6
     board: moves the knight from f6 to g4
-    alternatives: d6: The position is roughly equal; Ne5: White is slightly better
+    ideas: prevents e5, an attack on a bigger piece | brings the knight into the attack: it bears on 2 squares around the king | moves the knight for the second time while 2 pieces still wait at home | White now has 4 pieces developed to 2 pieces | controls e5 | prepares the pawn's advance to e5, which it now supports
+    alternatives: d6 (controls c5 and e5; shuts in the bishop on f8 (from 5 squares to 1)): The position is roughly equal, after Rd1 a6 Bf4 Be7; Ne5 (threatens to win the bishop on c4 with Nxc4; moves the knight for the second time while 2 pieces still wait at home; White now has 4 pieces developed to 2 pieces): White is slightly better, after Nxe5 Qxe5 Be3 Nxe4
     tempting threat: d5? Black's d5 moves the pawn from d7 to d5 | attacks the bishop on c4. White answers exd5: moves the pawn from e4 to d5 | captures the pawn on d5 | attacks the knight on c6. Then Nd8 Nb5 Qb8. Over the line White takes a pawn; at the end material is level (White is better).
     flags: critical
 n17 9.h3 (White, Line A) | blunder | before: White is slightly better → after: Black is better
     best instead: Nb5; after Nb5 Qb8 h3 h5 e5, Black is a pawn up
     why Nb5 is better: moves the knight from c3 to b5 | attacks the queen on c7
     board: moves the pawn from h2 to h3 | attacks the knight on g4
-    alternatives: Nb5: White is slightly better; Rd1: The position is roughly equal; Qd1: The position is roughly equal
+    ideas: attacks the knight on g4 | loosens the pawns in front of the king, and the pawn on h3 can become a target
+    alternatives: Nb5 (threatens to win the queen on c7 with Nxc7+; moves the knight for the second time while 1 piece still wait at home; White now has 4 pieces developed to 2 pieces): White is slightly better, after Qb8 h3 h5 e5; Rd1 (controls d4 and d5; puts a rook on the half-open d-file): The position is roughly equal, after Bc5 Nb5 Qb8 b4; Qd1 (moves the queen for the second time while 1 piece still wait at home; controls d4 and d5): The position is roughly equal, after a6 h3 Nge5 Nxe5
     flags: critical
 n18 9…Nd4 (Black, Line A) | great | before: Black is better → after: Black is better
     board: moves the knight from c6 to d4 | attacks the knight on f3 | attacks the queen on e2 | leaves the black knight on d4 hanging | leaves the black knight on g4 hanging
+    ideas: threatens mate in two: Nxf3+ Qxf3 Qh2# | sacrifices the knight on d4: it can be taken, and the engine still approves | threatens to win the queen on e2 with Nxe2+ | moves the knight for the second time while 2 pieces still wait at home | White now has 4 pieces developed to 2 pieces | centralises the knight on d4, which reaches 8 squares | opens the queen on c7 (from 9 squares to 12) | puts the knight on d4 on an outpost no pawn can attack
+    opens: the queen on c7, from 9 squares to 12
     tactics: You hit back instead of retreating — answers the threat by hitting the queen on e2.
-    alternatives: Nge5: The position is roughly equal; h5: White is slightly better
+    alternatives: Nge5 (White now has 4 pieces developed to 2 pieces; centralises the knight on e5, which reaches 8 squares; shuts in the queen on c7 (from 9 squares to 5)): The position is roughly equal, after Nxe5 Nxe5 Bb3 Bc5; h5 (advances the pawn to h5, toward the enemy king): White is slightly better, after Nd5 Qb8 Rd1 Nge5
     tempting threat: b5? Black's b5 moves the pawn from b7 to b5 | attacks the bishop on c4 | leaves the black pawn on b5 hanging | leaves the black knight on g4 hanging. White answers Nxb5: moves the knight from c3 to b5 | captures the pawn on b5 | attacks the queen on c7. Then Qb8 hxg4 h5. Over the line White takes a knight and a pawn; at the end White is a knight up (White is much better).
     tempting threat: d5? Black's d5 moves the pawn from d7 to d5 | attacks the bishop on c4 | leaves the black knight on g4 hanging. White answers Nb5: moves the knight from c3 to b5 | attacks the queen on c7. Then Qb8 exd5 a6. Over the line White takes a pawn; at the end material is level (White is better).
     flags: quiz-eligible, critical
@@ -92,17 +125,18 @@ n19 10.Nxd4 (White, Line A) | blunder | before: Black is better → after: Black
     best instead: hxg4; after hxg4 Nxe2+ Bxe2 Bc5 e5 O-O, White has two knights for a queen and a pawn
     why hxg4 is better: moves the pawn from h3 to g4 | captures the knight on g4
     board: moves the knight from f3 to d4 | captures the knight on d4 | the knight stops guarding h2, where Qh2# follows
+    ideas: takes the piece that attacked the queen on e2 | White now has 4 pieces developed to 1 piece | centralises the knight on d4, which reaches 8 squares | after the exchange White has a knight for a pawn
     tactics: They let you deliver checkmate with Qh2#.
-    alternatives: hxg4: Black is better; e5: Black is much better; Kh1: Black is much better
+    alternatives: hxg4 (White now has 4 pieces developed to 1 piece; controls f5; opens the h-file for the rooks (half-open)): Black is better, after Nxe2+ Bxe2 Bc5 e5; e5 (puts a pawn in the centre on e5; controls d6 and f6): Black is much better, after Nxe2+ Bxe2 Nxe5 Be3; Kh1: Black is much better, after Nxe2 Bxe2 h5 g3
 n20 10…Qh2# (Black, Line A) | great | before: Black has a forced mate in 1 → after: checkmate
     board: moves the queen from c7 to h2 | gives checkmate | why it is mate: the king on g1 is checked by the queen on h2; f1, f2, g2 hold its own pieces; h1 is covered by the queen on h2; the queen on h2 is guarded by the knight on g4
     tactics: You delivered checkmate.
     flags: quiz-eligible, critical
 
 REEL CANDIDATES
-  r1 mate n14–n20, climax n20 [highlight, puzzle, promo]
-  r2 trap n12–n20, climax n18 [highlight, puzzle, promo]
-  r3 swing n11–n20, climax n17 [highlight, promo]
+  r1 mate n12–n20, climax n20 [highlight, puzzle, promo]
+  r2 trap n10–n20, climax n18 [highlight, puzzle, promo]
+  r3 swing n9–n20, climax n17 [highlight, promo]
 
 PLAN
   e1 hook n1–n1
@@ -110,22 +144,25 @@ PLAN
   e3 bait n17–n17
   e4 quiz n18–n18 answer=n18
   e5 punish n19–n20
-  e6 safety n17–n17
+  e6 safety n17–n19
 
 REVIEW NOTES
   l1
-    n1 1.e4: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
-    n2 1…c5: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
-    n3 2.d4: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
-    n4 2…cxd4: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
-    n5 3.c3: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
-    n6 3…dxc3: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
-    n7 4.Nxc3: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
-    n8 4…Nc6: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
-    n9 5.Nf3: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
-    n10 5…e6: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
-    n11 6.Bc4: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
-    n12 6…Qc7: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
-    n18 9…Nd4: You hit back instead of retreating — answers the threat by hitting the queen on e2.; Won the queen, giving back a knight and a knight.
+    n1 1.e4: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…c5: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21); Controls d4; Opens the queen on d8 (from 0 squares to 3)
+    n3 2.d4: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21); Threatens to win the pawn on c5 with dxc5; Puts a pawn in the centre on d4; Strikes at the centre: attacks the pawn on c5
+    n4 2…cxd4: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21); Puts a pawn in the centre on d4; Controls c3 and e3; Opens the c-file for the rooks (half-open)
+    n5 3.c3: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21); Attacks the pawn on d4 twice, while nothing defends it; Takes c3 from the knight, whose natural square it is; Strikes at the centre: attacks the pawn on d4
+    n6 3…dxc3: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21); Gives up the centre: the pawn leaves d4; Opens a line for the opponent's queen on d1 (from 10 squares to 13)
+    n7 4.Nxc3: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21); Controls d5 and e4; Supports the centre pawn on e4; After the exchange Black is a pawn up
+    n8 4…Nc6: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21); Develops the knight to c6, its most useful square; Controls e5 and d4; Prevents e5, a pawn advance
+    n9 5.Nf3: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21); Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square; Controls d4 and e5
+    n10 5…e6: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21); Controls d5 and f5; Prevents Nd5, a knight on a strong square; Opens the bishop on f8 (from 0 squares to 5)
+    n11 6.Bc4: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21); Develops the bishop to c4; White now has 3 pieces developed to 1 piece; Controls d5
+    n12 6…Qc7: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21); Brings the queen out to c7; Controls e5; Prevents e5, a pawn advance
+    n13 7.O-O: Castles kingside: the king goes to safety and the rook comes to f1; White now has 4 pieces developed to 1 piece; Defends the pawn on h2, attacked once and now defended twice
+    n16 8…Ng4: Moves the knight for the second time while 2 pieces still wait at home
+    n17 9.h3: Loosens the pawns in front of the king, and the pawn on h3 can become a target
+    n18 9…Nd4: Threatens mate in two: Nxf3+ Qxf3 Qh2#; Sacrifices the knight on d4: it can be taken, and the engine still approves; Threatens to win the queen on e2 with Nxe2+; You hit back instead of retreating — answers the threat by hitting the queen on e2.; Won the queen, giving back a knight and a knight.
     n19 10.Nxd4: They let you deliver checkmate with Qh2#.; Won a knight, but it allowed mate.
     n20 10…Qh2#: You delivered checkmate.

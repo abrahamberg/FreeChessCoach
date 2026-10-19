@@ -27,3 +27,6 @@ apps/api/.course-studio-cache.json
 
 # The review audit workspace (scripts/review-audit): corpus, engine cache, runs, labels.
 apps/api/.review-audit/
+
+# A local workspace for measuring the move ideas; never in git.
+apps/api/.idea-coverage/

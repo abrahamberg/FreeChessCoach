@@ -7,47 +7,61 @@ Moves:
 n1 1.e4 (White, Line A) | book
     book: in book (King's Pawn Game)
     board: moves the pawn from e2 to e4
-    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: puts a pawn in the centre on e4 | controls d5 and f5 | opens the bishop on f1 (from 0 squares to 5)
+    opens: the light-squared bishop on f1, from 0 squares to 5
+    alternatives: d4 (puts a pawn in the centre on d4; controls c5 and e5; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after Nf6 c4 e6 Nc3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after Nf6 c4 e6 d4
 n2 1…e5 (Black, Line A) | book
     book: in book (King's Pawn Game)
     board: moves the pawn from e7 to e5
-    alternatives: c5: The position is roughly equal; d6: The position is roughly equal
+    ideas: puts a pawn in the centre on e5 | controls d4 and f4 | opens the bishop on f8 (from 0 squares to 5) | fixes the pawn on e4: it can no longer advance
+    opens: the dark-squared bishop on f8, from 0 squares to 5
+    alternatives: c5 (controls d4; opens the queen on d8 (from 0 squares to 3)): The position is roughly equal, after Nf3 d6 c3 Nf6; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after d4 Nf6 Nc3 e5
 n3 2.Nf3 (White, Line A) | book
     book: in book (King's Knight Opening)
     board: moves the knight from g1 to f3
-    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+    ideas: threatens to win the pawn on e5 with Nxe5 | puts the knight on f3, the best defender of a king castled short | develops the knight to f3, its most useful square | puts pressure on the pawn on e5 and controls d4 | prepares the pawn's advance to d4, which it now supports
+    alternatives: Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nc6 Nf3 Nf6 Bb5; Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after Nf6 Nc3 Nc6 d3
 n4 2…Nf6 (Black, Line A) | book
     book: in book (Petrov's Defense)
     board: moves the knight from g8 to f6 | leaves the black pawn on e5 hanging
-    alternatives: Nc6: The position is roughly equal; d6: The position is roughly equal
+    ideas: threatens to win the pawn on e4 with Nxe4 | puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | puts pressure on the pawn on e4 and controls d5 | prepares the pawn's advance to d5, which it now supports
+    alternatives: Nc6 (develops the knight to c6, its most useful square; controls e5 and d4; supports the centre pawn on e5): The position is roughly equal, after d4 exd4 Nxd4 Nf6; d6 (controls c5 and e5; supports the centre pawn on e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after d4 exd4 Nxd4 Nf6
 n5 3.Nxe5 (White, Line A) | book
     book: in book (Petrov's Defense)
+    the book also has: Nc3 (Petrov's Defense: Three Knights Game); Qe2 (Petrov's Defense: Moody Gambit); d4 (Petrov's Defense: Modern Attack)
     board: moves the knight from f3 to e5 | captures the pawn on e5 | leaves the white pawn on e4 hanging
-    alternatives: d4: The position is roughly equal; Nc3: The position is roughly equal
+    ideas: centralises the knight on e5, which reaches 8 squares | after the exchange White is a pawn up
+    alternatives: d4 (attacks the pawn on e5 twice, while nothing defends it; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after Nxe4 Bd3 d5 Nxe5; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nc6 Bb5 Bb4 O-O
 n6 3…Nxe4 (Black, Line A) | book
     book: in book (Petrov's Defense: Damiano Variation)
+    the book also has: Nc6 (Petrov's Defense: Stafford Gambit); d6 (Petrov's Defense)
     board: moves the knight from f6 to e4 | captures the pawn on e4
-    alternatives: d6: The position is roughly equal; Qe7: White is slightly better
+    ideas: centralises the knight on e4, which reaches 8 squares
+    alternatives: d6 (attacks the knight on e5; controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after Nf3 Nxe4 Qe2 Qe7; Qe7 (threatens to win the knight on e5 with Qxe5; brings the queen out to e7; controls e5): White is slightly better, after d4 d6 Nc4 d5
 n7 4.Qe2 (White, Line A) | book
     book: in book (Petrov's Defense: Damiano Variation)
     board: moves the queen from d1 to e2 | attacks the knight on e4
-    alternatives: d4: The position is roughly equal; Be2: The position is roughly equal
+    ideas: threatens to win the knight on e4 with Qxe4 | brings the queen out to e2 | controls e4 | shuts in the bishop on f1 (from 5 squares to 0) | defends the pawn on f2, attacked once and now defended twice
+    alternatives: d4 (puts a pawn in the centre on d4; controls c5; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after d6 Nf3 Be7 Bd3; Be2 (develops the bishop to e2; clears the way to castle kingside): The position is roughly equal, after d6 Nf3 d5 O-O
     tempting capture: Nxd7? White's Nxd7 moves the knight from e5 to d7 | captures the pawn on d7 | attacks the knight on b8 | attacks the bishop on f8 | leaves the white knight on d7 hanging. Black answers Bxd7: moves the bishop from c8 to d7 | captures the knight on d7. Then Qe2 Qe7 d4. Over the line White takes a pawn; Black takes a knight; at the end White has a pawn for a knight (Black is much better).
     tempting capture: Nxf7? White's Nxf7 moves the knight from e5 to f7 | captures the pawn on f7 | attacks the queen on d8 | attacks the rook on h8 | leaves the white knight on f7 hanging. Black answers Qe7: moves the queen from d8 to e7 | attacks the knight on f7 | leaves the black rook on h8 hanging. Then Qe2 Kxf7. Over the line White takes a pawn; Black takes a knight; at the end White has a pawn for a knight (Black is better).
     tempting threat: f3? White's f3 moves the pawn from f2 to f3 | attacks the knight on e4. Black answers Qh4+: moves the queen from d8 to h4 | gives check | the check can be answered: block with g3; the checking piece cannot be taken; move the king with Ke2. Then g3 Nxg3. Over the line Black takes a pawn; at the end Black is a pawn up (Black is better).
 n8 4…Nf6 (Black, Line A) | blunder | before: White is slightly better → after: White is much better
+    the book also has: Qe7 (Petrov's Defense: Damiano Variation, Kholmov Gambit)
     best instead: Qe7; after Qe7 Qxe4 d6 d4 f5 Qe3, White is a knight up
     why Qe7 is better: moves the queen from d8 to e7 | attacks the knight on e5 | leaves the black knight on e4 hanging
     board: moves the knight from e4 to f6 | allows Nc6+, where the knight on c6 forks the knight on b8 and the queen on d8
+    ideas: takes the attacked knight to safety on f6 | prevents Qg4, an attack on a bigger piece | puts the knight on f6, the best defender of a king castled short | controls e4 and d5 | defends the pawn on d7, attacked once and now defended 5 times
     tactics: They let you win a queen through a fork two moves away with Nc6+ — knight on c6 forks the knight on b8 and the queen on d8.
-    alternatives: Qe7: White is slightly better; d5: White is slightly better; d6: White is slightly better
+    alternatives: Qe7 (threatens to win the knight on e5 with Qxe5; brings the queen out to e7; controls e5): White is slightly better, after Qxe4 d6 d4 f5; d5 (puts a pawn in the centre on d5; controls c4; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after d3 Qe7 dxe4 Qxe5; d6 (attacks the knight on e5; controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after Nxf7 Kxf7 Qxe4 c6
     tempting capture: Nxf2? Black's Nxf2 moves the knight from e4 to f2 | captures the pawn on f2 | attacks the rook on h1 | leaves the black knight on f2 hanging. White answers Nc6+: moves the knight from e5 to c6 | gives check | a discovered check from the queen on e2 | the check can be answered: block with Qe7, Be7, Ne4; the checking piece cannot be taken; the king cannot move | attacks the knight on b8 | attacks the queen on d8 | the knight on c6 forks the knight on b8 and the queen on d8. Then Be7 Nxe7 Nd3+. Over the line Black takes a pawn; White takes a bishop; at the end White has a bishop for a pawn (White is much better).
     tempting capture: Nxd2? Black's Nxd2 moves the knight from e4 to d2 | captures the pawn on d2 | attacks the knight on b1 | attacks the bishop on f1 | leaves the black knight on d2 hanging. White answers Nc6+: moves the knight from e5 to c6 | gives check | a discovered check from the queen on e2 | the check can be answered: block with Qe7, Be7, Ne4; the checking piece cannot be taken; the king cannot move | attacks the knight on b8 | attacks the queen on d8 | the knight on c6 forks the knight on b8 and the queen on d8. Then Be7 Nxd8. Over the line Black takes a pawn; White takes the queen; at the end White has a queen for a pawn (White is much better).
     flags: critical
 n9 5.Nc6+ (White, Line A) | best | before: White is much better → after: White is much better
     board: moves the knight from e5 to c6 | gives check | a discovered check from the queen on e2 | the check can be answered: block with Qe7, Be7, Ne4; the checking piece cannot be taken; the king cannot move | attacks the knight on b8 | attacks the queen on d8 | the knight on c6 forks the knight on b8 and the queen on d8
+    ideas: controls e5 and d4
     tactics: You won a queen through a fork two moves away — knight on c6 forks the knight on b8 and the queen on d8.
-    alternatives: Ng6+: White is better; Ng4+: White is slightly better
+    alternatives: Ng6+ (controls e5): White is better, after Be7 Nxh8 Nc6 c3; Ng4+ (controls e5): White is slightly better, after Be7 Nxf6+ gxf6 d4
     tempting check: Nxd7+? White's Nxd7+ moves the knight from e5 to d7 | captures the pawn on d7 | gives check | a discovered check from the queen on e2 | the check can be answered: block with Qe7, Be7, Ne4; the checking piece cannot be taken; move the king with Kxd7 | attacks the knight on b8 | attacks the bishop on f8 | attacks the knight on f6 | leaves the white knight on d7 hanging. Black answers Kxd7: moves the king from e8 to d7 | captures the knight on d7. Then d4 Qe8 Nc3. Over the line White takes a pawn; Black takes a knight; at the end White has a pawn for a knight (Black is better).
     tempting check: Nxf7+? White's Nxf7+ moves the knight from e5 to f7 | captures the pawn on f7 | gives check | a discovered check from the queen on e2 | the check can be answered: block with Qe7, Be7, Ne4; the checking piece cannot be taken; move the king with Kxf7 | attacks the queen on d8 | attacks the rook on h8 | leaves the white knight on f7 hanging. Black answers Kxf7: moves the king from e8 to f7 | captures the knight on f7. Then Qd1 g6 d4. Over the line White takes a pawn; Black takes a knight; at the end White has a pawn for a knight (Black is much better).
     tempting check: Ng6+ White's Ng6+ moves the knight from e5 to g6 | gives check | a discovered check from the queen on e2 | the check can be answered: block with Qe7, Be7, Ne4; the checking piece cannot be taken; the king cannot move | attacks the bishop on f8 | attacks the rook on h8 | the knight on g6 forks the bishop on f8 and the rook on h8. Black answers Be7: moves the bishop from f8 to e7 | blocks the check from the queen on e2 | leaves the black rook on h8 hanging. Then Nxh8 d5 d4. Over the line White takes a rook; at the end White is a rook up (White is better). Works, but not the answer: White is still better, but the answer is stronger: White is much better.
@@ -56,8 +70,8 @@ n9 5.Nc6+ (White, Line A) | best | before: White is much better → after: White
     flags: quiz-eligible
 
 REEL CANDIDATES
-  r1 swing n2–n9, climax n8 [highlight, promo]
-  r2 idea n3–n9, climax n9 [highlight, puzzle, promo]
+  r1 swing n1–n9, climax n8 [highlight, promo]
+  r2 idea n1–n9, climax n9 [highlight, puzzle, promo]
 
 PLAN
   e1 concept n9–n9
@@ -66,12 +80,12 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.e4: Theory — Petrov's Defense: Damiano Variation (C42)
-    n2 1…e5: Theory — Petrov's Defense: Damiano Variation (C42)
-    n3 2.Nf3: Theory — Petrov's Defense: Damiano Variation (C42)
-    n4 2…Nf6: Theory — Petrov's Defense: Damiano Variation (C42)
-    n5 3.Nxe5: Theory — Petrov's Defense: Damiano Variation (C42)
-    n6 3…Nxe4: Theory — Petrov's Defense: Damiano Variation (C42)
-    n7 4.Qe2: Theory — Petrov's Defense: Damiano Variation (C42)
+    n1 1.e4: Theory — Petrov's Defense: Damiano Variation (C42); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…e5: Theory — Petrov's Defense: Damiano Variation (C42); Puts a pawn in the centre on e5; Controls d4 and f4; Opens the bishop on f8 (from 0 squares to 5)
+    n3 2.Nf3: Theory — Petrov's Defense: Damiano Variation (C42); Threatens to win the pawn on e5 with Nxe5; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
+    n4 2…Nf6: Theory — Petrov's Defense: Damiano Variation (C42); Threatens to win the pawn on e4 with Nxe4; Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square
+    n5 3.Nxe5: Theory — Petrov's Defense: Damiano Variation (C42); Centralises the knight on e5, which reaches 8 squares; After the exchange White is a pawn up
+    n6 3…Nxe4: Theory — Petrov's Defense: Damiano Variation (C42); Centralises the knight on e4, which reaches 8 squares
+    n7 4.Qe2: Theory — Petrov's Defense: Damiano Variation (C42); Threatens to win the knight on e4 with Qxe4; Brings the queen out to e2; Controls e4
     n8 4…Nf6: They let you win a queen through a fork two moves away with Nc6+ — knight on c6 forks the knight on b8 and the queen on d8.; Won a knight, but it cost the queen.
-    n9 5.Nc6+: You won a queen through a fork two moves away — knight on c6 forks the knight on b8 and the queen on d8.; Won the queen, giving back a knight.
+    n9 5.Nc6+: Controls e5 and d4; You won a queen through a fork two moves away — knight on c6 forks the knight on b8 and the queen on d8.; Won the queen, giving back a knight.

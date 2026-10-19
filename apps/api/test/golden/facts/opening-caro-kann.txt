@@ -10,112 +10,163 @@ Moves:
 n1 1.e4 (White, Classical) | book
     book: in book (King's Pawn Game)
     board: moves the pawn from e2 to e4
-    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: puts a pawn in the centre on e4 | controls d5 and f5 | opens the bishop on f1 (from 0 squares to 5)
+    opens: the light-squared bishop on f1, from 0 squares to 5
+    alternatives: d4 (puts a pawn in the centre on d4; controls c5 and e5; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after Nf6 c4 e6 Nc3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after Nf6 c4 e6 d4
 n2 1…c6 (Black, Classical) | book
     book: in book (Caro-Kann Defense)
     board: moves the pawn from c7 to c6
-    alternatives: e5: The position is roughly equal; c5: The position is roughly equal; d6: The position is roughly equal
+    ideas: takes c6 from the knight, whose natural square it is | controls d5 | opens the queen on d8 (from 0 squares to 3) | prepares the pawn's advance to d5, which it now supports
+    alternatives: e5 (puts a pawn in the centre on e5; controls d4 and f4; opens the bishop on f8 (from 0 squares to 5)): The position is roughly equal, after Nf3 Nc6 Nc3 Nf6; c5 (controls d4; opens the queen on d8 (from 0 squares to 3)): The position is roughly equal, after Nf3 d6 c3 Nf6; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after d4 Nf6 Nc3 e5
 n3 2.d4 (White, Classical) | book
     book: in book (Caro-Kann Defense)
+    the book also has: Bc4 (Caro-Kann Defense: Hillbilly Attack); Nc3 (Caro-Kann Defense); Nf3 (Caro-Kann Defense: Apocalypse Attack); b3 (Caro-Kann Defense: Euwe Attack); b4 (Caro-Kann Defense: Labahn Attack)
     board: moves the pawn from d2 to d4
-    alternatives: c4: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: puts a pawn in the centre on d4 | controls c5 and e5 | prevents e5, a pawn advance | opens the bishop on c1 (from 0 squares to 5)
+    opens: the dark-squared bishop on c1, from 0 squares to 5
+    alternatives: c4 (controls d5; opens the queen on d1 (from 4 squares to 7); shuts in the bishop on f1 (from 5 squares to 2)): The position is roughly equal, after d5 cxd5 cxd5 exd5; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after d5 e5 Bg4 d4
 n4 2…d5 (Black, Classical) | book
     book: in book (Caro-Kann Defense)
+    the book also has: Na6 (Caro-Kann Defense: De Bruycker Defense); Nf6 (Caro-Kann Defense: Masi Variation); f5 (Caro-Kann Defense: Massachusetts Defense)
     board: moves the pawn from d7 to d5
-    alternatives: g6: White is slightly better; d6: White is slightly better
+    ideas: threatens to win the pawn on e4 with dxe4 | puts a pawn in the centre on d5 | strikes at the centre: attacks the pawn on e4 | puts pressure on the pawn on e4 and controls c4 | opens the bishop on c8 (from 0 squares to 5) | fixes the pawn on d4: it can no longer advance
+    opens: the light-squared bishop on c8, from 0 squares to 5
+    alternatives: g6 (controls f5; opens the bishop on f8 (from 0 squares to 2)): White is slightly better, after Nf3 Bg7 Bd3 d6; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after Bd3 g6 Nf3 Nf6
 n5 3.Nc3 (White, Classical) | book
     book: in book (Caro-Kann Defense)
+    the book also has: Bd3 (Caro-Kann Defense: Mieses Attack, Landau Gambit); Be3 (Caro-Kann Defense: Mieses Gambit); Nd2 (Caro-Kann Defense: Edinburgh Variation); Nf3 (Caro-Kann Defense: Ulysses Gambit); e5 (Caro-Kann Defense: Advance Variation)
     board: moves the knight from b1 to c3
-    alternatives: e5: The position is roughly equal; Nd2: The position is roughly equal
+    ideas: defends the pawn on e4, which was attacked | develops the knight to c3, its most useful square | puts pressure on the pawn on d5 and controls e4 | supports the centre pawn on e4
+    alternatives: e5 (puts a pawn in the centre on e5; controls d6 and f6; gains space: the pawn on e5 takes a natural square from the knight): The position is roughly equal, after Bf5 g4 Bd7 c4; Nd2 (develops the knight to d2; controls e4; supports the centre pawn on e4): The position is roughly equal, after dxe4 Nxe4 Nf6 Qd3
 n6 3…dxe4 (Black, Classical) | book
     book: in book (Caro-Kann Defense)
+    the book also has: Nf6 (Caro-Kann Defense: Campomanes Attack); b5 (Caro-Kann Defense: Gurgenidze Counterattack); g6 (Caro-Kann Defense: Gurgenidze System)
     board: moves the pawn from d5 to e4 | captures the pawn on e4
-    alternatives: g6: White is slightly better; h6: White is slightly better
+    ideas: puts a pawn in the centre on e4 | controls d3 and f3 | opens the d-file for the rooks (half-open) | opens the queen on d8 (from 5 squares to 7) | leaves Black with doubled pawns on the e-file
+    alternatives: g6 (controls f5; opens the bishop on f8 (from 0 squares to 2)): White is slightly better, after e5 f6 h4 Bg7; h6: White is slightly better, after Nf3 Bg4 exd5 cxd5
 n7 4.Nxe4 (White, Classical) | book
     book: in book (Caro-Kann Defense: Main Line)
+    the book also has: Bc4 (Caro-Kann Defense: von Hennig Gambit); f3 (Caro-Kann Defense: Rasa-Studier Gambit)
     board: moves the knight from c3 to e4 | captures the pawn on e4
-    alternatives: Nge2: The position is roughly equal; g4: Black is slightly better
+    ideas: centralises the knight on e4, which reaches 8 squares
+    alternatives: Nge2 (develops the knight to e2; White now has 2 pieces developed to 0 pieces; controls d4): The position is roughly equal, after Nf6 Ng3 Bg4 Be2; g4 (controls f5; opens the bishop on f1 (from 5 squares to 7)): Black is slightly better, after e5 Nxe4 exd4 Ne2
 n8 4…Bf5 (Black, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation)
+    the book also has: Nd7 (Caro-Kann Defense: Karpov Variation); Nf6 (Caro-Kann Defense: Alekhine Gambit); h6 (Caro-Kann Defense: Finnish Variation)
+    piece: the light-squared bishop
     board: moves the bishop from c8 to f5 | attacks the knight on e4
-    alternatives: Nf6: The position is roughly equal; Nd7: The position is roughly equal
+    ideas: threatens to win the knight on e4 with Bxe4 | develops the bishop to f5 | controls e4
+    alternatives: Nf6 (threatens to win the knight on e4 with Nxe4; develops the knight to f6, its most useful square; controls e4 and d5): The position is roughly equal, after Nxf6+ exf6 c3 Bd6; Nd7 (develops the knight to d7; controls e5; shuts in the bishop on c8 (from 5 squares to 0)): The position is roughly equal, after Nf3 Ngf6 Ng3 e6
 n9 5.Ng3 (White, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation)
+    the book also has: Ng5 (Caro-Kann Defense: Martian Gambit)
     board: moves the knight from e4 to g3 | attacks the bishop on f5
-    alternatives: Bd3: The position is roughly equal; Qf3: The position is roughly equal
+    ideas: threatens to win the bishop on f5 with Nxf5 | takes the attacked knight to safety on g3 | controls e4
+    alternatives: Bd3 (develops the bishop to d3): The position is roughly equal, after Qxd4 Nf3 Qd8 Neg5; Qf3 (threatens to win the bishop on f5 with Qxf5; brings the queen out to f3; brings the queen out early, with 3 pieces still at home): The position is roughly equal, after e6 c3 Nd7 Ng3
 n10 5…Bg6 (Black, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation)
+    piece: the light-squared bishop
     board: moves the bishop from f5 to g6
-    alternatives: Be6: White is slightly better; Bd7: White is slightly better
+    ideas: takes the attacked bishop to safety on g6 | prevents Qh5, an attack on a bigger piece | prepares the pawn's advance to f5, which it now supports
+    alternatives: Be6 (the bishop on e6 blocks the pawn on e7; controls d5): White is slightly better, after Be2 g6 c3 Nf6; Bd7 (shuts in the queen on d8 (from 8 squares to 4)): White is slightly better, after Bd3 Nf6 Qe2 Qb6
 n11 6.h4 (White, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation, Main Line)
+    the book also has: Nh3 (Caro-Kann Defense: Classical Variation, Flohr Variation); f4 (Caro-Kann Defense: Classical Variation, Maróczy Attack)
     board: moves the pawn from h2 to h4
-    alternatives: N1e2: The position is roughly equal; Nf3: The position is roughly equal; c3: The position is roughly equal
+    ideas: loosens the pawns in front of the king, and the pawn on h4 can become a target
+    alternatives: N1e2 (develops the knight to e2; controls d4; supports the centre pawn on d4): The position is roughly equal, after Nf6 Nf4 e5 dxe5; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after e6 Bd3 Nf6 O-O; c3 (controls d4; supports the centre pawn on d4; opens the queen on d1 (from 6 squares to 9)): The position is roughly equal, after Nf6 Nf3 e6 Bd3
 n12 6…h6 (Black, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation, Main Line)
     board: moves the pawn from h7 to h6
-    alternatives: h5: White is slightly better; Nf6: White is slightly better
+    ideas: loosens the pawns in front of the king, and the pawn on h6 can become a target
+    alternatives: h5 (fixes the pawn on h4: it can no longer advance): White is slightly better, after Nh3 e5 dxe5 Qxd1+; Nf6 (develops the knight to f6, its most useful square; controls e4 and d5): White is slightly better, after h5 Be4 Rh4 Bd5
 n13 7.Nf3 (White, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation, Main Line)
     board: moves the knight from g1 to f3
-    alternatives: Nh3: The position is roughly equal; c3: The position is roughly equal
+    ideas: puts the knight on f3, the best defender of a king castled short | develops the knight to f3, its most useful square | controls d4 and e5 | supports the centre pawn on d4 | shuts in the queen on d1 (from 6 squares to 3) | defends the pawn on d4, attacked once and now defended twice
+    alternatives: Nh3 (develops the knight to h3): The position is roughly equal, after e6 c3 Nf6 Nf4; c3 (controls d4; supports the centre pawn on d4; opens the queen on d1 (from 6 squares to 9)): The position is roughly equal, after e6 Nh3 Bh7 Nf4
 n14 7…Nd7 (Black, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation)
     board: moves the knight from b8 to d7
-    alternatives: Nf6: The position is roughly equal; e6: The position is roughly equal
+    ideas: develops the knight to d7 | controls e5 | shuts in the queen on d8 (from 8 squares to 5) | prepares the pawn's advance to e5, which it now supports
+    alternatives: Nf6 (develops the knight to f6, its most useful square; controls e4 and d5): The position is roughly equal, after Bd3 Bxd3 Qxd3 e6; e6 (controls d5 and f5; opens the bishop on f8 (from 0 squares to 5)): The position is roughly equal, after Ne5 Bh7 Bd3 Bxd3
 n15 8.h5 (White, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation, Spassky Variation)
     board: moves the pawn from h4 to h5 | attacks the bishop on g6
-    alternatives: Bd3: The position is roughly equal; Bf4: The position is roughly equal
+    ideas: attacks the bishop on g6
+    alternatives: Bd3 (develops the bishop to d3; controls e4; clears the way to castle kingside): The position is roughly equal, after Bxd3 Qxd3 Ngf6 Bd2; Bf4 (develops the bishop to f4; controls e5): The position is roughly equal, after Ngf6 Bd3 Nd5 Bc1
 n16 8…Bh7 (Black, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation, Spassky Variation)
+    piece: the light-squared bishop
     board: moves the bishop from g6 to h7
-    alternatives: Bf5: White is better; Bxc2: White is much better
+    ideas: takes the attacked bishop to safety on h7
+    alternatives: Bf5: White is better, after Nxf5 Qa5+ Bd2 Qxf5; Bxc2 (threatens to win the queen on d1 with Bxd1; settles the bishop on c2 on a square by the king that no pawn can cover any more; leaves White with an isolated pawn on d4): White is much better, after Qxc2 e6 Bd2 Ngf6
 n17 9.Bd3 (White, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation, Spassky Variation)
+    piece: the light-squared bishop
     board: moves the bishop from f1 to d3 | attacks the bishop on h7
-    alternatives: a3: The position is roughly equal; a4: The position is roughly equal
+    ideas: develops the bishop to d3 | controls e4 | clears the way to castle kingside
+    alternatives: a3: The position is roughly equal, after Qc7 Be3 e6 Bd3; a4: The position is roughly equal, after Qa5+ Bd2 Qc7 Be2
 n18 9…Bxd3 (Black, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation, Spassky Variation)
+    piece: the light-squared bishop
     board: moves the bishop from h7 to d3 | captures the bishop on d3
-    alternatives: Ngf6: The position is roughly equal; Ndf6: White is slightly better
+    alternatives: Ngf6 (develops the knight to f6, its most useful square; controls e4 and d5): The position is roughly equal, after Bxh7 Nxh7 Bd2 e6; Ndf6 (moves the knight for the second time while 2 pieces still wait at home; controls e4 and d5; opens the queen on d8 (from 5 squares to 9)): White is slightly better, after O-O Bxd3 Qxd3 e6
 n19 10.Qxd3 (White, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation, Spassky Variation)
     board: moves the queen from d1 to d3 | captures the bishop on d3
-    alternatives: cxd3: Black is slightly better; Bxh6: Black is much better
+    ideas: controls d4 and e4 | supports the centre pawn on d4
+    alternatives: cxd3 (controls c4 and e4; opens the c-file for the rooks (half-open); opens the queen on d1 (from 3 squares to 5)): Black is slightly better, after e6 Bd2 Qb6 Qc2; Bxh6: Black is much better, after Bxc2 Qxc2 Nxh6 O-O-O
 n20 10…e6 (Black, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation, Spassky Variation)
+    the book also has: Ngf6 (Caro-Kann Defense: Classical Variation, Seirawan Variation)
     board: moves the pawn from e7 to e6
-    alternatives: Ngf6: The position is roughly equal; Qc7: The position is roughly equal
+    ideas: controls d5 and f5 | prevents d5, a pawn break | opens the bishop on f8 (from 0 squares to 5) | prepares the pawn's advance to f5, which it now supports
+    opens: the dark-squared bishop on f8, from 0 squares to 5; the queen on d8, from 5 squares to 9
+    alternatives: Ngf6 (develops the knight to f6, its most useful square; controls e4 and d5): The position is roughly equal, after Bf4 Qa5+ Bd2 Qb6; Qc7 (brings the queen out to c7; controls e5; clears the way to castle queenside): The position is roughly equal, after Bd2 e6 O-O-O Ngf6
 n21 3.e5 (White, Line B) | book
     book: in book (Caro-Kann Defense: Advance Variation)
+    the book also has: Bd3 (Caro-Kann Defense: Mieses Attack, Landau Gambit); Be3 (Caro-Kann Defense: Mieses Gambit); Nc3 (Caro-Kann Defense); Nd2 (Caro-Kann Defense: Edinburgh Variation); Nf3 (Caro-Kann Defense: Ulysses Gambit)
     board: moves the pawn from e4 to e5
-    alternatives: Nc3: The position is roughly equal; Nd2: The position is roughly equal
+    ideas: takes the attacked pawn to safety on e5 | puts a pawn in the centre on e5 | controls d6 and f6 | gains space: the pawn on e5 takes a natural square from the knight
+    alternatives: Nc3 (develops the knight to c3, its most useful square; puts pressure on the pawn on d5 and controls e4; supports the centre pawn on e4): The position is roughly equal, after dxe4 Nxe4 Nf6 Ng3; Nd2 (develops the knight to d2; controls e4; supports the centre pawn on e4): The position is roughly equal, after dxe4 Nxe4 Nf6 Qd3
     creator comment: "Advance"
     flags: creator-comment
 n22 3…Bf5 (Black, Line B) | book
     book: in book (Caro-Kann Defense: Advance Variation)
+    the book also has: c5 (Caro-Kann Defense: Advance Variation, Botvinnik-Carls Defense)
+    piece: the light-squared bishop
     board: moves the bishop from c8 to f5
-    alternatives: c5: The position is roughly equal; a6: White is slightly better
+    ideas: develops the bishop to f5 | controls e4
+    alternatives: c5 (strikes at the centre: attacks the pawn on d4; puts pressure on the pawn on d4): The position is roughly equal, after c3 Nc6 Be3 Qb6; a6: White is slightly better, after Nd2 c5 dxc5 Nc6
 n23 4.Nf3 (White, Line B) | book
     book: in book (Caro-Kann Defense: Advance Variation, Short Variation)
+    the book also has: Nc3 (Caro-Kann Defense: Advance Variation, Van der Wiel Attack); Ne2 (Caro-Kann Defense: Advance Variation, Bronstein Variation); b4 (Caro-Kann Defense: Advance Variation, Prins Attack); c3 (Caro-Kann Defense: Advance, Short Variation); g4 (Caro-Kann Defense: Advance Variation, Bayonet Attack)
     board: moves the knight from g1 to f3
-    alternatives: h4: The position is roughly equal; Nd2: The position is roughly equal; g4: The position is roughly equal
+    ideas: puts the knight on f3, the best defender of a king castled short | develops the knight to f3, its most useful square | controls d4 and e5 | supports the centre pawn on d4 | shuts in the queen on d1 (from 6 squares to 3)
+    alternatives: h4: The position is roughly equal, after h5 c4 e6 Nc3; Nd2 (develops the knight to d2; controls e4; shuts in the bishop on c1 (from 5 squares to 0)): The position is roughly equal, after e6 Nb3 Nd7 Nf3; g4 (attacks the bishop on f5; controls f5; opens the bishop on f1 (from 5 squares to 7)): The position is roughly equal, after Be4 f3 Bg6 h4
 n24 4…e6 (Black, Line B) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from e7 to e6
-    alternatives: h5: White is slightly better; Bg4: White is slightly better
+    ideas: controls d5 | supports the centre pawn on d5 | opens the bishop on f8 (from 0 squares to 5) | shuts in the bishop on f5 (from 9 squares to 6) | fixes the pawn on e5: it can no longer advance
+    opens: the dark-squared bishop on f8, from 0 squares to 5; the queen on d8, from 6 squares to 10
+    alternatives: h5: White is slightly better, after Bd3 Bxd3 Qxd3 e6; Bg4 (pins the knight on f3 to the queen; moves the bishop for the second time while 3 pieces still wait at home): White is slightly better, after Nbd2 e6 c3 Nd7
 n25 5.Be2 (White, Line B) | best | before: The position is roughly equal → after: The position is roughly equal
+    piece: the light-squared bishop
     board: moves the bishop from f1 to e2
-    alternatives: c3: The position is roughly equal; a3: The position is roughly equal
+    ideas: develops the bishop to e2 | clears the way to castle kingside
+    alternatives: c3 (takes c3 from the knight, whose natural square it is; controls d4; supports the centre pawn on d4): The position is roughly equal, after c5 Bb5+ Nd7 O-O; a3: The position is roughly equal, after Nd7 Be2 Ne7 Nbd2
 n26 5…c5 (Black, Line B) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from c6 to c5
-    alternatives: Bg6: The position is roughly equal; h6: White is slightly better
+    ideas: strikes at the centre: attacks the pawn on d4 | puts pressure on the pawn on d4 | shuts in the bishop on f8 (from 5 squares to 2)
+    alternatives: Bg6 (moves the bishop for the second time while 3 pieces still wait at home): The position is roughly equal, after h4 h6 Nc3 Nd7; h6: White is slightly better, after O-O Ne7 a4 Nd7
 n27 6.O-O (White, Line B) | good | before: The position is roughly equal → after: The position is roughly equal
     board: castles kingside
-    alternatives: Be3: The position is roughly equal; c3: The position is roughly equal
+    ideas: castles kingside: the king goes to safety and the rook comes to f1 | White now has 3 pieces developed to 1 piece
+    alternatives: Be3 (develops the bishop to e3; White now has 3 pieces developed to 1 piece; controls d4): The position is roughly equal, after cxd4 Nxd4 Ne7 Bg5; c3 (takes c3 from the knight, whose natural square it is; controls d4; supports the centre pawn on d4): The position is roughly equal, after Nc6 O-O cxd4 Nxd4
 n28 6…Nc6 (Black, Line B) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from b8 to c6
-    alternatives: Ne7: The position is roughly equal; a6: White is slightly better
+    ideas: develops the knight to c6, its most useful square | puts pressure on the pawns on e5 and d4
+    alternatives: Ne7 (develops the knight to e7; controls d5; supports the centre pawn on d5): The position is roughly equal, after dxc5 Nec6 Bg5 Be7; a6: White is slightly better, after Be3 cxd4 Nxd4 Ne7
 
 REEL CANDIDATES
 
@@ -126,31 +177,36 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.e4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n2 1…c6: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n3 2.d4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n4 2…d5: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n5 3.Nc3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n6 3…dxe4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n7 4.Nxe4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n8 4…Bf5: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n9 5.Ng3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n10 5…Bg6: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n11 6.h4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n12 6…h6: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n13 7.Nf3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n14 7…Nd7: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n15 8.h5: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n16 8…Bh7: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n17 9.Bd3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n1 1.e4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…c6: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Takes c6 from the knight, whose natural square it is; Controls d5; Opens the queen on d8 (from 0 squares to 3)
+    n3 2.d4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance
+    n4 2…d5: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Threatens to win the pawn on e4 with dxe4; Puts a pawn in the centre on d5; Strikes at the centre: attacks the pawn on e4
+    n5 3.Nc3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Defends the pawn on e4, which was attacked; Develops the knight to c3, its most useful square; Puts pressure on the pawn on d5 and controls e4
+    n6 3…dxe4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Puts a pawn in the centre on e4; Controls d3 and f3; Opens the d-file for the rooks (half-open)
+    n7 4.Nxe4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Centralises the knight on e4, which reaches 8 squares
+    n8 4…Bf5: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Threatens to win the knight on e4 with Bxe4; Develops the bishop to f5; Controls e4
+    n9 5.Ng3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Threatens to win the bishop on f5 with Nxf5; Takes the attacked knight to safety on g3; Controls e4
+    n10 5…Bg6: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Takes the attacked bishop to safety on g6; Prevents Qh5, an attack on a bigger piece; Prepares the pawn's advance to f5, which it now supports
+    n11 6.h4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Loosens the pawns in front of the king, and the pawn on h4 can become a target
+    n12 6…h6: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Loosens the pawns in front of the king, and the pawn on h6 can become a target
+    n13 7.Nf3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square; Controls d4 and e5
+    n14 7…Nd7: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Develops the knight to d7; Controls e5; Shuts in the queen on d8 (from 8 squares to 5)
+    n15 8.h5: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Attacks the bishop on g6
+    n16 8…Bh7: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Takes the attacked bishop to safety on h7
+    n17 9.Bd3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Develops the bishop to d3; Controls e4; Clears the way to castle kingside
     n18 9…Bxd3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n19 10.Qxd3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
-    n20 10…e6: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n19 10.Qxd3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Controls d4 and e4; Supports the centre pawn on d4
+    n20 10…e6: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Controls d5 and f5; Prevents d5, a pawn break; Opens the bishop on f8 (from 0 squares to 5)
   l2
-    n1 1.e4: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12)
-    n2 1…c6: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12)
-    n3 2.d4: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12)
-    n4 2…d5: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12)
-    n21 3.e5: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12)
-    n22 3…Bf5: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12)
-    n23 4.Nf3: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12)
+    n1 1.e4: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…c6: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12); Takes c6 from the knight, whose natural square it is; Controls d5; Opens the queen on d8 (from 0 squares to 3)
+    n3 2.d4: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance
+    n4 2…d5: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12); Threatens to win the pawn on e4 with dxe4; Puts a pawn in the centre on d5; Strikes at the centre: attacks the pawn on e4
+    n21 3.e5: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12); Takes the attacked pawn to safety on e5; Puts a pawn in the centre on e5; Controls d6 and f6
+    n22 3…Bf5: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12); Develops the bishop to f5; Controls e4
+    n23 4.Nf3: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12); Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square; Controls d4 and e5
+    n24 4…e6: Controls d5; Supports the centre pawn on d5; Opens the bishop on f8 (from 0 squares to 5)
+    n25 5.Be2: Develops the bishop to e2; Clears the way to castle kingside
+    n26 5…c5: Strikes at the centre: attacks the pawn on d4; Puts pressure on the pawn on d4; Shuts in the bishop on f8 (from 5 squares to 2)
+    n27 6.O-O: Castles kingside: the king goes to safety and the rook comes to f1; White now has 3 pieces developed to 1 piece
+    n28 6…Nc6: Develops the knight to c6, its most useful square; Puts pressure on the pawns on e5 and d4

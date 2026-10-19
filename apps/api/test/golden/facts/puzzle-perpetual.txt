@@ -7,7 +7,8 @@ l1 "Line A" | leaves book at n1
 Moves:
 n1 1.Qd8+ (White, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from d4 to d8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh7
-    alternatives: g3: Black is much better; Qb6: Black is much better
+    ideas: takes g8 from the enemy king | controls d4
+    alternatives: g3 (controls f4): Black is much better, after Qa8 Qb6 Rd2 Qb4; Qb6 (controls d4): Black is much better, after b1=Q Qxb1 Qxb1 h3
     tempting capture: Qxb2? White's Qxb2 moves the queen from d4 to b2 | captures the pawn on b2 | attacks the rook on c2 | attacks the queen on a1 | leaves the white queen on b2 hanging. Black answers Rxb2: moves the rook from c2 to b2 | captures the queen on b2. Then h4 Qe1 f4. Over the line White takes a pawn; Black takes the queen; at the end White has a bishop and a pawn for a queen and a rook (Black is much better).
     tempting threat: Qe4? White's Qe4 moves the queen from d4 to e4 | attacks the rook on c2. Black answers b1=Q: moves the pawn from b2 to b1 | promotes to a queen | attacks the bishop on f1, which is pinned to the king by the queen on b1. Then Qd3 Qf6 Qf3. Over the line nothing is taken; at the end White has a bishop and a pawn for a queen and a rook (Black is much better).
     tempting threat: Qd3? White's Qd3 moves the queen from d4 to d3 | attacks the rook on c2. Black answers b1=Q: moves the pawn from b2 to b1 | promotes to a queen | attacks the bishop on f1, which is pinned to the king by the queen on b1. Then h3 Qf6 Kh2. Over the line nothing is taken; at the end White has a bishop and a pawn for a queen and a rook (Black is much better).
@@ -16,38 +17,45 @@ n2 1…Kh7 (Black, Line A) | forced | before: The position is roughly equal → 
     board: moves the king from h8 to h7 | allows Qd3+, where the queen on d3 forks the king on h7 and the rook on c2
 n3 2.Qd3+ (White, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from d8 to d3 | gives check | the check can be answered: block with g6; the checking piece cannot be taken; move the king with Kg8, Kh8 | attacks the rook on c2 | the queen on d3 forks the king on h7 and the rook on c2
-    alternatives: Qb6: Black is much better; Qb8: Black is much better
+    ideas: takes g6 from the enemy king | controls e4 | defends the bishop on f1, attacked once and now defended twice
+    alternatives: Qb6 (moves the queen for the second time while 1 piece still wait at home): Black is much better, after b1=Q Qxb1 Qxb1 h4; Qb8 (moves the queen for the second time while 1 piece still wait at home; controls e5): Black is much better, after Rc1 Qb5 Rxf1+ Qxf1
     flags: quiz-eligible, critical
 n4 2…g6 (Black, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from g7 to g6 | blocks the check from the queen on d3 | leaves the black rook on c2 hanging
-    alternatives: Kg8: The position is roughly equal; Kh8: The position is roughly equal
+    ideas: loosens the pawns in front of the king: no pawn can cover f6 and h6 any more | controls f5
+    alternatives: Kg8: The position is roughly equal, after Qd8+ Kh7 Qd3+ Kg8; Kh8: The position is roughly equal, after Qd8+ Kh7 Qd3+
 n5 3.Qd7+ (White, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from d3 to d7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kg8, Kh8
-    alternatives: Qxc2: Black is better; h4: Black is much better
+    ideas: takes g7 from the enemy king
+    alternatives: Qxc2 (aims at the king on h7, through the pawn on g6): Black is better, after b1=Q Qc4 Qb7 Qe2; h4: Black is much better, after b1=Q h5 Qf6 hxg6+
     tempting capture: Qxc2? White's Qxc2 moves the queen from d3 to c2 | captures the rook on c2. Black answers b1=Q: moves the pawn from b2 to b1 | promotes to a queen | attacks the queen on c2 | attacks the bishop on f1, which is pinned to the king by the queen on b1. Then Qc7+ Qg7 Qc5. Over the line White takes a rook; at the end White has a bishop and a pawn for a queen (Black is better).
     tempting threat: Qe4? White's Qe4 moves the queen from d3 to e4 | attacks the rook on c2. Black answers b1=Q: moves the pawn from b2 to b1 | promotes to a queen | attacks the bishop on f1, which is pinned to the king by the queen on b1. Then Qd3 Qf6 Qd7+. Over the line nothing is taken; at the end White has a bishop and a pawn for a queen and a rook (Black is much better).
     flags: quiz-eligible, critical
 n6 3…Kg8 (Black, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from h7 to g8
-    alternatives: Kh8: The position is roughly equal
+    alternatives: Kh8: The position is roughly equal, after Qe8+ Kh7 Qe7+ Kg8
 n7 4.Qe8+ (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from d7 to e8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh7, Kg7
-    alternatives: Qd8+: The position is roughly equal; Qd5+: The position is roughly equal
+    ideas: takes f8 from the enemy king | settles the queen on e8 on a square by the king that no pawn can cover any more | controls e5 and e4
+    alternatives: Qd8+: The position is roughly equal, after Kf7 Qd7+ Kf6 Qd6+; Qd5+ (controls e5 and e4; centralises the queen on d5, which reaches 26 squares): The position is roughly equal, after Kg7 Qd7+ Kf6 Qd6+
     tempting check: Qc8+? White's Qc8+ moves the queen from d7 to c8 | gives check | the check can be answered: no block; take the checking piece with Rxc8; move the king with Kh7, Kg7, Kf7 | attacks the rook on c2 | leaves the white queen on c8 hanging. Black answers Rxc8: moves the rook from c2 to c8 | captures the queen on c8. Then h4 b1=Q Kh2. Over the line Black takes the queen; at the end White has a bishop and a pawn for two queens and a rook (Black has a forced mate).
     tempting threat: Qd3? White's Qd3 moves the queen from d7 to d3 | attacks the rook on c2. Black answers b1=Q: moves the pawn from b2 to b1 | promotes to a queen | attacks the bishop on f1, which is pinned to the king by the queen on b1 | leaves the black pawn on g6 hanging. Then Qxg6+ Qg7 Qg3. Over the line White takes a pawn; at the end White has a bishop and two pawns for a queen and a rook (Black is much better).
 n8 4…Kg7 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from g8 to g7
-    alternatives: Kh7: The position is roughly equal
+    ideas: brings the king toward the centre, a strong piece in the ending | defends the pawn on g6, attacked once and now defended once
+    alternatives: Kh7: The position is roughly equal, after Qf7+ Kh8 Qf8+ Kh7
 n9 5.Qe7+ (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from e8 to e7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kg8, Kh8
-    alternatives: Qd7+: The position is roughly equal; Qe5+: The position is roughly equal
+    ideas: takes f6 from the enemy king | settles the queen on e7 on a square by the king that no pawn can cover any more
+    alternatives: Qd7+ (controls d5 and d4): The position is roughly equal, after Kf6 Qd6+ Kf7 Qd7+; Qe5+ (controls d5 and d4; centralises the queen on e5, which reaches 25 squares): The position is roughly equal, after Kf8 Qf4+ Kg8 Qb8+
     tempting threat: Qe4? White's Qe4 moves the queen from e8 to e4 | attacks the rook on c2. Black answers b1=Q: moves the pawn from b2 to b1 | promotes to a queen | attacks the bishop on f1, which is pinned to the king by the queen on b1. Then Qe7+ Kg8 Qe8+. Over the line nothing is taken; at the end White has a bishop and a pawn for a queen and a rook (Black is much better).
 n10 5…Kg8 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from g7 to g8
-    alternatives: Kh8: The position is roughly equal
+    alternatives: Kh8: The position is roughly equal, after Qf8+ Kh7 Qf7+ Kh8
 n11 6.Qe8+ (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from e7 to e8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh7, Kg7 | the position has now come twice: a third time is a draw
-    alternatives: Qd8+: The position is roughly equal; Qe6+: The position is roughly equal
+    ideas: settles the queen on e8 on a square by the king that no pawn can cover any more
+    alternatives: Qd8+ (controls d5 and d4): The position is roughly equal, after Kh7 Qe7+ Kg8; Qe6+ (settles the queen on e6 on a square by the king that no pawn can cover any more; controls d5): The position is roughly equal, after Kf8 Qd6+ Ke8 Qxg6+
     tempting threat: Qe4? White's Qe4 moves the queen from e7 to e4 | attacks the rook on c2. Black answers b1=Q: moves the pawn from b2 to b1 | promotes to a queen | attacks the bishop on f1, which is pinned to the king by the queen on b1 | leaves the black pawn on g6 hanging. Then Qxg6+ Qg7 Qg3. Over the line White takes a pawn; at the end White has a bishop and two pawns for a queen and a rook (Black is much better).
 
 REEL CANDIDATES
@@ -68,6 +76,11 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.Qd8+: The only move that holds
-    n3 2.Qd3+: Forks the king on h7 and the rook on c2; The only move that holds
-    n5 3.Qd7+: The only move that holds
+    n1 1.Qd8+: The only move that holds; Takes g8 from the enemy king; Controls d4
+    n3 2.Qd3+: Forks the king on h7 and the rook on c2; The only move that holds; Takes g6 from the enemy king; Controls e4; Defends the bishop on f1, attacked once and now defended twice
+    n4 2…g6: Loosens the pawns in front of the king: no pawn can cover f6 and h6 any more; Controls f5
+    n5 3.Qd7+: The only move that holds; Takes g7 from the enemy king
+    n7 4.Qe8+: Takes f8 from the enemy king; Settles the queen on e8 on a square by the king that no pawn can cover any more; Controls e5 and e4
+    n8 4…Kg7: Brings the king toward the centre, a strong piece in the ending; Defends the pawn on g6, attacked once and now defended once
+    n9 5.Qe7+: Takes f6 from the enemy king; Settles the queen on e7 on a square by the king that no pawn can cover any more
+    n11 6.Qe8+: Settles the queen on e8 on a square by the king that no pawn can cover any more

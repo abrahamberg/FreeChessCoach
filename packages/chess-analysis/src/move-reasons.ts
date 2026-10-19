@@ -1,4 +1,6 @@
 import { Chess, type Move, type Square } from 'chess.js';
+import { faultIdeaSentences, ideaSentences, reviewIdeas } from './move-reason-ideas.js';
+import type { MoveIdea, MoveIdeaKind } from './move-ideas/index.js';
 import { isImprovableQuality, type EngineEval, type FeatureDeltaDto, type MoveQuality, type PositionFeatures } from '@freechesscoach/shared';
 import { betterMoveReasons } from './move-reason-better.js';
 import { kickReason } from './kick-reason.js';
@@ -43,6 +45,8 @@ export interface MoveReasonsInput {
   featureDelta?: FeatureDeltaDto;
   featuresBefore?: PositionFeatures;
   featuresAfter?: PositionFeatures;
+  /** The game's moves before this one: the ideas count a piece moved twice from them. */
+  previous?: readonly Move[];
 }
 
 type ReasonCategory = 'mate' | 'material' | 'tactical' | 'structural' | 'principle' | 'trade' | 'mobility';
@@ -61,7 +65,8 @@ const CATEGORY_ORDER: ReasonCategory[] = ['mate', 'material', 'tactical', 'struc
 
 /** §11's deterministic per-move coaching reasons — no LLM at render time. */
 export function buildReasons(input: MoveReasonsInput): string[] {
-  if (input.isBookMove) return [bookReason(input)];
+  const ideas = reviewIdeas({ fenBefore: input.fenBefore, moveSan: input.moveSan, previous: input.previous ?? [], evalBefore: input.evalBefore, evalAfter: input.evalAfter });
+  if (input.isBookMove) return [bookReason(input), ...ideaSentences(ideas)];
   const stalemate = stalemateReason(input.fenAfter, input.mover, input.evalBefore);
   if (stalemate) return [stalemate];
 
@@ -80,8 +85,11 @@ export function buildReasons(input: MoveReasonsInput): string[] {
     // no fault to report, which is most of them.
     ...tradeReason(input)
   ];
-  addPrinciple(input, reasons);
-  const note = cardReplaceableNote(input, reasons);
+  // A fine move's ideas say what the principle notes and the pin or kick
+  // note would (it develops, pins, takes an open file), and more.
+  const ideasExplain = !isFault(input) && ideas.length > 0;
+  addPrinciple(input, reasons, ideasExplain);
+  const note = ideasExplain ? onlyMoveNote(input, reasons) : cardReplaceableNote(input, reasons);
   // Mobility is the weakest signal here (a bad move usually has a sharper
   // reason than "fewer squares") — it only earns a mention when nothing
   // better already explains the move, never alongside one.
@@ -91,7 +99,21 @@ export function buildReasons(input: MoveReasonsInput): string[] {
     .sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category))
     .slice(0, MAX_REASONS)
     .map((reason) => reason.text);
-  return note && kept.length < MAX_REASONS ? [...kept, note] : kept;
+  const noted = note && kept.length < MAX_REASONS ? [...kept, note] : kept;
+  const extra = ideaReasons(input, ideas, reasons);
+  return [...noted, ...extra.filter((text) => !noted.includes(text))];
+}
+
+/** The ideas said after the reasons: a fine move's most telling ones, or
+ * what a costly move did wrong when no principle note said it already. */
+function ideaReasons(input: MoveReasonsInput, ideas: readonly MoveIdea[], reasons: readonly Reason[]): string[] {
+  if (isFault(input)) return reasons.some((reason) => reason.category === 'principle') ? [] : faultIdeaSentences(ideas, input.quality === 'inaccuracy' || input.quality === 'miss');
+  const skip = new Set<MoveIdeaKind>();
+  // "Recaptures the knight" already says the piece taken was the attacker.
+  if (reasons.some((reason) => reason.category === 'trade')) skip.add('saves');
+  if (passedPawnReasons(input).length) skip.add('passedPawn');
+  if (givesUpCastlingText(input)) skip.add('losesCastling');
+  return ideaSentences(ideas, skip);
 }
 
 /**
@@ -100,11 +122,11 @@ export function buildReasons(input: MoveReasonsInput): string[] {
  * fault they explain the trade the move made, so they replace its plain
  * "Trades …" sentence.
  */
-function addPrinciple(input: MoveReasonsInput, reasons: Reason[]): void {
+function addPrinciple(input: MoveReasonsInput, reasons: Reason[], ideasExplain: boolean): void {
   const castling = givesUpCastlingText(input);
   if (castling) reasons.push({ category: 'principle', text: castling });
   if (!input.comparisonRefuted && replaceMissedCaptureWithCandidates(input, reasons)) return;
-  if (castling) return;
+  if (castling || ideasExplain) return;
   if (reasons.some((reason) => reason.category !== 'trade' && reason.category !== 'mobility')) return;
   if (!isFault(input) && reasons.length > 0) return;
   if (input.comparisonRefuted && isImprovableQuality(input.quality)) return;

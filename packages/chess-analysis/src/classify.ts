@@ -1,4 +1,4 @@
-import { Chess, type PieceSymbol } from 'chess.js';
+import { Chess, type Move, type PieceSymbol } from 'chess.js';
 import type {
   ClassifiedMoveDto,
   EngineEval,
@@ -45,6 +45,7 @@ export function classifyMoves(
   const enrichment = enrichPositions(game.positions);
   const bookWalk = inBookWalk(game.positions);
   const opening = resolveOpening(game.positions.map((position) => positionKey(position.fen)));
+  const history = playedMoves(game);
 
   return game.positions.slice(1).map((position, index) => {
     const before = game.positions[index];
@@ -71,7 +72,8 @@ export function classifyMoves(
       opening,
       brilliantSoundness: options.brilliantSoundnessByPly?.get(position.ply),
       comparisonRefuted: options.refutedComparisonPlies?.has(position.ply),
-      isRecapture: isRecapture(game.positions[index - 1], before, position)
+      isRecapture: isRecapture(game.positions[index - 1], before, position),
+      previous: history.slice(0, index)
     };
     const move = buildClassifiedMove(moveInput);
     const brilliantSoundness = options.resolveBrilliantSoundness?.(move);
@@ -141,6 +143,8 @@ interface ClassifiedMoveInput {
   opening: OpeningResolution | null;
   brilliantSoundness: boolean | undefined;
   isRecapture: boolean;
+  /** The moves played before this one (empty for a live move). */
+  previous?: readonly Move[];
 }
 
 function buildClassifiedMove(input: ClassifiedMoveInput): ClassifiedMove {
@@ -193,7 +197,8 @@ function buildClassifiedMove(input: ClassifiedMoveInput): ClassifiedMove {
     eco: input.opening?.eco,
     featureDelta: input.featureDelta,
     featuresBefore: input.featuresBefore,
-    featuresAfter: input.features
+    featuresAfter: input.features,
+    previous: input.previous
   });
   const checksCapturesThreats = analyzeChecksCapturesThreats(input.beforeFen, { featuresBefore: input.featuresBefore });
 
@@ -337,3 +342,20 @@ export function hangsPiece(fenBefore: string, moveSan: string): boolean {
 
 export { classifyMove } from './classify-move.js';
 export type { MoveClassificationInput } from './classify-context.js';
+
+/** The game's moves as chess.js plays them, for the ideas that count earlier moves. */
+function playedMoves(game: ParsedGame): Move[] {
+  const start = game.positions[0]?.fen;
+  if (!start) return [];
+  const chess = new Chess(start);
+  const moves: Move[] = [];
+  for (const position of game.positions.slice(1)) {
+    if (!position.moveSan) break;
+    try {
+      moves.push(chess.move(position.moveSan));
+    } catch {
+      break;
+    }
+  }
+  return moves;
+}

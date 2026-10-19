@@ -7,58 +7,84 @@ Moves:
 n1 1.d4 (White, Line A) | book
     book: in book (Queen's Pawn Game)
     board: moves the pawn from d2 to d4
-    alternatives: e4: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: puts a pawn in the centre on d4 | controls c5 and e5 | prevents e5, a pawn advance | opens the bishop on c1 (from 0 squares to 5)
+    opens: the dark-squared bishop on c1, from 0 squares to 5
+    alternatives: e4 (puts a pawn in the centre on e4; controls d5 and f5; opens the bishop on f1 (from 0 squares to 5)): The position is roughly equal, after c5 Nf3 d6 d4; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after Nf6 c4 e6 d4
 n2 1…Nf6 (Black, Line A) | book
     book: in book (Indian Defense)
     board: moves the knight from g8 to f6
-    alternatives: d5: The position is roughly equal; d6: White is slightly better
+    ideas: puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | controls e4 and d5 | prevents e4, a pawn advance
+    alternatives: d5 (puts a pawn in the centre on d5; controls c4 and e4; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after c4 e6 Nc3 Nf6; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after Nc3 Nf6 e4 e5
 n3 2.c4 (White, Line A) | book
     book: in book (Indian Defense: Normal Variation)
+    the book also has: Bf4 (Indian Defense: Accelerated London System); Nd2 (Indian Defense: Lazard Gambit); d5 (Indian Defense: Pawn Push Variation); e4 (Indian Defense: Omega Gambit); f3 (Indian Defense: Gedult Attack)
     board: moves the pawn from c2 to c4
-    alternatives: Nf3: The position is roughly equal; Bf4: The position is roughly equal
+    ideas: controls d5 | prevents Nd5, a knight on a strong square | opens the queen on d1 (from 2 squares to 5) | prepares the pawn's advance to d5, which it now supports
+    opens: the queen on d1, from 2 squares to 5
+    alternatives: Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after e6 c4 b6 e3; Bf4 (develops the bishop to f4; controls e5): The position is roughly equal, after e6 e3 c5 Nf3
 n4 2…e5 (Black, Line A) | book
     book: in book (Indian Defense: Budapest Gambit)
+    the book also has: b5 (Indian Defense: Pyrenees Gambit); g5 (Indian Defense: Medusa Gambit)
     board: moves the pawn from e7 to e5 | leaves the black pawn on e5 hanging
-    alternatives: g6: The position is roughly equal; e6: The position is roughly equal; c6: The position is roughly equal
+    ideas: offers the pawn on e5: it can be taken, and the engine still approves | puts a pawn in the centre on e5 | strikes at the centre: attacks the pawn on d4 | puts pressure on the pawn on d4 and controls f4 | opens the bishop on f8 (from 0 squares to 5)
+    opens: the dark-squared bishop on f8, from 0 squares to 5
+    alternatives: g6 (controls f5; opens the bishop on f8 (from 0 squares to 2)): The position is roughly equal, after Nc3 d5 Nf3 Bg7; e6 (controls d5 and f5; opens the bishop on f8 (from 0 squares to 5)): The position is roughly equal, after Nf3 b6 e3 Bb4+; c6 (takes c6 from the knight, whose natural square it is; controls d5; opens the queen on d8 (from 0 squares to 3)): The position is roughly equal, after e3 e6 Nf3 Be7
 n5 3.dxe5 (White, Line A) | book
     book: in book (Indian Defense: Budapest Gambit Accepted)
     board: moves the pawn from d4 to e5 | captures the pawn on e5 | attacks the knight on f6
-    alternatives: e3: The position is roughly equal; Nc3: The position is roughly equal
+    ideas: threatens to win the knight on f6 with exf6 | puts a pawn in the centre on e5 | controls d6 and f6 | opens the d-file for the rooks (half-open) | opens the queen on d1 (from 5 squares to 9) | leaves White with doubled pawns on the e-file | after the exchange White is a pawn up
+    opens: the queen on d1, from 5 squares to 9
+    alternatives: e3 (controls d4 and f4; supports the centre pawn on d4; opens the queen on d1 (from 5 squares to 9)): The position is roughly equal, after exd4 exd4 Bb4+ Bd2; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4): The position is roughly equal, after exd4 Qxd4 Nc6 Qd1
 n6 3…Ng4 (Black, Line A) | book
     book: in book (Indian Defense: Budapest Gambit Accepted, Main Line)
+    the book also has: Ne4 (Indian Defense: Budapest Gambit Accepted, Fajarowicz Defense)
     board: moves the knight from f6 to g4
-    alternatives: Ne4: White is slightly better; Bb4+: White is better
+    ideas: threatens to win the pawn on e5 with Nxe5 | takes the attacked knight to safety on g4 | puts pressure on the pawn on e5 | prepares the pawn's advance to f6, which it now supports
+    alternatives: Ne4 (centralises the knight on e4, which reaches 8 squares): White is slightly better, after a3 Be7 g3 d6; Bb4+ (develops the bishop to b4; Black now has 2 pieces developed to 0 pieces; clears the way to castle kingside): White is better, after Bd2 Bxd2+ Qxd2 Ng4
 n7 4.Nf3 (White, Line A) | book
     book: in book (Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation)
+    the book also has: Bf4 (Indian Defense: Budapest Gambit Accepted, Main Line, Rubinstein Variation); e4 (Indian Defense: Budapest Gambit Accepted, Main Line, Alekhine Variation)
     board: moves the knight from g1 to f3
-    alternatives: e4: White is slightly better; e3: White is slightly better; Bf4: White is slightly better
+    ideas: defends the pawn on e5, which was attacked | puts the knight on f3, the best defender of a king castled short | develops the knight to f3, its most useful square | controls d4 and e5 | supports the centre pawn on e5 | defends the pawn on h2, attacked once and now defended twice
+    alternatives: e4 (threatens to win the knight on g4 with Qxg4; puts a pawn in the centre on e4; controls d5 and f5): White is slightly better, after Nxe5 a3 d6 Be2; e3 (threatens to win the knight on g4 with Qxg4; controls d4 and f4; opens the queen on d1 (from 9 squares to 12)): White is slightly better, after Nxe5 f4 Nec6 Nc3; Bf4 (develops the bishop to f4; controls e5; supports the centre pawn on e5): White is slightly better, after Nc6 Nf3 Bb4+ Nbd2
 n8 4…Nc6 (Black, Line A) | good | before: The position is roughly equal → after: White is slightly better
     board: moves the knight from b8 to c6
-    alternatives: Bc5: The position is roughly equal; d6: White is slightly better
+    ideas: threatens to win the pawn on e5 with Ncxe5 | prevents Qd4, an attack on a bigger piece | develops the knight to c6, its most useful square | puts pressure on the pawn on e5 and controls d4
+    alternatives: Bc5 (threatens to win the pawn on f2 with Bxf2+; develops the bishop to c5; controls d4): The position is roughly equal, after e3 Nc6 Be2 O-O; d6 (threatens to win the pawn on e5 with dxe5; strikes at the centre: attacks the pawn on e5; puts pressure on the pawn on e5 and controls c5): White is slightly better, after Bg5 Qd7 exd6 Bxd6
 n9 5.Bf4 (White, Line A) | best | before: White is slightly better → after: White is slightly better
+    piece: the dark-squared bishop
     board: moves the bishop from c1 to f4
-    alternatives: Bg5: White is slightly better; Qd5: The position is roughly equal
+    ideas: defends the pawn on e5, which was attacked | develops the bishop to f4 | controls e5 | supports the centre pawn on e5
+    alternatives: Bg5 (threatens to win the queen on d8 with Bxd8; develops the bishop to g5): White is slightly better, after Be7 Bf4 Bb4+ Nbd2; Qd5 (brings the queen out to d5; brings the queen out early, with 3 pieces still at home; controls e5 and e4): The position is roughly equal, after Bb4+ Nc3 Bxc3+ bxc3
 n10 5…Bb4+ (Black, Line A) | best | before: White is slightly better → after: The position is roughly equal
+    piece: the dark-squared bishop
     board: moves the bishop from f8 to b4 | gives check | the check can be answered: block with Bd2, Nfd2, Nc3, Nbd2, Qd2; the checking piece cannot be taken; the king cannot move
-    alternatives: f6: White is slightly better; Bc5: White is slightly better
+    ideas: develops the bishop to b4 | clears the way to castle kingside
+    alternatives: f6 (threatens to win the pawn on e5 with fxe5; strikes at the centre: attacks the pawn on e5; puts pressure on the pawn on e5): White is slightly better, after exf6 Qxf6 e3 Bb4+; Bc5 (threatens to win the pawn on f2 with Bxf2+; develops the bishop to c5; controls d4): White is slightly better, after e3 Bb4+ Nbd2 Qe7
 n11 6.Nbd2 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from b1 to d2 | blocks the check from the bishop on b4
-    alternatives: Nc3: The position is roughly equal; Bd2: The position is roughly equal
+    ideas: leaves the knight on d2 pinned to the king | develops the knight to d2 | controls e4
+    alternatives: Nc3 (leaves the knight on c3 pinned to the king; develops the knight to c3, its most useful square; controls d5 and e4): The position is roughly equal, after Bxc3+ bxc3 Qe7 Qd5; Bd2 (moves the bishop for the second time while 2 pieces still wait at home): The position is roughly equal, after a5 Nc3 Ngxe5 a3
 n12 6…Qe7 (Black, Line A) | best | before: The position is roughly equal → after: White is slightly better
     board: moves the queen from d8 to e7
-    alternatives: d6: The position is roughly equal; f6: White is slightly better
+    ideas: threatens to win the pawn on e5 with Ncxe5 | brings the queen out to e7 | puts pressure on the pawn on e5 | prepares the pawn's advance to d6, which it now supports
+    alternatives: d6 (threatens to win the pawn on e5 with dxe5; strikes at the centre: attacks the pawn on e5; puts pressure on the pawn on e5 and controls c5): The position is roughly equal, after exd6 Bxd6 Bxd6 Qxd6; f6 (threatens to win the pawn on e5 with fxe5; strikes at the centre: attacks the pawn on e5; puts pressure on the pawn on e5): White is slightly better, after exf6 Qxf6 e3 Qxb2
 n13 7.a3 (White, Line A) | good | before: White is slightly better → after: The position is roughly equal
     board: moves the pawn from a2 to a3 | attacks the bishop on b4
-    alternatives: Qc2: White is slightly better; e3: The position is roughly equal
+    ideas: attacks the bishop on b4, which pins the knight on d2
+    alternatives: Qc2 (brings the queen out to c2; controls e4; clears the way to castle queenside): White is slightly better, after Ngxe5 Nxe5 Nxe5 a3; e3 (controls d4; opens the bishop on f1 (from 0 squares to 2)): The position is roughly equal, after Ngxe5 Nxe5 Nxe5 Be2
 n14 7…Ngxe5 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from g4 to e5 | captures the pawn on e5 | attacks the knight on f3
-    alternatives: Ncxe5: White is slightly better; Bxd2+: White is slightly better
+    ideas: threatens mate with Nd3# | threatens to win the pawn on c4 with Nxc4 | centralises the knight on e5, which reaches 8 squares
+    alternatives: Ncxe5 (threatens mate with Nd3#; threatens to win the pawn on c4 with Nxc4; centralises the knight on e5, which reaches 8 squares): White is slightly better, after e3 Nxf3+ gxf3 Bxd2+; Bxd2+ (settles the bishop on d2 on a square by the king that no pawn can cover any more): White is slightly better, after Qxd2 Ngxe5 Nxe5 Nxe5
 n15 8.axb4 (White, Line A) | blunder | before: The position is roughly equal → after: Black has a forced mate in 1
     best instead: Nxe5; after Nxe5 Nxe5 e3 Bxd2+ Qxd2 d6, White has a bishop for a knight
     why Nxe5 is better: moves the knight from f3 to e5 | captures the knight on e5 | attacks the knight on c6
     board: moves the pawn from a3 to b4 | captures the bishop on b4
+    ideas: breaks the pin on the knight on d2 | controls c5 | opens the a-file for the rooks (half-open) | leaves White with doubled pawns on the b-file | after the exchange White is a bishop up | takes toward the centre | prepares the pawn's advance to c5, which it now supports
+    opens: the rook on a1, from 3 squares to 8
     tactics: They let you deliver checkmate with Nd3#.
-    alternatives: Nxe5: The position is roughly equal; e3: The position is roughly equal; Qc2: The position is roughly equal
+    alternatives: Nxe5 (centralises the knight on e5, which reaches 8 squares): The position is roughly equal, after Nxe5 e3 Bxd2+ Qxd2; e3 (controls d4; opens the bishop on f1 (from 0 squares to 2)): The position is roughly equal, after Nxf3+ gxf3 Bxd2+ Qxd2; Qc2 (brings the queen out to c2; controls e4; clears the way to castle queenside): The position is roughly equal, after Nxf3+ gxf3 Nd4 Qd3
     tempting threat: Bg5? White's Bg5 moves the bishop from f4 to g5 | attacks the queen on e7. Black answers Nd3#: moves the knight from e5 to d3 | gives checkmate | why it is mate: the king on e1 is checked by the knight on d3; d1, d2, e2, f1, f2 hold its own pieces. Over the line nothing is taken; at the end material is level (Black has a forced mate in 1).
     tempting threat: Bh6? White's Bh6 moves the bishop from f4 to h6 | leaves the white bishop on h6 hanging. Black answers Nd3#: moves the knight from e5 to d3 | gives checkmate | why it is mate: the king on e1 is checked by the knight on d3; d1, d2, e2, f1, f2 hold its own pieces. Over the line nothing is taken; at the end material is level (Black has a forced mate in 1).
     flags: critical
@@ -68,8 +94,8 @@ n16 8…Nd3# (Black, Line A) | great | before: Black has a forced mate in 1 → 
     flags: quiz-eligible, critical
 
 REEL CANDIDATES
-  r1 mate n10–n16, climax n16 [highlight, puzzle, promo]
-  r2 swing n9–n16, climax n15 [highlight, promo]
+  r1 mate n8–n16, climax n16 [highlight, puzzle, promo]
+  r2 swing n7–n16, climax n15 [highlight, promo]
 
 PLAN
   e1 hook n1–n1
@@ -80,13 +106,19 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.d4: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
-    n2 1…Nf6: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
-    n3 2.c4: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
-    n4 2…e5: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
-    n5 3.dxe5: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
-    n6 3…Ng4: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
-    n7 4.Nf3: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
+    n1 1.d4: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance
+    n2 1…Nf6: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square; Controls e4 and d5
+    n3 2.c4: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Controls d5; Prevents Nd5, a knight on a strong square; Opens the queen on d1 (from 2 squares to 5)
+    n4 2…e5: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Offers the pawn on e5: it can be taken, and the engine still approves; Puts a pawn in the centre on e5; Strikes at the centre: attacks the pawn on d4
+    n5 3.dxe5: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Threatens to win the knight on f6 with exf6; Puts a pawn in the centre on e5; Controls d6 and f6
+    n6 3…Ng4: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Threatens to win the pawn on e5 with Nxe5; Takes the attacked knight to safety on g4; Puts pressure on the pawn on e5
+    n7 4.Nf3: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Defends the pawn on e5, which was attacked; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
+    n8 4…Nc6: Threatens to win the pawn on e5 with Ncxe5; Prevents Qd4, an attack on a bigger piece; Develops the knight to c6, its most useful square
+    n9 5.Bf4: Defends the pawn on e5, which was attacked; Develops the bishop to f4; Controls e5
+    n10 5…Bb4+: Develops the bishop to b4; Clears the way to castle kingside
+    n11 6.Nbd2: Leaves the knight on d2 pinned to the king; Develops the knight to d2; Controls e4
+    n12 6…Qe7: Threatens to win the pawn on e5 with Ncxe5; Brings the queen out to e7; Puts pressure on the pawn on e5
     n13 7.a3: Attacks the bishop on b4, which pins the knight on d2
+    n14 7…Ngxe5: Threatens mate with Nd3#; Threatens to win the pawn on c4 with Nxc4; Centralises the knight on e5, which reaches 8 squares
     n15 8.axb4: They let you deliver checkmate with Nd3#.; Won a bishop, but it allowed mate.
     n16 8…Nd3#: You delivered checkmate.

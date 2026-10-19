@@ -14,147 +14,222 @@ Moves:
 n1 1.e4 (White, Closed) | book
     book: in book (King's Pawn Game)
     board: moves the pawn from e2 to e4
-    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: puts a pawn in the centre on e4 | controls d5 and f5 | opens the bishop on f1 (from 0 squares to 5)
+    opens: the light-squared bishop on f1, from 0 squares to 5
+    alternatives: d4 (puts a pawn in the centre on d4; controls c5 and e5; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after Nf6 c4 e6 Nc3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after Nf6 c4 e6 d4
 n2 1…e5 (Black, Closed) | book
     book: in book (King's Pawn Game)
     board: moves the pawn from e7 to e5
-    alternatives: c5: The position is roughly equal; d6: The position is roughly equal
+    ideas: puts a pawn in the centre on e5 | controls d4 and f4 | opens the bishop on f8 (from 0 squares to 5) | fixes the pawn on e4: it can no longer advance
+    opens: the dark-squared bishop on f8, from 0 squares to 5
+    alternatives: c5 (controls d4; opens the queen on d8 (from 0 squares to 3)): The position is roughly equal, after Nf3 d6 c3 Nf6; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after d4 Nf6 Nc3 e5
 n3 2.Nf3 (White, Closed) | book
     book: in book (King's Knight Opening)
     board: moves the knight from g1 to f3
-    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+    ideas: threatens to win the pawn on e5 with Nxe5 | puts the knight on f3, the best defender of a king castled short | develops the knight to f3, its most useful square | puts pressure on the pawn on e5 and controls d4 | prepares the pawn's advance to d4, which it now supports
+    alternatives: Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nc6 Nf3 Nf6 Bb5; Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after Nf6 Nc3 Nc6 d3
 n4 2…Nc6 (Black, Closed) | book
     book: in book (King's Knight Opening: Normal Variation)
     board: moves the knight from b8 to c6
-    alternatives: Nf6: The position is roughly equal; d6: The position is roughly equal
+    ideas: defends the pawn on e5, which was attacked | develops the knight to c6, its most useful square | controls e5 and d4 | supports the centre pawn on e5
+    alternatives: Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after d4 Nxe4 Nxe5 d5; d6 (controls c5 and e5; supports the centre pawn on e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after d4 exd4 Nxd4 Nf6
 n5 3.Bb5 (White, Closed) | book
     book: in book (Ruy Lopez)
+    piece: the light-squared bishop
     board: moves the bishop from f1 to b5 | attacks the knight on c6
-    alternatives: Bc4: The position is roughly equal; d4: The position is roughly equal; Nc3: The position is roughly equal
+    ideas: develops the bishop to b5 | clears the way to castle kingside
+    alternatives: Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after Nf6 Ng5 d5 exd5; d4 (threatens to win the pawn on e5 with dxe5; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 Nxd4 Nf6 Nxc6; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nf6 Bb5 Bb4 O-O
 n6 3…a6 (Black, Closed) | book
     book: in book (Ruy Lopez: Morphy Defense)
+    the book also has: Bb4 (Ruy Lopez: Alapin Defense); Bc5 (Ruy Lopez: Classical Defense, Boden Variation); Be7 (Ruy Lopez: Lucena Variation); Na5 (Ruy Lopez: Pollock Defense); Nb8 (Ruy Lopez: Retreat Variation)
     board: moves the pawn from a7 to a6 | attacks the bishop on b5
-    alternatives: Nf6: The position is roughly equal; g6: White is slightly better
+    ideas: attacks the bishop on b5
+    alternatives: Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after O-O Nxe4 Re1 Nd6; g6 (controls f5; opens the bishop on f8 (from 5 squares to 7)): White is slightly better, after c3 Nf6 O-O Nxe4
 n7 4.Ba4 (White, Closed) | book
     book: in book (Ruy Lopez: Morphy Defense)
+    the book also has: Bxc6 (Ruy Lopez: Exchange Variation)
+    piece: the light-squared bishop
     board: moves the bishop from b5 to a4 | attacks the knight on c6
-    alternatives: Bxc6: The position is roughly equal; Bc4: The position is roughly equal
+    ideas: takes the attacked bishop to safety on a4
+    alternatives: Bxc6 (threatens to win the pawn on e5 with Nxe5; White now has 2 pieces developed to 0 pieces; controls d5 and e4): The position is roughly equal, after dxc6 d4 exd4 Qxd4; Bc4 (controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after Nf6 d3 Bc5 O-O
 n8 4…Nf6 (Black, Closed) | book
     book: in book (Ruy Lopez: Morphy Defense)
+    the book also has: Bb4 (Ruy Lopez: Morphy Defense, Alapin's Defense Deferred); Bc5 (Ruy Lopez: Morphy Defense, Classical Defense Deferred); Nd4 (Ruy Lopez: Bird's Defense Deferred); Nge7 (Ruy Lopez: Morphy Defense, Cozio Defense); b5 (Ruy Lopez: Morphy Defense, Caro Variation)
     board: moves the knight from g8 to f6
-    alternatives: Be7: The position is roughly equal; Bd6: White is slightly better
+    ideas: threatens to win the pawn on e4 with Nxe4 | puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | puts pressure on the pawn on e4 and controls d5 | prepares the pawn's advance to d5, which it now supports
+    alternatives: Be7 (develops the bishop to e7): The position is roughly equal, after O-O Nf6 Re1 b5; Bd6 (develops the bishop to d6; the bishop on d6 blocks the pawn on d7; controls e5): White is slightly better, after O-O b5 Bb3 Nf6
 n9 5.O-O (White, Closed) | book
     book: in book (Ruy Lopez: Morphy Defense)
+    the book also has: Bxc6 (Ruy Lopez: Morphy Defense, Bayreuth Variation); Nc3 (Ruy Lopez: Morphy Defense, Tarrasch Variation); Qe2 (Ruy Lopez: Morphy Defense, Wormald Attack); c3 (Ruy Lopez: Morphy Defense, Jaffe Gambit); d3 (Ruy Lopez: Morphy Defense, Anderssen Variation)
     board: castles kingside | leaves the white pawn on e4 hanging
-    alternatives: Nc3: The position is roughly equal; d3: The position is roughly equal
+    ideas: castles kingside: the king goes to safety and the rook comes to f1
+    alternatives: Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after b5 Bb3 Be7 O-O; d3 (controls c4 and e4; supports the centre pawn on e4; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after Bc5 O-O d6 Bxc6+
 n10 5…Be7 (Black, Closed) | book
     book: in book (Ruy Lopez: Closed)
+    the book also has: Bc5 (Ruy Lopez: Morphy Defense, Møller Variation); Nxe4 (Ruy Lopez: Morphy Defense, Tartakower Variation); b5 (Ruy Lopez: Morphy Defense); d5 (Ruy Lopez: Central Countergambit); d6 (Ruy Lopez: Morphy Defense, Steinitz Deferred)
+    piece: the dark-squared bishop
     board: moves the bishop from f8 to e7
-    alternatives: b5: The position is roughly equal; Nxe4: The position is roughly equal
+    ideas: develops the bishop to e7 | clears the way to castle kingside
+    alternatives: b5 (attacks the bishop on a4; controls c4): The position is roughly equal, after Bb3 Nxe4 Re1 d5; Nxe4 (centralises the knight on e4, which reaches 8 squares): The position is roughly equal, after d4 b5 Bb3 d5
 n11 6.Re1 (White, Closed) | book
     book: in book (Ruy Lopez: Closed)
+    the book also has: Bxc6 (Ruy Lopez: Closed, Delayed Exchange); Nc3 (Ruy Lopez: Closed, Morphy Attack); Qe2 (Ruy Lopez: Closed, Worrall Attack); d3 (Ruy Lopez: Closed, Martinez Variation); d4 (Ruy Lopez: Closed, Basque Gambit)
     board: moves the rook from f1 to e1
-    alternatives: d4: The position is roughly equal; d3: The position is roughly equal
+    ideas: defends the pawn on e4, which was attacked | controls e4 | supports the centre pawn on e4 | brings the rook to the e-file, in the centre where files open first
+    alternatives: d4 (threatens to win the pawn on e5 with dxe5; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 Re1 b5 Bb3; d3 (controls c4 and e4; supports the centre pawn on e4; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after b5 Bb3 O-O Re1
 n12 6…b5 (Black, Closed) | book
     book: in book (Ruy Lopez: Closed)
+    the book also has: d6 (Ruy Lopez: Closed, Averbakh Variation)
     board: moves the pawn from b7 to b5 | attacks the bishop on a4
-    alternatives: d6: White is slightly better; Bc5: White is slightly better
+    ideas: attacks the bishop on a4 | controls c4 | makes room for the bishop on c8 to fianchetto on b7
+    alternatives: d6 (leaves the knight on c6 pinned to the king; controls c5 and e5; supports the centre pawn on e5): White is slightly better, after c3 Bg4 h3 Bh5; Bc5 (moves the bishop for the second time while 1 piece still wait at home; controls d4; aims at the king on g1, through the pawn on f2): White is slightly better, after c3 d6 d4 Ba7
 n13 7.Bb3 (White, Closed) | book
     book: in book (Ruy Lopez: Closed)
+    piece: the light-squared bishop
     board: moves the bishop from a4 to b3
-    alternatives: d4: Black is better; Nxe5: Black is better
+    ideas: takes the attacked bishop to safety on b3 | controls d5 | aims at the pawn on f7, which only the king defends | prepares the pawn's advance to c4, which it now supports
+    alternatives: d4 (threatens to win the pawn on e5 with dxe5; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): Black is better, after bxa4 dxe5 Ng4 Qd5; Nxe5 (centralises the knight on e5, which reaches 8 squares): Black is better, after bxa4 d4 O-O h3
     flags: quiz-eligible
 n14 7…d6 (Black, Closed) | book
     book: in book (Ruy Lopez: Closed)
+    the book also has: Bb7 (Ruy Lopez: Closed, Trajkovic Counterattack); O-O (Ruy Lopez: Closed)
     board: moves the pawn from d7 to d6
-    alternatives: O-O: White is slightly better; Rb8: White is slightly better
+    ideas: controls c5 and e5 | supports the centre pawn on e5 | opens the bishop on c8 (from 1 squares to 6) | shuts in the bishop on e7 (from 5 squares to 1) | defends the pawn on e5, attacked once and now defended twice
+    opens: the light-squared bishop on c8, from 1 squares to 6
+    alternatives: O-O (castles kingside: the king goes to safety and the rook comes to f8; Black now has 4 pieces developed to 2 pieces): White is slightly better, after c3 d6 h3 Be6; Rb8: White is slightly better, after d4 d6 c3 Bg4
 n15 8.c3 (White, Closed) | book
     book: in book (Ruy Lopez: Closed)
+    the book also has: d4 (Ruy Lopez: Closed, Rosen Attack)
     board: moves the pawn from c2 to c3
-    alternatives: a4: The position is roughly equal; a3: The position is roughly equal
+    ideas: takes c3 from the knight, whose natural square it is | controls d4 | prevents Nd4, a knight on a strong square | prepares the pawn's advance to d4, which it now supports
+    alternatives: a4: The position is roughly equal, after Na5 axb5 axb5 d4; a3: The position is roughly equal, after Na5 Ba2 c5 h3
 n16 8…O-O (Black, Closed) | book
     book: in book (Ruy Lopez: Closed)
+    the book also has: Na5 (Ruy Lopez: Closed, Alekhine Gambit)
     board: castles kingside
-    alternatives: Bg4: White is slightly better; Be6: White is slightly better
+    ideas: castles kingside: the king goes to safety and the rook comes to f8 | Black now has 4 pieces developed to 2 pieces
+    alternatives: Bg4 (pins the knight on f3 to the queen; develops the bishop to g4; Black now has 4 pieces developed to 2 pieces): White is slightly better, after h3 Bh5 d3 Na5; Be6 (develops the bishop to e6; Black now has 4 pieces developed to 2 pieces; controls d5): White is slightly better, after Bxe6 fxe6 d4 O-O
 n17 9.h3 (White, Closed) | book
     book: in book (Ruy Lopez: Closed)
+    the book also has: Bc2 (Ruy Lopez: Closed, Lutikov Variation); a3 (Ruy Lopez: Closed, Suetin Variation); d4 (Ruy Lopez: Closed, Bogoljubow Variation)
     board: moves the pawn from h2 to h3
-    alternatives: d4: The position is roughly equal; a4: The position is roughly equal
+    ideas: prevents Bg4, a pin | loosens the pawns in front of the king, and the pawn on h3 can become a target
+    alternatives: d4 (puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5; puts pressure on the pawn on e5 and controls c5): The position is roughly equal, after Bg4 Be3 exd4 cxd4; a4: The position is roughly equal, after b4 a5 Rb8 h3
 n18 4…b5 (Black, Early b5) | book
     book: in book (Ruy Lopez: Morphy Defense, Caro Variation)
+    the book also has: Bb4 (Ruy Lopez: Morphy Defense, Alapin's Defense Deferred); Bc5 (Ruy Lopez: Morphy Defense, Classical Defense Deferred); Nd4 (Ruy Lopez: Bird's Defense Deferred); Nf6 (Ruy Lopez: Morphy Defense, Anderssen Variation); Nge7 (Ruy Lopez: Morphy Defense, Cozio Defense)
     board: moves the pawn from b7 to b5 | attacks the bishop on a4
-    alternatives: Nf6: The position is roughly equal; Be7: The position is roughly equal; Bd6: White is slightly better
+    ideas: attacks the bishop on a4 | controls c4 | makes room for the bishop on c8 to fianchetto on b7
+    alternatives: Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after Nc3 Bc5 d3 O-O; Be7 (develops the bishop to e7): The position is roughly equal, after O-O Nf6 Re1 b5; Bd6 (develops the bishop to d6; the bishop on d6 blocks the pawn on d7; controls e5): White is slightly better, after O-O b5 Bb3 Nf6
 n19 5.Bb3 (White, Early b5) | book
     book: in book (Ruy Lopez: Morphy Defense, Caro Variation)
+    piece: the light-squared bishop
     board: moves the bishop from a4 to b3
-    alternatives: d4: Black is better; Nxe5: Black is better
+    ideas: takes the attacked bishop to safety on b3 | controls d5 | prevents d5, a pawn break | aims at the pawn on f7, which only the king defends | prepares the pawn's advance to c4, which it now supports
+    alternatives: d4 (threatens to win the pawn on e5 with dxe5; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): Black is better, after bxa4 d5 Nce7 Nxe5; Nxe5 (centralises the knight on e5, which reaches 8 squares): Black is better, after bxa4 Nxc6 dxc6 O-O
     flags: quiz-eligible
 n20 5…Na5 (Black, Early b5) | book
     book: in book (Ruy Lopez: Morphy Defense, Norwegian Variation)
+    the book also has: Bc5 (Ruy Lopez: Morphy Defense, Graz Variation); d6 (Ruy Lopez: Noah's Ark Trap)
     board: moves the knight from c6 to a5 | attacks the bishop on b3 | leaves the black pawn on e5 hanging
-    alternatives: Nf6: The position is roughly equal; Bb7: White is slightly better
+    ideas: moves the knight for the second time while 3 pieces still wait at home | prevents c4, a pawn break
+    alternatives: Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after d4 d6 O-O Bg4; Bb7 (develops the bishop to b7; fianchettoes the bishop on b7, on the long diagonal): White is slightly better, after O-O Nf6 d3 Bc5
 n21 6.O-O (White, Early b5) | best | before: White is slightly better → after: White is slightly better
+    the book also has: Bxf7+ (Ruy Lopez: Morphy Defense, Norwegian Variation, Nightingale Gambit)
     board: castles kingside
-    alternatives: Nc3: White is slightly better; d4: The position is roughly equal
+    ideas: castles kingside: the king goes to safety and the rook comes to f1 | White now has 3 pieces developed to 1 piece
+    alternatives: Nc3 (develops the knight to c3, its most useful square; White now has 3 pieces developed to 1 piece; controls d5 and e4): White is slightly better, after d6 d4 exd4 Qxd4; d4 (attacks the pawn on e5 twice, while nothing defends it; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 O-O Nxb3 axb3
 n22 3…Nf6 (Black, Berlin) | book
     book: in book (Ruy Lopez: Berlin Defense)
+    the book also has: Bb4 (Ruy Lopez: Alapin Defense); Bc5 (Ruy Lopez: Classical Defense, Boden Variation); Be7 (Ruy Lopez: Lucena Variation); Na5 (Ruy Lopez: Pollock Defense); Nb8 (Ruy Lopez: Retreat Variation)
     board: moves the knight from g8 to f6
-    alternatives: a6: The position is roughly equal; g6: White is slightly better
+    ideas: threatens to win the pawn on e4 with Nxe4 | puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | puts pressure on the pawn on e4 and controls d5 | prepares the pawn's advance to d5, which it now supports
+    alternatives: a6 (attacks the bishop on b5): The position is roughly equal, after Ba4 Nf6 O-O Nxe4; g6 (controls f5; opens the bishop on f8 (from 5 squares to 7)): White is slightly better, after c3 Nf6 O-O Nxe4
 n23 4.O-O (White, Berlin) | book
     book: in book (Ruy Lopez: Berlin Defense)
+    the book also has: Nxe5 (Ruy Lopez: Halloween Attack); d3 (Ruy Lopez: Berlin Defense, Anti-Berlin Variation); d4 (Ruy Lopez: Berlin Defense, Nyholm Attack)
     board: castles kingside | leaves the white pawn on e4 hanging
-    alternatives: d3: The position is roughly equal; Nc3: The position is roughly equal
+    ideas: castles kingside: the king goes to safety and the rook comes to f1
+    alternatives: d3 (controls c4 and e4; supports the centre pawn on e4; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after d6 O-O a6 Ba4; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Bb4 O-O O-O d3
 n24 4…Nxe4 (Black, Berlin) | book
     book: in book (Ruy Lopez: Berlin Defense, Rio Gambit Accepted)
+    the book also has: Bc5 (Ruy Lopez: Classical Defense, Benelux Variation); Ng4 (Ruy Lopez: Berlin Defense, Fishing Pole Variation); d6 (Ruy Lopez: Berlin Defense, Closed Bernstein Variation)
     board: moves the knight from f6 to e4 | captures the pawn on e4
-    alternatives: Bc5: The position is roughly equal; d6: White is slightly better
+    ideas: centralises the knight on e4, which reaches 8 squares | after the exchange Black is a pawn up
+    alternatives: Bc5 (develops the bishop to c5; controls d4; aims at the king on g1, through the pawn on f2): The position is roughly equal, after Nxe5 Nxe5 d4 c6; d6 (leaves the knight on c6 pinned to the king; controls c5 and e5; supports the centre pawn on e5): White is slightly better, after Re1 Bd7 c3 a6
 n25 5.d4 (White, Berlin) | book
     book: in book (Ruy Lopez: Berlin Defense, Rio Gambit Accepted)
     board: moves the pawn from d2 to d4
-    alternatives: Re1: The position is roughly equal; Qe1: The position is roughly equal
+    ideas: threatens to win the pawn on e5 with dxe5 | puts a pawn in the centre on d4 | strikes at the centre: attacks the pawn on e5 | puts pressure on the pawn on e5 and controls c5 | prevents Nc5, a knight on a strong square | opens the bishop on c1 (from 0 squares to 5)
+    opens: the dark-squared bishop on c1, from 0 squares to 5
+    alternatives: Re1 (threatens to win the knight on e4 with Rxe4; controls e4; puts a rook on the half-open e-file): The position is roughly equal, after Nd6 Bf1 Be7 Nxe5; Qe1 (threatens to win the knight on e4 with Qxe4; brings the queen out to e1; controls e4): The position is roughly equal, after Nf6 Bxc6 dxc6 Qxe5+
 n26 5…Nd6 (Black, Berlin) | book
     book: in book (Ruy Lopez: Berlin Defense, l'Hermet Variation)
+    the book also has: Be7 (Ruy Lopez: Berlin Defense, Cordel Variation); a6 (Ruy Lopez: Berlin Defense, Rosenthal Variation)
     board: moves the knight from e4 to d6 | attacks the bishop on b5
-    alternatives: a6: The position is roughly equal; Be7: The position is roughly equal
+    ideas: threatens to win the bishop on b5 with Nxb5 | moves the knight for the third time while 2 pieces still wait at home | the knight on d6 blocks the pawn on d7 | controls e4 | shuts in the bishop on f8 (from 5 squares to 1) | prepares e4 by clearing the way
+    alternatives: a6 (attacks the bishop on b5): The position is roughly equal, after Bxc6 dxc6 Re1 Nd6; Be7 (develops the bishop to e7; clears the way to castle kingside): The position is roughly equal, after d5 Nd6 Be2 Nd4
 n27 6.Bxc6 (White, Berlin) | book
     book: in book (Ruy Lopez: Berlin Defense, l'Hermet Variation)
+    the book also has: Ba4 (Ruy Lopez: Open Berlin Defense, Showalter Variation); dxe5 (Ruy Lopez: Open Berlin Defense, l'Hermet Variation)
+    piece: the light-squared bishop
     board: moves the bishop from b5 to c6 | captures the knight on c6
-    alternatives: Ba4: The position is roughly equal; Bd3: The position is roughly equal
+    ideas: White now has 3 pieces developed to 1 piece | controls d5 and e4 | aims at the king on e8, through the pawn on d7 | puts the bishop on the long diagonal | after dxc6 the opponent's pawns are doubled on the c-file
+    alternatives: Ba4: The position is roughly equal, after e4 Re1 Be7 Ne5; Bd3 (controls e4; aims at the pawn on h7): The position is roughly equal, after e4 Re1 Be7 d5
 n28 6…dxc6 (Black, Berlin) | book
     book: in book (Ruy Lopez: Berlin Defense, l'Hermet Variation)
     board: moves the pawn from d7 to c6 | captures the bishop on c6 | leaves the black pawn on e5 hanging
-    alternatives: bxc6: White is slightly better; e4: White is slightly better
+    ideas: controls d5 | gives up the centre: the pawn leaves d7 | opens the d-file for the rooks (half-open) | opens the bishop on c8 (from 0 squares to 5) | leaves Black with doubled pawns on the c-file
+    opens: the light-squared bishop on c8, from 0 squares to 5
+    alternatives: bxc6 (controls d5; opens the b-file for the rooks (half-open); opens the bishop on c8 (from 0 squares to 2)): White is slightly better, after dxe5 Nf5 Qd3 d5; e4 (attacks the knight on f3; puts a pawn in the centre on e4; controls d3 and f3): White is slightly better, after Bd5 c6 Bb3 exf3
 n29 7.dxe5 (White, Berlin) | book
     book: in book (Ruy Lopez: Berlin Defense, l'Hermet Variation)
     board: moves the pawn from d4 to e5 | captures the pawn on e5 | attacks the knight on d6
-    alternatives: Nxe5: The position is roughly equal; Bg5: The position is roughly equal
+    ideas: threatens to win the knight on d6 with exd6 | pins the knight on d6 to the queen | puts a pawn in the centre on e5 | controls d6 and f6 | opens the d-file for the rooks | opens the queen on d1 (from 4 squares to 7) | after the exchange White has a knight for a bishop
+    opens: the queen on d1, from 4 squares to 7
+    alternatives: Nxe5 (centralises the knight on e5, which reaches 8 squares; opens the queen on d1 (from 4 squares to 7); posts the knight on e5 on a strong square, supported by the pawn on d4): The position is roughly equal, after Be7 Re1 O-O Nc3; Bg5 (threatens to win the queen on d8 with Bxd8; develops the bishop to g5; White now has 3 pieces developed to 1 piece): The position is roughly equal, after f6 dxe5 fxg5 exd6
 n30 7…Nf5 (Black, Berlin) | book
     book: in book (Ruy Lopez: Berlin Defense, l'Hermet Variation)
+    the book also has: Ne4 (Ruy Lopez: Berlin Defense, l'Hermet Variation, Westerinen Line)
     board: moves the knight from d6 to f5
-    alternatives: Ne4: White is slightly better; Nc4: White is slightly better
+    ideas: takes the attacked knight to safety on f5 | prevents Qd4, a pin | controls d4 | opens the queen on d8 (from 5 squares to 11) | shuts in the bishop on c8 (from 5 squares to 2)
+    opens: the queen on d8, from 5 squares to 11; the dark-squared bishop on f8, from 1 squares to 5
+    alternatives: Ne4 (centralises the knight on e4, which reaches 8 squares; opens the queen on d8 (from 5 squares to 11)): White is slightly better, after Qe2 Bf5 Rd1 Qc8; Nc4 (puts pressure on the pawn on e5; opens the queen on d8 (from 5 squares to 11)): White is slightly better, after Qe2 Nb6 Nc3 Qe7
 n31 8.Qxd8+ (White, Berlin) | book
     book: in book (Ruy Lopez: Berlin Defense, l'Hermet Variation)
     board: moves the queen from d1 to d8 | captures the queen on d8 | gives check | the check can be answered: no block; take the checking piece with Kxd8; the king cannot move | attacks the bishop on c8
-    alternatives: Qe2: The position is roughly equal; Nbd2: The position is roughly equal
+    ideas: pins the bishop on c8 to the rook | settles the queen on d8 on a square by the king that no pawn can cover any more | brings the queen out to d8
+    alternatives: Qe2 (brings the queen out to e2; controls e4 and e5; supports the centre pawn on e5): The position is roughly equal, after Nd4 Qd1 Ne6 Qe2; Nbd2 (leaves the knight on d2 pinned to the queen; develops the knight to d2; White now has 3 pieces developed to 1 piece): The position is roughly equal, after Be6 b3 Qd5 Bb2
 n32 8…Kxd8 (Black, Berlin) | book
     book: in book (Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense)
     board: moves the king from e8 to d8 | captures the queen on d8
+    ideas: breaks the pin on the bishop on c8 | gives up castling for good | after the exchange White has a knight for a bishop
 n33 3…d6 (Black, Steinitz) | book
     book: in book (Ruy Lopez: Steinitz Defense)
+    the book also has: Bb4 (Ruy Lopez: Alapin Defense); Bc5 (Ruy Lopez: Classical Defense, Boden Variation); Be7 (Ruy Lopez: Lucena Variation); Na5 (Ruy Lopez: Pollock Defense); Nb8 (Ruy Lopez: Retreat Variation)
     board: moves the pawn from d7 to d6
-    alternatives: a6: The position is roughly equal; Nf6: The position is roughly equal; g6: White is slightly better
+    ideas: leaves the knight on c6 pinned to the king | controls c5 and e5 | supports the centre pawn on e5 | opens the bishop on c8 (from 0 squares to 5) | shuts in the bishop on f8 (from 5 squares to 1) | defends the pawn on e5, attacked once and now defended twice | prepares Bd7 by clearing the way
+    opens: the light-squared bishop on c8, from 0 squares to 5
+    alternatives: a6 (attacks the bishop on b5): The position is roughly equal, after Ba4 Nf6 O-O Nxe4; Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after O-O Nxe4 Re1 Nd6; g6 (controls f5; opens the bishop on f8 (from 5 squares to 7)): White is slightly better, after c3 Nf6 O-O Nxe4
 n34 4.d4 (White, Steinitz) | book
     book: in book (Ruy Lopez: Steinitz Defense)
     board: moves the pawn from d2 to d4
-    alternatives: Nc3: White is slightly better; O-O: White is slightly better
+    ideas: threatens to win the pawn on e5 with dxe5 | the knight on c6 cannot take it: it is pinned by the bishop on b5 | puts a pawn in the centre on d4 | strikes at the centre: attacks the pawn on e5 | puts pressure on the pawn on e5 and controls c5 | opens the bishop on c1 (from 0 squares to 5)
+    opens: the dark-squared bishop on c1, from 0 squares to 5
+    alternatives: Nc3 (develops the knight to c3, its most useful square; White now has 3 pieces developed to 1 piece; controls d5 and e4): White is slightly better, after Bd7 d4 exd4 Nxd4; O-O (castles kingside: the king goes to safety and the rook comes to f1; White now has 3 pieces developed to 1 piece): White is slightly better, after Bd7 Bxc6 Bxc6 Nc3
 n35 4…Bd7 (Black, Steinitz) | book
     book: in book (Ruy Lopez: Steinitz Defense)
+    the book also has: exd4 (Ruy Lopez: Steinitz Defense, Center Gambit)
+    piece: the light-squared bishop
     board: moves the bishop from c8 to d7
-    alternatives: exd4: White is slightly better; Ne7: White is slightly better
+    ideas: breaks the pin on the knight on c6 | develops the bishop to d7 | defends the knight on c6, attacked once and now defended twice
+    alternatives: exd4 (puts a pawn in the centre on d4; controls c3 and e3; opens the e-file for the rooks (half-open)): White is slightly better, after Nxd4 Bd7 Nc3 Nf6; Ne7 (develops the knight to e7; controls d5; shuts in the queen on d8 (from 5 squares to 1)): White is slightly better, after d5 a6 Be2 Nb8
 n36 5.Nc3 (White, Steinitz) | book
     book: in book (Ruy Lopez: Steinitz Defense)
+    the book also has: c4 (Ruy Lopez: Steinitz Defense, Semi-Duras Variation)
     board: moves the knight from b1 to c3
-    alternatives: Bxc6: White is slightly better; d5: White is slightly better
+    ideas: develops the knight to c3, its most useful square | controls d5 and e4 | supports the centre pawn on e4
+    alternatives: Bxc6 (threatens to win the pawn on b7 with Bxb7; leaves the bishop on d7 with a single move; controls d5 and e4): White is slightly better, after Bxc6 Nc3 exd4 Nxd4; d5 (attacks the knight on c6; puts a pawn in the centre on d5; controls c6 and e6): White is slightly better, after Nb8 c4 Be7 Bxd7+
 
 REEL CANDIDATES
 
@@ -167,58 +242,59 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.e4: Theory — Ruy Lopez: Closed (C92)
-    n2 1…e5: Theory — Ruy Lopez: Closed (C92)
-    n3 2.Nf3: Theory — Ruy Lopez: Closed (C92)
-    n4 2…Nc6: Theory — Ruy Lopez: Closed (C92)
-    n5 3.Bb5: Theory — Ruy Lopez: Closed (C92)
-    n6 3…a6: Theory — Ruy Lopez: Closed (C92)
-    n7 4.Ba4: Theory — Ruy Lopez: Closed (C92)
-    n8 4…Nf6: Theory — Ruy Lopez: Closed (C92)
-    n9 5.O-O: Theory — Ruy Lopez: Closed (C92)
-    n10 5…Be7: Theory — Ruy Lopez: Closed (C92)
-    n11 6.Re1: Theory — Ruy Lopez: Closed (C92)
-    n12 6…b5: Theory — Ruy Lopez: Closed (C92)
-    n13 7.Bb3: Theory — Ruy Lopez: Closed (C92)
-    n14 7…d6: Theory — Ruy Lopez: Closed (C92)
-    n15 8.c3: Theory — Ruy Lopez: Closed (C92)
-    n16 8…O-O: Theory — Ruy Lopez: Closed (C92)
-    n17 9.h3: Theory — Ruy Lopez: Closed (C92)
+    n1 1.e4: Theory — Ruy Lopez: Closed (C92); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…e5: Theory — Ruy Lopez: Closed (C92); Puts a pawn in the centre on e5; Controls d4 and f4; Opens the bishop on f8 (from 0 squares to 5)
+    n3 2.Nf3: Theory — Ruy Lopez: Closed (C92); Threatens to win the pawn on e5 with Nxe5; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
+    n4 2…Nc6: Theory — Ruy Lopez: Closed (C92); Defends the pawn on e5, which was attacked; Develops the knight to c6, its most useful square; Controls e5 and d4
+    n5 3.Bb5: Theory — Ruy Lopez: Closed (C92); Develops the bishop to b5; Clears the way to castle kingside
+    n6 3…a6: Theory — Ruy Lopez: Closed (C92); Attacks the bishop on b5
+    n7 4.Ba4: Theory — Ruy Lopez: Closed (C92); Takes the attacked bishop to safety on a4
+    n8 4…Nf6: Theory — Ruy Lopez: Closed (C92); Threatens to win the pawn on e4 with Nxe4; Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square
+    n9 5.O-O: Theory — Ruy Lopez: Closed (C92); Castles kingside: the king goes to safety and the rook comes to f1
+    n10 5…Be7: Theory — Ruy Lopez: Closed (C92); Develops the bishop to e7; Clears the way to castle kingside
+    n11 6.Re1: Theory — Ruy Lopez: Closed (C92); Defends the pawn on e4, which was attacked; Controls e4; Supports the centre pawn on e4
+    n12 6…b5: Theory — Ruy Lopez: Closed (C92); Attacks the bishop on a4; Controls c4; Makes room for the bishop on c8 to fianchetto on b7
+    n13 7.Bb3: Theory — Ruy Lopez: Closed (C92); Takes the attacked bishop to safety on b3; Controls d5; Aims at the pawn on f7, which only the king defends
+    n14 7…d6: Theory — Ruy Lopez: Closed (C92); Controls c5 and e5; Supports the centre pawn on e5; Opens the bishop on c8 (from 1 squares to 6)
+    n15 8.c3: Theory — Ruy Lopez: Closed (C92); Takes c3 from the knight, whose natural square it is; Controls d4; Prevents Nd4, a knight on a strong square
+    n16 8…O-O: Theory — Ruy Lopez: Closed (C92); Castles kingside: the king goes to safety and the rook comes to f8; Black now has 4 pieces developed to 2 pieces
+    n17 9.h3: Theory — Ruy Lopez: Closed (C92); Prevents Bg4, a pin; Loosens the pawns in front of the king, and the pawn on h3 can become a target
   l2
-    n1 1.e4: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70)
-    n2 1…e5: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70)
-    n3 2.Nf3: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70)
-    n4 2…Nc6: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70)
-    n5 3.Bb5: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70)
-    n6 3…a6: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70)
-    n7 4.Ba4: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70)
-    n18 4…b5: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70)
-    n19 5.Bb3: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70)
-    n20 5…Na5: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70)
+    n1 1.e4: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…e5: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70); Puts a pawn in the centre on e5; Controls d4 and f4; Opens the bishop on f8 (from 0 squares to 5)
+    n3 2.Nf3: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70); Threatens to win the pawn on e5 with Nxe5; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
+    n4 2…Nc6: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70); Defends the pawn on e5, which was attacked; Develops the knight to c6, its most useful square; Controls e5 and d4
+    n5 3.Bb5: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70); Develops the bishop to b5; Clears the way to castle kingside
+    n6 3…a6: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70); Attacks the bishop on b5
+    n7 4.Ba4: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70); Takes the attacked bishop to safety on a4
+    n18 4…b5: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70); Attacks the bishop on a4; Controls c4; Makes room for the bishop on c8 to fianchetto on b7
+    n19 5.Bb3: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70); Takes the attacked bishop to safety on b3; Controls d5; Prevents d5, a pawn break
+    n20 5…Na5: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70); Moves the knight for the second time while 3 pieces still wait at home; Prevents c4, a pawn break
+    n21 6.O-O: Castles kingside: the king goes to safety and the rook comes to f1; White now has 3 pieces developed to 1 piece
   l3
-    n1 1.e4: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67)
-    n2 1…e5: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67)
-    n3 2.Nf3: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67)
-    n4 2…Nc6: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67)
-    n5 3.Bb5: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67)
-    n22 3…Nf6: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67)
-    n23 4.O-O: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67)
-    n24 4…Nxe4: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67)
-    n25 5.d4: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67)
-    n26 5…Nd6: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67)
-    n27 6.Bxc6: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67)
-    n28 6…dxc6: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67)
-    n29 7.dxe5: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67)
-    n30 7…Nf5: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67)
-    n31 8.Qxd8+: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67)
-    n32 8…Kxd8: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67)
+    n1 1.e4: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…e5: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Puts a pawn in the centre on e5; Controls d4 and f4; Opens the bishop on f8 (from 0 squares to 5)
+    n3 2.Nf3: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Threatens to win the pawn on e5 with Nxe5; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
+    n4 2…Nc6: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Defends the pawn on e5, which was attacked; Develops the knight to c6, its most useful square; Controls e5 and d4
+    n5 3.Bb5: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Develops the bishop to b5; Clears the way to castle kingside
+    n22 3…Nf6: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Threatens to win the pawn on e4 with Nxe4; Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square
+    n23 4.O-O: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Castles kingside: the king goes to safety and the rook comes to f1
+    n24 4…Nxe4: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Centralises the knight on e4, which reaches 8 squares; After the exchange Black is a pawn up
+    n25 5.d4: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Threatens to win the pawn on e5 with dxe5; Puts a pawn in the centre on d4; Strikes at the centre: attacks the pawn on e5
+    n26 5…Nd6: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Threatens to win the bishop on b5 with Nxb5; Moves the knight for the third time while 2 pieces still wait at home; The knight on d6 blocks the pawn on d7
+    n27 6.Bxc6: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); White now has 3 pieces developed to 1 piece; Controls d5 and e4; Aims at the king on e8, through the pawn on d7
+    n28 6…dxc6: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Controls d5; Gives up the centre: the pawn leaves d7; Opens the d-file for the rooks (half-open)
+    n29 7.dxe5: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Threatens to win the knight on d6 with exd6; Pins the knight on d6 to the queen; Puts a pawn in the centre on e5
+    n30 7…Nf5: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Takes the attacked knight to safety on f5; Prevents Qd4, a pin; Controls d4
+    n31 8.Qxd8+: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Pins the bishop on c8 to the rook; Settles the queen on d8 on a square by the king that no pawn can cover any more; Brings the queen out to d8
+    n32 8…Kxd8: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Breaks the pin on the bishop on c8; Gives up castling for good; After the exchange White has a knight for a bishop
   l4
-    n1 1.e4: Theory — Ruy Lopez: Steinitz Defense (C62)
-    n2 1…e5: Theory — Ruy Lopez: Steinitz Defense (C62)
-    n3 2.Nf3: Theory — Ruy Lopez: Steinitz Defense (C62)
-    n4 2…Nc6: Theory — Ruy Lopez: Steinitz Defense (C62)
-    n5 3.Bb5: Theory — Ruy Lopez: Steinitz Defense (C62)
-    n33 3…d6: Theory — Ruy Lopez: Steinitz Defense (C62)
-    n34 4.d4: Theory — Ruy Lopez: Steinitz Defense (C62)
-    n35 4…Bd7: Theory — Ruy Lopez: Steinitz Defense (C62)
-    n36 5.Nc3: Theory — Ruy Lopez: Steinitz Defense (C62)
+    n1 1.e4: Theory — Ruy Lopez: Steinitz Defense (C62); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
+    n2 1…e5: Theory — Ruy Lopez: Steinitz Defense (C62); Puts a pawn in the centre on e5; Controls d4 and f4; Opens the bishop on f8 (from 0 squares to 5)
+    n3 2.Nf3: Theory — Ruy Lopez: Steinitz Defense (C62); Threatens to win the pawn on e5 with Nxe5; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
+    n4 2…Nc6: Theory — Ruy Lopez: Steinitz Defense (C62); Defends the pawn on e5, which was attacked; Develops the knight to c6, its most useful square; Controls e5 and d4
+    n5 3.Bb5: Theory — Ruy Lopez: Steinitz Defense (C62); Develops the bishop to b5; Clears the way to castle kingside
+    n33 3…d6: Theory — Ruy Lopez: Steinitz Defense (C62); Leaves the knight on c6 pinned to the king; Controls c5 and e5; Supports the centre pawn on e5
+    n34 4.d4: Theory — Ruy Lopez: Steinitz Defense (C62); Threatens to win the pawn on e5 with dxe5; The knight on c6 cannot take it: it is pinned by the bishop on b5; Puts a pawn in the centre on d4
+    n35 4…Bd7: Theory — Ruy Lopez: Steinitz Defense (C62); Breaks the pin on the knight on c6; Develops the bishop to d7; Defends the knight on c6, attacked once and now defended twice
+    n36 5.Nc3: Theory — Ruy Lopez: Steinitz Defense (C62); Develops the knight to c3, its most useful square; Controls d5 and e4; Supports the centre pawn on e4

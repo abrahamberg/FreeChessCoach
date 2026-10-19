@@ -14,6 +14,8 @@ import { bookMovesForFen, isBookMoveFrom, resolveOpening } from '../opening-book
 import { lineChanges, type LineChange } from '../piece-coordination.js';
 import { positionKey } from '../opening-book-key.js';
 import { tacticAllowedReason, tacticOpportunityReason } from '../tactic-reason-text.js';
+import type { MoveIdea } from '../move-ideas/index.js';
+import { alternativeIdeas, nodeIdeas } from './dossier-ideas.js';
 
 
 export interface CourseNodeFacts {
@@ -46,6 +48,9 @@ export interface CourseNodeFacts {
   mateAhead: boolean;
   bestInstead: { san: string; line: string[]; board: BoardFact[]; balance: string } | null;
   board: BoardFact[];
+  /** Why the move was played (`move-ideas/`): what it threatens and stops,
+   * develops, controls, opens, prepares, most telling first. */
+  ideas: MoveIdea[];
   /** Checked tactic sentences (`tactic-reason-text.ts`), learner = "you".
    * Not the review's prevention sentences ("you stopped them winning a
    * bishop through a fork"): about a move nobody played, the model presented
@@ -53,8 +58,9 @@ export interface CourseNodeFacts {
   tactics: string[];
   /** The motif the move plays, when the detectors found one. */
   motif: TacticMotifType | null;
-  /** The engine's other top moves, in words. None for a move that is checkmate. */
-  alternatives: { san: string; verdict: string }[];
+  /** The engine's other top moves, in words, each with what it would do
+   * and the engine's line after it. None for a move that is checkmate. */
+  alternatives: { san: string; verdict: string; ideas: MoveIdea[]; line: string[] }[];
   /** §13.5: checks, captures and threats that look right here and fail,
    * with the engine's answer (`withTempting`, after a second engine batch);
    * empty until then. */
@@ -112,9 +118,10 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     mateAhead: !noEvaluation && (evalsByFen.get(node.fenAfter)?.lines[0]?.mateIn ?? null) !== null,
     bestInstead: noEvaluation ? null : bestInstead(move, node.san, fenBefore),
     board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, reply), ...replyFork(node.fenAfter, reply), ...repetition(node.fenAfter, input.linePositionFens)],
+    ideas: nodeIdeas(fenBefore, node.san, input.linePositionFens, noEvaluation ? new Map() : evalsByFen, node.fenAfter),
     tactics: tacticSentences(move, side === input.learnerSide),
     motif: move.tacticOpportunity?.found ? move.tacticOpportunity.type : null,
-    alternatives: noEvaluation ? [] : alternatives(evalBefore, node),
+    alternatives: noEvaluation ? [] : alternatives(evalBefore, node, fenBefore, input.linePositionFens),
     tempting: [],
     quizEligible: isOnlyMove(evalBefore, node.san, side),
     critical: input.critical,
@@ -138,10 +145,17 @@ function opened(fenBefore: string, san: string): LineChange[] {
 /** After a checkmate the mate is the whole description: 38…Rc1# listed
  * "Rxd2+: Black is much better" and "Ra2: Black is much better" (the owner's
  * calibration, 2026-10-01). */
-function alternatives(evalBefore: EngineEval | undefined, node: CourseTreeNode): CourseNodeFacts['alternatives'] {
+function alternatives(evalBefore: EngineEval | undefined, node: CourseTreeNode, fenBefore: string, linePositionFens: readonly string[]): CourseNodeFacts['alternatives'] {
   if (new Chess(node.fenAfter).isCheckmate()) return [];
   if (!evalBefore) return [];
-  return evalBefore.lines.filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line, evalBefore) }));
+  return evalBefore.lines
+    .filter((line) => line.moveSan !== node.san)
+    .map((line) => ({
+      san: line.moveSan,
+      verdict: lineWords(line, evalBefore),
+      ideas: alternativeIdeas(fenBefore, line.moveSan, linePositionFens),
+      line: (line.pvSan ?? []).slice(1, 1 + CONFIG.courses.alternativeLinePlies)
+    }));
 }
 
 /** A perpetual check is a position that comes back: the perpetual's

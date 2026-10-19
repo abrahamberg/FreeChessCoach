@@ -10,69 +10,104 @@ Moves:
 n1 1.d4 (White, The setup) | book
     book: in book (Queen's Pawn Game)
     board: moves the pawn from d2 to d4
-    alternatives: e4: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: puts a pawn in the centre on d4 | controls c5 and e5 | prevents e5, a pawn advance | opens the bishop on c1 (from 0 squares to 5)
+    opens: the dark-squared bishop on c1, from 0 squares to 5
+    alternatives: e4 (puts a pawn in the centre on e4; controls d5 and f5; opens the bishop on f1 (from 0 squares to 5)): The position is roughly equal, after c5 Nf3 d6 d4; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after Nf6 c4 e6 d4
 n2 1…d5 (Black, The setup) | book
     book: in book (Queen's Pawn Game)
+    the book also has: c6 (Queen's Pawn Game: Anglo-Slav Opening)
     board: moves the pawn from d7 to d5
-    alternatives: Nf6: The position is roughly equal; d6: White is slightly better
+    ideas: puts a pawn in the centre on d5 | controls c4 and e4 | prevents e4, a pawn advance | opens the bishop on c8 (from 0 squares to 5) | fixes the pawn on d4: it can no longer advance
+    opens: the light-squared bishop on c8, from 0 squares to 5
+    alternatives: Nf6 (develops the knight to f6, its most useful square; controls e4 and d5): The position is roughly equal, after c4 e6 Nc3 Bb4; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after Nc3 Nf6 e4 e5
 n3 2.Bf4 (White, The setup) | book
     book: in book (Queen's Pawn Game: Accelerated London System)
+    the book also has: Bg5 (Queen's Pawn Game: Levitsky Attack); Nc3 (Queen's Pawn Game: Chigorin Variation); e3 (Queen's Pawn Game); f4 (Queen's Pawn Game: Mason Attack); g4 (Queen's Pawn Game: Zurich Gambit)
+    piece: the dark-squared bishop
     board: moves the bishop from c1 to f4
-    alternatives: c4: The position is roughly equal; Nf3: The position is roughly equal; e3: The position is roughly equal
+    ideas: develops the bishop to f4 | controls e5
+    alternatives: c4 (strikes at the centre: attacks the pawn on d5; puts pressure on the pawn on d5; opens the queen on d1 (from 2 squares to 5)): The position is roughly equal, after e6 Nf3 Nf6 Nc3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after e6 Bf4 c5 e3; e3 (controls d4 and f4; supports the centre pawn on d4; opens the bishop on f1 (from 0 squares to 5)): The position is roughly equal, after Nf6 c4 e6 Nf3
 n4 2…Nf6 (Black, The setup) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    the book also has: c5 (Queen's Pawn Game: Accelerated London System, Steinitz Countergambit)
     board: moves the knight from g8 to f6
-    alternatives: c5: The position is roughly equal; e6: The position is roughly equal
+    ideas: puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | controls e4 and d5 | supports the centre pawn on d5
+    alternatives: c5 (strikes at the centre: attacks the pawn on d4; puts pressure on the pawn on d4; opens the queen on d8 (from 2 squares to 5)): The position is roughly equal, after e3 cxd4 exd4 Nc6; e6 (controls d5 and f5; supports the centre pawn on d5; opens the bishop on f8 (from 0 squares to 5)): The position is roughly equal, after e3 Nf6 Nf3 c5
 n5 3.e3 (White, The setup) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from e2 to e3
-    alternatives: c3: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: controls d4 | supports the centre pawn on d4 | opens the bishop on f1 (from 0 squares to 5) | shuts in the bishop on f4 (from 9 squares to 6)
+    opens: the light-squared bishop on f1, from 0 squares to 5; the queen on d1, from 3 squares to 7
+    alternatives: c3 (takes c3 from the knight, whose natural square it is; controls d4; supports the centre pawn on d4): The position is roughly equal, after e6 e3 Bd6 Nd2; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after c5 e3 Qb6 dxc5
 n6 3…e6 (Black, The setup) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from e7 to e6
-    alternatives: c5: The position is roughly equal; Bg4: The position is roughly equal
+    ideas: controls d5 and f5 | supports the centre pawn on d5 | opens the bishop on f8 (from 0 squares to 5) | shuts in the bishop on c8 (from 5 squares to 1)
+    opens: the dark-squared bishop on f8, from 0 squares to 5
+    alternatives: c5 (strikes at the centre: attacks the pawn on d4; puts pressure on the pawn on d4; opens the queen on d8 (from 2 squares to 5)): The position is roughly equal, after Nf3 cxd4 exd4 Bf5; Bg4 (threatens to win the queen on d1 with Bxd1; develops the bishop to g4): The position is roughly equal, after Nf3 e6 Nbd2 Bd6
 n7 4.Nf3 (White, The setup) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from g1 to f3
-    alternatives: Nd2: The position is roughly equal; c3: The position is roughly equal
+    ideas: puts the knight on f3, the best defender of a king castled short | develops the knight to f3, its most useful square | controls d4 and e5 | supports the centre pawn on d4 | shuts in the queen on d1 (from 7 squares to 4)
+    alternatives: Nd2 (develops the knight to d2; controls e4): The position is roughly equal, after c5 Ngf3 Nc6 c3; c3 (takes c3 from the knight, whose natural square it is; controls d4; supports the centre pawn on d4): The position is roughly equal, after Bd6 Nd2 O-O Ngf3
 n8 4…Bd6 (Black, The setup) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    piece: the dark-squared bishop
     board: moves the bishop from f8 to d6 | attacks the bishop on f4
-    alternatives: c5: The position is roughly equal; Bd7: The position is roughly equal
+    ideas: develops the bishop to d6 | controls e5 | aims at the pawn on h2, through the bishop on f4 | clears the way to castle kingside | prepares the pawn's advance to e5, which it now supports
+    alternatives: c5 (strikes at the centre: attacks the pawn on d4; puts pressure on the pawn on d4; opens the queen on d8 (from 3 squares to 6)): The position is roughly equal, after Nbd2 Nc6 Bb5 Bd7; Bd7 (develops the bishop to d7): The position is roughly equal, after c4 c5 dxc5 Bxc5
 n9 5.Bg3 (White, The setup) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    piece: the dark-squared bishop
     board: moves the bishop from f4 to g3 | attacks the bishop on d6
-    alternatives: Nbd2: The position is roughly equal; Bxd6: The position is roughly equal
+    alternatives: Nbd2 (develops the knight to d2; controls e4): The position is roughly equal, after Bxf4 exf4 Qd6 g3; Bxd6: The position is roughly equal, after cxd6 c4 Bd7 Nc3
 n10 5…O-O (Black, The setup) | good | before: The position is roughly equal → after: The position is roughly equal
     board: castles kingside
-    alternatives: c5: The position is roughly equal; b6: The position is roughly equal
+    ideas: castles kingside: the king goes to safety and the rook comes to f8
+    alternatives: c5 (strikes at the centre: attacks the pawn on d4; puts pressure on the pawn on d4; opens the queen on d8 (from 2 squares to 5)): The position is roughly equal, after dxc5 Bxg3 hxg3 Qa5+; b6 (controls c5; opens the bishop on c8 (from 1 squares to 3)): The position is roughly equal, after c4 O-O Nc3 Bb7
 n11 6.Bd3 (White, The setup) | good | before: The position is roughly equal → after: The position is roughly equal
+    piece: the light-squared bishop
     board: moves the bishop from f1 to d3
-    alternatives: c4: The position is roughly equal; a3: The position is roughly equal; Be2: The position is roughly equal
+    ideas: develops the bishop to d3 | controls e4 | aims at the pawn on h7 | clears the way to castle kingside | prepares the pawn's advance to e4, which it now supports
+    alternatives: c4 (strikes at the centre: attacks the pawn on d5; puts pressure on the pawn on d5; opens the queen on d1 (from 4 squares to 7)): The position is roughly equal, after c5 dxc5 Bxc5 a3; a3: The position is roughly equal, after b6 c4 c5 cxd5; Be2 (develops the bishop to e2; clears the way to castle kingside): The position is roughly equal, after c5 dxc5 Bxg3 hxg3
 n12 6…c5 (Black, The setup) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from c7 to c5
-    alternatives: b6: The position is roughly equal; h6: The position is roughly equal
+    ideas: strikes at the centre: attacks the pawn on d4 | puts pressure on the pawn on d4 | opens the queen on d8 (from 3 squares to 6)
+    opens: the queen on d8, from 3 squares to 6
+    alternatives: b6 (controls c5; opens the bishop on c8 (from 1 squares to 3)): The position is roughly equal, after Qe2 c5 c3 Bb7; h6: The position is roughly equal, after Nbd2 c5 c3 b6
 n13 7.c3 (White, The setup) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from c2 to c3
-    alternatives: dxc5: The position is roughly equal; a4: The position is roughly equal
+    ideas: takes c3 from the knight, whose natural square it is | controls d4 | supports the centre pawn on d4 | opens the queen on d1 (from 3 squares to 6) | defends the pawn on d4, attacked once and now defended 3 times
+    opens: the queen on d1, from 3 squares to 6
+    alternatives: dxc5 (threatens to win the bishop on d6 with cxd6; controls d6; gives up the centre: the pawn leaves d4): The position is roughly equal, after Bxc5 Nbd2 h6 c4; a4: The position is roughly equal, after b6 c3 Ba6 Bxa6
 n14 7…Nc6 (Black, The setup) | good | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from b8 to c6
-    alternatives: Qc7: The position is roughly equal; b6: The position is roughly equal; Ne4: The position is roughly equal
+    ideas: develops the knight to c6, its most useful square | puts pressure on the pawn on d4 and controls e5 | prepares the pawn's advance to e5, which it now supports
+    alternatives: Qc7 (brings the queen out to c7): The position is roughly equal, after Nbd2 Nbd7 Bc2 a5; b6 (controls c5; opens the bishop on c8 (from 1 squares to 3)): The position is roughly equal, after Nbd2 Ba6 Bxa6 Nxa6; Ne4 (moves the knight for the second time while 2 pieces still wait at home; centralises the knight on e4, which reaches 8 squares; opens the queen on d8 (from 6 squares to 9)): The position is roughly equal, after Bxd6 Qxd6 O-O f5
 n15 8.Nbd2 (White, The setup) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from b1 to d2
-    alternatives: Qe2: The position is roughly equal; Ne5: The position is roughly equal
+    ideas: develops the knight to d2 | controls e4 | prevents Ne4, a knight on a strong square | prepares the pawn's advance to c4, which it now supports
+    alternatives: Qe2 (brings the queen out to e2): The position is roughly equal, after Ne4 Nbd2 f5 Bxd6; Ne5 (moves the knight for the second time while 1 piece still wait at home; centralises the knight on e5, which reaches 8 squares; opens the queen on d1 (from 6 squares to 9)): The position is roughly equal, after cxd4 exd4 Ne4 Qe2
 n16 3…c5 (Black, Early c5) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from c7 to c5 | leaves the black pawn on c5 hanging
-    alternatives: e6: The position is roughly equal; Bg4: The position is roughly equal
+    ideas: offers the pawn on c5: it can be taken, and the engine still approves | strikes at the centre: attacks the pawn on d4 | puts pressure on the pawn on d4 | opens the queen on d8 (from 2 squares to 5)
+    opens: the queen on d8, from 2 squares to 5
+    alternatives: e6 (controls d5 and f5; supports the centre pawn on d5; opens the bishop on f8 (from 0 squares to 5)): The position is roughly equal, after Nf3 c5 Nbd2 Qb6; Bg4 (threatens to win the queen on d1 with Bxd1; develops the bishop to g4): The position is roughly equal, after Nf3 e6 Nbd2 Bd6
 n17 4.c3 (White, Early c5) | good | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from c2 to c3
-    alternatives: dxc5: The position is roughly equal; Nf3: The position is roughly equal
+    ideas: takes c3 from the knight, whose natural square it is | controls d4 | supports the centre pawn on d4 | opens the queen on d1 (from 7 squares to 10) | defends the pawn on d4, attacked once and now defended 3 times
+    opens: the queen on d1, from 7 squares to 10
+    alternatives: dxc5 (controls d6; gives up the centre: the pawn leaves d4; opens the d-file for the rooks (half-open)): The position is roughly equal, after Nc6 Bb5 Qa5+ Nc3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after Qb6 dxc5 Qxb2 Nbd2
 n18 4…Nc6 (Black, Early c5) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from b8 to c6 | leaves the black pawn on c5 hanging
-    alternatives: Qb6: The position is roughly equal; e6: The position is roughly equal
+    ideas: develops the knight to c6, its most useful square | puts pressure on the pawn on d4 and controls e5 | prevents b4, a pawn break | prepares the pawn's advance to e5, which it now supports
+    alternatives: Qb6 (threatens to win the pawn on b2 with Qxb2; brings the queen out to b6; brings the queen out early, with 3 pieces still at home): The position is roughly equal, after Qc2 g6 Nf3 c4; e6 (controls d5 and f5; supports the centre pawn on d5; opens the bishop on f8 (from 0 squares to 2)): The position is roughly equal, after Nd2 Nc6 Ngf3 Bd6
 n19 5.Nd2 (White, Early c5) | good | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from b1 to d2
-    alternatives: Nf3: The position is roughly equal; a4: The position is roughly equal
+    ideas: develops the knight to d2 | controls e4 | prepares the pawn's advance to c4, which it now supports
+    alternatives: Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after Qb6 Qc2 g6 Be2; a4: The position is roughly equal, after Qb6 Bb5 e6 Nd2
 n20 5…Qb6 (Black, Early c5) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from d8 to b6
-    alternatives: Bf5: The position is roughly equal; e6: The position is roughly equal
+    ideas: threatens to win the pawn on b2 with Qxb2 | defends the pawn on c5, which was attacked | prevents Bb5, a pin | brings the queen out to b6 | brings the queen out early, with 2 pieces still at home
+    alternatives: Bf5 (develops the bishop to f5; controls e4): The position is roughly equal, after Ngf3 e6 Bb5 Be7; e6 (controls d5 and f5; supports the centre pawn on d5; opens the bishop on f8 (from 0 squares to 2)): The position is roughly equal, after Ngf3 Bd6 Bg3 c4
 n21 6.Qb3 (White, Early c5) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from d1 to b3 | attacks the queen on b6
-    alternatives: Ngf3: The position is roughly equal; Qc2: The position is roughly equal
+    ideas: defends the pawn on b2, which was attacked | brings the queen out to b3 | brings the queen out early, with 2 pieces still at home | puts pressure on the pawn on d5 | clears the way to castle queenside | prepares the pawn's advance to c4, which it now supports
+    alternatives: Ngf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after cxd4 cxd4 Nh5 Bg3; Qc2 (brings the queen out to c2; controls e4; clears the way to castle queenside): The position is roughly equal, after Nh5 Be5 cxd4 Bxd4
 
 REEL CANDIDATES
 
@@ -83,11 +118,29 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.d4: Theory — Queen's Pawn Game: Accelerated London System (D00)
-    n2 1…d5: Theory — Queen's Pawn Game: Accelerated London System (D00)
-    n3 2.Bf4: Theory — Queen's Pawn Game: Accelerated London System (D00)
+    n1 1.d4: Theory — Queen's Pawn Game: Accelerated London System (D00); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance
+    n2 1…d5: Theory — Queen's Pawn Game: Accelerated London System (D00); Puts a pawn in the centre on d5; Controls c4 and e4; Prevents e4, a pawn advance
+    n3 2.Bf4: Theory — Queen's Pawn Game: Accelerated London System (D00); Develops the bishop to f4; Controls e5
+    n4 2…Nf6: Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square; Controls e4 and d5
+    n5 3.e3: Controls d4; Supports the centre pawn on d4; Opens the bishop on f1 (from 0 squares to 5)
+    n6 3…e6: Controls d5 and f5; Supports the centre pawn on d5; Opens the bishop on f8 (from 0 squares to 5)
+    n7 4.Nf3: Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square; Controls d4 and e5
+    n8 4…Bd6: Develops the bishop to d6; Controls e5; Aims at the pawn on h2, through the bishop on f4
+    n10 5…O-O: Castles kingside: the king goes to safety and the rook comes to f8
+    n11 6.Bd3: Develops the bishop to d3; Controls e4; Aims at the pawn on h7
+    n12 6…c5: Strikes at the centre: attacks the pawn on d4; Puts pressure on the pawn on d4; Opens the queen on d8 (from 3 squares to 6)
+    n13 7.c3: Takes c3 from the knight, whose natural square it is; Controls d4; Supports the centre pawn on d4
+    n14 7…Nc6: Develops the knight to c6, its most useful square; Puts pressure on the pawn on d4 and controls e5; Prepares the pawn's advance to e5, which it now supports
+    n15 8.Nbd2: Develops the knight to d2; Controls e4; Prevents Ne4, a knight on a strong square
   l2
-    n1 1.d4: Theory — Queen's Pawn Game: Accelerated London System (D00)
-    n2 1…d5: Theory — Queen's Pawn Game: Accelerated London System (D00)
-    n3 2.Bf4: Theory — Queen's Pawn Game: Accelerated London System (D00)
-    n17 4.c3: Missed dxc5, winning material on c5
+    n1 1.d4: Theory — Queen's Pawn Game: Accelerated London System (D00); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance
+    n2 1…d5: Theory — Queen's Pawn Game: Accelerated London System (D00); Puts a pawn in the centre on d5; Controls c4 and e4; Prevents e4, a pawn advance
+    n3 2.Bf4: Theory — Queen's Pawn Game: Accelerated London System (D00); Develops the bishop to f4; Controls e5
+    n4 2…Nf6: Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square; Controls e4 and d5
+    n5 3.e3: Controls d4; Supports the centre pawn on d4; Opens the bishop on f1 (from 0 squares to 5)
+    n16 3…c5: Offers the pawn on c5: it can be taken, and the engine still approves; Strikes at the centre: attacks the pawn on d4; Puts pressure on the pawn on d4
+    n17 4.c3: Missed dxc5, winning material on c5; Takes c3 from the knight, whose natural square it is; Controls d4; Supports the centre pawn on d4
+    n18 4…Nc6: Develops the knight to c6, its most useful square; Puts pressure on the pawn on d4 and controls e5; Prevents b4, a pawn break
+    n19 5.Nd2: Develops the knight to d2; Controls e4; Prepares the pawn's advance to c4, which it now supports
+    n20 5…Qb6: Threatens to win the pawn on b2 with Qxb2; Defends the pawn on c5, which was attacked; Prevents Bb5, a pin
+    n21 6.Qb3: Defends the pawn on b2, which was attacked; Brings the queen out to b3; Brings the queen out early, with 2 pieces still at home

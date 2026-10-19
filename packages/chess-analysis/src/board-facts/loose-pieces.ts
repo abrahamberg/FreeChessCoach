@@ -26,12 +26,18 @@ export interface LoosePiece {
  * the turn passed; when passing is illegal (`owner` is in check, so the
  * flipped position would be illegal) the answer is `[]`. */
 export function loosePieces(fen: string, owner: Color): LoosePiece[] {
+  return looseAmong(fen, owner, null);
+}
+
+/** `loosePieces` asked about some squares only (null: all of them): only
+ * the attackers of those squares generate their moves. */
+export function looseAmong(fen: string, owner: Color, squares: readonly Square[] | null): LoosePiece[] {
   const opponent = opponentOf(owner);
   const turn = new Chess(fen).turn();
   const seat = turn === opponent ? fen : flipActiveColorFen(fen);
   if (!seat) return [];
   const chess = new Chess(seat);
-  const capturable = new Set(chess.moves({ verbose: true }).filter((move) => move.captured).map((move) => move.to));
+  const capturable = squares === null ? new Set(chess.moves({ verbose: true }).filter((move) => move.captured).map((move) => move.to)) : capturableAmong(chess, opponent, squares);
   const loose: LoosePiece[] = [];
   for (const row of chess.board()) {
     for (const cell of row) {
@@ -53,4 +59,9 @@ const keyOf = (piece: LoosePiece): string => `${piece.square}:${piece.piece}:${p
 export function newLoosePieces(fenBefore: string, fenAfter: string): LoosePiece[] {
   const before = new Set([...loosePieces(fenBefore, 'w'), ...loosePieces(fenBefore, 'b')].map(keyOf));
   return [...loosePieces(fenAfter, 'w'), ...loosePieces(fenAfter, 'b')].filter((piece) => !before.has(keyOf(piece)));
+}
+
+/** The squares among `squares` the side to move can legally capture on. */
+function capturableAmong(chess: Chess, taker: Color, squares: readonly Square[]): Set<Square> {
+  return new Set(squares.filter((square) => chess.attackers(square, taker).some((from) => chess.moves({ square: from, verbose: true }).some((move) => move.to === square && move.captured))));
 }
