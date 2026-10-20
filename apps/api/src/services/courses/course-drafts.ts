@@ -1,13 +1,12 @@
 import {
   buildCourseSkeleton,
-  courseDiagnosisCodes,
+  courseLineGames,
   inferLearnerSide,
   parseCourseTreeOfKind,
   endgameShapeProblems,
   quizSideProblems,
   puzzleShapeProblems,
-  type CourseDossier,
-  type CourseTree
+  type CourseDossier
 } from '@freechesscoach/chess-analysis';
 import {
   bandForRating,
@@ -29,6 +28,7 @@ import { draftProblem } from './draft-checks.js';
 import { missingNoteAudio } from './note-audio.js';
 import { courseEvals } from './public-course.js';
 import { buildManualEpisodes } from './manual-episodes.js';
+import { courseDossierFor, courseTreeOf } from './generation-inputs.js';
 import { courseSlug, courseTitle, resultHeader } from './intake-text.js';
 
 /** Bounds the one engine batch the skeleton runs (a long master game with
@@ -128,22 +128,19 @@ export async function saveDraft(db: Kysely<Database>, ownerId: string, id: strin
 }
 
 /** "Build without AI" (docs/courses.md §10): the skeleton's episodes with
- * template text replace the draft's chapters and episodes. */
+ * template text replace the draft's chapters and episodes. The course's kept
+ * dossier is used when it has one (`courseDossierFor`), so a course written by
+ * hand is checked against the same engine facts as a generation. */
 export async function buildSkeletonDraft(db: Kysely<Database>, ownerId: string, id: string, buildDossier: CourseDossierBuilder): Promise<CourseResponse> {
   const row = await ownedCourse(db, ownerId, id);
   notBeingWritten(row);
-  const document = storedDocument(row);
-  const tree: CourseTree = { startFen: document.startFen, nodes: document.nodes, lines: document.lines, errors: [] };
-  const { dossier, lines } = await buildDossier(tree, document.learnerSide, ownerId, document.kind);
-  const lineGames = lines.map((analysis) => analysis.line);
+  const { dossier, document } = await courseDossierFor(db, row, storedDocument(row), buildDossier);
+  const tree = courseTreeOf(document);
+  const lineGames = courseLineGames(tree);
   const skeleton = buildCourseSkeleton({ kind: document.kind, tree, lines: lineGames, dossier });
   if (!skeleton) throw new ValidationError('No trap found: no move by the other side loses ground on this line');
   const { chapters, episodes } = buildManualEpisodes({ document, skeleton, dossier, lines: lineGames });
-  // Kept, so a course written by hand is checked against the engine's facts
-  // too; the codes follow the first dossier, as in a generation.
-  const diagnosisCodes = row.dossier ? document.diagnosisCodes : courseDiagnosisCodes(tree, dossier);
-  await coursesRepo.setDossier(db, id, dossier);
-  const saved = await coursesRepo.updateDraft(db, id, ownerId, { ...document, diagnosisCodes, chapters, episodes });
+  const saved = await coursesRepo.updateDraft(db, id, ownerId, { ...document, chapters, episodes });
   if (!saved) throw new NotFoundError('Course not found');
   return toCourseResponse(db, saved);
 }

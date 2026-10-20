@@ -3,6 +3,7 @@ import { CourseListResponseSchema, type CourseDebugResponse, type CourseResponse
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build-app.js';
+import type { CourseDossierBuilder } from '../services/courses/dossier.js';
 import { ENGLUND, ENGLUND_INTAKE, englundDossier } from '../../test/helpers/course-fixtures.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import { mockResolution, multiStepGenerateModel } from '../../test/helpers/mock-model.js';
@@ -30,8 +31,8 @@ afterAll(async () => {
 
 const audioStore = fakeAudioStore();
 
-async function creatorApp() {
-  const app = buildTestApp({ db, courseDossierBuilder: englundDossier, audioStore });
+async function creatorApp(courseDossierBuilder: CourseDossierBuilder = englundDossier) {
+  const app = buildTestApp({ db, courseDossierBuilder, audioStore });
   await app.ready();
   await app.inject({ method: 'GET', url: '/api/users/me' });
   await usersRepo.setCanCreateCourses(db, DEV_EMAIL, true);
@@ -124,7 +125,8 @@ describe('course routes', () => {
   });
 
   test('build without AI: the trap skeleton becomes the §6.3 episodes with fact-filled lines', async () => {
-    const app = await creatorApp();
+    const buildDossier = vi.fn(englundDossier);
+    const app = await creatorApp(buildDossier);
     const course = (await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE })).json<CourseResponse>();
 
     const built = await app.inject({ method: 'POST', url: `/api/courses/${course.id}/skeleton` });
@@ -141,6 +143,9 @@ describe('course routes', () => {
     expect(episodes.find((episode) => episode.role === 'quiz')?.quiz?.answerNodeId).toBe('n12');
     // The template picks a clip move or two where there is a tactic or a critical moment.
     expect(episodes.every((episode) => episode.plies.filter((ply) => ply.video).length <= 2)).toBe(true);
+    // Built again, it reads the kept dossier: no second engine pass.
+    expect((await app.inject({ method: 'POST', url: `/api/courses/${course.id}/skeleton` })).statusCode).toBe(200);
+    expect(buildDossier).toHaveBeenCalledTimes(1);
     await app.close();
   });
 
