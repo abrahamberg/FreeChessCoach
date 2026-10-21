@@ -65,7 +65,7 @@ n10 5…cxb5 (Black, Line A) | mistake | before: White is better → after: Whit
     why a5 is better: moves the pawn from a7 to a5 | leaves the black pawn on c4 hanging
     board: moves the pawn from c6 to b5 | captures the pawn on b5
     ideas: defends the pawn on c4, which was attacked | controls c4 | after the exchange Black is a pawn up | prepares Nc6 by clearing the way
-    alternatives: a5 (leaves Black with an isolated pawn on a5): White is better, after Bxc4 e6 Nf3 Nf6; e6 (controls d5 and f5; opens the bishop on f8 (from 0 squares to 5); shuts in the bishop on c8 (from 7 squares to 3)): White is better, after Bxc4 a5 Nf3 Nf6; Nf6 (develops the knight to f6, its most useful square; controls e4 and d5): White is better, after Bxc4 e6 Nf3 a5
+    alternatives: a5: White is better, after Bxc4 e6 Nf3 Nf6; e6 (controls d5 and f5; opens the bishop on f8 (from 0 squares to 5); shuts in the bishop on c8 (from 7 squares to 3)): White is better, after Bxc4 a5 Nf3 Nf6; Nf6 (develops the knight to f6, its most useful square; controls e4 and d5): White is better, after Bxc4 e6 Nf3 a5
     flags: critical
 n11 6.Qf3 (White, Line A) | best | before: White is better → after: White is better
     board: moves the queen from d1 to f3 | attacks the rook on a8

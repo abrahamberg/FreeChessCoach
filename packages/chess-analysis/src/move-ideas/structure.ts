@@ -16,6 +16,8 @@ const distance = (a: Square, b: Square): number => Math.max(Math.abs(fileIndex(a
  * half an outpost (the knight on e5). */
 function outpostOrHole({ after, move, enemy }: IdeaContext): MoveIdea | null {
   if (move.piece === 'p' || move.piece === 'k' || ownRank(move.to, move.color) < 4) return null;
+  // With no enemy pawns every square is out of their reach: nothing to say.
+  if (!after.board().flat().some((cell) => cell?.type === 'p' && cell.color === enemy)) return null;
   const secure = !pawnCanReach(after, enemy, move.to);
   const piece = { piece: move.piece, square: move.to };
   const king = kingSquare(after, enemy);
@@ -46,6 +48,9 @@ function blockades({ after, move, enemy }: IdeaContext): MoveIdea | null {
 /** A pawn marching at the enemy king's wing while the own king is away from it. */
 function pawnStorm({ after, move, enemy, fullmove }: IdeaContext): MoveIdea | null {
   if (move.piece !== 'p' || ownRank(move.to, move.color) < 4 || fullmove < 6) return null;
+  // A passed pawn's push is said as that (`passedPawn`).
+  const owner = move.color === 'w' ? 'white' : 'black';
+  if (pawnStructure(after).passedPawns.some((pawn) => pawn.square === move.to && pawn.color === owner)) return null;
   const king = kingSquare(after, enemy);
   if (!king || ownRank(king, enemy) > 2 || Math.abs(fileIndex(king) - fileIndex(move.to)) > 1 || !shieldFiles(king)) return null;
   // Beside its own king a pawn on the fourth is making room, not storming.
@@ -77,7 +82,8 @@ function weaknesses({ fenBefore, after, move }: IdeaContext): MoveIdea[] {
     const name = color === 'w' ? 'white' : 'black';
     const doubled = now.doubledPawns.filter((each) => each.color === name && !was.doubledPawns.some((old) => old.color === name && old.file === each.file));
     if (doubled.length) ideas.push({ kind: 'pawnWeakness', owner: name, weakness: 'doubled', where: doubled.map((each) => String(each.file)) });
-    const isolated = now.isolatedPawns.filter((each) => each.color === name && !was.isolatedPawns.some((old) => old.color === name && old.square === each.square));
+    // By file: a pawn pushed up an isolated file is not a new weakness.
+    const isolated = now.isolatedPawns.filter((each) => each.color === name && !was.isolatedPawns.some((old) => old.color === name && String(old.square)[0] === String(each.square)[0]));
     if (isolated.length) ideas.push({ kind: 'pawnWeakness', owner: name, weakness: 'isolated', where: isolated.map((each) => String(each.square)) });
   }
   return ideas;

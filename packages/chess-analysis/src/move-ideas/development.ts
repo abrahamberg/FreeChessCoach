@@ -2,7 +2,7 @@ import type { Color, Move, Square } from 'chess.js';
 import { developedMinorPieceCount } from '../opening-development.js';
 import { PIECE_VALUES } from '../tactics.js';
 import type { IdeaContext } from './context.js';
-import { homeRank, NATURAL_KNIGHT_SQUARES, ownRank } from './squares.js';
+import { fewPieces, homeRank, NATURAL_KNIGHT_SQUARES, ownRank } from './squares.js';
 import type { MoveIdea, Wing } from './types.js';
 
 /** Past this move the opening's rules (move a piece once, the queen stays
@@ -18,6 +18,7 @@ const MINOR_HOMES: Record<Color, Record<'n' | 'b', readonly Square[]>> = {
 };
 
 export function developmentIdeas(context: IdeaContext): MoveIdea[] {
+  if (fewPieces(context.before)) return [castles(context)].filter((idea): idea is MoveIdea => idea !== null);
   return [develops(context), castles(context), clearsCastling(context), movesAgain(context), blocksPawn(context), takesKnightSquare(context), earlyQueen(context), developmentLead(context)].filter(
     (idea): idea is MoveIdea => idea !== null
   );

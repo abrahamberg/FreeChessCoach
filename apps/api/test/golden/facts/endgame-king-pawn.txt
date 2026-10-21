@@ -8,53 +8,64 @@ l2 "Line B" | leaves book at n1
 Moves:
 n1 1.Kf6 (White, Line A) | best | before: White is winning → after: White is winning
     board: moves the king from e6 to f6
-    alternatives: Kd6: White is winning; Kd5: The position is roughly equal
+    ideas: prepares e6 by clearing the way
+    alternatives: Kd6: White is winning, after Kd8 Ke6 Kc7 Kf7; Kd5: The position is roughly equal, after Ke7 e6 Ke8 Ke4
 n2 1…Kf8 (Black, Line A) | best | before: White is winning → after: White is winning
     board: moves the king from e8 to f8 | takes the opposition: the kings face each other with one square between, and the other king must give way
-    alternatives: Kd7: White is winning; Kd8: White is winning
+    alternatives: Kd7: White is winning, after e6+ Kc6 Kf7 Kd5; Kd8: White is winning, after Kf7 Kc8 e6 Kb7
 n3 2.e6 (White, Line A) | best | before: White is winning → after: White is winning
     board: moves the pawn from e5 to e6
-    alternatives: Ke6: White is winning; Kg6: The position is roughly equal
+    ideas: pushes the passed pawn to e6, 2 squares from queening
+    alternatives: Ke6: White is winning, after Ke8 Kf6 Kd8 Kf7; Kg6: The position is roughly equal, after Ke7 Kf5 Kf7 e6+
 n4 2…Ke8 (Black, Line A) | best | before: White is winning → after: White is winning
     board: moves the king from f8 to e8
-    alternatives: Kg8: White has a forced mate
+    alternatives: Kg8: White has a forced mate, after e7 Kh8 e8=Q+ Kh7
 n5 3.e7 (White, Line A) | great | before: White is winning → after: White is winning
     board: moves the pawn from e6 to e7
-    alternatives: Kf5: The position is roughly equal; Ke5: The position is roughly equal
+    ideas: pushes the passed pawn to e7, 1 square from queening
+    alternatives: Kf5: The position is roughly equal, after Ke7 Ke5 Ke8 Kf6; Ke5: The position is roughly equal, after Ke7 Kd5 Ke8 Ke4
     flags: quiz-eligible, critical
 n6 3…Kd7 (Black, Line A) | forced | before: White is winning → after: White is winning
     board: moves the king from e8 to d7
+    ideas: brings the king toward the centre, a strong piece in the ending
 n7 4.Kf7 (White, Line A) | great | before: White is winning → after: White is winning
     board: moves the king from f6 to f7 | takes the opposition: the kings face each other with one square between, and the other king must give way
-    alternatives: e8=R: The position is roughly equal; e8=Q+: The position is roughly equal
+    ideas: marches the king into the enemy half, to f7 | prepares e8=Q, which it now supports
+    alternatives: e8=R: The position is roughly equal, after Kxe8 Ke6 Kd8 Kd6; e8=Q+: The position is roughly equal, after Kxe8 Ke6 Kd8 Kd6
     tempting check: e8=B+? White's e8=B+ moves the pawn from e7 to e8 | promotes to a bishop | gives check | the check can be answered: no block; take the checking piece with Kxe8; move the king with Kc8, Kd8, Kd6, Kc7 | leaves the white bishop on e8 hanging. Black answers Kd6: moves the king from d7 to d6. Then Bf7 Kc6 Bd5+. Over the line nothing is taken; at the end White is a bishop up (The position is roughly equal).
     tempting check: e8=Q+? White's e8=Q+ moves the pawn from e7 to e8 | promotes to a queen | gives check | the check can be answered: no block; take the checking piece with Kxe8; move the king with Kd6, Kc7 | leaves the white queen on e8 hanging. Black answers Kxe8: moves the king from d7 to e8 | captures the queen on e8. Then Ke6 Kd8 Kd6. Over the line Black takes the queen; at the end material is level (The position is roughly equal).
     flags: quiz-eligible, critical
 n8 4…Kd6 (Black, Line A) | best | before: White is winning → after: White is winning
     board: moves the king from d7 to d6
-    alternatives: Kc6: White is winning; Kc7: White is winning
+    ideas: brings the king toward the centre, a strong piece in the ending
+    alternatives: Kc6: White is winning, after e8=Q+ Kb6 Qe5 Kb7; Kc7: White is winning, after e8=Q Kd6 Qe3 Kc6
 n9 5.e8=Q (White, Line A) | best | before: White is winning → after: White is winning
     board: moves the pawn from e7 to e8 | promotes to a queen
-    alternatives: Kf6: White is winning; Kf8: White is winning
+    alternatives: Kf6: White is winning, after Kd5 e8=Q Kc5 Ke5; Kf8: White is winning, after Kd5 Kf7 Kc4 e8=Q
     tempting check: e8=N+? White's e8=N+ moves the pawn from e7 to e8 | promotes to a knight | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd7, Ke5, Kd5, Kc5, Kc6. Black answers Ke5: moves the king from d6 to e5. Then Nc7 Kf4 Kg7. Over the line nothing is taken; at the end White is a knight up (The position is roughly equal).
 n10 1…Kd7 (Black, Line B) | excellent | before: White is winning → after: White is winning
     board: moves the king from e8 to d7
-    alternatives: Kf8: White is winning; Kd8: White is winning
+    ideas: brings the king toward the centre, a strong piece in the ending
+    alternatives: Kf8: White is winning, after e6 Ke8 e7 Kd7; Kd8: White is winning, after Kf7 Kc8 e6 Kb7
 n11 2.Kf7 (White, Line B) | excellent | before: White is winning → after: White is winning
     board: moves the king from f6 to f7 | takes the opposition: the kings face each other with one square between, and the other king must give way
-    alternatives: e6+: White is winning; Kf5: The position is roughly equal
+    ideas: marches the king into the enemy half, to f7
+    alternatives: e6+ (pushes the passed pawn to e6, 2 squares from queening): White is winning, after Kc8 e7 Kc7 e8=Q; Kf5: The position is roughly equal, after Ke7 e6 Ke8 Ke4
 n12 2…Kd8 (Black, Line B) | excellent | before: White is winning → after: White is winning
     board: moves the king from d7 to d8
-    alternatives: Kc6: White is winning; Kc8: White is winning
+    alternatives: Kc6: White is winning, after e6 Kc5 e7 Kb5; Kc8: White is winning, after e6 Kc7 e7 Kb6
 n13 3.e6 (White, Line B) | best | before: White is winning → after: White is winning
     board: moves the pawn from e5 to e6
-    alternatives: Ke6: White is winning; Kf6: White is winning
+    ideas: pushes the passed pawn to e6, 2 squares from queening
+    alternatives: Ke6: White is winning, after Kc8 Kf7 Kc7 e6; Kf6: White is winning, after Ke8 Ke6 Kd8 Kf7
 n14 3…Kc7 (Black, Line B) | best | before: White is winning → after: White is winning
     board: moves the king from d8 to c7
-    alternatives: Kc8: White is winning
+    ideas: brings the king toward the centre, a strong piece in the ending
+    alternatives: Kc8: White is winning, after e7 Kc7 e8=Q Kd6
 n15 4.e7 (White, Line B) | excellent | before: White is winning → after: White is winning
     board: moves the pawn from e6 to e7 | the black king on c7 is outside the pawn's square: it cannot catch the pawn
-    alternatives: Ke8: White is winning; Ke7: White is winning
+    ideas: pushes the passed pawn to e7, 1 square from queening
+    alternatives: Ke8: White is winning, after Kb7 Kd7 Kb6 Kd8; Ke7: White is winning, after Kc8 Kf7 Kb7 e7
 
 REEL CANDIDATES
   r1 puzzle n1–n9, climax n7 [highlight, puzzle, promo]
@@ -70,6 +81,16 @@ PLAN
 
 REVIEW NOTES
   l1
-    n5 3.e7: The only winning move
-    n7 4.Kf7: The only winning move
+    n1 1.Kf6: Prepares e6 by clearing the way
+    n3 2.e6: Pushes the passed pawn to e6, 2 squares from queening
+    n5 3.e7: The only winning move; Pushes the passed pawn to e7, 1 square from queening
+    n6 3…Kd7: Brings the king toward the centre, a strong piece in the ending
+    n7 4.Kf7: The only winning move; Marches the king into the enemy half, to f7; Prepares e8=Q, which it now supports
+    n8 4…Kd6: Brings the king toward the centre, a strong piece in the ending
   l2
+    n1 1.Kf6: Prepares e6 by clearing the way
+    n10 1…Kd7: Brings the king toward the centre, a strong piece in the ending
+    n11 2.Kf7: Marches the king into the enemy half, to f7
+    n13 3.e6: Pushes the passed pawn to e6, 2 squares from queening
+    n14 3…Kc7: Brings the king toward the centre, a strong piece in the ending
+    n15 4.e7: Pushes the passed pawn to e7, 1 square from queening

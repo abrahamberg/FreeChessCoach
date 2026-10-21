@@ -1,8 +1,9 @@
-import { Chess, type Color, type PieceSymbol, type Square } from 'chess.js';
+import type { Color, PieceSymbol, Square } from 'chess.js';
+import { attackersOf, colorOf, FastBoard, indexOf, squareOf, symbolOf } from '../fast-board/board.js';
+import { legalMoves } from '../fast-board/moves.js';
 import { opponentOf } from '../attack-map.js';
 import { CONFIG } from '../config.js';
-import { flipActiveColorFen } from '../null-move-fen.js';
-import { see } from '../see.js';
+import { seeOnBoard } from '../see.js';
 
 /** One pawn on `see`'s scale: the least an exchange has to win. `see` prices
  * a bishop 10 centipawns above a knight, so a knight taking a defended bishop
@@ -33,24 +34,29 @@ export function loosePieces(fen: string, owner: Color): LoosePiece[] {
  * the attackers of those squares generate their moves. */
 export function looseAmong(fen: string, owner: Color, squares: readonly Square[] | null): LoosePiece[] {
   const opponent = opponentOf(owner);
-  const turn = new Chess(fen).turn();
-  const seat = turn === opponent ? fen : flipActiveColorFen(fen);
-  if (!seat) return [];
-  const chess = new Chess(seat);
-  const capturable = squares === null ? new Set(chess.moves({ verbose: true }).filter((move) => move.captured).map((move) => move.to)) : capturableAmong(chess, opponent, squares);
+  const board = FastBoard.fromFen(fen);
+  // Read from the opponent's seat: passing is illegal when `owner` is in check.
+  if (board.turn !== opponent && board.inCheck(owner)) return [];
+  board.turn = opponent;
+  board.ep = -1;
+  // Board order, as the answer always was.
+  const asked = squares === null ? allSquares() : [...new Set(squares.map(indexOf))].sort((a, b) => a - b);
+  const movers = squares === null ? legalMoves(board) : [...new Set(asked.flatMap((index) => attackersOf(board, index, opponent)))].flatMap((from) => legalMoves(board, from));
+  const capturable = new Set(movers.filter((move) => move.captured && asked.includes(move.to)).map((move) => move.to));
   const loose: LoosePiece[] = [];
-  for (const row of chess.board()) {
-    for (const cell of row) {
-      if (!cell || cell.color !== owner || cell.type === 'k' || !capturable.has(cell.square)) continue;
-      // `see` also counts recaptures through the piece taken (the Englund's
-      // rook on a1 sits behind the queen on b2: taking it loses the queen).
-      if (see(seat, cell.square, opponent) < MIN_WON_SEE_CP) continue;
-      const tier = chess.attackers(cell.square, owner).length === 0 ? 'free' : 'winnable';
-      loose.push({ square: cell.square, piece: cell.type, owner, tier });
-    }
+  for (const index of asked) {
+    const piece = board.squares[index] ?? 0;
+    if (!piece || colorOf(piece) !== owner || symbolOf(piece) === 'k' || !capturable.has(index)) continue;
+    // `see` also counts recaptures through the piece taken (the Englund's
+    // rook on a1 sits behind the queen on b2: taking it loses the queen).
+    if (seeOnBoard(board, index) < MIN_WON_SEE_CP) continue;
+    const tier = attackersOf(board, index, owner).length === 0 ? 'free' : 'winnable';
+    loose.push({ square: squareOf(index), piece: symbolOf(piece), owner, tier });
   }
   return loose;
 }
+
+const allSquares = (): number[] => Array.from({ length: 64 }, (_, index) => index);
 
 const keyOf = (piece: LoosePiece): string => `${piece.square}:${piece.piece}:${piece.owner}`;
 
@@ -59,9 +65,4 @@ const keyOf = (piece: LoosePiece): string => `${piece.square}:${piece.piece}:${p
 export function newLoosePieces(fenBefore: string, fenAfter: string): LoosePiece[] {
   const before = new Set([...loosePieces(fenBefore, 'w'), ...loosePieces(fenBefore, 'b')].map(keyOf));
   return [...loosePieces(fenAfter, 'w'), ...loosePieces(fenAfter, 'b')].filter((piece) => !before.has(keyOf(piece)));
-}
-
-/** The squares among `squares` the side to move can legally capture on. */
-function capturableAmong(chess: Chess, taker: Color, squares: readonly Square[]): Set<Square> {
-  return new Set(squares.filter((square) => chess.attackers(square, taker).some((from) => chess.moves({ square: from, verbose: true }).some((move) => move.to === square && move.captured))));
 }

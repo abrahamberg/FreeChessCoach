@@ -1,4 +1,6 @@
 import type { Chess, Color, Square } from 'chess.js';
+import { colorOf, indexOf, squareOf, symbolOf } from '../fast-board/board.js';
+import { hasLegalMove, isMate, legalMoves } from '../fast-board/moves.js';
 import { kickTarget } from '../kick-reason.js';
 import { see } from '../see.js';
 import { pinShapes } from '../tactic-pins.js';
@@ -15,11 +17,11 @@ export function threatIdeas(context: IdeaContext): MoveIdea[] {
 }
 
 /** A mate the mover would have next move, which it did not have before. */
-function threatensMate({ again, before, after }: IdeaContext): MoveIdea | null {
-  if (!again || after.isGameOver()) return null;
-  const line = mateThreat(again);
+function threatensMate({ fast }: IdeaContext): MoveIdea | null {
+  if (!fast.again || !hasLegalMove(fast.after)) return null;
+  const line = mateThreat(fast.again);
   if (!line) return null;
-  const had = mateThreat(before);
+  const had = mateThreat(fast.before);
   return had && had[0] === line[0] ? null : { kind: 'threatensMate', line };
 }
 
@@ -33,13 +35,16 @@ function threatensMaterial({ fenBefore, before, after, again, enemy, move }: Ide
     .filter((piece) => !had.has(piece.square))
     .sort((a, b) => PIECE_VALUES[b.piece] - PIECE_VALUES[a.piece]);
   if (!target) return null;
-  const capture = again
-    .moves({ verbose: true })
-    .filter((each) => each.to === target.square && each.captured)
-    .sort((a, b) => PIECE_VALUES[a.piece] - PIECE_VALUES[b.piece])[0];
   // A piece the move itself hangs and takes back is the exchange, not a threat.
-  if (!capture || target.square === move.to) return null;
-  return { kind: 'threatensMaterial', san: capture.san, target: { piece: target.piece, square: target.square } };
+  if (target.square === move.to) return null;
+  const san = cheapestCapture(again, target.square);
+  return san ? { kind: 'threatensMaterial', san, target: { piece: target.piece, square: target.square } } : null;
+}
+
+/** The SAN of the cheapest legal capture on `square`: only its attackers generate moves. */
+function cheapestCapture(board: Chess, square: Square): string | null {
+  const captures = board.attackers(square, board.turn()).flatMap((from) => board.moves({ square: from, verbose: true }).filter((each) => each.to === square && each.captured));
+  return captures.sort((a, b) => PIECE_VALUES[a.piece] - PIECE_VALUES[b.piece])[0]?.san ?? null;
 }
 
 /** The enemy men that gained an attacker or lost a defender: the only ones
@@ -75,10 +80,11 @@ function pilesOn({ after, before, move, enemy }: IdeaContext): MoveIdea | null {
 
 /** The moved piece stands where an enemy man attacks it but cannot take,
  * because it is pinned: 13…Qg3+ and the f2-pawn may not take. */
-function pinnedCannotTake({ after, move, enemy }: IdeaContext): MoveIdea | null {
+function pinnedCannotTake({ after, move, enemy, fast }: IdeaContext): MoveIdea | null {
   const attackers = after.attackers(move.to, enemy);
-  if (attackers.length === 0 || after.isCheckmate()) return null;
-  const legal = new Set(attackers.filter((from) => after.moves({ square: from, verbose: true }).some((each) => each.to === move.to)));
+  if (attackers.length === 0 || isMate(fast.after)) return null;
+  const target = indexOf(move.to);
+  const legal = new Set(attackers.filter((from) => legalMoves(fast.after, indexOf(from)).some((each) => each.to === target)));
   for (const attacker of attackers) {
     // A king that may not take is guarded against, not pinned.
     if (legal.has(attacker) || after.get(attacker)?.type === 'k') continue;
@@ -127,15 +133,16 @@ function kicks({ fenBefore, move, after }: IdeaContext): MoveIdea | null {
 
 /** An enemy piece the move leaves with one move or none, that had three or
  * more: the bishop dominated, the queen with one flight square. */
-function restricts({ enemyBefore, after, enemy }: IdeaContext): MoveIdea | null {
+function restricts({ fast, enemy }: IdeaContext): MoveIdea | null {
+  const { after, enemyBefore } = fast;
   // In check every piece but the king is short of moves: that is the check, not a bind.
-  if (!enemyBefore || after.isGameOver() || after.inCheck()) return null;
-  const countMoves = (board: typeof after, square: Square): number => board.moves({ square, verbose: true }).length;
-  for (const cell of after.board().flat()) {
-    if (!cell || cell.color !== enemy || cell.type === 'p' || cell.type === 'k') continue;
-    const now = countMoves(after, cell.square);
+  if (!enemyBefore || after.inCheck() || !hasLegalMove(after)) return null;
+  for (let index = 0; index < 64; index++) {
+    const piece = after.squares[index] ?? 0;
+    if (!piece || colorOf(piece) !== enemy || symbolOf(piece) === 'p' || symbolOf(piece) === 'k') continue;
+    const now = legalMoves(after, index).length;
     if (now > 1) continue;
-    if (countMoves(enemyBefore, cell.square) >= 3) return { kind: 'restricts', piece: { piece: cell.type, square: cell.square }, moves: now };
+    if (legalMoves(enemyBefore, index).length >= 3) return { kind: 'restricts', piece: { piece: symbolOf(piece), square: squareOf(index) }, moves: now };
   }
   return null;
 }

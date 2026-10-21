@@ -4,6 +4,9 @@ import { CONFIG } from './config.js';
 /** Notes that say something small beside a move that lost a piece or allowed mate. */
 const PAWN_NOTE = /^Leaves the pawn on [a-h][1-8]|keeps the pawn on [a-h][1-8] safe|takes the pawn out of danger on /;
 const POSITIONAL_NOTE = /^(Creates a passed pawn|Develops the|Puts the rook on|Opens the|Pins the knight|Takes the \w+ on [a-h][1-8], which nothing defended)/;
+/** A costly move's development and structure faults (`faultIdeaSentences`);
+ * its king-safety faults stay, they may be how the tactic came about. */
+const FAULT_IDEA_NOTE = /^(Shuts in the|Moves the \w+ for the \w+ time|Brings the queen out early|The \w+ on [a-h][1-8] blocks the pawn|Takes [a-h][1-8] from the knight|Gives up castling for good|Gives up the centre)/;
 const LOOSE_PIECE_NOTE = /^Leaves the (?!pawn)(\w+) on ([a-h][1-8]) where it can be won/;
 
 /** The fault is decisive: a mistake, blunder or miss whose allowed tactic is a
@@ -24,7 +27,7 @@ export function hasDecisiveNote(move: Pick<ClassifiedMoveDto, 'quality' | 'tacti
 export function withoutClutterBesideDecisive(plain: readonly string[], decisive: readonly string[]): string[] {
   const said = decisive.join(' ');
   return plain.filter((note) => {
-    if (PAWN_NOTE.test(note) || POSITIONAL_NOTE.test(note)) return false;
+    if (PAWN_NOTE.test(note) || POSITIONAL_NOTE.test(note) || FAULT_IDEA_NOTE.test(note)) return false;
     const loose = LOOSE_PIECE_NOTE.exec(note);
     return !(loose && said.includes(` on ${loose[2]}`));
   });

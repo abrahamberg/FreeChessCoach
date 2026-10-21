@@ -132,7 +132,7 @@ n20 10…cxb5 (Black, Line A) | inaccuracy | before: White is better → after: 
     why Qb4+ is better: moves the queen from e7 to b4 | gives check | the check can be answered: block with Nc3, Bd2, Qc3, c3; take the checking piece with Qxb4; move the king with Ke2, Kf1, Kd1 | attacks the knight on b5 | attacks the bishop on c4 | attacks the queen on b3
     board: moves the pawn from c6 to b5 | captures the knight on b5 | attacks the bishop on c4
     ideas: threatens to win the bishop on c4 with bxc4 | controls c4 | opens the c-file for the rooks (half-open)
-    alternatives: Qb4+ (attacks the knight on b5 twice, while it is defended once): White is better, after Qxb4 Bxb4+ c3 cxb5; Na6 (develops the knight to a6; clears the way to castle queenside): White is better, after O-O-O Rb8 Qh3 Rxb5; a6 (leaves Black with an isolated pawn on a6): White is better, after Nc3 Nbd7 Qb7 Qd8
+    alternatives: Qb4+ (attacks the knight on b5 twice, while it is defended once): White is better, after Qxb4 Bxb4+ c3 cxb5; Na6 (develops the knight to a6; clears the way to castle queenside): White is better, after O-O-O Rb8 Qh3 Rxb5; a6: White is better, after Nc3 Nbd7 Qb7 Qd8
 n21 11.Bxb5+ (White, Line A) | great | before: White is much better → after: White is much better
     piece: the light-squared bishop
     board: moves the bishop from c4 to b5 | captures the pawn on b5 | gives check | the check can be answered: block with Nbd7, Nc6, Qd7, Nfd7; the checking piece cannot be taken; move the king with Kd8

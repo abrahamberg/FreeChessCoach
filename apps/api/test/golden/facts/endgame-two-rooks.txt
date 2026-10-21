@@ -6,13 +6,14 @@ l1 "Line A" | leaves book at n1
 Moves:
 n1 1.Ra7 (White, Line A) | excellent | before: White has a forced mate in 2 → after: White has a forced mate in 1
     board: moves the rook from a2 to a7
-    alternatives: Rb7: White has a forced mate in 2; Ra6: White has a forced mate
+    ideas: threatens mate with Rb8# | puts the rook on the seventh rank
+    alternatives: Rb7 (threatens mate with Ra8#; puts the rook on the seventh rank): White has a forced mate in 2, after Kd8 Ra8#; Ra6: White has a forced mate, after Kd7 Rb7+ Kc8 Raa7
     tempting check: Ra8+ White's Ra8+ moves the rook from a2 to a8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf7, Ke7, Kd7. Black answers Kd7: moves the king from e8 to d7. Then Rb6 Kc7 Raa6. Over the line nothing is taken; at the end White is two rooks up (White has a forced mate). Works, but not the answer: it mates too, but later.
     tempting check: Re2+ White's Re2+ moves the rook from a2 to e2 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf8, Kf7, Kd7, Kd8. Black answers Kf8: moves the king from e8 to f8. Then Ra2 Ke7 Rb6. Over the line nothing is taken; at the end White is two rooks up (White has a forced mate). Works, but not the answer: it mates too, but later.
     tempting check: Rb8+ White's Rb8+ moves the rook from b1 to b8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf7, Ke7, Kd7. Black answers Kd7: moves the king from e8 to d7. Then Rb6 Kc7 Raa6. Over the line nothing is taken; at the end White is two rooks up (White has a forced mate). Works, but not the answer: it mates too, but later.
 n2 1…Kd8 (Black, Line A) | excellent | before: White has a forced mate in 1 → after: White has a forced mate in 1
     board: moves the king from e8 to d8
-    alternatives: Kf8: White has a forced mate in 1
+    alternatives: Kf8: White has a forced mate in 1, after Rb8#
 n3 2.Rb8# (White, Line A) | best | before: White has a forced mate in 1 → after: checkmate
     board: moves the rook from b1 to b8 | gives checkmate | a back-rank mate | why it is mate: the king on d8 is checked by the rook on b8; c7 and d7 and e7 are covered by the rook on a7; c8 and e8 are covered by the rook on b8
     tempting check: Ra8+ White's Ra8+ moves the rook from a7 to a8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke7, Kd7, Kc7. Black answers Kd7: moves the king from d8 to d7. Then Rb6 Kc7 Raa6. Over the line nothing is taken; at the end White is two rooks up (White has a forced mate). Works, but not the answer: it mates too, but later.
@@ -29,3 +30,4 @@ PLAN
 
 REVIEW NOTES
   l1
+    n1 1.Ra7: Threatens mate with Rb8#; Puts the rook on the seventh rank

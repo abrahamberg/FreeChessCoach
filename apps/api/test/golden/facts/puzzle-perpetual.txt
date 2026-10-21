@@ -18,7 +18,7 @@ n2 1…Kh7 (Black, Line A) | forced | before: The position is roughly equal → 
 n3 2.Qd3+ (White, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from d8 to d3 | gives check | the check can be answered: block with g6; the checking piece cannot be taken; move the king with Kg8, Kh8 | attacks the rook on c2 | the queen on d3 forks the king on h7 and the rook on c2
     ideas: takes g6 from the enemy king | controls e4 | defends the bishop on f1, attacked once and now defended twice
-    alternatives: Qb6 (moves the queen for the second time while 1 piece still wait at home): Black is much better, after b1=Q Qxb1 Qxb1 h4; Qb8 (moves the queen for the second time while 1 piece still wait at home; controls e5): Black is much better, after Rc1 Qb5 Rxf1+ Qxf1
+    alternatives: Qb6: Black is much better, after b1=Q Qxb1 Qxb1 h4; Qb8 (controls e5): Black is much better, after Rc1 Qb5 Rxf1+ Qxf1
     flags: quiz-eligible, critical
 n4 2…g6 (Black, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from g7 to g6 | blocks the check from the queen on d3 | leaves the black rook on c2 hanging

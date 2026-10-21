@@ -7,7 +7,7 @@ l1 "Line A" | leaves book at n1
 Moves:
 n1 1…Rg2+ (Black, Line A) | brilliant | before: The position is roughly equal → after: The position is roughly equal
     board: moves the rook from a2 to g2 | gives check | the check can be answered: no block; take the checking piece with Kxg2; move the king with Kf4, Kh4, Kh3, Kf3 | leaves the black rook on g2 hanging: taking it is stalemate
-    ideas: stops the mate threat Qc8# | sacrifices the rook on g2: it can be taken, and the engine still approves | settles the rook on g2 on a square by the king that no pawn can cover any more | puts a rook on the open g-file | puts the rook on the seventh rank
+    ideas: stops the mate threat Qe8# | sacrifices the rook on g2: it can be taken, and the engine still approves | settles the rook on g2 on a square by the king that no pawn can cover any more | puts a rook on the open g-file | puts the rook on the seventh rank
     tactics: You found a brilliant sacrifice.
     alternatives: Ra3+: White is winning, after Kh4 Rh3+ Qxh3 Kg8; Ra8: White has a forced mate in 2, after Qe5+ Kg8 Qg7#
     tempting check: Ra3+? Black's Ra3+ moves the rook from a2 to a3 | gives check | the check can be answered: block with Qe3, Qb3; the checking piece cannot be taken; move the king with Kf4, Kg4, Kh4, Kh2, Kg2, Kf2. White answers Kh4: moves the king from g3 to h4. Then Ra4+ Kg5 Ra5+. Over the line nothing is taken; at the end White has a queen for a rook (White is much better).
@@ -28,5 +28,5 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1…Rg2+: Stops the mate threat Qc8#; Sacrifices the rook on g2: it can be taken, and the engine still approves; Settles the rook on g2 on a square by the king that no pawn can cover any more; You found a brilliant sacrifice.
+    n1 1…Rg2+: Stops the mate threat Qe8#; Sacrifices the rook on g2: it can be taken, and the engine still approves; Settles the rook on g2 on a square by the king that no pawn can cover any more; You found a brilliant sacrifice.
     n2 2.Kxg2: Stalemate: Black has no legal move, so the game is a draw

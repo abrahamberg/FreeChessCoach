@@ -1,5 +1,6 @@
 import { Chess, type Color, type Move, type PieceSymbol, type Square } from 'chess.js';
-import { flipActiveColorFen } from './null-move-fen.js';
+import { colorOf, FastBoard, squareOf, symbolOf } from './fast-board/board.js';
+import { legalMoves } from './fast-board/moves.js';
 import { PIECE_NAMES } from './piece-names.js';
 import { PIECE_VALUES } from './tactics.js';
 
@@ -33,18 +34,18 @@ function sliderReach(fen: string, color: Color): Map<Square, Reach> | null {
 }
 
 function computeSliderReach(fen: string, color: Color): Map<Square, Reach> | null {
-  const turn = fen.split(' ')[1];
-  const asked = turn === color ? fen : flipActiveColorFen(fen);
-  if (!asked) return null;
-  const chess = new Chess(asked);
-  const reach = new Map<Square, Reach>();
-  for (const row of chess.board()) {
-    for (const piece of row) {
-      if (!piece || piece.color !== color || !SLIDERS.includes(piece.type)) continue;
-      const squares = new Set(chess.moves({ square: piece.square, verbose: true }).map((each) => each.to as Square));
-      reach.set(piece.square, { piece: piece.type, squares });
-    }
+  const board = FastBoard.fromFen(fen);
+  if (board.turn !== color) {
+    // Passing is illegal when the side to move is in check (`flipActiveColorFen`).
+    if (board.inCheck(board.turn)) return null;
+    board.turn = color;
+    board.ep = -1;
   }
+  const reach = new Map<Square, Reach>();
+  board.squares.forEach((piece, index) => {
+    if (!piece || colorOf(piece) !== color || !SLIDERS.includes(symbolOf(piece))) return;
+    reach.set(squareOf(index), { piece: symbolOf(piece), squares: new Set(legalMoves(board, index).map((move) => squareOf(move.to))) });
+  });
   return reach;
 }
 

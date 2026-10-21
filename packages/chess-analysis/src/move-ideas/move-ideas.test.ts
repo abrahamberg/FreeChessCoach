@@ -73,6 +73,13 @@ describe('moveIdeas precision', () => {
     expect(kinds(moveIdeas(sound))).toContain('sacrifices');
   });
 
+  it('says only the passed pawn of a pawn push in a bare ending set up at move 1', () => {
+    const ideas = kinds(moveIdeas({ fenBefore: '4k3/8/5K2/4P3/8/8/8/8 w - - 0 1', san: 'e6', previous: [] }));
+    expect(ideas).toContain('passedPawn');
+    expect(ideas).not.toContain('pawnWeakness');
+    expect(ideas).not.toContain('controlsCentre');
+  });
+
   it('states the material only once the exchange is over', () => {
     const fen = '1r4k1/r4ppp/pqR1b3/R2p4/1P1Q4/P3PPP1/7P/5BK1 b - - 0 27';
     const after = new Chess(fen).move('Qxc6').after;

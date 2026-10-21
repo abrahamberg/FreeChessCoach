@@ -33,7 +33,12 @@ Precision rules found by checking 134 sampled ideas by hand (about 92%
 right before the fixes): nothing on a mate; no prevention on a capture or a
 check; no domination while in check; a sacrifice only when the position is
 not lost anyway; the material only once the exchange is over; no pin of a
-king; no shield or castling talk in the ending.
+king; no shield or castling talk in the ending. Endgame studies start at
+move 1, so the move number alone does not say "opening": with two pieces
+or fewer a side there is no development, and with four pawns or fewer too
+no centre control (a piece centralised still counts); no outpost against a
+side with no pawns; a pawn pushed up an isolated file is not a new
+isolated pawn, and a passed pawn's push is not a pawn storm.
 
 ## Where they show
 
@@ -63,8 +68,12 @@ after a first measure; 31–33 were never studied.
 | all 33 | 29.4% | 74.3% |
 | all 33, without "why not X?" | – | 79.5% |
 
-Cost: about 20 ms a move (memoised; `loosePieces` and `lineChanges` only
-where pressure changed), so about 1.6 s on a reviewed game.
+Cost: about 2.4 ms a move (memoised; `loosePieces` and `lineChanges` only
+where pressure changed). The move generation, exchanges, mate searches and
+slider reach behind it run on `fast-board/`, a plain board with chess.js's
+rules but no SAN or history: chess.js plays every move it generates to
+write its SAN, which was most of the cost (about 20 ms a move before).
+Perft at the standard positions pins its rules (`fast-board.test.ts`).
 
 ## Not built yet
 

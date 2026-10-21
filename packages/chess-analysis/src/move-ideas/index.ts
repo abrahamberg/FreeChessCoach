@@ -1,3 +1,4 @@
+import { isMate } from '../fast-board/moves.js';
 import { centreIdeas } from './centre.js';
 import { ideaContext, type MoveIdeasInput } from './context.js';
 import { defenceIdeas } from './defence.js';
@@ -66,7 +67,7 @@ function ideasKey(input: MoveIdeasInput, scope: IdeaScope): string {
 function computeIdeas(input: MoveIdeasInput, scope: IdeaScope): MoveIdea[] {
   const context = ideaContext(input);
   // A mate is the whole description (the owner's rule for the dossier's alternatives too).
-  if (!context || context.after.isCheckmate()) return [];
+  if (!context || isMate(context.fast.after)) return [];
   const full = scope === 'full';
   const ideas = [
     ...threatIdeas(context),

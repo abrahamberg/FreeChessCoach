@@ -7,7 +7,7 @@ l1 "Line A" | leaves book at n1
 Moves:
 n1 1.Nc7+ (White, Line A) | good | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from b5 to c7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf8, Kf7, Ke7, Kd7, Kd8 | attacks the rook on a8 | the knight on c7 forks the rook on a8 and the king on e8
-    ideas: settles the knight on c7 on a square by the king that no pawn can cover any more | controls d5 | heads for e6, a square no enemy pawn can attack
+    ideas: heads for e6, a square no enemy pawn can attack
     alternatives: Kd2: The position is roughly equal, after Kd8 Nc3 Rb8 Kc2; Ke2: The position is roughly equal, after Kd8 Kd3 Ra5 Nd4; Kf2: The position is roughly equal, after Kf7 Nd4 Rd8
 n2 1…Kd7 (Black, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from e8 to d7 | attacks the knight on c7 | leaves the black rook on a8 hanging
@@ -16,7 +16,7 @@ n2 1…Kd7 (Black, Line A) | excellent | before: The position is roughly equal �
 n3 2.Nxa8 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from c7 to a8 | captures the rook on a8
     ideas: takes the attacked knight to safety on a8 | after the exchange White is a knight up
-    alternatives: Nb5 (controls d4; puts the knight on b5 on an outpost no pawn can attack): The position is roughly equal, after Ra2 Kf1 Re2 Kxe2; Nd5 (centralises the knight on d5, which reaches 8 squares; puts the knight on d5 on an outpost no pawn can attack): The position is roughly equal, after Ra2 Nf4 Re2+ Nxe2
+    alternatives: Nb5: The position is roughly equal, after Ra2 Kf1 Re2 Kxe2; Nd5 (centralises the knight on d5, which reaches 8 squares): The position is roughly equal, after Ra2 Nf4 Re2+ Nxe2
 
 REEL CANDIDATES
   r1 puzzle n1–n3, climax n3 [highlight, puzzle, promo]
@@ -29,6 +29,6 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.Nc7+: Forks the king on e8 and the rook on a8; Settles the knight on c7 on a square by the king that no pawn can cover any more; Controls d5; Heads for e6, a square no enemy pawn can attack
+    n1 1.Nc7+: Forks the king on e8 and the rook on a8; Heads for e6, a square no enemy pawn can attack
     n2 1…Kd7: Threatens to win the knight on c7 with Kxc7; Brings the king toward the centre, a strong piece in the ending
     n3 2.Nxa8: Wins the rook on a8; Takes the attacked knight to safety on a8; After the exchange White is a knight up

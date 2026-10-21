@@ -1,4 +1,6 @@
-import { Chess, type Color, type Move, type PieceSymbol, type Square } from 'chess.js';
+import type { Color, PieceSymbol, Square } from 'chess.js';
+import { attackersOf, FastBoard, type FastMove, indexOf, squareOf, symbolOf } from './fast-board/board.js';
+import { legalMoves } from './fast-board/moves.js';
 import type { ColorName } from './attack-map.js';
 
 const SEE_PIECE_VALUES: Record<PieceSymbol, number> = {
@@ -20,8 +22,7 @@ export const BISHOP_KNIGHT_GAP_CP = SEE_PIECE_VALUES.b - SEE_PIECE_VALUES.n;
  * may stand pat instead of continuing an unprofitable exchange.
  */
 export function see(fen: string, targetSquare: Square, sideToMove: SeeColor): number {
-  const side = toChessColor(sideToMove);
-  return evaluateCapture(new Chess(withSideToMove(fen, side)), targetSquare);
+  return evaluateCapture(boardFor(fen, toChessColor(sideToMove)), indexOf(targetSquare));
 }
 
 /**
@@ -31,57 +32,68 @@ export function see(fen: string, targetSquare: Square, sideToMove: SeeColor): nu
  * square does not depend on which capture was listed first.
  */
 export function seeOnAllOpponentCaptures(fenAfterMove: string, movingColor: SeeColor, credit?: { square: string; value: number }): number {
-  const mover = toChessColor(movingColor);
-  const opponent = oppositeColor(mover);
-  const chess = new Chess(withSideToMove(fenAfterMove, opponent));
-  const targets = new Set(chess.moves({ verbose: true }).filter(isCapture).map((move) => move.to));
+  const opponent = oppositeColor(toChessColor(movingColor));
+  const board = boardFor(fenAfterMove, opponent);
+  const targets = new Set(legalMoves(board).filter(isCapture).map((move) => move.to));
 
   if (targets.size === 0) return 0;
 
   // `credit`: what the move itself just took on `square`, so a knight taking a
   // rook and being taken back is +rook-knight, not a lost knight.
-  return Math.min(...[...targets].map((square) => -evaluateCapture(chess, square) + (credit && credit.square === square ? credit.value : 0)));
+  return Math.min(...[...targets].map((target) => -evaluateCapture(board, target) + (credit && credit.square === squareOf(target) ? credit.value : 0)));
 }
 
-/** The exchange on `targetSquare` for the side to move of `chess`, played
- * and taken back on the one board (a fresh board and every legal move per
- * step made SEE most of a course dossier's time). */
-function evaluateCapture(chess: Chess, targetSquare: Square): number {
-  const capture = leastValuableCapture(chess, targetSquare);
+/** `see` on a board already set up: the side to move takes on `target`.
+ * The board is played on and given back as it was. */
+export function seeOnBoard(board: FastBoard, target: number): number {
+  return evaluateCapture(board, target);
+}
+
+/** The position with `side` to move and no en-passant square (see `withSideToMove`). */
+function boardFor(fen: string, side: Color): FastBoard {
+  const board = FastBoard.fromFen(withSideToMove(fen, side));
+  board.turn = side;
+  board.ep = -1;
+  return board;
+}
+
+/** The exchange on `target` for the side to move, played and taken back on
+ * the one board (the fast board: chess.js's SAN for every move made SEE most
+ * of a review's time). */
+function evaluateCapture(board: FastBoard, target: number): number {
+  const capture = leastValuableCapture(board, target);
 
   if (!capture) return 0;
 
-  const capturedValue = SEE_PIECE_VALUES[capture.captured];
-  chess.move({ from: capture.from, to: capture.to, promotion: capture.promotion });
-  const opponentGain = evaluateCapture(chess, targetSquare);
-  chess.undo();
+  const capturedValue = SEE_PIECE_VALUES[symbolOf(capture.captured)];
+  board.make(capture);
+  const opponentGain = evaluateCapture(board, target);
+  board.unmake();
   return capturedValue - Math.max(0, opponentGain);
 }
 
 /** Only the pieces attacking the square generate their moves. */
-function leastValuableCapture(chess: Chess, targetSquare: Square): CaptureMove | null {
-  const captures = chess
-    .attackers(targetSquare, chess.turn())
-    .flatMap((from) => chess.moves({ square: from, verbose: true }))
-    .filter(isCapture)
-    .filter((move) => move.to === targetSquare);
+function leastValuableCapture(board: FastBoard, target: number): FastMove | null {
+  const captures = attackersOf(board, target, board.turn)
+    .flatMap((from) => legalMoves(board, from))
+    .filter((move) => move.to === target && isCapture(move));
 
-  return captures.reduce<CaptureMove | null>(selectLowerValueCapture, null);
+  return captures.reduce<FastMove | null>(selectLowerValueCapture, null);
 }
 
-function selectLowerValueCapture(selected: CaptureMove | null, candidate: CaptureMove): CaptureMove {
+function selectLowerValueCapture(selected: FastMove | null, candidate: FastMove): FastMove {
   if (!selected) return candidate;
 
-  const selectedValue = SEE_PIECE_VALUES[selected.piece];
-  const candidateValue = SEE_PIECE_VALUES[candidate.piece];
+  const selectedValue = SEE_PIECE_VALUES[symbolOf(selected.piece)];
+  const candidateValue = SEE_PIECE_VALUES[symbolOf(candidate.piece)];
   if (candidateValue < selectedValue) return candidate;
   if (candidateValue > selectedValue) return selected;
 
   return captureKey(candidate) < captureKey(selected) ? candidate : selected;
 }
 
-function captureKey(move: CaptureMove): string {
-  return `${move.from}${move.to}${move.promotion ?? ''}`;
+function captureKey(move: FastMove): string {
+  return `${squareOf(move.from)}${squareOf(move.to)}${move.promotion ? symbolOf(move.promotion) : ''}`;
 }
 
 /**
@@ -95,8 +107,8 @@ function captureKey(move: CaptureMove): string {
  * in an exchange either way: `SEE_PIECE_VALUES` prices it at 20,000
  * precisely so no sequence ever chooses to trade for it.
  */
-function isCapture(move: Move): move is CaptureMove {
-  return move.captured !== undefined && move.captured !== 'k';
+function isCapture(move: FastMove): boolean {
+  return move.captured !== 0 && symbolOf(move.captured) !== 'k';
 }
 
 /**
@@ -125,7 +137,5 @@ function toChessColor(color: SeeColor): Color {
 function oppositeColor(color: Color): Color {
   return color === 'w' ? 'b' : 'w';
 }
-
-type CaptureMove = Move & { captured: PieceSymbol };
 
 export type SeeColor = Color | ColorName;

@@ -7,19 +7,22 @@ l1 "Line A" | leaves book at n1
 Moves:
 n1 1.Kb6 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from a6 to b6
-    alternatives: Kb5: The position is roughly equal
+    ideas: brings the king toward the centre, a strong piece in the ending
+    alternatives: Kb5: The position is roughly equal, after Kb7 a6+ Ka7 Ka5
 n2 1…Kb8 (Black, Line A) | forced | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from a8 to b8 | takes the opposition: the kings face each other with one square between, and the other king must give way
 n3 2.a6 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from a5 to a6
-    alternatives: Ka6: The position is roughly equal; Kc6: The position is roughly equal; Kc5: The position is roughly equal
+    ideas: pushes the passed pawn to a6, 2 squares from queening
+    alternatives: Ka6: The position is roughly equal, after Ka8 Kb5 Kb7 a6+; Kc6: The position is roughly equal, after Ka7 Kb5 Ka8 a6; Kc5: The position is roughly equal, after Ka7 Kc6 Ka8 Kc7
 n4 2…Ka8 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from b8 to a8
-    alternatives: Kc8: White is winning
+    alternatives: Kc8: White is winning, after a7 Kd7 a8=Q Ke6
     flags: quiz-eligible, critical
 n5 3.a7 (White, Line A) | excellent | before: The position is roughly equal → after: stalemate
     board: moves the pawn from a6 to a7
-    alternatives: Kc6: The position is roughly equal; Kc5: The position is roughly equal; Kb5: The position is roughly equal
+    ideas: takes b8 from the enemy king | pushes the passed pawn to a7, 1 square from queening
+    alternatives: Kc6: The position is roughly equal, after Kb8 Kd6 Ka7 Ke6; Kc5: The position is roughly equal, after Ka7 Kb5 Kb8 Kb6; Kb5: The position is roughly equal, after Ka7 Ka5 Kb8 Kb6
 
 REEL CANDIDATES
   r1 puzzle n1–n5, climax n4 [highlight, puzzle, promo]
@@ -31,5 +34,7 @@ PLAN
 
 REVIEW NOTES
   l1
+    n1 1.Kb6: Brings the king toward the centre, a strong piece in the ending
+    n3 2.a6: Pushes the passed pawn to a6, 2 squares from queening
     n4 2…Ka8: The only move that holds
     n5 3.a7: Stalemate: Black has no legal move, so the game is a draw

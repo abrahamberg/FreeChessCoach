@@ -106,3 +106,11 @@ export function isEnding(board: Chess): boolean {
   if (!pieces.some((cell) => cell?.type === 'q')) return true;
   return (['w', 'b'] as const).every((color) => pieces.filter((cell) => cell?.color === color).length <= 2);
 }
+
+/** At most two pieces a side: an ending even when set up at move 1 (an
+ * endgame study), where the centre, development and pawn storms are no goals
+ * of their own. Unlike `isEnding`, a queen trade alone is not this. */
+export function fewPieces(board: Chess): boolean {
+  const pieces = board.board().flat().filter((cell) => cell && cell.type !== 'p' && cell.type !== 'k');
+  return (['w', 'b'] as const).every((color) => pieces.filter((cell) => cell?.color === color).length <= 2);
+}

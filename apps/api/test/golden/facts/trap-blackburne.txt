@@ -116,5 +116,5 @@ REVIEW NOTES
     n10 5…Qxg2: Threatens to win the rook on h1 with Qxh1+; Takes the attacked queen to safety on g2; Settles the queen on g2 on a square by the king that no pawn can cover any more; You won a rook through an eventual fork.
     n11 6.Rf1: Leaves the pawn on h2 undefended
     n12 6…Qxe4+: Attacks the pawn on c2 twice, while it is defended once; Controls e5 and d5; Centralises the queen on e4, which reaches 22 squares
-    n13 7.Be2: Leaves the knight on f7 undefended; Moves the bishop for the second time while 2 pieces still wait at home; They let you deliver checkmate with Nf3# — mates the king on e1, smothered by its own pieces.
+    n13 7.Be2: Leaves the knight on f7 undefended; They let you deliver checkmate with Nf3# — mates the king on e1, smothered by its own pieces.
     n14 7…Nf3#: Puts the knight on an outpost on f3, where no pawn can attack it; You delivered checkmate — mates the king on e1, smothered by its own pieces.

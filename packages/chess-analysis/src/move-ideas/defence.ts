@@ -1,15 +1,12 @@
-import { Chess, type Move, type Square } from 'chess.js';
-import { CONFIG } from '../config.js';
-import { see } from '../see.js';
+import type { Square } from 'chess.js';
 import { PIECE_VALUES } from '../tactics.js';
 import type { IdeaContext } from './context.js';
 import { looseAt, pinsOf } from './memo.js';
 import { mateThreat } from './mates.js';
-import { attacksFrom, BIG_CENTRE, CENTRE, fileIndex, ownRank, pieceAt, rankOf } from './squares.js';
-import type { MoveIdea, PreventedBecause } from './types.js';
+import { prevents } from './prevents.js';
+import { attacksFrom, fileIndex, pieceAt, rankOf } from './squares.js';
+import type { MoveIdea } from './types.js';
 
-const { minThreatSeeCp: MIN_WON_SEE_CP } = CONFIG.evalWitness;
-const PREVENTED_ORDER: PreventedBecause[] = ['check', 'pin', 'attack', 'break', 'advance', 'outpost', 'invade'];
 
 /** What the move does against the opponent's threats and plans. */
 export function defenceIdeas(context: IdeaContext): MoveIdea[] {
@@ -17,11 +14,11 @@ export function defenceIdeas(context: IdeaContext): MoveIdea[] {
 }
 
 /** The opponent had a mate (in one, or two starting with a check) and no longer has it. */
-function stopsMate({ enemyBefore, after }: IdeaContext): MoveIdea | null {
-  if (!enemyBefore) return null;
-  const threat = mateThreat(enemyBefore);
+function stopsMate({ fast }: IdeaContext): MoveIdea | null {
+  if (!fast.enemyBefore) return null;
+  const threat = mateThreat(fast.enemyBefore);
   if (!threat) return null;
-  const still = mateThreat(after);
+  const still = mateThreat(fast.after);
   return still ? null : { kind: 'stopsMate', line: threat };
 }
 
@@ -68,82 +65,6 @@ function defends({ before, after, move, enemy, mover }: IdeaContext): MoveIdea |
   }
   const piece = best ? pieceAt(after, best.square) : null;
   return best && piece ? { kind: 'defends', piece, attackers: best.attackers, defenders: best.defenders } : null;
-}
-
-/**
- * A move the opponent wanted that the moved man now stops: it lands on a
- * square the move newly covers, and loses material there now where it did
- * not before (h3 against …Bg4 pinning the knight, …a6 against Bb5).
- */
-function prevents(context: IdeaContext): MoveIdea | null {
-  const { enemyBefore, after, before, move } = context;
-  // A check answers itself, and a capture's point is what it takes: a
-  // prevention is the quiet move's reason (h3, …a6, a3).
-  if (!enemyBefore || move.san.includes('+') || move.captured) return null;
-  const covered = new Set(attacksFrom(after, move.to).filter((square) => !attacksFrom(before, move.from).includes(square) || move.piece === 'p'));
-  const found: { san: string; because: PreventedBecause }[] = [];
-  for (const wanted of enemyBefore.moves({ verbose: true })) {
-    // The move standing on the wanted square, or moving the man that wanted to go, is no prevention to name.
-    if (wanted.captured || wanted.piece === 'k' || wanted.from === move.to || wanted.to === move.to) continue;
-    // A pawn break may be stopped from afar (a rook behind it); a piece's
-    // square only by the man the move put on it.
-    if (!covered.has(wanted.to) && !(wanted.piece === 'p' && isBreak(wanted))) continue;
-    if (!nowLoses(after, wanted, move.color) || see(wanted.after, wanted.to, move.color) >= MIN_WON_SEE_CP) continue;
-    const because = wantedFor(wanted);
-    if (!because) continue;
-    found.push({ san: wanted.san, because });
-  }
-  const [best] = found.sort((a, b) => PREVENTED_ORDER.indexOf(a.because) - PREVENTED_ORDER.indexOf(b.because));
-  return best ? { kind: 'prevents', san: best.san, because: best.because } : null;
-}
-
-/** What the opponent's move would have done: check, pin, attack a bigger
- * piece, push a pawn into the centre, put a knight on a forward square. */
-function wantedFor(wanted: Move): PreventedBecause | null {
-  if (wanted.san.includes('+')) return 'check';
-  const next = new Chess(wanted.after);
-  if (pinsOf(wanted.after).some((hit) => hit.by === wanted.to && next.get(hit.pinned)?.type !== 'p')) return 'pin';
-  const mover = wanted.color;
-  const hits = attacksFrom(next, wanted.to).some((square) => {
-    const piece = next.get(square);
-    return piece && piece.color !== mover && piece.type !== 'p' && piece.type !== 'k' && PIECE_VALUES[piece.type] > PIECE_VALUES[wanted.piece];
-  });
-  const undefended = attacksFrom(next, wanted.to).some((square) => {
-    const piece = next.get(square);
-    return piece && piece.color !== mover && piece.type !== 'p' && piece.type !== 'k' && next.attackers(square, piece.color).length === 0;
-  });
-  if (hits || undefended) return 'attack';
-  if (wanted.piece === 'p' && isBreak(wanted)) return 'break';
-  if (wanted.piece === 'p' && CENTRE.includes(wanted.to)) return 'advance';
-  if (wanted.piece === 'n' && ownRank(wanted.to, mover) >= 4 && BIG_CENTRE.includes(wanted.to)) return 'outpost';
-  // An invasion: a knight jumping into the enemy half, or a rook or queen
-  // going deep (…Ng4, …Nb4, …Rc2); a bishop's or queen's mere excursion is not one.
-  const deep = wanted.piece === 'n' ? 5 : wanted.piece === 'r' || wanted.piece === 'q' ? 6 : 9;
-  if (ownRank(wanted.from, mover) <= 4 && ownRank(wanted.to, mover) >= deep) return 'invade';
-  return null;
-}
-
-/** A pawn push that attacks an enemy pawn: the break that frees a game (…c5 against d4). */
-function isBreak(wanted: Move): boolean {
-  if (wanted.piece !== 'p' || wanted.captured) return false;
-  const next = new Chess(wanted.after);
-  return attacksFrom(next, wanted.to).some((square) => {
-    const piece = next.get(square);
-    return piece?.type === 'p' && piece.color !== wanted.color;
-  });
-}
-
-/** After the move, the wanted move is illegal or drops material. The board
- * is played on and taken back. */
-function nowLoses(after: Chess, wanted: Move, mover: 'w' | 'b'): boolean {
-  let played: Move;
-  try {
-    played = after.move({ from: wanted.from, to: wanted.to, promotion: wanted.promotion });
-  } catch {
-    return true;
-  }
-  after.undo();
-  return see(played.after, played.to as Square, mover) >= MIN_WON_SEE_CP;
 }
 
 /** An own piece that was pinned and is not after the move, because the

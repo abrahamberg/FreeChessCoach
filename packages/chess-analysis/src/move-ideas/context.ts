@@ -2,6 +2,7 @@ import { Chess, type Color, type Move } from 'chess.js';
 import type { EngineEval } from '@freechesscoach/shared';
 import { opponentOf } from '../attack-map.js';
 import { flipActiveColorFen } from '../null-move-fen.js';
+import { FastBoard } from '../fast-board/board.js';
 
 export interface MoveIdeasInput {
   fenBefore: string;
@@ -32,6 +33,9 @@ export interface IdeaContext {
   previous: readonly Move[];
   evalAfter?: EngineEval;
   evalBefore?: EngineEval;
+  /** The same four positions on the fast board, for move generation and
+   * exchanges (`fast-board/`). Played on and always given back. */
+  fast: { before: FastBoard; after: FastBoard; again: FastBoard | null; enemyBefore: FastBoard | null };
 }
 
 export function ideaContext(input: MoveIdeasInput): IdeaContext | null {
@@ -56,7 +60,13 @@ export function ideaContext(input: MoveIdeasInput): IdeaContext | null {
     fullmove: Number(input.fenBefore.split(' ')[5] ?? '1'),
     previous: input.previous,
     evalAfter: input.evalAfter,
-    evalBefore: input.evalBefore
+    evalBefore: input.evalBefore,
+    fast: {
+      before: FastBoard.fromFen(input.fenBefore),
+      after: FastBoard.fromFen(move.after),
+      again: again ? FastBoard.fromFen(again) : null,
+      enemyBefore: enemyBefore ? FastBoard.fromFen(enemyBefore) : null
+    }
   };
 }
 

@@ -7,52 +7,65 @@ l1 "Line A" | leaves book at n1
 Moves:
 n1 1…Nd7 (Black, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from e5 to d7
-    alternatives: Nc6+: The position is roughly equal; Nf7: White is slightly better
+    ideas: threatens to win the pawn on b6 with Nxb6 | takes the attacked knight to safety on d7
+    alternatives: Nc6+: The position is roughly equal, after Kc5 Na5 Kb5 Nb7; Nf7: White is slightly better, after Kd5 Nd8 Kd6 Kh2
     tempting check: Nf3+? Black's Nf3+ moves the knight from e5 to f3 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc5, Kd5, Ke4, Ke3, Kd3, Kc3, Kc4. White answers Kd5: moves the king from d4 to d5. Then Nd2 b7 Kg2. Over the line nothing is taken; at the end White has a pawn for a knight (White is much better).
 n2 2.b7 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from b6 to b7
-    alternatives: Kd5: The position is roughly equal; Ke4: The position is roughly equal
+    ideas: takes the attacked pawn to safety on b7 | pushes the passed pawn to b7, 1 square from queening
+    alternatives: Kd5: The position is roughly equal, after Nxb6+ Ke6 Kg2 Kf6; Ke4: The position is roughly equal, after Nxb6 Ke5 Nd5 Ke6
 n3 2…Nb8 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from d7 to b8
-    alternatives: Kh2: White is slightly better; Kg2: White is slightly better
+    ideas: blockades the pawn on b7
+    alternatives: Kh2: White is slightly better, after Kd5 Nb8 Ke5 Kg2; Kg2: White is slightly better, after Kd5 Nb8 Kd6 Kg3
 n4 3.Kc5 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from d4 to c5
-    alternatives: Ke5: The position is roughly equal; Kd5: The position is roughly equal
+    ideas: prevents Nc6+, a check | marches the king into the enemy half, to c5
+    alternatives: Ke5: The position is roughly equal, after Kg2 Kd6 Kg3 Kc7; Kd5: The position is roughly equal, after Kg2 Kd6 Kf3 Kc7
 n5 3…Kg2 (Black, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from h1 to g2
-    alternatives: Kh2: The position is roughly equal; Na6+: The position is roughly equal
+    ideas: brings the king toward the centre, a strong piece in the ending
+    alternatives: Kh2: The position is roughly equal, after Kd6 Kg3 Kc7 Na6+; Na6+: The position is roughly equal, after Kd6 Kg2 Ke6 Kh2
 n6 4.Kb6 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from c5 to b6
-    alternatives: Kd6: The position is roughly equal; Kd5: The position is roughly equal
+    ideas: prevents Na6+, a check | marches the king into the enemy half, to b6
+    alternatives: Kd6: The position is roughly equal, after Kf3 Kc7 Na6+ Kc8; Kd5: The position is roughly equal, after Kf3 Ke5 Ke2 Kd6
 n7 4…Kf3 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from g2 to f3
-    alternatives: Kg3: The position is roughly equal; Kf2: The position is roughly equal
+    ideas: brings the king toward the centre, a strong piece in the ending
+    alternatives: Kg3: The position is roughly equal, after Kc7 Na6+ Kc6 Nb8+; Kf2: The position is roughly equal, after Kc7 Na6+ Kc6 Nb8+
 n8 5.Kc7 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from b6 to c7 | attacks the knight on b8 | the king stops guarding a6, where Na6+ follows
-    alternatives: Kc5: The position is roughly equal; Kb5: The position is roughly equal
+    ideas: threatens to win the knight on b8 with Kxb8 | prevents Nd7+, a check | marches the king into the enemy half, to c7
+    alternatives: Kc5: The position is roughly equal, after Kf4 Kd6 Na6 Ke7; Kb5: The position is roughly equal, after Ke4 Kb6 Kd5 Kc7
 n9 5…Na6+ (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from b8 to a6 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc8, Kd8, Kd7, Kd6, Kc6, Kb6
-    alternatives: Kg2: White is winning; Kg3: White is winning
+    ideas: takes the attacked knight to safety on a6
+    alternatives: Kg2: White is winning, after Kxb8 Kg1 Kc7 Kf1; Kg3: White is winning, after Kxb8 Kf3 Kc7 Ke2
     flags: quiz-eligible, critical
 n10 6.Kb6 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from c7 to b6 | attacks the knight on a6
-    alternatives: Kd6: The position is roughly equal; Kd8: The position is roughly equal
+    ideas: threatens to win the knight on a6 with Kxa6
+    alternatives: Kd6: The position is roughly equal, after Ke4 Kd7 Nb8+ Kd8; Kd8: The position is roughly equal, after Ke4 Kd7 Nb8+ Kc7
 n11 6…Nb8 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from a6 to b8 | the position has now come twice: a third time is a draw
-    alternatives: Nb4: White is much better; Nc7: White is winning
+    ideas: takes the attacked knight to safety on b8 | blockades the pawn on b7
+    alternatives: Nb4 (puts the knight on b4 on an outpost no pawn can attack): White is much better, after b8=Q Nc2 Qa8+ Ke3; Nc7: White is winning, after Kxc7 Kf2 b8=Q Ke1
     flags: quiz-eligible, critical
 n12 7.Kc7 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from b6 to c7 | attacks the knight on b8 | the king stops guarding a6, where Na6+ follows | the position has now come twice: a third time is a draw
-    alternatives: Kb5: The position is roughly equal; Kc5: The position is roughly equal
+    ideas: threatens to win the knight on b8 with Kxb8 | prevents Nd7+, a check | marches the king into the enemy half, to c7
+    alternatives: Kb5: The position is roughly equal, after Kf4 Kc4 Ke5 Kc3; Kc5: The position is roughly equal, after Ke4 Kd6 Kf4 Kc7
 n13 7…Na6+ (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from b8 to a6 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc8, Kd8, Kd7, Kd6, Kc6, Kb6 | the position has now come twice: a third time is a draw
-    alternatives: Nc6: White is winning; Ke2: White is winning
+    ideas: takes the attacked knight to safety on a6
+    alternatives: Nc6: White is winning, after Kxc6 Ke2 Kd6 Kf2; Ke2: White is winning, after Kxb8 Kf1 Kc7 Kf2
     flags: quiz-eligible, critical
 
 REEL CANDIDATES
-  r1 puzzle n7–n13, climax n13 [highlight, puzzle, promo]
-  r2 brilliant n3–n11, climax n9 [highlight, puzzle, promo]
-  r3 brilliant n5–n13, climax n11 [highlight, puzzle, promo]
+  r1 puzzle n5–n13, climax n13 [highlight, puzzle, promo]
+  r2 brilliant n1–n11, climax n9 [highlight, puzzle, promo]
+  r3 brilliant n3–n13, climax n11 [highlight, puzzle, promo]
 
 PLAN
   e1 goal n1–n1
@@ -63,6 +76,16 @@ PLAN
 
 REVIEW NOTES
   l1
-    n9 5…Na6+: The only move that holds: the next best, Kg2, loses a knight
-    n11 6…Nb8: The only move that holds
-    n13 7…Na6+: The only move that holds: the next best, Nc6, loses a knight
+    n1 1…Nd7: Threatens to win the pawn on b6 with Nxb6; Takes the attacked knight to safety on d7
+    n2 2.b7: Takes the attacked pawn to safety on b7; Pushes the passed pawn to b7, 1 square from queening
+    n3 2…Nb8: Blockades the pawn on b7
+    n4 3.Kc5: Prevents Nc6+, a check; Marches the king into the enemy half, to c5
+    n5 3…Kg2: Brings the king toward the centre, a strong piece in the ending
+    n6 4.Kb6: Prevents Na6+, a check; Marches the king into the enemy half, to b6
+    n7 4…Kf3: Brings the king toward the centre, a strong piece in the ending
+    n8 5.Kc7: Threatens to win the knight on b8 with Kxb8; Prevents Nd7+, a check; Marches the king into the enemy half, to c7
+    n9 5…Na6+: The only move that holds: the next best, Kg2, loses a knight; Takes the attacked knight to safety on a6
+    n10 6.Kb6: Threatens to win the knight on a6 with Kxa6
+    n11 6…Nb8: The only move that holds; Takes the attacked knight to safety on b8; Blockades the pawn on b7
+    n12 7.Kc7: Threatens to win the knight on b8 with Kxb8; Prevents Nd7+, a check; Marches the king into the enemy half, to c7
+    n13 7…Na6+: The only move that holds: the next best, Nc6, loses a knight; Takes the attacked knight to safety on a6

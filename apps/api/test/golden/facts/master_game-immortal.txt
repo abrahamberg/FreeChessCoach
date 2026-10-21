@@ -161,7 +161,7 @@ n41 21.Nxg7+ (White, Line A) | great | before: White has a forced mate → after
     board: moves the knight from f5 to g7 | captures the pawn on g7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8
     ideas: settles the knight on g7 on a square by the king that no pawn can cover any more | leaves Black with an isolated pawn on f7 and h7 | prepares the pawn's advance to e6, which it now supports | heads for f5, a square no enemy pawn can attack
     tactics: You forced mate in 2.
-    alternatives: a3 (leaves White with an isolated pawn on a3): Black is slightly better; Nb4 (threatens to win the rook on a8 with Qxa8; controls d5; opens the queen on f3 (from 9 squares to 13)): Black is much better
+    alternatives: a3: Black is slightly better; Nb4 (threatens to win the rook on a8 with Qxa8; controls d5; opens the queen on f3 (from 9 squares to 13)): Black is much better
     flags: quiz-eligible, critical
 n42 21…Kd8 (Black, Line A) | forced | before: White has a forced mate in 2 → after: White has a forced mate in 2
     board: moves the king from e8 to d8 | leaves the black pawn on f7 hanging
@@ -169,7 +169,7 @@ n42 21…Kd8 (Black, Line A) | forced | before: White has a forced mate in 2 →
 n43 22.Qf6+ (White, Line A) | best | before: White has a forced mate in 2 → after: White has a forced mate in 1
     board: moves the queen from f3 to f6 | gives check | the check can be answered: block with Ne7; take the checking piece with Nxf6; the king cannot move
     ideas: sacrifices the queen on f6: it can be taken, and the engine still approves | settles the queen on f6 on a square by the king that no pawn can cover any more | controls e5 | supports the centre pawn on e5 | blockades the pawn on f7 | defends the pawn on e5, attacked once and now defended twice | prepares the pawn's advance to e6, which it now supports
-    alternatives: Qxf7 (threatens mate with Qe8#; settles the queen on f7 on a square by the king that no pawn can cover any more; leaves a 2-to-1 pawn majority on the kingside): White has a forced mate; a3 (leaves White with an isolated pawn on a3): White is much better
+    alternatives: Qxf7 (threatens mate with Qf8#; settles the queen on f7 on a square by the king that no pawn can cover any more; leaves a 2-to-1 pawn majority on the kingside): White has a forced mate; a3: White is much better
     tempting threat: Nc7? White's Nc7 moves the knight from d5 to c7 | attacks the rook on a8 | attacks the knight on a6 | leaves the white pawn on a2 hanging. Black answers Qxa2: moves the queen from a1 to a2 | captures the pawn on a2 | leaves the black rook on a8 hanging | leaves the black pawn on b5 hanging. Over the line Black takes a pawn; at the end Black is two rooks and a bishop up (Black is much better).
     flags: quiz-eligible
 n44 22…Nxf6 (Black, Line A) | best

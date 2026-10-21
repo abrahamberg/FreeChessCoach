@@ -87,7 +87,7 @@ n13 7.Ke2 (White, Line A) | best | before: Black is much better → after: Black
     alternatives: Kxf2: Black is much better, after Qxd1 Nf3 Qa4 Ba3
 n14 7…fxg1=N+ (Black, Line A) | best | before: Black is much better → after: Black is much better
     board: moves the pawn from f2 to g1 | promotes to a knight | captures the knight on g1 | gives check | the check can be answered: no block; take the checking piece with Rxg1; move the king with Ke3, Kf2, Ke1
-    ideas: controls f3 | after the exchange White has a bishop for two knights
+    ideas: after the exchange White has a bishop for two knights
     tactics: You won a knight through an underpromotion — promotes to a knight rather than a queen.
     alternatives: Qh4 (threatens to win the pawn on c4 with Qxc4+; brings the queen out to h4; brings the queen out early, with 3 pieces still at home): Black is slightly better, after Nf3 Qxc4+ Kxf2 Qxb4; Qxd1+ (pins the knight on b1 to the rook; settles the queen on d1 on a square by the king that no pawn can cover any more; brings the queen out to d1): Black is slightly better, after Kxd1 fxg1=R Rxg1 Nc6
     tempting check: Bg4+? Black's Bg4+ moves the bishop from c8 to g4 | gives check | the check can be answered: block with Nf3; the checking piece cannot be taken; move the king with Ke3, Kxf2 | leaves the black pawn on f2 hanging. White answers Nf3: moves the knight from g1 to f3 | blocks the check from the bishop on g4. Then Qh4 g3. Over the line nothing is taken; at the end White has a bishop for a pawn (White is better).
@@ -153,7 +153,7 @@ REVIEW NOTES
     n11 6.Bxb4: Missed fxe3, winning material on e3
     n12 6…exf2+: Creates a passed pawn on f; Trades pawns on f2; Gives up the centre: the pawn leaves e3; Opens the e-file for the rooks (half-open); Leaves White with an isolated pawn on e5; You threw in an in-between move — checks first instead of taking back on b4.
     n13 7.Ke2: Gives up castling for good
-    n14 7…fxg1=N+: Controls f3; After the exchange White has a bishop for two knights; You won a knight through an underpromotion — promotes to a knight rather than a queen.
+    n14 7…fxg1=N+: After the exchange White has a bishop for two knights; You won a knight through an underpromotion — promotes to a knight rather than a queen.
     n15 8.Rxg1: Recaptures the knight on g1
     n16 8…Bg4+: Develops the bishop to g4; You won a queen through a skewer two moves away — skewers the king on e2, exposing the queen on d1.
     n17 9.Ke1: Leaves the queen on d1 where it can be won; They let you force mate with Qxd1+.

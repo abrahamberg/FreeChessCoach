@@ -1,0 +1,35 @@
+Learner side: White
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: a, b, c, d, e, f, g, h
+
+Moves:
+n1 1.Nc6 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from d4 to c6
+    ideas: heads for e5, a square no enemy pawn can attack
+    alternatives: Kf2: The position is roughly equal, after Kd7 Ke3 Kd6 Nf3; Kd2: The position is roughly equal, after Kd7 Ke3 Kd6 Nf3; Ke2: The position is roughly equal, after Kd7 Kd3 Kd6 Nf3
+n2 1…Kd7 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from e8 to d7 | attacks the knight on c6
+    ideas: threatens to win the knight on c6 with Kxc6 | brings the king toward the centre, a strong piece in the ending
+    alternatives: Kf7: The position is roughly equal, after Nd4 Kg6 Ke2 Kf6; Kf8: The position is roughly equal, after Kf2 Kg7 Kg3 Kf6
+n3 2.Ne5+ (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from c6 to e5 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc8, Kd8, Ke8, Ke7, Ke6, Kd6, Kc7
+    ideas: takes the attacked knight to safety on e5 | centralises the knight on e5, which reaches 8 squares | heads for c6, a square no enemy pawn can attack
+    alternatives: Kd2: The position is roughly equal, after Ke6 Ke3 Kf5 Kf3; Ke2: The position is roughly equal, after Ke6 Ke3 Kf5 Kf3; Kf2: The position is roughly equal, after Ke6 Ke3 Kf5 Kf3
+n4 2…Ke7 (Black, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from d7 to e7
+    alternatives: Ke6 (threatens to win the knight on e5 with Kxe5): The position is roughly equal, after Ke2 Kd6 Kd3 Kc5; Kd6 (threatens to win the knight on e5 with Kxe5): The position is roughly equal, after Ke2 Kd5 Kd3 Kc5
+
+REEL CANDIDATES
+
+PLAN
+  e1 concept n1–n1
+  e2 example n1–n4
+  e3 recap n1–n1
+
+REVIEW NOTES
+  l1
+    n1 1.Nc6: Heads for e5, a square no enemy pawn can attack
+    n2 1…Kd7: Threatens to win the knight on c6 with Kxc6; Brings the king toward the centre, a strong piece in the ending
+    n3 2.Ne5+: Takes the attacked knight to safety on e5; Centralises the knight on e5, which reaches 8 squares; Heads for c6, a square no enemy pawn can attack

@@ -1,6 +1,6 @@
-import type { Square } from 'chess.js';
+import type { Chess, Square } from 'chess.js';
 import type { IdeaContext } from './context.js';
-import { attacksFrom, BIG_CENTRE, CENTRE } from './squares.js';
+import { attacksFrom, BIG_CENTRE, CENTRE, fewPieces } from './squares.js';
 import type { MoveIdea } from './types.js';
 
 /** Past this move the centre is what the middlegame was fought over, not
@@ -9,7 +9,14 @@ const CENTRE_LAST_MOVE = 25;
 
 export function centreIdeas(context: IdeaContext): MoveIdea[] {
   if (context.fullmove > CENTRE_LAST_MOVE) return [];
+  // A bare ending (an endgame study starts at move 1): only a piece brought to the centre counts.
+  if (bareEnding(context.before)) return [centralises(context)].filter((idea): idea is MoveIdea => idea !== null);
   return [occupies(context), controls(context), supports(context), strikes(context), centralises(context), givesUp(context)].filter((idea): idea is MoveIdea => idea !== null);
+}
+
+/** At most two pieces a side and four pawns in all: no pawn centre left to fight over. */
+function bareEnding(board: Chess): boolean {
+  return fewPieces(board) && board.board().flat().filter((cell) => cell?.type === 'p').length <= 4;
 }
 
 function occupies({ move }: IdeaContext): MoveIdea | null {
@@ -21,7 +28,8 @@ function occupies({ move }: IdeaContext): MoveIdea | null {
  * d5 and f5"), a piece's on the four in the middle. */
 function controls(context: IdeaContext): MoveIdea | null {
   const { move } = context;
-  if (move.piece === 'k') return null;
+  // A promotion is about the new queen, not a pawn's reach.
+  if (move.piece === 'k' || move.promotion) return null;
   const region = move.piece === 'p' ? BIG_CENTRE : CENTRE;
   const had = new Set(attacksFrom(context.before, move.from));
   const found = newlyAttacked(context).filter((square) => region.includes(square) && !had.has(square));
