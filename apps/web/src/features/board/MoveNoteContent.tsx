@@ -21,6 +21,8 @@ export function hasMoveNoteText(move: ClassifiedMoveDto, excludeTacticText = fal
   return plainReviewReasons(move, excludeTacticText).length > 0 || betterWasText(move, excludeTacticText) !== null;
 }
 
+const RUNNERS_UP = 2;
+
 /** §11's closing paragraph: a book move's theory label is shown unconditionally
  * via `OpeningLabel` below, not gated behind the notes toggle — so `MoveNote`
  * skips it here to avoid rendering the same "Theory — …" line twice.
@@ -63,12 +65,12 @@ export interface AlternativesPanelProps {
 
 /** §11's closing paragraph: the engine's actual best line plus its two
  * win%-ranked (not raw-cp) runners-up, so a player can see what else was
- * playable without leaving the move list. The deep analysis pipeline only
- * stores one PV per ply, so `move.alternatives` is usually empty — when it
- * is, this lazily asks the lite engine for a couple of runner-up lines
- * (useMoveAlternatives) instead of leaving the panel bare. */
+ * playable without leaving the move list. Game review stores two lines a
+ * position (`REVIEW_MULTI_PV`), so `move.alternatives` holds at most one
+ * runner-up — with fewer than two, this lazily asks the lite engine for a
+ * couple of runner-up lines (useMoveAlternatives) for the one move on show. */
 export function AlternativesPanel({ move, hideBestLine }: AlternativesPanelProps): ReactNode {
-  const precomputed = (move.alternatives ?? []).slice(0, 2);
+  const precomputed = (move.alternatives ?? []).slice(0, RUNNERS_UP);
   // The played move already WAS the engine's top choice — "Best: <the move
   // just played>" repeats what the quality badge/headline already said.
   // Worth showing only when it names something the student didn't play, and
@@ -76,12 +78,12 @@ export function AlternativesPanel({ move, hideBestLine }: AlternativesPanelProps
   // below too, or every best-move ply the student steps past would spend an
   // uncached engine search on runners-up nobody ever sees.
   const hasSomethingToShow = Boolean(move.bestMoveSan) && move.bestMoveSan !== move.moveSan;
-  const shouldFetch = hasSomethingToShow && precomputed.length === 0 && Boolean(move.fenBefore);
+  const shouldFetch = hasSomethingToShow && precomputed.length < RUNNERS_UP && Boolean(move.fenBefore);
   const fetched = useMoveAlternatives(move.fenBefore, move.mover, move.bestMoveSan, shouldFetch);
   if (!hasSomethingToShow) return null;
 
   const pv = move.bestLinePvSan && move.bestLinePvSan.length > 0 ? move.bestLinePvSan.join(' ') : move.bestMoveSan;
-  const runnersUp = precomputed.length > 0 ? precomputed : fetched.data;
+  const runnersUp = precomputed.length >= RUNNERS_UP || fetched.data.length === 0 ? precomputed : fetched.data;
 
   return (
     <div className="move-explorer__alternatives">
