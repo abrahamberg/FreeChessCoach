@@ -1,9 +1,10 @@
-import { positionKey, repairEvalSignConvention } from '@freechesscoach/chess-analysis';
-import type { EngineEval } from '@freechesscoach/shared';
+import { positionKey, repairEvalSignConvention, type ParsedGame } from '@freechesscoach/chess-analysis';
+import { ENGINE_MULTI_PV, REVIEW_MULTI_PV, type EngineEval } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import type { Database } from '../db/schema.js';
 import type { AnalysisJobDependencies } from './analysis-deps.js';
+import { widenBrilliantCandidates } from './analysis-widen.js';
 
 /** Positions per engine call. Small enough that the progress percentage moves
  * often, large enough not to pay per-request overhead on every ply — and it
@@ -16,6 +17,22 @@ interface PendingPosition {
   /** Every pending index holding this position (Task 77.2): a repetition is
    * sent once and its eval fanned back out to each index. */
   occurrences: { index: number; fen: string }[];
+}
+
+/** The game's evals as review reads them: every position in chunks
+ * (`analyzeInChunks`), then the Brilliant candidates' positions widened
+ * (`widenBrilliantCandidates`) and stored again, so a resume or re-analysis
+ * asks for neither. */
+export async function analyzeReviewEvals(
+  db: Kysely<Database>,
+  deps: AnalysisJobDependencies,
+  analysisId: string,
+  game: ParsedGame
+): Promise<EngineEval[]> {
+  const evals = await analyzeInChunks(db, deps, analysisId, game.positions.map((position) => position.fen));
+  const widened = await widenBrilliantCandidates(game, evals, (fens) => deps.analyzeGamePositions(fens, ENGINE_MULTI_PV));
+  if (widened !== evals) await analysesRepo.storeEngineEvals(db, analysisId, widened);
+  return widened;
 }
 
 /**
@@ -50,7 +67,7 @@ export async function analyzeInChunks(
   if (known.size > 0) await analysesRepo.setEvalsComputed(db, analysisId, known.size);
 
   for (const chunk of chunked(pendingPositions(known, fens), ENGINE_CHUNK_POSITIONS)) {
-    const chunkEvals = await deps.analyzeGamePositions(chunk.map((position) => position.fen));
+    const chunkEvals = await deps.analyzeGamePositions(chunk.map((position) => position.fen), REVIEW_MULTI_PV);
     chunk.forEach((position, i) => {
       const evalResult = chunkEvals[i];
       if (!evalResult) throw new Error(`Engine returned no eval for position ${position.fen}`);

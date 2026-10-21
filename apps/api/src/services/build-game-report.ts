@@ -6,9 +6,8 @@ import {
   type GameResultForColour,
   type ParsedGame
 } from '@freechesscoach/chess-analysis';
-import { ENGINE_DEFAULT_DEPTH } from '@freechesscoach/shared';
+import { ENGINE_DEFAULT_DEPTH, REVIEW_MULTI_PV } from '@freechesscoach/shared';
 import type { BookReport, ClassifiedMoveDto, EngineEval } from '@freechesscoach/shared';
-import { ENGINE_MULTI_PV } from './engine-client.js';
 
 const ENGINE_NAME = 'stockfish';
 
@@ -55,7 +54,7 @@ export function buildGameReportForAnalysis(input: BuildGameReportForAnalysisInpu
     engine: {
       name: ENGINE_NAME,
       depth: input.evals[0]?.depth ?? ENGINE_DEFAULT_DEPTH,
-      multiPv: ENGINE_MULTI_PV
+      multiPv: REVIEW_MULTI_PV
     },
     priorRating: {
       white: whiteElo ?? (input.userColor === 'white' ? input.userRating : null),

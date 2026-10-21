@@ -8,7 +8,7 @@ import type {
   PositionFeatures
 } from '@freechesscoach/shared';
 import { positionDelta } from './diff-features.js';
-import { computeMoveDrop } from './move-metrics.js';
+import { moveDrop } from './move-metrics.js';
 import { enrichPositions } from './position-enrichment.js';
 import { inBookWalk, resolveOpening, type OpeningResolution } from './opening-book.js';
 import { positionKey } from './opening-book-key.js';
@@ -17,7 +17,7 @@ import { buildReasons } from './move-reasons.js';
 import { moveFlags } from './move-flags.js';
 import { computePositionFeatures } from './position-features.js';
 import { moveAccuracy as calculateMoveAccuracy } from './accuracy-curve.js';
-import { toCpWhite, winPctFor, winPctWhite } from './win-probability.js';
+import { toCpWhite, winPctFor } from './win-probability.js';
 import { analyzeChecksCapturesThreats } from './checks-captures-threats.js';
 import type { ParsedGame } from './pgn.js';
 
@@ -150,11 +150,10 @@ interface ClassifiedMoveInput {
 function buildClassifiedMove(input: ClassifiedMoveInput): ClassifiedMove {
   const mover = input.position.mover ?? 'white';
   const cpBefore = toCpWhite(firstLine(input.evalBefore) ?? EMPTY_SCORE);
-  const deliveredMate = input.position.moveSan?.endsWith('#') ?? false;
   const cpAfter = toCpWhite(firstLine(input.evalAfter) ?? EMPTY_SCORE);
   const winPctBefore = winPctFor(mover, cpBefore);
   const winPctAfter = winPctFor(mover, cpAfter);
-  const drop = deliveredMate ? 0 : computeMoveDrop(winPctWhite(cpBefore), winPctWhite(cpAfter), mover);
+  const drop = moveDrop(input.evalBefore, input.evalAfter, mover, input.position.moveSan ?? '');
   const bestMoveSan = firstLine(input.evalBefore)?.moveSan ?? '';
   const bestLinePvSan = bestMoveSan ? (firstLine(input.evalBefore)?.pvSan ?? [bestMoveSan]) : [];
   const classificationInput: MoveClassificationInput = {

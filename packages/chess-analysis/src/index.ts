@@ -12,6 +12,7 @@ export * from './bot-move-pick.js';
 export * from './bot-opening.js';
 export * from './bot-think-time.js';
 export * from './build-game-report.js';
+export * from './brilliant-candidates.js';
 export * from './build-stats-dashboard.js';
 export * from './candidate-moves.js';
 export * from './classify-candidate-move.js';

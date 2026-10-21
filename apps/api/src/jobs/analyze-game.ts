@@ -40,7 +40,7 @@ export function createAnalyzeGameTask(options: AnalyzeGameTaskOptions): Task {
     // this game and never leak into another job.
     const backend = await resolveReviewEngineBackend(options.engineBackendOptions, game.userId);
     const deps: AnalysisJobDependencies = {
-      analyzeGamePositions: (fens) => backend.analyzeGame(fens),
+      analyzeGamePositions: (fens, multiPv) => backend.analyzeGame(fens, { multiPv }),
       ...(process.env.REVIEW_DEEP_CHECK === '1' ? { analyzeDeepPositions: (fens: string[]) => backend.analyzeGame(fens, { depth: DEEP_CHECK.depth, multiPv: 1 }) } : {})
     };
 

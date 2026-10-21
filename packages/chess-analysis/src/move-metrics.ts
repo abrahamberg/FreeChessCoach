@@ -16,7 +16,7 @@ export type MoveMetrics = MoveMetric[];
 
 /** Builds the White-perspective win-percentage value for every analyzed position. */
 export function buildWinPctSeries(evals: EngineEval[]): number[] {
-  return evals.map((evalResult) => winPctWhite(cpWhiteFor(evalResult)));
+  return evals.map((evalResult) => winPctWhite(cpWhiteOf(evalResult)));
 }
 
 /**
@@ -29,13 +29,21 @@ export function computeMoveDrop(before: number, after: number, mover: PlayerColo
   return Math.max(0, drop);
 }
 
+/** A move's win% drop as Game Review labels it, from the evals of the
+ * positions before and after it. A move that mates drops nothing: the
+ * position after it has no engine lines. */
+export function moveDrop(evalBefore: EngineEval | undefined, evalAfter: EngineEval | undefined, mover: PlayerColor, moveSan: string): number {
+  if (moveSan.endsWith('#')) return 0;
+  return computeMoveDrop(winPctWhite(cpWhiteOf(evalBefore)), winPctWhite(cpWhiteOf(evalAfter)), mover);
+}
+
 /** Builds the per-move metrics from position evaluations and move colours. */
 export function buildMoveMetrics(evals: EngineEval[], movers: PlayerColor[]): MoveMetrics {
   if (movers.length !== Math.max(evals.length - 1, 0)) {
     throw new RangeError(`Expected one mover per transition, got ${movers.length} movers for ${evals.length} evaluations`);
   }
 
-  const cpWhiteByPosition = evals.map(cpWhiteFor);
+  const cpWhiteByPosition = evals.map(cpWhiteOf);
   const winPctWhiteByPosition = buildWinPctSeries(evals);
 
   return movers.map((mover, index) => {
@@ -65,7 +73,7 @@ export function buildMoveMetrics(evals: EngineEval[], movers: PlayerColor[]): Mo
   });
 }
 
-function cpWhiteFor(evalResult: EngineEval): number {
-  const firstLine = evalResult.lines[0];
+function cpWhiteOf(evalResult: EngineEval | undefined): number {
+  const firstLine = evalResult?.lines[0];
   return toCpWhite({ cp: firstLine?.cp ?? null, mateIn: firstLine?.mateIn ?? null });
 }

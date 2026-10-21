@@ -363,7 +363,7 @@ G4  MATERIALITY: at least one of
       - the move enters a forced mate that no other move enters
 ```
 
-`G3` needs MultiPV ≥ 2, which the pipeline already provides (MultiPV 3). If MultiPV data is missing for a position, Great cannot be awarded — fail closed.
+`G3` needs MultiPV ≥ 2, which the pipeline provides (`REVIEW_MULTI_PV`, 2 lines). If MultiPV data is missing for a position, Great cannot be awarded — fail closed.
 
 ### 5.7 Excellent / Good / Book
 
@@ -765,7 +765,7 @@ The stated priority is presentation, not the numbers. The per-move `reasons: str
 
 Ordering rule for the UI: show at most **two** reasons per move, prioritising `mate > material > tactical motif > structural > mobility`. More than two reads as noise. The only-move, pin and kick notes are one family: at most one a move, in that order, and only in a free slot, because a tactic card for the same thing replaces the note later.
 
-For the alternatives panel, the existing MultiPV-3 output is already the right shape: show `bestMoveSan` with its PV, plus the two runners-up with their win% (not raw centipawns — win% is what the accuracy number is built on, and it is far more intuitive for club players).
+For the alternatives panel: show `bestMoveSan` with its PV, plus the two runners-up (review stores one runner-up, `REVIEW_MULTI_PV`; the panel asks the engine for the second when the move is on show) with their win% (not raw centipawns — win% is what the accuracy number is built on, and it is far more intuitive for club players).
 
 ---
 
