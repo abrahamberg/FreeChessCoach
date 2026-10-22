@@ -60,7 +60,7 @@ n8 4…g6 (Black, Legal's Mate) | mistake | before: White is slightly better →
     flags: critical
 n9 5.Nxe5 (White, Legal's Mate) | best | before: White is better → after: White is better
     board: moves the knight from f3 to e5 | captures the pawn on e5 | attacks the bishop on g4 | leaves the white knight on e5 hanging
-    ideas: threatens mate in two: Bxf7+ Ke7 Nd5# | sacrifices the knight on e5: it can be taken, and the engine still approves | attacks the pawn on f7 twice, while it is defended once | White now has 3 pieces developed to 1 piece | centralises the knight on e5, which reaches 8 squares | prepares the pawn's advance to f3, which it now supports
+    ideas: threatens mate in two: Bxf7+ Ke7 Nd5# | sacrifices the knight on e5: it can be taken, and the engine still approves | White now has 3 pieces developed to 1 piece | prepares the pawn's advance to f3, which it now supports
     alternatives: h3 (attacks the bishop on g4, which pins the knight on f3): White is slightly better, after Bxf3 Qxf3 Qd7 Nd5; d4 (attacks the pawn on e5 twice, while it is defended once; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): White is slightly better, after Nc6 dxe5 Bxf3 Qxf3
     tempting check: Bb5+? White's Bb5+ moves the bishop from c4 to b5 | gives check | the check can be answered: block with Nd7, Nc6, Qd7, c6, Bd7; the checking piece cannot be taken; move the king with Ke7. Black answers c6: moves the pawn from c7 to c6 | blocks the check from the bishop on b5 | attacks the bishop on b5. Then Bc4 Qf6 Be2. Over the line nothing is taken; at the end material is level (The position is roughly equal).
     tempting check: Bxf7+? White's Bxf7+ moves the bishop from c4 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; take the checking piece with Kxf7; move the king with Ke7, Kd7 | attacks the knight on g8 | leaves the white bishop on f7 hanging. Black answers Kxf7: moves the king from e8 to f7 | captures the bishop on f7. Then d4 Ke8. Over the line White takes a pawn; Black takes a bishop; at the end White has a pawn for a bishop (Black is better).
@@ -70,14 +70,14 @@ n10 5…Bxd1 (Black, Legal's Mate) | blunder | before: White is better → after
     best instead: dxe5; after dxe5 Qxg4 Nc6 Bb5, White has a bishop and a pawn for a knight
     why dxe5 is better: moves the pawn from d6 to e5 | captures the knight on e5 | leaves the black bishop on g4 hanging
     board: moves the bishop from g4 to d1 | captures the queen on d1
-    ideas: removes the queen on d1, the guard of the pawn on c2 | settles the bishop on d1 on a square by the king that no pawn can cover any more | White now has 3 pieces developed to 1 piece
+    ideas: removes the queen on d1, the guard of the pawn on c2 | White now has 3 pieces developed to 1 piece
     notes: Won a queen, but it allowed mate.
     tactics: They let you force mate in 2 through a mating net with Bxf7+ — closes the net — every answer runs into mate.
     alternatives: dxe5 (puts a pawn in the centre on e5; controls d4 and f4; opens the d-file for the rooks (half-open)): White is better, after Qxg4 Nc6 Bb5; Be6 (White now has 3 pieces developed to 1 piece; controls d5): White is better, after Bxe6 dxe5 Bb3 Nc6; d5 (puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on e4; puts pressure on the pawn on e4 and controls c4): White is better, after Bb5+ c6 Nxg4 cxb5
 n11 6.Bxf7+ (White, Legal's Mate) | great | before: White has a forced mate in 2 → after: White has a forced mate in 1
     piece: the light-squared bishop
     board: moves the bishop from c4 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke7 | attacks the knight on g8
-    ideas: attacks the pawn on g6 twice, while it is defended once | settles the bishop on f7 on a square by the king that no pawn can cover any more | White now has 3 pieces developed to 1 piece | after the exchange White has two pawns for a queen
+    ideas: attacks the pawn on g6 twice, while it is defended once | White now has 3 pieces developed to 1 piece | after the exchange White has two pawns for a queen
     tactics: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
     alternatives: Nxf7 (threatens to win the queen on d8 for a knight with Nxd8; settles the knight on f7 on a square by the king that no pawn can cover any more; White now has 3 pieces developed to 1 piece): Black is better, after Qd7 Nxh8 Bxc2 d3; O-O (castles kingside: the king goes to safety and the rook comes to f1; White now has 4 pieces developed to 1 piece): Black is much better, after dxe5 Rxd1 Ne7 d3
     tempting check: Bb5+? White's Bb5+ moves the bishop from c4 to b5 | gives check | the check can be answered: block with Nd7, Nc6, Qd7, c6; the checking piece cannot be taken; move the king with Ke7. Black answers c6: moves the pawn from c7 to c6 | blocks the check from the bishop on b5 | attacks the bishop on b5 | leaves the black bishop on d1 hanging. Then Bc4 dxe5 Nxd1. Over the line White takes a bishop; Black takes a knight; at the end White has a bishop and a pawn for a queen and a knight (Black is much better).
@@ -124,7 +124,7 @@ n17 3…Nf6 (Black, Scholar's Mate) | blunder | before: The position is roughly 
     best instead: g6; after g6 Qd1 Nf6 Nc3 Na5 d3, material is level
     why g6 is better: moves the pawn from g7 to g6 | attacks the queen on h5
     board: moves the knight from g8 to f6 | attacks the queen on h5
-    ideas: threatens to win the queen on h5 with Nxh5 | puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | puts pressure on the pawn on e4 and controls d5 | defends the pawn on h7, attacked once and now defended twice | prepares the pawn's advance to d5, which it now supports
+    ideas: threatens to win the queen on h5 with Nxh5 | puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | defends the pawn on h7, attacked once and now defended twice
     tactics: They let you deliver checkmate with Qxf7#.
     alternatives: g6 (attacks the queen on h5; controls f5; opens the bishop on f8 (from 5 squares to 7)): The position is roughly equal, after Qd1 Nf6 Nc3 Na5; Qe7 (brings the queen out to e7; controls e5; supports the centre pawn on e5): The position is roughly equal, after Nc3 Nd4 Qd1 c6; Qf6 (brings the queen out early to f6, with 3 pieces still at home; controls e5; supports the centre pawn on e5): The position is roughly equal, after Nc3 Bc5 Nf3 Qg6
     tempting threat: Qg5? Black's Qg5 moves the queen from d8 to g5 | attacks the queen on h5 | leaves the black queen on g5 hanging. White answers Qxf7+: moves the queen from h5 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8 | attacks the bishop on f8 | attacks the knight on g8 | the queen on f7 forks the king on e8 and the bishop on f8 and the knight on g8. Then Kd8 Qxf8#. Over the line White takes a bishop and a pawn; at the end White is a bishop and a pawn up (White has a forced mate in 2).
@@ -162,9 +162,9 @@ REVIEW NOTES
     n6 3…Bg4: Pins the knight on f3 to the queen; Develops the bishop to g4
     n7 4.Nc3: Develops the knight to c3, its most useful square; White now has 3 pieces developed to 1 piece; Controls d5 and e4
     n8 4…g6: Nc6 was better: it develops the knight; They let you win a pawn through a free piece with Nxe5 — captures the pawn on e5.
-    n9 5.Nxe5: Threatens mate in two: Bxf7+ Ke7 Nd5#; Sacrifices the knight on e5: it can be taken, and the engine still approves; Attacks the pawn on f7 twice, while it is defended once
+    n9 5.Nxe5: Threatens mate in two: Bxf7+ Ke7 Nd5#; Sacrifices the knight on e5: it can be taken, and the engine still approves; White now has 3 pieces developed to 1 piece
     n10 5…Bxd1: They let you force mate in 2 through a mating net with Bxf7+ — closes the net — every answer runs into mate.; Won a queen, but it allowed mate.
-    n11 6.Bxf7+: Attacks the pawn on g6 twice, while it is defended once; Settles the bishop on f7 on a square by the king that no pawn can cover any more; White now has 3 pieces developed to 1 piece; You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
+    n11 6.Bxf7+: Attacks the pawn on g6 twice, while it is defended once; White now has 3 pieces developed to 1 piece; After the exchange White has two pawns for a queen; You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
     n12 6…Ke7: Gives up castling for good
     n13 7.Nd5#: You delivered checkmate.
   l2

@@ -6,7 +6,7 @@ l1 "Line A" | leaves book at n1
 Moves:
 n1 1.Ra7 (White, Line A) | excellent | before: White has a forced mate in 2 → after: White has a forced mate in 1
     board: moves the rook from a2 to a7
-    ideas: threatens mate with Rb8# | puts the rook on the seventh rank
+    ideas: threatens mate with Rb8#
     alternatives: Rb7 (threatens mate with Ra8#; puts the rook on the seventh rank): White has a forced mate in 2, after Kh8 Ra8#; Rb6: White has a forced mate in 3, after Kf7 Ra7+ Ke8 Rb8#
     tempting check: Ra8+ White's Ra8+ moves the rook from a2 to a8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh7, Kg7, Kf7. Black answers Kh7: moves the king from g8 to h7. Then Rb6 Kg7 Ra7+. Over the line nothing is taken; at the end White is two rooks up (White has a forced mate). Works, but not the answer: it mates too, but later.
     tempting check: Rg2+ White's Rg2+ moves the rook from a2 to g2 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh8, Kh7, Kf7, Kf8. Black answers Kf7: moves the king from g8 to f7. Then Rb6 Ke8 Rg8+. Over the line nothing is taken; at the end White is two rooks up (White has a forced mate). Works, but not the answer: it mates too, but later.
@@ -31,4 +31,4 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.Ra7: Threatens mate with Rb8#; Puts the rook on the seventh rank
+    n1 1.Ra7: Threatens mate with Rb8#

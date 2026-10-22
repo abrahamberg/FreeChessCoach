@@ -1,4 +1,5 @@
 import { isMate } from '../fast-board/moves.js';
+import { withoutBesideThePoint } from './beside-the-point.js';
 import { centreIdeas } from './centre.js';
 import { ideaContext, type MoveIdeasInput } from './context.js';
 import { defenceIdeas } from './defence.js';
@@ -16,6 +17,7 @@ export type { MoveIdea, MoveIdeaKind, PreventedBecause, Wing } from './types.js'
 export type { MoveIdeasInput } from './context.js';
 export { movesOfLine } from './context.js';
 export { renderMoveIdea } from './render.js';
+export { smallIdeasAreClutter } from './beside-the-point.js';
 
 /** Most telling first: what the move threatens or stops, then the king,
  * then development, the centre, the lines, the pawns, trades and plans. */
@@ -81,7 +83,7 @@ function computeIdeas(input: MoveIdeasInput, scope: IdeaScope): MoveIdea[] {
     ...tradeIdeas(context),
     ...(full ? planIdeas(context) : [])
   ];
-  return withoutRepeats(ideas).sort((a, b) => rank(a) - rank(b));
+  return withoutBesideThePoint(withoutRepeats(ideas), context).sort((a, b) => rank(a) - rank(b));
 }
 
 /** A prevented check, pin or attack ranks with the threats; a prevented

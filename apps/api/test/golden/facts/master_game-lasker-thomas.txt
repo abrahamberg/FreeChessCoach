@@ -45,7 +45,7 @@ n8 4…Be7 (Black, Line A) | good | before: The position is roughly equal → af
 n9 5.Bxf6 (White, Line A) | best | before: White is slightly better → after: White is slightly better
     piece: the dark-squared bishop
     board: moves the bishop from g5 to f6 | captures the knight on f6 | attacks the bishop on e7
-    ideas: White now has 3 pieces developed to 1 piece | controls e5 and d4 | supports the centre pawn on d4
+    ideas: White now has 3 pieces developed to 1 piece
     notes: Trades the bishop for the knight on f6
     alternatives: e3 (controls d4 and f4; supports the centre pawn on d4; opens the bishop on f1 (from 0 squares to 5)): The position is roughly equal, after Nc6 Bb5 O-O Ne2; a3: The position is roughly equal, after d5 e3 O-O Na4
 n10 5…Bxf6 (Black, Line A) | best | before: White is slightly better → after: White is slightly better
@@ -61,7 +61,7 @@ n11 6.e4 (White, Line A) | best | before: White is slightly better → after: Wh
     alternatives: e3 (controls d4 and f4; supports the centre pawn on d4; opens the bishop on f1 (from 0 squares to 5)): The position is roughly equal, after c5 dxc5 Qa5 Qd2; Qd2 (brings the queen out to d2; clears the way to castle queenside): The position is roughly equal, after d5 e3 Bd7 O-O-O
 n12 6…fxe4 (Black, Line A) | excellent | before: White is slightly better → after: White is slightly better
     board: moves the pawn from f5 to e4 | captures the pawn on e4 | attacks the knight on f3
-    ideas: puts a pawn in the centre on e4 | controls d3 and f3 | opens the f-file for the rooks (half-open) | leaves Black with doubled pawns on the e-file | takes toward the centre
+    ideas: opens the f-file for the rooks (half-open) | takes toward the centre
     notes: Trades pawns on e4
     alternatives: c5 (strikes at the centre: attacks the pawn on d4; puts pressure on the pawn on d4; opens the queen on d8 (from 1 squares to 4)): White is slightly better, after exf5 cxd4 Ne4 Nc6; O-O (castles kingside: the king goes to safety and the rook comes to f8): White is slightly better, after Qd2 fxe4 Nxe4 b6
 n13 7.Nxe4 (White, Line A) | great | before: White is slightly better → after: White is slightly better
@@ -79,7 +79,7 @@ n15 8.Ne5 (White, Line A) | inaccuracy | before: White is slightly better → af
     best instead: c3; after c3 Bb7 Bd3 O-O Qe2 Nc6, White has a knight for a bishop
     why c3 is better: moves the pawn from c2 to c3
     board: moves the knight from f3 to e5
-    ideas: moves the knight for the second time while 1 piece still wait at home | centralises the knight on e5, which reaches 8 squares | opens the queen on d1 (from 5 squares to 8) | posts the knight on e5 on a strong square, supported by the pawn on d4
+    ideas: moves the knight for the second time while 1 piece still wait at home | opens the queen on d1 (from 5 squares to 8)
     opens: the queen on d1, from 5 squares to 8
     alternatives: c3 (controls d4; supports the centre pawn on d4; opens the queen on d1 (from 5 squares to 8)): White is slightly better, after Bb7 Bd3 O-O Qe2; Bd3 (develops the bishop to d3; White now has 3 pieces developed to 1 piece; aims at the pawn on h7, through the knight on e4): White is slightly better, after Nc6 c3 Bb7 Qe2; Qd2 (brings the queen out to d2; clears the way to castle queenside): White is slightly better, after Bb7 Bd3 Nc6 c3
     flags: critical
@@ -116,7 +116,7 @@ n20 10…Qe7 (Black, Line A) | blunder | before: The position is roughly equal �
     best instead: Bxe5; after Bxe5 dxe5 Rf5 Qg4 Rxe5 O-O, Black is a pawn up
     why Bxe5 is better: moves the bishop from f6 to e5 | captures the knight on e5
     board: moves the queen from d8 to e7
-    ideas: brings the queen out to e7 | prepares the pawn's advance to c5, which it now supports
+    ideas: brings the queen out to e7
     notes: Won a queen, but it allowed mate.
     tactics: They let you force mate with Qxh7+.
     alternatives: Bxe5 (puts pressure on the pawn on d4; centralises the bishop on e5, which reaches 8 squares; aims at the pawn on h2): The position is roughly equal, after dxe5 Rf5 Qg4 Rxe5; g6 (attacks the queen on h5; controls f5; opens the bishop on f6 (from 4 squares to 6)): The position is roughly equal, after Qe2 Bg7 h4 Nc6
@@ -126,7 +126,7 @@ n20 10…Qe7 (Black, Line A) | blunder | before: The position is roughly equal �
     flags: critical
 n21 11.Qxh7+ (White, Line A) | great | before: White has a forced mate → after: White has a forced mate
     board: moves the queen from h5 to h7 | captures the pawn on h7 | gives check | the check can be answered: no block; take the checking piece with Kxh7; the king cannot move | leaves the white queen on h7 hanging
-    ideas: sacrifices the queen on h7: it can be taken, and the engine still approves | breaks into the pawns in front of the king (the pawn on h7) | brings the queen into the attack: it bears on 3 squares around the king | takes h8 from the enemy king | settles the queen on h7 on a square by the king that no pawn can cover any more | leaves Black with an isolated pawn on g7 | defends the knight on e4, attacked once and now defended twice
+    ideas: sacrifices the queen on h7: it can be taken, and the engine still approves | breaks into the pawns in front of the king (the pawn on h7) | defends the knight on e4, attacked once and now defended twice
     notes: Won the bishop, giving back a queen.
     tactics: You forced mate.
     alternatives: Nxf6+ (attacks the pawn on h7 3 times, while it is defended once; controls e4 and d5): White is slightly better, after gxf6 Nf3 Nc6 a3; O-O-O (castles queenside: the king goes to safety and the rook comes to d1; connects the rooks): White is slightly better, after Bxe5 Qxe5 d6 Qg3
@@ -138,7 +138,7 @@ n22 11…Kxh7 (Black, Line A) | forced | before: White has a forced mate → aft
     notes: Recaptures the queen on h7
 n23 12.Nxf6+ (White, Line A) | great | before: White has a forced mate → after: White has a forced mate
     board: moves the knight from e4 to f6 | captures the bishop on f6 | gives check | a double check, with the bishop on d3 | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh8, Kh6
-    ideas: brings the knight into the attack: it bears on 2 squares around the king | takes g8 from the enemy king | White now has 3 pieces developed to 1 piece | controls e4 and d5 | after the exchange White has a knight and a pawn for a queen | prepares the pawn's advance to d5, which it now supports
+    ideas: brings the knight into the attack: it bears on 2 squares around the king | White now has 3 pieces developed to 1 piece | after the exchange White has a knight and a pawn for a queen
     tactics: You forced mate.
     alternatives: Nc5+ (controls e4): Black is much better, after Kg8 Nxb7 Bxe5 dxe5; Nxd7 (controls e5; leaves Black with an isolated pawn on e6): Black is much better, after Nxd7 Nxf6+ Kh6 Nxd7
     tempting check: Nd6+? White's Nd6+ moves the knight from e4 to d6 | gives check | a discovered check from the bishop on d3 | the check can be answered: block with Be4, g6; the checking piece cannot be taken; move the king with Kg8, Kh8, Kh6 | attacks the bishop on b7. Black answers Kg8: moves the king from h7 to g8 | leaves the black bishop on b7 hanging. Then Nxb7 Qb4+ c3. Over the line White takes a bishop; at the end White has a knight and a pawn for a queen (Black is much better).
@@ -150,7 +150,7 @@ n24 12…Kh6 (Black, Line A) | best | before: White has a forced mate → after:
     alternatives: Kh8: White has a forced mate in 1, after Ng6#
 n25 13.Neg4+ (White, Line A) | great | before: White has a forced mate → after: White has a forced mate
     board: moves the knight from e5 to g4 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kg5
-    ideas: defends the knight on f6, which was attacked | White now has 3 pieces developed to 1 piece | controls e5 | puts the knight on g4 on an outpost no pawn can attack
+    ideas: defends the knight on f6, which was attacked | White now has 3 pieces developed to 1 piece
     tactics: You forced mate.
     alternatives: Nfg4+ (White now has 3 pieces developed to 1 piece; puts the knight on g4 on an outpost no pawn can attack): White is slightly better, after Kh5 Bg6+ Kh4 Rd1; Ne4 (White now has 3 pieces developed to 1 piece; centralises the knight on e4, which reaches 8 squares; shuts in the bishop on d3 (from 9 squares to 5)): Black is better, after Rf5 Ng3 Rxe5+ dxe5
     flags: quiz-eligible, critical
@@ -165,10 +165,9 @@ n27 14.h4+ (White, Line A) | excellent | before: White has a forced mate → aft
     alternatives: f4+ (controls e5): White has a forced mate, after Kh4 g3+ Kh3 O-O; Nh7+ (settles the knight on h7 on a square by the king that no pawn can cover any more; White now has 3 pieces developed to 1 piece): Black is much better, after Kxg4 Be2+ Kf5 Bd3+
 n28 14…Kf4 (Black, Line A) | forced | before: White has a forced mate → after: White has a forced mate in 3
     board: moves the king from g5 to f4 | attacks the knight on g4
-    ideas: prepares the pawn's advance to e5, which it now supports
 n29 15.g3+ (White, Line A) | best | before: White has a forced mate in 3 → after: White has a forced mate in 2
     board: moves the pawn from g2 to g3 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf3
-    ideas: takes the attacked pawn to safety on g3 | loosens the pawns in front of the king: no pawn can cover f3 and h3 any more | controls f4
+    ideas: takes the attacked pawn to safety on g3 | loosens the pawns in front of the king: no pawn can cover f3 and h3 any more
     alternatives: Ne5 (threatens mate with Nh5#; White now has 3 pieces developed to 1 piece; centralises the knight on e5, which reaches 8 squares): White has a forced mate, after Qb4+ c3 Qxc3+ bxc3; Nh2 (threatens mate with Nh5#; White now has 3 pieces developed to 1 piece): White is much better, after Be4 Nxe4 e5 d5
     tempting threat: Ng8? White's Ng8 moves the knight from f6 to g8 | attacks the queen on e7 | leaves the white knight on g8 hanging | leaves the white knight on g4 hanging | leaves the white pawn on g2 hanging. Black answers Qb4+: moves the queen from e7 to b4 | gives check | the check can be answered: block with c3; the checking piece cannot be taken; move the king with Ke2, Kf1, Kd1. Then c3 Qxb2 O-O. Over the line Black takes a pawn; at the end White has a knight for a queen (Black is much better).
     flags: quiz-eligible
@@ -223,10 +222,10 @@ REVIEW NOTES
     n6 3…Nf6: Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square; Controls e4 and d5
     n7 4.Bg5: Pins the knight on f6 to the queen; Develops the bishop to g5; White now has 3 pieces developed to 1 piece
     n8 4…Be7: Breaks the pin on the knight on f6; Develops the bishop to e7; Defends the knight on f6, attacked once and now defended twice
-    n9 5.Bxf6: Trades the bishop for the knight on f6; White now has 3 pieces developed to 1 piece; Controls e5 and d4; Supports the centre pawn on d4
+    n9 5.Bxf6: Trades the bishop for the knight on f6; White now has 3 pieces developed to 1 piece
     n10 5…Bxf6: Recaptures the bishop on f6; Puts pressure on the pawn on d4 and controls e5; Puts the bishop on the long diagonal; After the exchange White has a knight for a bishop
     n11 6.e4: Puts a pawn in the centre on e4; Strikes at the centre: attacks the pawn on f5; Puts pressure on the pawn on f5 and controls d5
-    n12 6…fxe4: Trades pawns on e4; Puts a pawn in the centre on e4; Controls d3 and f3; Opens the f-file for the rooks (half-open)
+    n12 6…fxe4: Trades pawns on e4; Opens the f-file for the rooks (half-open); Takes toward the centre
     n13 7.Nxe4: Recaptures the pawn on e4; Centralises the knight on e4, which reaches 8 squares; After the exchange White has a knight for a bishop
     n14 7…b6: Controls c5; Prevents Nc5, a knight on a strong square; Opens the bishop on c8 (from 0 squares to 2)
     n15 8.Ne5: Moves the knight for the second time while 1 piece still wait at home
@@ -235,14 +234,13 @@ REVIEW NOTES
     n18 9…Bb7: Bxe5 was better: it takes the knight on e5
     n19 10.Qh5: O-O was better: castling now gets the king safe
     n20 10…Qe7: They let you force mate with Qxh7+.; Won a queen, but it allowed mate.
-    n21 11.Qxh7+: Sacrifices the queen on h7: it can be taken, and the engine still approves; Breaks into the pawns in front of the king (the pawn on h7); Brings the queen into the attack: it bears on 3 squares around the king; You forced mate.; Won the bishop, giving back a queen.
+    n21 11.Qxh7+: Sacrifices the queen on h7: it can be taken, and the engine still approves; Breaks into the pawns in front of the king (the pawn on h7); Defends the knight on e4, attacked once and now defended twice; You forced mate.; Won the bishop, giving back a queen.
     n22 11…Kxh7: Recaptures the queen on h7
-    n23 12.Nxf6+: Brings the knight into the attack: it bears on 2 squares around the king; Takes g8 from the enemy king; White now has 3 pieces developed to 1 piece; You forced mate.
-    n25 13.Neg4+: Defends the knight on f6, which was attacked; White now has 3 pieces developed to 1 piece; Controls e5; You forced mate.
+    n23 12.Nxf6+: Brings the knight into the attack: it bears on 2 squares around the king; White now has 3 pieces developed to 1 piece; After the exchange White has a knight and a pawn for a queen; You forced mate.
+    n25 13.Neg4+: Defends the knight on f6, which was attacked; White now has 3 pieces developed to 1 piece; You forced mate.
     n26 13…Kg5: Threatens to win the knight on f6 with gxf6
     n27 14.h4+: Loosens the pawns in front of the king, and the pawn on h4 can become a target; You forced mate.; Won the queen, giving back a pawn.
-    n28 14…Kf4: Prepares the pawn's advance to e5, which it now supports
-    n29 15.g3+: Takes the attacked pawn to safety on g3; Loosens the pawns in front of the king: no pawn can cover f3 and h3 any more; Controls f4
+    n29 15.g3+: Takes the attacked pawn to safety on g3; Loosens the pawns in front of the king: no pawn can cover f3 and h3 any more
     n31 16.Be2+: White now has 3 pieces developed to 1 piece
     n32 16…Kg2: Threatens to win the rook on h1 with Kxh1; Keeps the king from castling kingside: f1 is covered
     n33 17.Rh2+: Takes the attacked rook to safety on h2

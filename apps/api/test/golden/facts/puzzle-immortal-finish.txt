@@ -6,7 +6,7 @@ l1 "Line A" | leaves book at n1
 Moves:
 n1 22.Qf6+ (White, Line A) | best | before: White has a forced mate in 2 → after: White has a forced mate in 1
     board: moves the queen from f3 to f6 | gives check | the check can be answered: block with Ne7; take the checking piece with Nxf6; the king cannot move
-    ideas: sacrifices the queen on f6: it can be taken, and the engine still approves | settles the queen on f6 on a square by the king that no pawn can cover any more | controls e5 | supports the centre pawn on e5 | blockades the pawn on f7 | defends the pawn on e5, attacked once and now defended twice | prepares the pawn's advance to e6, which it now supports
+    ideas: sacrifices the queen on f6: it can be taken, and the engine still approves | defends the pawn on e5, attacked once and now defended twice
     alternatives: Qxf7 (threatens mate with Qf8#; settles the queen on f7 on a square by the king that no pawn can cover any more; leaves a 2-to-1 pawn majority on the kingside): White has a forced mate, after Qe1+ Kxe1 Bf2+ Kxf2; a3: White is much better, after Bc5 Qxf7 Qxe5+ Bxe5
     tempting check: Ne6+? White's Ne6+ moves the knight from g7 to e6 | gives check | the check can be answered: no block; take the checking piece with dxe6, fxe6; move the king with Ke8 | leaves the white knight on e6 hanging. Black answers dxe6: moves the pawn from d7 to e6 | captures the knight on e6 | attacks the knight on d5 | leaves the black pawn on f7 hanging. Then Ne3 Qc1 Nf1. Over the line Black takes a knight; at the end White has a pawn for two rooks, a bishop and a knight (Black is winning).
     tempting check: Bc7+? White's Bc7+ moves the bishop from d6 to c7 | gives check | the check can be answered: no block; take the checking piece with Nxc7; the king cannot move. Black answers Nxc7: moves the knight from a6 to c7 | captures the bishop on c7 | attacks the knight on d5 | leaves the black pawn on f7 hanging. Then Nxc7 Kxc7 Ne8+. Over the line White takes a knight; Black takes a bishop and a knight; at the end White has a pawn for two rooks and two bishops (Black is winning).
@@ -15,7 +15,7 @@ n1 22.Qf6+ (White, Line A) | best | before: White has a forced mate in 2 → aft
     flags: quiz-eligible
 n2 22…Nxf6 (Black, Line A) | best | before: White has a forced mate in 1 → after: White has a forced mate in 1
     board: moves the knight from g8 to f6 | captures the queen on f6 | attacks the knight on d5 | the knight stops guarding e7, where Be7# follows
-    ideas: develops the knight to f6, its most useful square | controls e4 and d5 | after the exchange White has a pawn for a queen, two rooks and a bishop
+    ideas: develops the knight to f6, its most useful square | after the exchange White has a pawn for a queen, two rooks and a bishop
     notes: Wins the queen for the knight on f6
     alternatives: Ne7 (leaves the knight on e7 pinned to the king; develops the knight to e7; controls d5): White has a forced mate in 1, after Qxe7#
 n3 23.Be7# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
@@ -41,6 +41,6 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 22.Qf6+: Sacrifices the queen on f6: it can be taken, and the engine still approves; Settles the queen on f6 on a square by the king that no pawn can cover any more; Controls e5
-    n2 22…Nxf6: Wins the queen for the knight on f6; Develops the knight to f6, its most useful square; Controls e4 and d5; After the exchange White has a pawn for a queen, two rooks and a bishop
+    n1 22.Qf6+: Sacrifices the queen on f6: it can be taken, and the engine still approves; Defends the pawn on e5, attacked once and now defended twice
+    n2 22…Nxf6: Wins the queen for the knight on f6; Develops the knight to f6, its most useful square; After the exchange White has a pawn for a queen, two rooks and a bishop
     n3 23.Be7#: You delivered checkmate.

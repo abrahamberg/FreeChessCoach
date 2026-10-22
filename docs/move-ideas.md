@@ -40,6 +40,18 @@ no centre control (a piece centralised still counts); no outpost against a
 side with no pawns; a pawn pushed up an isolated file is not a new
 isolated pawn, and a passed pawn's push is not a pawn storm.
 
+Ideas beside the point (`beside-the-point.ts`, from the review audit's
+judged-irrelevant ideas): once the engine's best line before the move gives
+either side the severity's damping win% (`CONFIG.severity.dampingHighWin`,
+about +6, or a forced mate), or the move drops a blunder's win%, the small
+positional ideas (squares, lines, outposts, pawn weaknesses, majorities,
+pawn advances prepared or prevented) are dropped, and so are Game Review's
+principle notes that say the same; threats, mates, material, the king,
+development, castling and passed pawns stay. When the engine's reply takes
+the moved piece (or wins the moved pawn), nothing is said about where it
+stands, and no prevention by a man taken at once. Game Review and the
+dossier both lose them.
+
 ## Where they show
 
 - **Course dossier** (`course/dossier-node.ts`): an `ideas:` row per move

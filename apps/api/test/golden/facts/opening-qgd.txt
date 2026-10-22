@@ -105,7 +105,7 @@ n16 8…dxc4 (Black, Orthodox) | book
     book: in book (Queen's Gambit Declined: Orthodox Defense, Bd3 Line)
     the book also has: h6 (Queen's Gambit Declined: Orthodox Defense, Bd3 Line)
     board: moves the pawn from d5 to c4 | captures the pawn on c4 | attacks the bishop on d3
-    ideas: controls d3 | gives up the centre: the pawn leaves d5 | opens the d-file for the rooks (half-open) | leaves Black with doubled pawns on the c-file
+    ideas: gives up the centre: the pawn leaves d5 | opens the d-file for the rooks (half-open)
     alternatives: h6 (attacks the bishop on g5): The position is roughly equal, after Bh4 dxc4 Bxc4 a6; a6: The position is roughly equal, after c5 e5 dxe5 Ne8
 n17 9.Bxc4 (White, Orthodox) | book
     book: in book (Queen's Gambit Declined: Orthodox Defense, Bd3 Line)
@@ -117,7 +117,7 @@ n18 4.cxd5 (White, Exchange) | book
     book: in book (Queen's Gambit Declined: Exchange Variation)
     the book also has: Bf4 (Queen's Gambit Declined: Harrwitz Attack); Bg5 (Queen's Gambit Declined: Been-Koomen Variation); Nf3 (Queen's Gambit Declined: Harrwitz Attack, Orthodox Defense); e3 (Queen's Gambit Declined: Exchange Variation)
     board: moves the pawn from c4 to d5 | captures the pawn on d5
-    ideas: puts a pawn in the centre on d5 | puts pressure on the pawn on e6 and controls c6 | opens the c-file for the rooks (half-open) | leaves White with doubled pawns on the d-file | takes toward the centre
+    ideas: opens the c-file for the rooks (half-open) | takes toward the centre
     alternatives: Bg5 (pins the knight on f6 to the queen; develops the bishop to g5): The position is roughly equal, after Be7 e3 O-O Nf3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after c5 Bg5 cxd4 Nxd4
 n19 4…exd5 (Black, Exchange) | book
     book: in book (Queen's Gambit Declined: Exchange Variation)
@@ -180,7 +180,7 @@ REVIEW NOTES
     n13 7.Rc1: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
     n14 7…c6: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66); Controls d5; Supports the centre pawn on d5; Prevents Nb5, an invasion
     n15 8.Bd3: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66); Develops the bishop to d3; Controls e4; Prevents Ne4, a knight on a strong square
-    n16 8…dxc4: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66); Controls d3; Gives up the centre: the pawn leaves d5; Opens the d-file for the rooks (half-open)
+    n16 8…dxc4: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66); Gives up the centre: the pawn leaves d5; Opens the d-file for the rooks (half-open)
     n17 9.Bxc4: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66); Takes the attacked bishop to safety on c4; Controls d5; Aims at the pawn on f7, through the pawn on e6
   l2
     n1 1.d4: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance
@@ -189,7 +189,7 @@ REVIEW NOTES
     n4 2…e6: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35); Controls d5 and f5; Supports the centre pawn on d5; Opens the bishop on f8 (from 0 squares to 5)
     n5 3.Nc3: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35); Develops the knight to c3, its most useful square; Puts pressure on the pawn on d5 and controls e4; Prepares the pawn's advance to e4, which it now supports
     n6 3…Nf6: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35); Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square; Controls e4 and d5
-    n18 4.cxd5: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35); Puts a pawn in the centre on d5; Puts pressure on the pawn on e6 and controls c6; Opens the c-file for the rooks (half-open)
+    n18 4.cxd5: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35); Opens the c-file for the rooks (half-open); Takes toward the centre
     n19 4…exd5: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35); Puts a pawn in the centre on d5; Controls c4 and e4; Opens the e-file for the rooks (half-open)
     n20 5.Bg5: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35); Pins the knight on f6 to the queen; Develops the bishop to g5
     n21 5…c6: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35); Takes c6 from the knight, whose natural square it is; Controls d5; Supports the centre pawn on d5

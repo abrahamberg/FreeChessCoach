@@ -49,7 +49,6 @@ n12 6…Rb1+ (Black, Line A) | blunder | before: White is much better → after:
     best instead: Ke6; after Ke6 Re4+ Kd5 Rb4 Rc5+ Ka4, White is a pawn up
     why Ke6 is better: moves the king from e7 to e6
     board: moves the rook from c1 to b1 | gives check | the check can be answered: block with Rb4; the checking piece cannot be taken; move the king with Ka6, Kc6, Kc5, Kc4, Ka4, Ka5
-    ideas: puts a rook on the half-open b-file
     alternatives: Ke6: White is much better, after Re4+ Kd5 Rb4 Rc5+; Kf6: White is winning, after b8=Q Rb1+ Rb4 Rxb4+
 n13 7.Rb4 (White, Line A) | best | before: White is winning → after: White is winning
     board: moves the rook from d4 to b4 | blocks the check from the rook on b1 | attacks the rook on b1

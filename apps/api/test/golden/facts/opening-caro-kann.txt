@@ -42,7 +42,7 @@ n6 3…dxe4 (Black, Classical) | book
     book: in book (Caro-Kann Defense)
     the book also has: Nf6 (Caro-Kann Defense: Campomanes Attack); b5 (Caro-Kann Defense: Gurgenidze Counterattack); g6 (Caro-Kann Defense: Gurgenidze System)
     board: moves the pawn from d5 to e4 | captures the pawn on e4
-    ideas: puts a pawn in the centre on e4 | controls d3 and f3 | opens the d-file for the rooks (half-open) | opens the queen on d8 (from 5 squares to 7) | leaves Black with doubled pawns on the e-file
+    ideas: opens the d-file for the rooks (half-open) | opens the queen on d8 (from 5 squares to 7)
     alternatives: g6 (controls f5; opens the bishop on f8 (from 0 squares to 2)): White is slightly better, after e5 f6 h4 Bg7; h6: White is slightly better, after Nf3 Bg4 exd5 cxd5
 n7 4.Nxe4 (White, Classical) | book
     book: in book (Caro-Kann Defense: Main Line)
@@ -105,7 +105,7 @@ n17 9.Bd3 (White, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation, Spassky Variation)
     piece: the light-squared bishop
     board: moves the bishop from f1 to d3 | attacks the bishop on h7
-    ideas: develops the bishop to d3 | controls e4 | clears the way to castle kingside
+    ideas: develops the bishop to d3 | clears the way to castle kingside
     alternatives: a3: The position is roughly equal, after Qc7 Be3 e6 Bd3; a4: The position is roughly equal, after Qa5+ Bd2 Qc7 Be2
 n18 9…Bxd3 (Black, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation, Spassky Variation)
@@ -182,7 +182,7 @@ REVIEW NOTES
     n3 2.d4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance
     n4 2…d5: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Puts a pawn in the centre on d5; Strikes at the centre: attacks the pawn on e4; Puts pressure on the pawn on e4 and controls c4
     n5 3.Nc3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Defends the pawn on e4, which was attacked; Develops the knight to c3, its most useful square; Puts pressure on the pawn on d5 and controls e4
-    n6 3…dxe4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Puts a pawn in the centre on e4; Controls d3 and f3; Opens the d-file for the rooks (half-open)
+    n6 3…dxe4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Opens the d-file for the rooks (half-open); Opens the queen on d8 (from 5 squares to 7)
     n7 4.Nxe4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Centralises the knight on e4, which reaches 8 squares
     n8 4…Bf5: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Threatens to win the knight on e4 with Bxe4; Develops the bishop to f5; Controls e4
     n9 5.Ng3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Threatens to win the bishop on f5 with Nxf5; Takes the attacked knight to safety on g3; Controls e4
@@ -193,7 +193,7 @@ REVIEW NOTES
     n14 7…Nd7: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Develops the knight to d7; Controls e5; Shuts in the queen on d8 (from 8 squares to 5)
     n15 8.h5: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Attacks the bishop on g6
     n16 8…Bh7: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Takes the attacked bishop to safety on h7
-    n17 9.Bd3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Develops the bishop to d3; Controls e4; Clears the way to castle kingside
+    n17 9.Bd3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Develops the bishop to d3; Clears the way to castle kingside
     n18 9…Bxd3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
     n19 10.Qxd3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Controls d4 and e4; Supports the centre pawn on d4
     n20 10…e6: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Controls d5 and f5; Prevents d5, a pawn break; Opens the bishop on f8 (from 0 squares to 5)

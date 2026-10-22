@@ -103,7 +103,8 @@ function eyesOutpost({ after, move, enemy }: IdeaContext): MoveIdea | null {
   if (move.piece !== 'n') return null;
   const square = attacksFrom(after, move.to).find((each) => {
     const rank = ownRank(each, move.color);
-    return rank >= 5 && rank <= 6 && fileIndex(each) >= 2 && fileIndex(each) <= 5 && !after.get(each) && !pawnCanReach(after, enemy, each);
+    // The square it just came from is no destination (27…Ne2 "heads for c3").
+    return each !== move.from && rank >= 5 && rank <= 6 && fileIndex(each) >= 2 && fileIndex(each) <= 5 && !after.get(each) && !pawnCanReach(after, enemy, each);
   });
   return square ? { kind: 'eyesOutpost', piece: { piece: 'n', square: move.to }, square } : null;
 }

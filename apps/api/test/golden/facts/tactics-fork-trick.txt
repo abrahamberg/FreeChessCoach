@@ -49,7 +49,7 @@ n7 4.Bc4 (White, Line A) | inaccuracy | before: The position is roughly equal �
 n8 4…Nxe4 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Four Knights Game: Italian Variation)
     board: moves the knight from f6 to e4 | captures the pawn on e4 | attacks the knight on c3 | leaves the black knight on e4 hanging
-    ideas: sacrifices the knight on e4: it can be taken, and the engine still approves | centralises the knight on e4, which reaches 8 squares
+    ideas: sacrifices the knight on e4: it can be taken, and the engine still approves
     alternatives: Bc5 (develops the bishop to c5; controls d4; aims at the pawn on f2, which only the king defends): The position is roughly equal, after d3 h6 O-O a6; Bb4 (develops the bishop to b4; clears the way to castle kingside): The position is roughly equal, after Nd5 Nxe4 O-O O-O
     tempting threat: b5? Black's b5 moves the pawn from b7 to b5 | attacks the bishop on c4 | leaves the black pawn on b5 hanging. White answers Bxb5: moves the bishop from c4 to b5 | captures the pawn on b5 | attacks the knight on c6. Then Bc5 O-O Qe7. Over the line White takes a pawn; at the end White is a pawn up (White is better).
     tempting threat: d5? Black's d5 moves the pawn from d7 to d5 | attacks the bishop on c4. White answers exd5: moves the pawn from e4 to d5 | captures the pawn on d5 | attacks the knight on c6. Then Nd4 h3 Bd6. Over the line White takes a pawn; at the end White is a pawn up (White is slightly better).
@@ -90,6 +90,6 @@ REVIEW NOTES
     n5 3.Nc3: Theory — Italian Game: Two Knights Defense (C55); Develops the knight to c3, its most useful square; Controls d5 and e4; Supports the centre pawn on e4
     n6 3…Nf6: Theory — Italian Game: Two Knights Defense (C55); Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square; Puts pressure on the pawn on e4 and controls d5
     n7 4.Bc4: Bb5 was better: it develops the bishop and attacks the knight on c6
-    n8 4…Nxe4: Sacrifices the knight on e4: it can be taken, and the engine still approves; Centralises the knight on e4, which reaches 8 squares
+    n8 4…Nxe4: Sacrifices the knight on e4: it can be taken, and the engine still approves
     n9 5.Nxe4: Recaptures the knight on e4; White now has 3 pieces developed to 1 piece; Centralises the knight on e4, which reaches 8 squares; After the exchange White has a knight for a pawn
     n10 5…d5: Puts a pawn in the centre on d5; Controls c4 and e4; You won a bishop through a fork two moves away — pawn on d5 forks the bishop on c4 and the knight on e4.; Won the knight, giving back a pawn.

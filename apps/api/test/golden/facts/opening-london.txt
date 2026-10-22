@@ -84,7 +84,7 @@ n15 8.Nbd2 (White, The setup) | best | before: The position is roughly equal →
     alternatives: Qe2 (brings the queen out to e2): The position is roughly equal, after Ne4 Nbd2 f5 Bxd6; Ne5 (moves the knight for the second time while 1 piece still wait at home; centralises the knight on e5, which reaches 8 squares; opens the queen on d1 (from 6 squares to 9)): The position is roughly equal, after cxd4 exd4 Ne4 Qe2
 n16 3…c5 (Black, Early c5) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from c7 to c5 | leaves the black pawn on c5 hanging
-    ideas: offers the pawn on c5: it can be taken, and the engine still approves | strikes at the centre: attacks the pawn on d4 | puts pressure on the pawn on d4 | opens the queen on d8 (from 2 squares to 5)
+    ideas: offers the pawn on c5: it can be taken, and the engine still approves | strikes at the centre: attacks the pawn on d4 | opens the queen on d8 (from 2 squares to 5)
     opens: the queen on d8, from 2 squares to 5
     alternatives: e6 (controls d5 and f5; supports the centre pawn on d5; opens the bishop on f8 (from 0 squares to 5)): The position is roughly equal, after Nf3 c5 Nbd2 Qb6; Bg4 (threatens to win the queen on d1 for a bishop with Bxd1; develops the bishop to g4): The position is roughly equal, after Nf3 e6 Nbd2 Bd6
 n17 4.c3 (White, Early c5) | good | before: The position is roughly equal → after: The position is roughly equal
@@ -139,7 +139,7 @@ REVIEW NOTES
     n3 2.Bf4: Theory — Queen's Pawn Game: Accelerated London System (D00); Develops the bishop to f4; Controls e5
     n4 2…Nf6: Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square; Controls e4 and d5
     n5 3.e3: Controls d4; Supports the centre pawn on d4; Opens the bishop on f1 (from 0 squares to 5)
-    n16 3…c5: Offers the pawn on c5: it can be taken, and the engine still approves; Strikes at the centre: attacks the pawn on d4; Puts pressure on the pawn on d4
+    n16 3…c5: Offers the pawn on c5: it can be taken, and the engine still approves; Strikes at the centre: attacks the pawn on d4; Opens the queen on d8 (from 2 squares to 5)
     n17 4.c3: Missed dxc5, winning material on c5; Takes c3 from the knight, whose natural square it is; Controls d4; Supports the centre pawn on d4
     n18 4…Nc6: Develops the knight to c6, its most useful square; Puts pressure on the pawn on d4 and controls e5; Prevents b4, a pawn break
     n19 5.Nd2: Develops the knight to d2; Controls e4; Prepares the pawn's advance to c4, which it now supports

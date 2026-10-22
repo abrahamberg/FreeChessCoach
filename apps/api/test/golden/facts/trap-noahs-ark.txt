@@ -73,12 +73,12 @@ n11 6.Bb3 (White, Line A) | best | before: The position is roughly equal → aft
 n12 6…Nxd4 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Ruy Lopez: Morphy Defense, Modern Steinitz Defense)
     board: moves the knight from c6 to d4 | captures the pawn on d4 | attacks the bishop on b3 | attacks the knight on f3
-    ideas: centralises the knight on d4, which reaches 8 squares | posts the knight on d4 on a strong square, supported by the pawn on e5 | prepares the pawn's advance to f5, which it now supports
+    ideas: prepares the pawn's advance to f5, which it now supports
     alternatives: Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after c3 Be7 a4 Bg4; Bg4 (pins the knight on f3 to the queen; develops the bishop to g4): White is slightly better, after h3 Bxf3 Qxf3 Nf6
 n13 7.Nxd4 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Ruy Lopez: Morphy Defense, Modern Steinitz Defense)
     board: moves the knight from f3 to d4 | captures the knight on d4
-    ideas: White now has 2 pieces developed to 0 pieces | centralises the knight on d4, which reaches 8 squares | after exd4 the opponent's pawns are doubled on the d-file | heads for c6, a square no enemy pawn can attack
+    ideas: White now has 2 pieces developed to 0 pieces | after exd4 the opponent's pawns are doubled on the d-file
     notes: Recaptures the knight on d4
     alternatives: Bg5 (threatens to win the queen on d8 for a bishop with Bxd8; develops the bishop to g5; White now has 3 pieces developed to 1 piece): The position is roughly equal, after Nxf3+ Qxf3 Qd7 a4; Bd5 (threatens to win the rook on a8 with Bxa8; controls e4; supports the centre pawn on e4): Black is slightly better, after c6 Nxd4 cxd5 Nc6
 n14 7…exd4 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
@@ -95,7 +95,6 @@ n15 8.Qxd4 (White, Line A) | blunder | before: The position is roughly equal →
     best instead: c3; after c3 dxc3 Nxc3 Bb7 Qh5 Qe7, Black is a pawn up
     why c3 is better: moves the pawn from c2 to c3
     board: moves the queen from d1 to d4 | captures the pawn on d4
-    ideas: controls e4, d5 and e5 | supports the centre pawn on e4 | centralises the queen on d4, which reaches 19 squares | prepares the pawn's advance to e5, which it now supports
     notes: c3 was better: it attacks the pawn on d4
     alternatives: c3 (attacks the pawn on d4 twice, while nothing defends it; takes c3 from the knight, whose natural square it is; strikes at the centre: attacks the pawn on d4): The position is roughly equal, after dxc3 Nxc3 Bb7 Qh5; a4: The position is roughly equal, after Bb7 axb5 axb5 Rxa8; Bd5 (threatens to win the rook on a8 with Bxa8; moves the bishop for the fourth time while 2 pieces still wait at home; controls e4): The position is roughly equal, after Rb8 Bc6+ Bd7 Bxd7+
     flags: critical
@@ -173,8 +172,8 @@ REVIEW NOTES
     n8 4…d6: Theory — Ruy Lopez: Noah's Ark Trap (C71); Leaves the knight on c6 pinned to the king; Controls c5 and e5; Supports the centre pawn on e5
     n10 5…b5: Attacks the bishop on a4; Controls c4; Makes room for the bishop on c8 to fianchetto on b7
     n11 6.Bb3: Takes the attacked bishop to safety on b3; Controls d5; Prevents d5, a pawn break
-    n12 6…Nxd4: Centralises the knight on d4, which reaches 8 squares; Posts the knight on d4 on a strong square, supported by the pawn on e5; Prepares the pawn's advance to f5, which it now supports
-    n13 7.Nxd4: Recaptures the knight on d4; White now has 2 pieces developed to 0 pieces; Centralises the knight on d4, which reaches 8 squares; After exd4 the opponent's pawns are doubled on the d-file
+    n12 6…Nxd4: Prepares the pawn's advance to f5, which it now supports
+    n13 7.Nxd4: Recaptures the knight on d4; White now has 2 pieces developed to 0 pieces; After exd4 the opponent's pawns are doubled on the d-file
     n14 7…exd4: Recaptures the knight on d4; Puts a pawn in the centre on d4; Controls c3 and e3; Opens the e-file for the rooks (half-open)
     n15 8.Qxd4: c3 was better: it attacks the pawn on d4
     n16 8…c5: Controls d4; Opens the queen on d8 (from 5 squares to 8); You won a tempo — hits the queen on d4 with a pawn.; Won the bishop, giving back a pawn.

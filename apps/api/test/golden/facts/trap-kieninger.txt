@@ -26,7 +26,7 @@ n4 2…e5 (Black, Line A) | book
     book: in book (Indian Defense: Budapest Gambit)
     the book also has: b5 (Indian Defense: Pyrenees Gambit); g5 (Indian Defense: Medusa Gambit)
     board: moves the pawn from e7 to e5 | leaves the black pawn on e5 hanging
-    ideas: offers the pawn on e5: it can be taken, and the engine still approves | puts a pawn in the centre on e5 | strikes at the centre: attacks the pawn on d4 | puts pressure on the pawn on d4 and controls f4 | opens the bishop on f8 (from 0 squares to 5)
+    ideas: offers the pawn on e5: it can be taken, and the engine still approves | strikes at the centre: attacks the pawn on d4 | opens the bishop on f8 (from 0 squares to 5)
     opens: the dark-squared bishop on f8, from 0 squares to 5
     alternatives: g6 (controls f5; opens the bishop on f8 (from 0 squares to 2)): The position is roughly equal, after Nc3 d5 Nf3 Bg7; e6 (controls d5 and f5; opens the bishop on f8 (from 0 squares to 5)): The position is roughly equal, after Nf3 b6 e3 Bb4+; c6 (takes c6 from the knight, whose natural square it is; controls d5; opens the queen on d8 (from 0 squares to 3)): The position is roughly equal, after e3 e6 Nf3 Be7
 n5 3.dxe5 (White, Line A) | book
@@ -75,13 +75,13 @@ n13 7.a3 (White, Line A) | good | before: White is slightly better → after: Th
     alternatives: Qc2 (brings the queen out to c2; controls e4; clears the way to castle queenside): White is slightly better, after Ngxe5 Nxe5 Nxe5 a3; e3 (controls d4; opens the bishop on f1 (from 0 squares to 2)): The position is roughly equal, after Ngxe5 Nxe5 Nxe5 Be2
 n14 7…Ngxe5 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from g4 to e5 | captures the pawn on e5 | attacks the knight on f3
-    ideas: threatens mate with Nd3# | threatens to win the pawn on c4 with Nxc4 | centralises the knight on e5, which reaches 8 squares
+    ideas: threatens mate with Nd3# | threatens to win the pawn on c4 with Nxc4
     alternatives: Ncxe5 (threatens mate with Nd3#; threatens to win the pawn on c4 with Nxc4; centralises the knight on e5, which reaches 8 squares): White is slightly better, after e3 Nxf3+ gxf3 Bxd2+; Bxd2+ (settles the bishop on d2 on a square by the king that no pawn can cover any more): White is slightly better, after Qxd2 Ngxe5 Nxe5 Nxe5
 n15 8.axb4 (White, Line A) | blunder | before: The position is roughly equal → after: Black has a forced mate in 1
     best instead: Nxe5; after Nxe5 Nxe5 e3 Bxd2+ Qxd2 d6, White has a bishop for a knight
     why Nxe5 is better: moves the knight from f3 to e5 | captures the knight on e5 | attacks the knight on c6
     board: moves the pawn from a3 to b4 | captures the bishop on b4
-    ideas: breaks the pin on the knight on d2 | controls c5 | opens the a-file for the rooks (half-open) | leaves White with doubled pawns on the b-file | after the exchange White is a bishop up | takes toward the centre | prepares the pawn's advance to c5, which it now supports
+    ideas: breaks the pin on the knight on d2 | after the exchange White is a bishop up
     notes: Won a bishop, but it allowed mate.
     opens: the rook on a1, from 3 squares to 8
     tactics: They let you deliver checkmate with Nd3#.
@@ -110,7 +110,7 @@ REVIEW NOTES
     n1 1.d4: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance
     n2 1…Nf6: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square; Controls e4 and d5
     n3 2.c4: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Controls d5; Prevents Nd5, a knight on a strong square; Opens the queen on d1 (from 2 squares to 5)
-    n4 2…e5: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Offers the pawn on e5: it can be taken, and the engine still approves; Puts a pawn in the centre on e5; Strikes at the centre: attacks the pawn on d4
+    n4 2…e5: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Offers the pawn on e5: it can be taken, and the engine still approves; Strikes at the centre: attacks the pawn on d4; Opens the bishop on f8 (from 0 squares to 5)
     n5 3.dxe5: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Threatens to win the knight on f6 for a pawn with exf6; Puts a pawn in the centre on e5; Controls d6 and f6
     n6 3…Ng4: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Threatens to win the pawn on e5 with Nxe5; Takes the attacked knight to safety on g4; Puts pressure on the pawn on e5
     n7 4.Nf3: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Defends the pawn on e5, which was attacked; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
@@ -120,6 +120,6 @@ REVIEW NOTES
     n11 6.Nbd2: Leaves the knight on d2 pinned to the king; Develops the knight to d2; Controls e4
     n12 6…Qe7: Threatens to win the pawn on e5 with Ncxe5; Brings the queen out to e7; Puts pressure on the pawn on e5
     n13 7.a3: Attacks the bishop on b4, which pins the knight on d2
-    n14 7…Ngxe5: Threatens mate with Nd3#; Threatens to win the pawn on c4 with Nxc4; Centralises the knight on e5, which reaches 8 squares
+    n14 7…Ngxe5: Threatens mate with Nd3#; Threatens to win the pawn on c4 with Nxc4
     n15 8.axb4: They let you deliver checkmate with Nd3#.; Won a bishop, but it allowed mate.
     n16 8…Nd3#: You delivered checkmate.

@@ -101,7 +101,7 @@ n36 18…Bxc4+ (Black, Line A) | great | before: Black is much better → after:
 n37 19.Kg1 (White, Line A) | best
 n38 19…Ne2+ (Black, Line A) | great | before: Black is much better → after: Black is much better
     board: moves the knight from c3 to e2 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf1
-    ideas: takes the attacked knight to safety on e2 | settles the knight on e2 on a square by the king that no pawn can cover any more | puts pressure on the pawn on d4 | heads for c3, a square no enemy pawn can attack
+    ideas: takes the attacked knight to safety on e2 | settles the knight on e2 on a square by the king that no pawn can cover any more | puts pressure on the pawn on d4
     notes: The only winning move
     alternatives: Nxd1: Black is slightly better; Bxd4 (attacks the bishop on b6 twice, while nothing defends it; centralises the bishop on d4, which reaches 9 squares; aims at the king on g1, through the pawn on f2): White is slightly better
     tempting capture: axb6? Black's axb6 moves the pawn from a7 to b6 | captures the bishop on b6 | leaves the black knight on c3 hanging. White answers Qxc3: moves the queen from a3 to c3 | captures the knight on c3 | attacks the bishop on c4 | leaves the white pawn on a2 hanging. Over the line Black takes a bishop; White takes a knight; at the end White has a queen and a knight for two bishops and a pawn (White is better).
@@ -148,7 +148,6 @@ n67 34.Ne5 (White, Line A) | mistake | before: Black is much better → after: B
     best instead: Kg1; after Kg1, White has a queen for a rook, two bishops and three pawns
     why Kg1 is better: moves the king from h2 to g1
     board: moves the knight from f3 to e5
-    ideas: shuts in the queen on b8 (from 14 squares to 11)
     notes: Ne5 cuts off the queen on b8, from 14 squares to 11; Kg1 keeps it open
     alternatives: Kg1: Black is much better; Kh3: Black is much better; Ng5 (posts the knight on g5 on a strong square, supported by the pawn on h4): Black is much better
 n68 34…Kg7 (Black, Line A) | best
@@ -168,7 +167,7 @@ n71 36.Kf1 (White, Line A) | blunder | before: Black is winning → after: Black
     alternatives: Kh2: Black is winning; Kh1: Black has a forced mate
 n72 36…Ng3+ (Black, Line A) | best | before: Black has a forced mate → after: Black has a forced mate
     board: moves the knight from e4 to g3 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke1
-    ideas: brings the knight into the attack: it bears on 2 squares around the king | settles the knight on g3 on a square by the king that no pawn can cover any more | heads for e4, a square no enemy pawn can attack
+    ideas: brings the knight into the attack: it bears on 2 squares around the king
     alternatives: Ra1+: Black has a forced mate; Bf2 (threatens mate with Ng3#; threatens to win the pawn on h4 with Bxh4; settles the bishop on f2 on a square by the king that no pawn can cover any more): Black is winning
     tempting check: Nd2+? Black's Nd2+ moves the knight from e4 to d2 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke2, Ke1. White answers Ke1: moves the king from f1 to e1 | attacks the knight on d2 | leaves the white pawn on g2 hanging. Over the line nothing is taken; at the end White has a queen for a rook, two bishops and three pawns (Black is much better).
     flags: quiz-eligible
@@ -180,7 +179,6 @@ n75 38.Kd1 (White, Line A) | forced | before: Black has a forced mate → after:
 n76 38…Bb3+ (Black, Line A) | best | before: Black has a forced mate → after: Black has a forced mate
     piece: the light-squared bishop
     board: moves the bishop from d5 to b3 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc1
-    ideas: settles the bishop on b3 on a square by the king that no pawn can cover any more
     alternatives: Rd2+ (settles the rook on d2 on a square by the king that no pawn can cover any more; puts a rook on the open d-file; puts the rook on the seventh rank): Black has a forced mate; Bc3 (threatens mate in two: Bb3+ Kc1 Ra1#; settles the bishop on c3 on a square by the king that no pawn can cover any more; puts the bishop on the long diagonal): Black is winning
     tempting check: Ra1+? Black's Ra1+ moves the rook from a2 to a1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc2. White answers Kc2: moves the king from d1 to c2 | leaves the white pawn on g2 hanging. Over the line nothing is taken; at the end White has a queen for a rook, two bishops and three pawns (Black is much better).
     tempting capture: Bxg2? Black's Bxg2 moves the bishop from d5 to g2 | captures the pawn on g2. White answers Nc4: moves the knight from e5 to c4 | leaves the white knight on c4 hanging. Over the line Black takes a pawn; at the end White has a queen for a rook, two bishops and four pawns (Black is much better).
@@ -190,7 +188,6 @@ n77 39.Kc1 (White, Line A) | forced | before: Black has a forced mate → after:
     board: moves the king from d1 to c1 | leaves the white pawn on g2 hanging | the king stops guarding e2, where Ne2+ follows
 n78 39…Ne2+ (Black, Line A) | best | before: Black has a forced mate in 3 → after: Black has a forced mate in 2
     board: moves the knight from g3 to e2 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kb1
-    ideas: settles the knight on e2 on a square by the king that no pawn can cover any more | heads for c3, a square no enemy pawn can attack
     alternatives: Bc3 (threatens mate with Ra1#; settles the bishop on c3 on a square by the king that no pawn can cover any more; puts the bishop on the long diagonal): Black has a forced mate; Ba3+ (settles the bishop on a3 on a square by the king that no pawn can cover any more): Black has a forced mate
     tempting check: Bd2+? Black's Bd2+ moves the bishop from b4 to d2 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kb1. White answers Kb1: moves the king from c1 to b1 | attacks the rook on a2. Over the line nothing is taken; at the end White has a queen for a rook, two bishops and three pawns (Black has a forced mate).
     tempting check: Rc2+? Black's Rc2+ moves the rook from a2 to c2 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd1, Kb1. White answers Kb1: moves the king from c1 to b1 | attacks the rook on c2 | leaves the white pawn on g2 hanging. Over the line nothing is taken; at the end White has a queen for a rook, two bishops and three pawns (Black has a forced mate).
@@ -200,7 +197,7 @@ n79 40.Kb1 (White, Line A) | forced | before: Black has a forced mate in 2 → a
     board: moves the king from c1 to b1 | attacks the rook on a2
 n80 40…Nc3+ (Black, Line A) | best | before: Black has a forced mate in 2 → after: Black has a forced mate in 1
     board: moves the knight from e2 to c3 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc1
-    ideas: brings the knight into the attack: it bears on 2 squares around the king | settles the knight on c3 on a square by the king that no pawn can cover any more | defends the rook on a2, attacked once and now defended twice | heads for e4, a square no enemy pawn can attack
+    ideas: brings the knight into the attack: it bears on 2 squares around the king | defends the rook on a2, attacked once and now defended twice
     alternatives: Ba3 (threatens mate with Nc3#; settles the bishop on a3 on a square by the king that no pawn can cover any more; shuts in the rook on a2 (from 10 squares to 4)): Black has a forced mate; Bc3 (threatens mate with Ra1#; settles the bishop on c3 on a square by the king that no pawn can cover any more; puts the bishop on the long diagonal): Black has a forced mate
     tempting threat: Bd6? Black's Bd6 moves the bishop from b4 to d6 | attacks the queen on b8 | attacks the knight on e5 | leaves the black pawn on c6 hanging | leaves the black bishop on d6 hanging. White answers Qh8+: moves the queen from b8 to h8 | gives check | the check can be answered: no block; take the checking piece with Kxh8; the king cannot move | leaves the white queen on h8 hanging. Over the line nothing is taken; at the end White has a queen for a rook, two bishops and three pawns (Black has a forced mate).
     tempting threat: f6? Black's f6 moves the pawn from f7 to f6 | attacks the knight on e5 | leaves the black pawn on c6 hanging. White answers Qa7+: moves the queen from b8 to a7 | gives check | the check can be answered: block with Be7, Bf7; take the checking piece with Rxa7; move the king with Kf8, Kg8, Kh8, Kh6 | attacks the rook on a2 | leaves the white queen on a7 hanging. Over the line nothing is taken; at the end White has a queen for a rook, two bishops and three pawns (Black is winning).
@@ -277,29 +274,24 @@ REVIEW NOTES
     n47 24.Qb4: Forks the bishop on c4 and the knight on c3; Threatens to win the bishop on c4 with Qxc4; Takes the attacked queen to safety on b4
     n48 24…Ra4: Threatens to win the queen on b4 with Rxb4
     n49 25.Qxb6: Threatens to win the pawn on b7 with Qxb7; Takes the attacked queen to safety on b6; Controls d4
-    n50 25…Nxd1: Wins the rook on d1; Removes the rook on d1, a defender of the king; Opens the bishop on g7 (from 6 squares to 9); Heads for c3, a square no enemy pawn can attack
+    n50 25…Nxd1: Wins the rook on d1; Removes the rook on d1, a defender of the king; Opens the bishop on g7 (from 6 squares to 9)
     n51 26.h3: Gives the king a flight square on h2
-    n52 26…Rxa2: Creates a passed pawn on b; Threatens to win the pawn on f2 with Nxf2; Puts the rook on the seventh rank
+    n52 26…Rxa2: Creates a passed pawn on b; Threatens to win the pawn on f2 with Nxf2
     n53 27.Kh2: Threatens to win the knight on d1 with Rxd1
     n54 27…Nxf2: Threatens to win the rook on h1 for a knight with Nxh1; Takes the attacked knight to safety on f2; Breaks into the pawns in front of the king (the pawn on f2)
-    n55 28.Re1: Takes the attacked rook to safety on e1; Prevents Be5+, a check; Puts a rook on the open e-file
-    n56 28…Rxe1: Trades rooks on e1; Removes the rook on e1, a defender of the king; Brings the rook into the attack: it bears on 2 squares around the king; Takes g1 from the enemy king
+    n55 28.Re1: Takes the attacked rook to safety on e1; Prevents Be5+, a check
+    n56 28…Rxe1: Trades rooks on e1; Removes the rook on e1, a defender of the king; Brings the rook into the attack: it bears on 2 squares around the king; Trades pieces while ahead in material
     n57 29.Qd8+: Missed Nxe1, winning material on e1; Brings the queen into the attack: it bears on 2 squares around the king; Takes f8 from the enemy king
     n58 29…Bf8: Leaves the bishop on f8 pinned to the king
     n59 30.Nxe1: Wins the rook on e1
-    n60 30…Bd5: Puts the bishop on the long diagonal; Puts the bishop on d5 on an outpost no pawn can attack, supported by the pawn on c6
     n61 31.Nf3: Puts the knight on f3, the best defender of a king castled short
-    n62 31…Ne4: Puts the knight on e4 on an outpost no pawn can attack; Prepares the pawn's advance to f6, which it now supports; Heads for c3, a square no enemy pawn can attack
     n63 32.Qb8: Threatens to win the pawn on b7 with Qxb7; Pins the bishop on f8 to the king; Keeps the pin on the bishop on f8
-    n66 33…h5: Loosens the pawns in front of the king, and the pawn on h5 can become a target; Fixes the pawn on h4: it can no longer advance
+    n66 33…h5: Loosens the pawns in front of the king, and the pawn on h5 can become a target
     n67 34.Ne5: Ne5 cuts off the queen on b8, from 14 squares to 11; Kg1 keeps it open
-    n68 34…Kg7: Breaks the pin on the bishop on f8; Opens the bishop on f8 (from 0 squares to 5); Defends the pawn on g6, attacked once and now defended twice
+    n68 34…Kg7: Breaks the pin on the bishop on f8; Defends the pawn on g6, attacked once and now defended twice
     n69 35.Kg1: Allows Bd6, forking the queen on b8 and the knight on e5
-    n70 35…Bc5+: Brings the bishop into the attack: it bears on 2 squares around the king; Develops the bishop to c5; Puts the bishop on c5 on an outpost no pawn can attack
+    n70 35…Bc5+: Brings the bishop into the attack: it bears on 2 squares around the king; Develops the bishop to c5
     n71 36.Kf1: They let you force mate with Ng3+.
-    n72 36…Ng3+: Brings the knight into the attack: it bears on 2 squares around the king; Settles the knight on g3 on a square by the king that no pawn can cover any more; Heads for e4, a square no enemy pawn can attack
-    n74 37…Bb4+: Puts the bishop on b4 on an outpost no pawn can attack
-    n76 38…Bb3+: Settles the bishop on b3 on a square by the king that no pawn can cover any more
-    n78 39…Ne2+: Settles the knight on e2 on a square by the king that no pawn can cover any more; Heads for c3, a square no enemy pawn can attack
-    n80 40…Nc3+: Brings the knight into the attack: it bears on 2 squares around the king; Settles the knight on c3 on a square by the king that no pawn can cover any more; Defends the rook on a2, attacked once and now defended twice
+    n72 36…Ng3+: Brings the knight into the attack: it bears on 2 squares around the king
+    n80 40…Nc3+: Brings the knight into the attack: it bears on 2 squares around the king; Defends the rook on a2, attacked once and now defended twice
     n82 41…Rc2#: Missed mate in 1 starting with Ba3#

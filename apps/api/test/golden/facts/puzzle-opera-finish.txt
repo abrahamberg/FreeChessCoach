@@ -6,7 +6,7 @@ l1 "Line A" | leaves book at n1
 Moves:
 n1 16.Qb8+ (White, Line A) | great | before: White has a forced mate in 2 → after: White has a forced mate in 1
     board: moves the queen from b3 to b8 | gives check | the check can be answered: no block; take the checking piece with Nxb8; the king cannot move | leaves the white queen on b8 hanging
-    ideas: sacrifices the queen on b8: it can be taken, and the engine still approves | puts pressure on the pawn on e5
+    ideas: sacrifices the queen on b8: it can be taken, and the engine still approves
     tactics: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
     alternatives: Qb7 (threatens mate with Qc8#; threatens to win the pawn on a7 with Qxa7; controls e4): White is better, after f6 Qc8+ Ke7 Be3; Qc3 (threatens mate with Qc8#; puts pressure on the pawn on e5 and controls d4): White is slightly better, after Bc5 Rxd7 Qxd7 Qxc5
     tempting check: Qxe6+? White's Qxe6+ moves the queen from b3 to e6 | captures the queen on e6 | gives check | the check can be answered: block with Be7; take the checking piece with fxe6; the king cannot move | attacks the knight on d7. Black answers fxe6: moves the pawn from f7 to e6 | captures the queen on e6. Then c3 Bc5 f3. Over the line White takes the queen; Black takes the queen; at the end White has two pawns for a knight (Black is slightly better).
@@ -35,6 +35,6 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 16.Qb8+: Sacrifices the queen on b8: it can be taken, and the engine still approves; Puts pressure on the pawn on e5; You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
+    n1 16.Qb8+: Sacrifices the queen on b8: it can be taken, and the engine still approves; You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
     n2 16…Nxb8: Wins the queen on b8; Breaks the pin on the king on e8; White now has 2 pieces developed to 0 pieces; After the exchange White has two pawns for a queen and a knight
     n3 17.Rd8#: You delivered checkmate.

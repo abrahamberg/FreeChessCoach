@@ -14,7 +14,7 @@ n2 1…Kb3 (Black, Line A) | best | before: White is winning → after: White is
     alternatives: Kb2: White is winning, after f5 Kc2 f6 Kb2; Kb1: White is winning, after Kg2 Kc1 Kg3 Kc2
 n3 2.f5 (White, Line A) | best | before: White is winning → after: White is winning
     board: moves the pawn from f4 to f5 | the black king on b3 is outside the pawn's square: it cannot catch the pawn
-    ideas: gains space with the pawn on f5 | pushes the passed pawn to f5, 3 squares from queening
+    ideas: pushes the passed pawn to f5, 3 squares from queening
     tactics: You gained space — pushes a pawn to f5, taking space.
     alternatives: Kh2: White is much better, after Kc4 Kh3 Kd5 Kh4; Kg2: White is much better, after Kc4 Kg3 Kd4 Kg4
     flags: quiz-eligible
@@ -67,7 +67,7 @@ REVIEW NOTES
   l1
     n1 1.f4: Pushes the passed pawn to f4, 4 squares from queening
     n2 1…Kb3: Brings the king toward the centre, a strong piece in the ending
-    n3 2.f5: Gains space with the pawn on f5; Pushes the passed pawn to f5, 3 squares from queening; You gained space — pushes a pawn to f5, taking space.
+    n3 2.f5: Pushes the passed pawn to f5, 3 squares from queening; You gained space — pushes a pawn to f5, taking space.
     n4 2…Kc4: Brings the king toward the centre, a strong piece in the ending
     n5 3.f6: The only winning move; Pushes the passed pawn to f6, 2 squares from queening
     n6 3…Kd5: Brings the king toward the centre, a strong piece in the ending

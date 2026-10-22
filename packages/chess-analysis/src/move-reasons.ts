@@ -1,6 +1,6 @@
 import { Chess, type Move, type Square } from 'chess.js';
 import { faultIdeaSentences, ideaSentences, reviewIdeas } from './move-reason-ideas.js';
-import type { MoveIdea, MoveIdeaKind } from './move-ideas/index.js';
+import { smallIdeasAreClutter, type MoveIdea, type MoveIdeaKind } from './move-ideas/index.js';
 import { isImprovableQuality, type EngineEval, type FeatureDeltaDto, type MoveQuality, type PositionFeatures } from '@freechesscoach/shared';
 import { betterMoveReasons } from './move-reason-better.js';
 import { kickReason } from './kick-reason.js';
@@ -86,8 +86,9 @@ export function buildReasons(input: MoveReasonsInput): string[] {
     ...tradeReason(input)
   ];
   // A fine move's ideas say what the principle notes and the pin or kick
-  // note would (it develops, pins, takes an open file), and more.
-  const ideasExplain = !isFault(input) && ideas.length > 0;
+  // note would (it develops, pins, takes an open file), and more. Where the
+  // small ideas are clutter (a decided game), so are those notes.
+  const ideasExplain = !isFault(input) && (ideas.length > 0 || smallIdeasAreClutter(input.evalBefore, input.evalAfter, input.mover === 'white' ? 'w' : 'b', input.moveSan));
   addPrinciple(input, reasons, ideasExplain);
   const note = ideasExplain ? onlyMoveNote(input, reasons) : cardReplaceableNote(input, reasons);
   // Mobility is the weakest signal here (a bad move usually has a sharper

@@ -35,14 +35,14 @@ n5 3.d4 (White, English Attack) | book
     book: in book (Sicilian Defense)
     the book also has: Bb5+ (Sicilian Defense: Moscow Variation); Bd3 (Sicilian Defense: Kopec System); b4 (Sicilian Defense: Wing Gambit, Deferred Variation); c3 (Sicilian Defense: Delayed Alapin Variation, Basman-Palatnik Double Gambit); g3 (Sicilian Defense: Kotov Gambit)
     board: moves the pawn from d2 to d4
-    ideas: puts a pawn in the centre on d4 | strikes at the centre: attacks the pawn on c5 | puts pressure on the pawn on c5 and controls e5 | prevents e5, a pawn advance | opens the bishop on c1 (from 0 squares to 5) | prepares the pawn's advance to e5, which it now supports
+    ideas: puts a pawn in the centre on d4 | strikes at the centre: attacks the pawn on c5 | puts pressure on the pawn on c5 and controls e5 | opens the bishop on c1 (from 0 squares to 5) | prepares the pawn's advance to e5, which it now supports
     opens: the dark-squared bishop on c1, from 0 squares to 5
     alternatives: Nc3 (develops the knight to c3, its most useful square; White now has 2 pieces developed to 0 pieces; controls d5 and e4): The position is roughly equal, after e5 Bc4 Be7 d3; Bc4 (develops the bishop to c4; White now has 2 pieces developed to 0 pieces; controls d5): The position is roughly equal, after Nf6 Nc3 a6 d4
 n6 3…cxd4 (Black, English Attack) | book
     book: in book (Sicilian Defense)
     the book also has: Nf6 (Sicilian Defense: Modern Variations, Anti-Qxd4 Move Order)
     board: moves the pawn from c5 to d4 | captures the pawn on d4
-    ideas: puts a pawn in the centre on d4 | controls c3 and e3 | opens the c-file for the rooks (half-open) | leaves Black with doubled pawns on the d-file | takes toward the centre
+    ideas: opens the c-file for the rooks (half-open) | takes toward the centre
     alternatives: Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after Nc3 cxd4 Nxd4 a6; Nd7 (develops the knight to d7; controls e5; shuts in the bishop on c8 (from 5 squares to 0)): White is slightly better, after c3 a6 Bd3 g6
 n7 4.Nxd4 (White, English Attack) | book
     book: in book (Sicilian Defense)
@@ -172,7 +172,7 @@ REVIEW NOTES
     n3 2.Nf3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square; Controls d4 and e5
     n4 2…d6: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Controls c5 and e5; Prevents Ne5, a knight on a strong square; Opens the bishop on c8 (from 0 squares to 5)
     n5 3.d4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Puts a pawn in the centre on d4; Strikes at the centre: attacks the pawn on c5; Puts pressure on the pawn on c5 and controls e5
-    n6 3…cxd4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Puts a pawn in the centre on d4; Controls c3 and e3; Opens the c-file for the rooks (half-open)
+    n6 3…cxd4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Opens the c-file for the rooks (half-open); Takes toward the centre
     n7 4.Nxd4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Centralises the knight on d4, which reaches 8 squares
     n8 4…Nf6: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Threatens to win the pawn on e4 with Nxe4; Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square
     n9 5.Nc3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Defends the pawn on e4, which was attacked; Develops the knight to c3, its most useful square; Controls d5 and e4
@@ -193,7 +193,7 @@ REVIEW NOTES
     n3 2.Nf3: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square; Controls d4 and e5
     n4 2…d6: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Controls c5 and e5; Prevents Ne5, a knight on a strong square; Opens the bishop on c8 (from 0 squares to 5)
     n5 3.d4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Puts a pawn in the centre on d4; Strikes at the centre: attacks the pawn on c5; Puts pressure on the pawn on c5 and controls e5
-    n6 3…cxd4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Puts a pawn in the centre on d4; Controls c3 and e3; Opens the c-file for the rooks (half-open)
+    n6 3…cxd4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Opens the c-file for the rooks (half-open); Takes toward the centre
     n7 4.Nxd4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Centralises the knight on d4, which reaches 8 squares
     n8 4…Nf6: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Threatens to win the pawn on e4 with Nxe4; Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square
     n9 5.Nc3: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98); Defends the pawn on e4, which was attacked; Develops the knight to c3, its most useful square; Controls d5 and e4

@@ -62,7 +62,7 @@ n11 6.hxg4 (White, Line A) | blunder | before: White is better → after: Black 
     best instead: d4; after d4 exd4 c3 a6 Bxc6 dxc6, White has a knight for a bishop and a pawn
     why d4 is better: moves the pawn from d2 to d4
     board: moves the pawn from h3 to g4 | captures the knight on g4
-    ideas: White now has 3 pieces developed to 1 piece | controls f5 | opens the h-file for the rooks (half-open) | leaves White with doubled pawns on the g-file | after hxg4 the opponent's pawns are doubled on the g-file | takes toward the centre
+    ideas: White now has 3 pieces developed to 1 piece
     alternatives: d4 (puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5; puts pressure on the pawn on e5 and controls c5): White is better, after exd4 c3 a6 Bxc6; c3 (takes c3 from the knight, whose natural square it is; controls d4; opens the queen on d1 (from 2 squares to 5)): White is better, after d5 Qe2 Be6 d4; Ba4 (moves the bishop for the second time while 2 pieces still wait at home): White is better, after Bc5 c3 Nxf2 Rxf2
     flags: critical
 n12 6…hxg4 (Black, Line A) | great | before: Black is better → after: Black is better
@@ -79,11 +79,11 @@ n13 7.Ne1 (White, Line A) | blunder | before: Black is better → after: Black i
     best instead: c3; after c3 gxf3 Qxf3 a6 Ba4 Qh4, material is level
     why c3 is better: moves the pawn from c2 to c3
     board: moves the knight from f3 to e1
-    ideas: threatens to win the pawn on g4 with Qxg4 | takes the attacked knight to safety on e1 | White now has 3 pieces developed to 1 piece | prepares f4 by opening the line | prepares the pawn's advance to f3, which it now supports
+    ideas: threatens to win the pawn on g4 with Qxg4 | takes the attacked knight to safety on e1 | White now has 3 pieces developed to 1 piece | prepares f4 by opening the line
     alternatives: c3 (takes c3 from the knight, whose natural square it is; controls d4; opens the queen on d1 (from 2 squares to 5)): Black is better, after gxf3 Qxf3 a6 Ba4; Nc3 (develops the knight to c3, its most useful square; White now has 4 pieces developed to 1 piece; controls d5 and e4): Black is better, after gxf3 Qxf3 Qh4 Qh3; g3 (controls f4; fixes the pawn on g4: it can no longer advance): Black is better, after gxf3 c3 a6 Ba4
 n14 7…Qh4 (Black, Line A) | great | before: Black is much better → after: Black is much better
     board: moves the queen from d8 to h4
-    ideas: threatens mate with Qh2# | defends the pawn on g4, which was attacked | brings the queen into the attack: it bears on 3 squares around the king | brings the queen out early to h4, with 2 pieces still at home | lines up queen and rook on the h-file | shuts in the rook on h8 (from 8 squares to 4)
+    ideas: threatens mate with Qh2# | defends the pawn on g4, which was attacked | brings the queen into the attack: it bears on 3 squares around the king | brings the queen out early to h4, with 2 pieces still at home
     notes: Won the queen, giving back a bishop.
     tactics: You took the open file — takes the open h-file with the queen.
     alternatives: a6 (attacks the bishop on b5): Black is better, after Qxg4 axb5 Qg3 b4; d5 (leaves the knight on c6 pinned to the king; puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on e4): Black is better, after Bxc6+ bxc6
@@ -93,12 +93,12 @@ n15 8.f3 (White, Line A) | blunder | before: Black is much better → after: Bla
     best instead: f4; after f4 Bc5+ d4 Bxd4+ Qxd4 Nxd4, White has a bishop and a knight for a queen and two pawns
     why f4 is better: moves the pawn from f2 to f4
     board: moves the pawn from f2 to f3
-    ideas: stops the mate threat Qh2# | loosens the pawns in front of the king: no pawn can cover g3 any more | controls e4 | supports the centre pawn on e4
+    ideas: stops the mate threat Qh2# | loosens the pawns in front of the king: no pawn can cover g3 any more
     tactics: They let you force mate in 2 with g3.
     alternatives: f4 (strikes at the centre: attacks the pawn on e5; puts pressure on the pawn on e5): Black is much better, after Bc5+ d4 Bxd4+ Qxd4; a3: Black has a forced mate in 1, after Qh1#
 n16 8…g3 (Black, Line A) | best | before: Black has a forced mate in 2 → after: Black has a forced mate in 1
     board: moves the pawn from g4 to g3
-    ideas: threatens mate with Qh2# | takes the attacked pawn to safety on g3 | prevents f4, a pawn break | advances the pawn to g3, toward the enemy king
+    ideas: threatens mate with Qh2# | takes the attacked pawn to safety on g3 | prevents f4, a pawn break
     alternatives: Bc5+ (develops the bishop to c5; controls d4; clears the way to castle kingside): Black has a forced mate, after d4 Nxd4 Bxd7+ Bxd7; Nd4 (threatens to win the bishop on b5 with Nxb5; White now has 3 pieces developed to 1 piece; centralises the knight on d4, which reaches 8 squares): Black is much better, after Bxd7+ Bxd7 fxg4 Bc5
     tempting check: Qh2+? Black's Qh2+ moves the queen from h4 to h2 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf2. White answers Kf2: moves the king from g1 to f2. Then Bc5+ Ke2. Over the line nothing is taken; at the end White has a knight for a pawn (Black is better).
     tempting check: Qh1+? Black's Qh1+ moves the queen from h4 to h1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf2. White answers Kf2: moves the king from g1 to f2. Then Bc5+ d4 Qh4+. Over the line nothing is taken; at the end White has a knight for a pawn (Black is better).

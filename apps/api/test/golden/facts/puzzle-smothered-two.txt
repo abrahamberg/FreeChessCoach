@@ -6,7 +6,7 @@ l1 "Line A" | leaves book at n1
 Moves:
 n1 1.Qg8+ (White, Line A) | best | before: White has a forced mate in 2 → after: White has a forced mate in 1
     board: moves the queen from b3 to g8 | gives check | the check can be answered: no block; take the checking piece with Rxg8; the king cannot move | attacks the rook on a8
-    ideas: sacrifices the queen on g8: it can be taken, and the engine still approves | settles the queen on g8 on a square by the king that no pawn can cover any more | aims at the pawn on h7, which only the king defends
+    ideas: sacrifices the queen on g8: it can be taken, and the engine still approves
     alternatives: Nf7+ (settles the knight on f7 on a square by the king that no pawn can cover any more): White has a forced mate, after Kg8 Nh6+ Kh8 Qg8+; Qd5 (threatens mate with Qxa8#; centralises the queen on d5, which reaches 26 squares): White is much better, after gxh6 Qe5+ Kg8 h3
     tempting check: Nf7+ White's Nf7+ moves the knight from h6 to f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kg8. Black answers Kg8: moves the king from h8 to g8 | attacks the knight on f7. Then Nh6+ Kh8 Qg8+. Over the line nothing is taken; at the end White has a queen and a knight for a rook (White has a forced mate). Works, but not the answer: it mates too, but later.
     tempting check: Qb8+? White's Qb8+ moves the queen from b3 to b8 | gives check | the check can be answered: no block; take the checking piece with Rxb8; the king cannot move | attacks the rook on a8 | leaves the white queen on b8 hanging. Black answers Rxb8: moves the rook from a8 to b8 | captures the queen on b8. Then Ng4 Rb1+ Kf2. Over the line Black takes the queen; at the end White has a knight for a rook (Black is better).
@@ -35,6 +35,6 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.Qg8+: Sacrifices the queen on g8: it can be taken, and the engine still approves; Settles the queen on g8 on a square by the king that no pawn can cover any more; Aims at the pawn on h7, which only the king defends
+    n1 1.Qg8+: Sacrifices the queen on g8: it can be taken, and the engine still approves
     n2 1…Rxg8: Wins the queen for the rook on g8; After the exchange White has a knight for a rook
     n3 2.Nf7#: You delivered checkmate — mates the king on h8, smothered by its own pieces.

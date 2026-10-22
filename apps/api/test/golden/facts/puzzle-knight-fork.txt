@@ -7,7 +7,7 @@ l1 "Line A" | leaves book at n1
 Moves:
 n1 1.Ne7+ (White, Line A) | great | before: White is much better → after: White is much better
     board: moves the knight from d5 to e7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh8, Kf8 | attacks the queen on c8 | the knight on e7 forks the queen on c8 and the king on g8
-    ideas: stops the mate threat Qc1# | settles the knight on e7 on a square by the king that no pawn can cover any more | controls d5 | heads for d5, a square no enemy pawn can attack
+    ideas: stops the mate threat Qc1# | settles the knight on e7 on a square by the king that no pawn can cover any more | controls d5 | heads for c6, a square no enemy pawn can attack
     tactics: You won a queen through a fork two moves away — knight on e7 forks the queen on c8 and the king on g8.
     alternatives: Nc7 (controls d5): Black is much better, after Qb7 g3 Qb1+ Kg2; Nf6+ (controls e4 and d5): Black is much better, after Kh8 g4 Qe6 h3
     tempting check: Nf6+? White's Nf6+ moves the knight from d5 to f6 | gives check | the check can be answered: no block; take the checking piece with gxf6; move the king with Kh8, Kf8 | leaves the white knight on f6 hanging. Black answers Kh8: moves the king from g8 to h8. Then g3 Qc5 h4. Over the line nothing is taken; at the end White has a knight for a queen (Black is much better).

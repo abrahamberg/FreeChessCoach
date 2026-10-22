@@ -19,7 +19,7 @@ n3 2.d4 (White, Line A) | book
     book: in book (Sicilian Defense: Smith-Morra Gambit)
     the book also has: Bc4 (Sicilian Defense: Bowdler Attack); Ke2 (Sicilian Defense: King David's Opening); Na3 (Sicilian Defense: Kronberger Variation); Nc3 (Sicilian Defense: Closed); Ne2 (Sicilian Defense: Keres Variation)
     board: moves the pawn from d2 to d4
-    ideas: puts a pawn in the centre on d4 | strikes at the centre: attacks the pawn on c5 | puts pressure on the pawn on c5 and controls e5 | prevents e5, a pawn advance | opens the bishop on c1 (from 0 squares to 5)
+    ideas: puts a pawn in the centre on d4 | strikes at the centre: attacks the pawn on c5 | puts pressure on the pawn on c5 and controls e5 | opens the bishop on c1 (from 0 squares to 5)
     opens: the dark-squared bishop on c1, from 0 squares to 5
     alternatives: c3 (takes c3 from the knight, whose natural square it is; controls d4; opens the queen on d1 (from 4 squares to 7)): The position is roughly equal, after d5 exd5 Qxd5 d4; Ne2 (develops the knight to e2; controls d4; shuts in the bishop on f1 (from 5 squares to 0)): The position is roughly equal, after e6 d4 d5 Nbc3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5): The position is roughly equal, after Nc6 c3 d5 exd5
 n4 2…cxd4 (Black, Line A) | book
@@ -126,7 +126,7 @@ n19 10.Nxd4 (White, Line A) | blunder | before: Black is better → after: Black
     best instead: hxg4; after hxg4 Nxe2+ Bxe2 Bc5 e5 O-O, White has two knights for a queen and a pawn
     why hxg4 is better: moves the pawn from h3 to g4 | captures the knight on g4
     board: moves the knight from f3 to d4 | captures the knight on d4 | the knight stops guarding h2, where Qh2# follows
-    ideas: takes the piece that attacked the queen on e2 | White now has 4 pieces developed to 1 piece | centralises the knight on d4, which reaches 8 squares | after the exchange White has a knight for a pawn
+    ideas: takes the piece that attacked the queen on e2 | White now has 4 pieces developed to 1 piece | after the exchange White has a knight for a pawn
     notes: Won a knight, but it allowed mate.
     tactics: They let you deliver checkmate with Qh2#.
     alternatives: hxg4 (White now has 4 pieces developed to 1 piece; controls f5; opens the h-file for the rooks (half-open)): Black is better, after Nxe2+ Bxe2 Bc5 e5; e5 (puts a pawn in the centre on e5; controls d6 and f6): Black is much better, after Nxe2+ Bxe2 Nxe5 Be3; Kh1: Black is much better, after Nxe2 Bxe2 h5 g3

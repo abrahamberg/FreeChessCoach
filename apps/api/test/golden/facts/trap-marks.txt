@@ -14,7 +14,7 @@ n1 1.d4 (White, Line A) | book
 n2 1…e5 (Black, Line A) | book
     book: in book (Englund Gambit)
     board: moves the pawn from e7 to e5 | leaves the black pawn on e5 hanging
-    ideas: offers the pawn on e5: it can be taken, and the engine still approves | puts a pawn in the centre on e5 | strikes at the centre: attacks the pawn on d4 | puts pressure on the pawn on d4 and controls f4 | opens the bishop on f8 (from 0 squares to 5)
+    ideas: offers the pawn on e5: it can be taken, and the engine still approves | strikes at the centre: attacks the pawn on d4 | opens the bishop on f8 (from 0 squares to 5)
     opens: the dark-squared bishop on f8, from 0 squares to 5
     alternatives: d5 (puts a pawn in the centre on d5; controls c4 and e4; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after c4 dxc4 e4 e5; Nf6 (develops the knight to f6, its most useful square; controls e4 and d5): The position is roughly equal, after c4 e6 Nf3 d5; e6 (controls d5 and f5; opens the bishop on f8 (from 0 squares to 5)): The position is roughly equal, after e4 d5 Nc3 Bb4
     flags: creator-fast
@@ -75,7 +75,7 @@ n11 6.Bc3 (White, Line A) | blunder | before: White is better → after: Black i
     best instead: Nc3; after Nc3 Bb4 Rb1 Qa3 Nd5, material is level
     why Nc3 is better: moves the knight from b1 to c3
     board: moves the bishop from d2 to c3 | attacks the queen on b2
-    ideas: threatens to win the queen on b2 with Bxb2 | defends the pawn on e5, which was attacked | moves the bishop for the third time while 2 pieces still wait at home | controls d4 and e5 | supports the centre pawn on e5 | prevents Nd4, a knight on a strong square | puts the bishop on the long diagonal | opens the queen on d1 (from 1 squares to 7)
+    ideas: threatens to win the queen on b2 with Bxb2 | defends the pawn on e5, which was attacked | moves the bishop for the third time while 2 pieces still wait at home
     notes: The bishop on c3 gets chased by Bb4, a developing move, and has to move again; Nc3 avoids losing the time | Won a knight, but it cost the queen.
     opens: the queen on d1, from 1 squares to 7
     tactics: They let you win a bishop through an eventual pin with Bb4 — the bishop on c3 is stuck in front of the king.
@@ -98,7 +98,7 @@ n13 7.Qd2 (White, Line A) | inaccuracy | before: Black is better → after: Blac
 n14 7…Bxc3 (Black, Line A) | best | before: Black is much better → after: Black is much better
     piece: the dark-squared bishop
     board: moves the bishop from b4 to c3 | captures the bishop on c3 | attacks the queen on d2, which is pinned to the king by the bishop on c3
-    ideas: threatens mate with Qc1# | threatens to win the pawn on e5 with Nxe5 | takes the piece that attacked the queen on b2 | pins the queen on d2 to the king | removes the bishop on c3, the guard of the pawn on e5 | leaves the queen on d2 with a single move | settles the bishop on c3 on a square by the king that no pawn can cover any more | puts pressure on the pawn on e5 and controls d4
+    ideas: threatens mate with Qc1# | threatens to win the pawn on e5 with Nxe5 | takes the piece that attacked the queen on b2 | pins the queen on d2 to the king | removes the bishop on c3, the guard of the pawn on e5 | leaves the queen on d2 with a single move | aims at the king on e1, through the queen on d2
     notes: Trades bishops on c3
     tactics: You saved a hanging piece — saves the queen on b2.
     alternatives: Qxa1 (pins the knight on b1 to the king): Black is better, after Bxa1 Bxd2+ Nbxd2 Nge7; Ba3: White is much better, after Bxb2 Bxb2 Nc3 Bxa1
@@ -134,7 +134,7 @@ PLAN
 REVIEW NOTES
   l1
     n1 1.d4: Theory — Englund Gambit: Main Line (A40); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance
-    n2 1…e5: Theory — Englund Gambit: Main Line (A40); Offers the pawn on e5: it can be taken, and the engine still approves; Puts a pawn in the centre on e5; Strikes at the centre: attacks the pawn on d4
+    n2 1…e5: Theory — Englund Gambit: Main Line (A40); Offers the pawn on e5: it can be taken, and the engine still approves; Strikes at the centre: attacks the pawn on d4; Opens the bishop on f8 (from 0 squares to 5)
     n3 2.dxe5: Theory — Englund Gambit: Main Line (A40); Puts a pawn in the centre on e5; Controls d6 and f6; Opens the d-file for the rooks (half-open)
     n4 2…Nc6: Theory — Englund Gambit: Main Line (A40); Threatens to win the pawn on e5 with Nxe5; Develops the knight to c6, its most useful square; Puts pressure on the pawn on e5 and controls d4
     n5 3.Nf3: Theory — Englund Gambit: Main Line (A40); Defends the pawn on e5, which was attacked; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square

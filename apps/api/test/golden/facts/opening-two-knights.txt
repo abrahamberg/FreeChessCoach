@@ -80,7 +80,7 @@ n12 6…c6 (Black, Main line) | book
 n13 7.dxc6 (White, Main line) | book
     book: in book (Italian Game: Two Knights Defense, Polerio Defense, Bishop Check Line)
     board: moves the pawn from d5 to c6 | captures the pawn on c6
-    ideas: takes the piece that attacked the bishop on b5 | gives up the centre: the pawn leaves d5 | opens a line for the opponent's queen on d8 (from 6 squares to 9) | leaves White with doubled pawns on the c-file | after bxc6 the opponent has an isolated pawn on a7 and c6
+    ideas: takes the piece that attacked the bishop on b5 | gives up the centre: the pawn leaves d5 | opens a line for the opponent's queen on d8 (from 6 squares to 9) | after bxc6 the opponent has an isolated pawn on a7 and c6
     alternatives: Be2: Black is slightly better, after cxd5 Nf3 Bd6 d4; Bd3 (the bishop on d3 blocks the pawn on d2; controls e4; aims at the pawn on h7): Black is slightly better, after cxd5 Bb5+ Nc6 d4
 n14 7…bxc6 (Black, Main line) | book
     book: in book (Italian Game: Two Knights Defense, Polerio Defense, Bishop Check Line)
@@ -127,7 +127,7 @@ n21 6.Nxf7 (White, Fried Liver) | book
     book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
     the book also has: d4 (Italian Game: Two Knights Defense, Lolli Attack)
     board: moves the knight from g5 to f7 | captures the pawn on f7 | attacks the queen on d8 | attacks the rook on h8 | leaves the white knight on f7 hanging
-    ideas: sacrifices the knight on f7: it can be taken, and the engine still approves | settles the knight on f7 on a square by the king that no pawn can cover any more | puts pressure on the pawn on e5 | leaves Black with an isolated pawn on e5
+    ideas: sacrifices the knight on f7: it can be taken, and the engine still approves | leaves Black with an isolated pawn on e5
     alternatives: d4 (puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5; puts pressure on the pawn on e5 and controls c5): White is slightly better, after Nxd4 c3 b5 Bd3; O-O (castles kingside: the king goes to safety and the rook comes to f1): The position is roughly equal, after Qxg5 Bxd5 Bd7 d4
 n22 6…Kxf7 (Black, Fried Liver) | book
     book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
@@ -198,7 +198,7 @@ REVIEW NOTES
     n8 4…d5: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Blocks the attack on the pawn on f7; Attacks the bishop on c4; Attacks the pawn on e4 twice, while it is defended once
     n9 5.exd5: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Takes the piece that attacked the bishop on c4; Puts a pawn in the centre on d5; Controls c6 and e6
     n20 5…Nxd5: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Threatens to win the knight on g5 with Qxg5; Takes the piece that attacked the knight on c6; Centralises the knight on d5, which reaches 8 squares; You let them win a pawn through a free piece with Nxf7 — captures the pawn on f7.
-    n21 6.Nxf7: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Sacrifices the knight on f7: it can be taken, and the engine still approves; Settles the knight on f7 on a square by the king that no pawn can cover any more; Puts pressure on the pawn on e5
+    n21 6.Nxf7: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Sacrifices the knight on f7: it can be taken, and the engine still approves; Leaves Black with an isolated pawn on e5
     n22 6…Kxf7: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Takes the piece that attacked the queen on d8; Leaves the knight on d5 pinned to the king; Gives up castling for good
     n23 7.Qf3+: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Attacks the knight on d5 twice, while it is defended once; Brings the queen into the attack: it bears on 2 squares around the king; Takes f6 from the enemy king
     n24 7…Ke6: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Supports the centre pawn on e5; Defends the knight on d5, attacked twice and now defended twice

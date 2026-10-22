@@ -6,7 +6,6 @@ l1 "Line A" | leaves book at n1
 Moves:
 n1 1.Qe4+ (White, Line A) | excellent | before: White is winning → after: White is winning
     board: moves the queen from h1 to e4 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf8, Kf7, Kd7, Kd8 | attacks the rook on a8 | the queen on e4 forks the rook on a8 and the king on e8
-    ideas: centralises the queen on e4, which reaches 27 squares
     notes: Forks the king on e8 and the rook on a8
     alternatives: Qh8+: White is winning, after Kd7 Qxa8 Ke6 Qe8+; Qxa8+: White is winning, after Kf7 Kf2 Ke6 Qd8; Qc6+: White is winning, after Kf7 Qxa8 Ke6 Qe8+
     tempting threat: Qg2? White's Qg2 moves the queen from h1 to g2 | attacks the rook on a8. Black answers Ra1+: moves the rook from a8 to a1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd2, Ke2, Kf2. Then Kf2 Ra2+ Kg3. Over the line nothing is taken; at the end White has a queen for a rook (The position is roughly equal).
@@ -36,6 +35,6 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.Qe4+: Forks the king on e8 and the rook on a8; Centralises the queen on e4, which reaches 27 squares
+    n1 1.Qe4+: Forks the king on e8 and the rook on a8
     n2 1…Kd7: Brings the king toward the centre, a strong piece in the ending
     n3 2.Qxa8: Wins the rook on a8; After the exchange White is a queen up

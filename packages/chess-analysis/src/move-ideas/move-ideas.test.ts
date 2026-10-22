@@ -111,6 +111,46 @@ describe('moveIdeas precision', () => {
   });
 });
 
+describe('ideas beside the point', () => {
+  const start = new Chess().fen();
+  const afterNf3 = new Chess(start).move('Nf3').after;
+  const nf3 = (before: number, after: number, best = 'Nf3'): string[] => kinds(moveIdeas({ fenBefore: start, san: 'Nf3', previous: [], evalBefore: line(start, before, null, [best]), evalAfter: line(afterNf3, after, null, ['d5']) }));
+
+  it('drops the small positional ideas once the game is decided or the move throws it away', () => {
+    expect(nf3(30, 30)).toEqual(expect.arrayContaining(['develops', 'controlsCentre']));
+    // The engine's own move is no blunder, whatever the search after it says.
+    expect(nf3(30, -600)).toContain('controlsCentre');
+    for (const decided of [nf3(900, 900), nf3(-900, -900), nf3(30, -600, 'e4')]) {
+      expect(decided).toContain('develops');
+      expect(decided).not.toContain('controlsCentre');
+    }
+  });
+
+  it('says nothing of where the moved man stands when the reply takes it', () => {
+    const fen = '1r1q1rk1/ppp2ppp/2n1p3/3p1b2/Q2PnPP1/2P2N1P/PP1N1P2/R3KB1R b KQ - 0 11';
+    const after = new Chess(fen).move('Nxd2').after;
+    const nxd2 = (reply: string): string[] => kinds(moveIdeas({ fenBefore: fen, san: 'Nxd2', previous: [], evalAfter: line(after, -60, null, [reply]) }));
+    expect(nxd2('Be2')).toContain('controlsCentre');
+    expect(nxd2('Nxd2')).not.toContain('controlsCentre');
+    // A pawn traded evenly keeps its place in the centre; what it stopped is possible again.
+    const sicilian = 'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2';
+    const d4 = (reply: string): string[] => kinds(moveIdeas({ fenBefore: sicilian, san: 'd4', previous: [], evalAfter: line(new Chess(sicilian).move('d4').after, 0, null, [reply]) }));
+    expect(d4('Nc6')).toContain('prevents');
+    expect(d4('cxd4')).not.toContain('prevents');
+    expect(d4('cxd4')).toContain('occupiesCentre');
+    // 3…exd4 doubles Black's d-pawns only until Nxd4.
+    const scotch = 'r1bqkbnr/pppp1ppp/2n5/4p3/3PP3/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 3';
+    const exd4 = (reply: string): string[] => kinds(moveIdeas({ fenBefore: scotch, san: 'exd4', previous: [], evalAfter: line(new Chess(scotch).move('exd4').after, 0, null, [reply]) }));
+    expect(exd4('Bc4')).toContain('pawnWeakness');
+    expect(exd4('Nxd4')).not.toContain('pawnWeakness');
+  });
+
+  it('never has a knight head for the square it just left', () => {
+    const ideas = moveIdeas({ fenBefore: '5rk1/4bppp/pN2pn2/2p5/8/1Pnr2P1/P4PBP/R1R4K b - - 1 27', san: 'Ne2', previous: [] });
+    expect(ideas.filter((idea) => idea.kind === 'eyesOutpost' && idea.square === 'c3')).toEqual([]);
+  });
+});
+
 describe('Game Review notes', () => {
   it('follows a book move\'s theory line with what the move does', () => {
     const start = new Chess().fen();

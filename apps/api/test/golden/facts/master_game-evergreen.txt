@@ -84,7 +84,7 @@ n33 17.Nf6+ (White, Line A) | miss | before: White is much better → after: Whi
     best instead: Rad1; after Rad1, material is level
     why Rad1 is better: moves the rook from a1 to d1
     board: moves the knight from e4 to f6 | gives check | the check can be answered: no block; take the checking piece with gxf6; move the king with Kf8, Kd8 | attacks the queen on h5
-    ideas: answers the attack on the pawn on e5 with a counter-threat | controls e4 and d5
+    ideas: answers the attack on the pawn on e5 with a counter-threat
     notes: Leaves the knight on f6 where it can be won
     alternatives: Rad1 (leaves the knight on f3 pinned to the rook; puts a rook on the half-open d-file; shuts in the rook on e1 (from 6 squares to 3)): White is much better; Ng3 (threatens to win the queen on h5 with Nxh5; controls e4; opens the queen on a4 (from 11 squares to 15)): White is much better; Rab1 (puts a rook on the open b-file): White is better
     tempting capture: Bxe7? White's Bxe7 moves the bishop from a3 to e7 | captures the knight on e7. Black answers Nxe7: moves the knight from c6 to e7 | captures the bishop on e7. Over the line White takes a knight; Black takes a bishop; at the end White has a knight for a bishop (White is slightly better).
@@ -109,7 +109,7 @@ n37 19.Rad1 (White, Line A) | blunder | before: White is slightly better → aft
     best instead: Kf1; after Kf1, White has a pawn for a knight
     why Kf1 is better: moves the king from g1 to f1
     board: moves the rook from a1 to d1 | allows Qxf3, where the queen on f3 forks the bishop on d3 and the rook on d1
-    ideas: leaves the knight on f3 pinned to the rook | puts a rook on the half-open d-file | shuts in the rook on e1 (from 10 squares to 7)
+    ideas: leaves the knight on f3 pinned to the rook
     notes: Leaves the knight on f3 where it can be won; Kf1 defends it | Allows Qxf3, forking the bishop on d3 and the rook on d1
     alternatives: Kf1: White is slightly better; Kh1: White is slightly better; Be4 (controls d5; centralises the bishop on e4, which reaches 9 squares; aims at the pawn on h7): White is slightly better
     tempting capture: fxe7? White's fxe7 moves the pawn from f6 to e7 | captures the knight on e7. Black answers Ne5: moves the knight from c6 to e5 | attacks the bishop on d3 | attacks the knight on f3. Over the line White takes a knight; at the end White is a pawn up (Black is much better).
@@ -136,13 +136,13 @@ n40 20…Nxe7 (Black, Line A) | blunder | before: White is better → after: Whi
     best instead: Kd8; after Kd8, White has a pawn for a knight
     why Kd8 is better: moves the king from e8 to d8 | attacks the rook on e7 | leaves the black pawn on f7 hanging | leaves the black pawn on h7 hanging
     board: moves the knight from c6 to e7 | captures the rook on e7 | leaves the black pawn on h7 hanging
-    ideas: threatens mate with Qxg2# | controls d5 | prepares the pawn's advance to c6, which it now supports
+    ideas: threatens mate with Qxg2#
     notes: Recaptures the rook on e7 | Won a rook, but it allowed mate.
     tactics: They let you force mate with Qxd7+.
     alternatives: Kd8 (threatens mate with Qxg2#): White is better; Kf8 (threatens mate with Qxg2#): White is much better
 n41 21.Qxd7+ (White, Line A) | great | before: White has a forced mate → after: White has a forced mate
     board: moves the queen from a4 to d7 | captures the pawn on d7 | gives check | the check can be answered: no block; take the checking piece with Kxd7; move the king with Kf8 | attacks the knight on e7 | leaves the white queen on d7 hanging
-    ideas: stops the mate threat Qxg2# | sacrifices the queen on d7: it can be taken, and the engine still approves | attacks the knight on e7 3 times, while it is defended once | settles the queen on d7 on a square by the king that no pawn can cover any more | controls d5 | leaves Black with an isolated pawn on c7 | defends the bishop on d3, attacked once and now defended twice
+    ideas: stops the mate threat Qxg2# | sacrifices the queen on d7: it can be taken, and the engine still approves | attacks the knight on e7 3 times, while it is defended once | defends the bishop on d3, attacked once and now defended twice
     tactics: You forced mate.
     alternatives: Qe4 (threatens mate with Qxe7#; pins the knight on e7 to the king; attacks the knight on e7 3 times, while it is defended once): Black has a forced mate; Qg4 (attacks the queen on f3 twice, while it is defended once; aims at the pawn on d7, which only the king defends): Black has a forced mate
     tempting capture: fxe7? White's fxe7 moves the pawn from f6 to e7 | captures the knight on e7. Black answers Qxg2#: moves the queen from f3 to g2 | captures the pawn on g2 | gives checkmate | why it is mate: the king on g1 is checked by the queen on g2; f2, h2 hold its own pieces; f1 and h1 are covered by the queen on g2; the queen on g2 is guarded by the rook on g8 and the bishop on b7. Over the line White takes a knight; Black takes a pawn; at the end Black is a rook up (Black has a forced mate in 1).
@@ -153,7 +153,7 @@ n42 21…Kxd7 (Black, Line A) | best
 n43 22.Bf5+ (White, Line A) | great | before: White has a forced mate in 3 → after: White has a forced mate in 2
     piece: the light-squared bishop
     board: moves the bishop from d3 to f5 | gives check | a double check, with the rook on d1 | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke8, Kc6
-    ideas: stops the mate threat Qxg2# | blocks the attack on the pawn on f6 | aims at the pawn on h7 | puts the bishop on f5 on an outpost no pawn can attack
+    ideas: stops the mate threat Qxg2# | blocks the attack on the pawn on f6
     tactics: You forced mate in 2.
     alternatives: Be2+ (attacks the queen on f3 twice, while it is defended once): Black is winning; Bb5+: Black has a forced mate
     flags: quiz-eligible, critical
@@ -161,7 +161,7 @@ n44 22…Ke8 (Black, Line A) | best
 n45 23.Bd7+ (White, Line A) | great | before: White has a forced mate in 2 → after: White has a forced mate in 1
     piece: the light-squared bishop
     board: moves the bishop from f5 to d7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf8, Kd8
-    ideas: stops the mate threat Qxg2# | takes the attacked bishop to safety on d7 | settles the bishop on d7 on a square by the king that no pawn can cover any more
+    ideas: stops the mate threat Qxg2# | takes the attacked bishop to safety on d7
     tactics: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
     alternatives: Rd8+ (settles the rook on d8 on a square by the king that no pawn can cover any more): Black has a forced mate; g3 (controls f4): Black has a forced mate in 1
     tempting threat: Bg4? White's Bg4 moves the bishop from f5 to g4 | attacks the queen on f3 | leaves the white pawn on f6 hanging | leaves the white bishop on g4 hanging | leaves the white pawn on c3 hanging. Black answers Qxg2#: moves the queen from f3 to g2 | captures the pawn on g2 | gives checkmate | why it is mate: the king on g1 is checked by the queen on g2; f2, h2 hold its own pieces; f1 and h1 are covered by the queen on g2; the queen on g2 is guarded by the bishop on b7. Over the line Black takes a pawn; at the end White has a pawn for a queen, a rook and a knight (Black has a forced mate in 1).
@@ -233,14 +233,14 @@ REVIEW NOTES
     n34 17…gxf6: Attacks the pawn on e5 3 times, while it is defended twice; Loosens the pawns in front of the king: no pawn can cover f6, f5, h6 and h5 any more; Puts pressure on the pawn on e5; They saved a hanging piece — saves the queen on h5.
     n35 18.exf6: Recaptures the pawn on f6; Threatens to win the knight on e7 with fxe7; Pins the knight on e7 to the king; Leaves the knight on e7 without a move
     n36 18…Rg8: Prevents g4, an attack on a bigger piece; Puts a rook on the half-open g-file
-    n37 19.Rad1: Leaves the knight on f3 where it can be won; Kf1 defends it; Allows Qxf3, forking the bishop on d3 and the rook on d1; Shuts in the rook on e1 (from 10 squares to 7)
+    n37 19.Rad1: Leaves the knight on f3 where it can be won; Kf1 defends it; Allows Qxf3, forking the bishop on d3 and the rook on d1
     n38 19…Qxf3: Forks the bishop on d3 and the rook on d1; Threatens mate with Qxg2#; Threatens to win the pawn on f6 with Qxf6; The pawn on g2 cannot take it: it is pinned by the rook on g8; They won a knight through a free piece — captures the knight on f3.
     n39 20.Rxe7+: Stops the mate threat Qxg2#; Settles the rook on e7 on a square by the king that no pawn can cover any more; Puts the rook on the seventh rank
     n40 20…Nxe7: Recaptures the rook on e7; They let you force mate with Qxd7+.; Won a rook, but it allowed mate.
     n41 21.Qxd7+: Stops the mate threat Qxg2#; Sacrifices the queen on d7: it can be taken, and the engine still approves; Attacks the knight on e7 3 times, while it is defended once; You forced mate.
     n42 21…Kxd7: Recaptures the queen on d7; Threatens mate with Qxg2#
-    n43 22.Bf5+: Stops the mate threat Qxg2#; Blocks the attack on the pawn on f6; Aims at the pawn on h7; You forced mate in 2.
+    n43 22.Bf5+: Stops the mate threat Qxg2#; Blocks the attack on the pawn on f6; You forced mate in 2.
     n44 22…Ke8: Threatens mate with Qxg2#
-    n45 23.Bd7+: Stops the mate threat Qxg2#; Takes the attacked bishop to safety on d7; Settles the bishop on d7 on a square by the king that no pawn can cover any more; You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
+    n45 23.Bd7+: Stops the mate threat Qxg2#; Takes the attacked bishop to safety on d7; You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
     n46 23…Kf8: Threatens mate with Qxg2#; Leaves the knight on e7 pinned to the king
     n47 24.Bxe7#: You delivered checkmate.
