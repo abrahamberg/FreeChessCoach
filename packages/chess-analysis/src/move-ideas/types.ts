@@ -18,7 +18,7 @@ export type MoveIdea =
   | { kind: 'movesAgain'; piece: PieceAt; times: number; undeveloped: number }
   | { kind: 'blocksPawn'; piece: PieceAt; pawn: Square }
   | { kind: 'takesKnightSquare'; square: Square }
-  | { kind: 'earlyQueen'; undeveloped: number }
+  | { kind: 'earlyQueen'; square: Square; undeveloped: number }
   // Centre
   | { kind: 'occupiesCentre'; square: Square }
   | { kind: 'controlsCentre'; squares: Square[]; pressures: Square[] }

@@ -80,6 +80,13 @@ describe('moveIdeas precision', () => {
     expect(ideas).not.toContain('controlsCentre');
   });
 
+  it('says an early queen once: out early, not also brought out', () => {
+    const game = history('1. e4 e5 2. Qh5');
+    const ideas = moveIdeas({ fenBefore: game[2]!.before, san: 'Qh5', previous: game.slice(0, 2) });
+    expect(ideas).toContainEqual({ kind: 'earlyQueen', square: 'h5', undeveloped: 4 });
+    expect(kinds(ideas)).not.toContain('develops');
+  });
+
   it('states the material only once the exchange is over', () => {
     const fen = '1r4k1/r4ppp/pqR1b3/R2p4/1P1Q4/P3PPP1/7P/5BK1 b - - 0 27';
     const after = new Chess(fen).move('Qxc6').after;

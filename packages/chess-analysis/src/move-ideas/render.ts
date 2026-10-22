@@ -37,7 +37,7 @@ export function renderMoveIdea(idea: MoveIdea): string {
     case 'takesKnightSquare':
       return `takes ${idea.square} from the knight, whose natural square it is`;
     case 'earlyQueen':
-      return `brings the queen out early, with ${pieces(idea.undeveloped)} still at home`;
+      return `brings the queen out early to ${idea.square}, with ${pieces(idea.undeveloped)} still at home`;
     case 'occupiesCentre':
       return `puts a pawn in the centre on ${idea.square}`;
     case 'controlsCentre':

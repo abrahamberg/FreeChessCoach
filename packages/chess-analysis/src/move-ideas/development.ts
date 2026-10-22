@@ -19,7 +19,9 @@ const MINOR_HOMES: Record<Color, Record<'n' | 'b', readonly Square[]>> = {
 
 export function developmentIdeas(context: IdeaContext): MoveIdea[] {
   if (fewPieces(context.before)) return [castles(context)].filter((idea): idea is MoveIdea => idea !== null);
-  return [develops(context), castles(context), clearsCastling(context), movesAgain(context), blocksPawn(context), takesKnightSquare(context), earlyQueen(context), developmentLead(context)].filter(
+  const early = earlyQueen(context);
+  // The early queen says where the queen went; "brings the queen out to h5" beside it says it again.
+  return [early ? null : develops(context), castles(context), clearsCastling(context), movesAgain(context), blocksPawn(context), takesKnightSquare(context), early, developmentLead(context)].filter(
     (idea): idea is MoveIdea => idea !== null
   );
 }
@@ -109,7 +111,7 @@ function takesKnightSquare({ move, after }: IdeaContext): MoveIdea | null {
 function earlyQueen({ move, before, fullmove }: IdeaContext): MoveIdea | null {
   if (move.piece !== 'q' || move.captured || move.san.includes('+') || fullmove > 8 || ownRank(move.to, move.color) < 3) return null;
   const undeveloped = minorsAtHome(before.fen(), move.color);
-  return undeveloped >= 2 ? { kind: 'earlyQueen', undeveloped } : null;
+  return undeveloped >= 2 ? { kind: 'earlyQueen', square: move.to, undeveloped } : null;
 }
 
 /** "White has four pieces out to Black's two", on a move that changed the count. */
