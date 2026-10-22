@@ -29,10 +29,10 @@ n6 3…Re1+ (Black, Line A) | best | before: The position is roughly equal → a
     board: moves the rook from f1 to e1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd6, Kf6, Kf5, Kf4, Kd4, Kd5
     ideas: puts a rook on the half-open e-file
     alternatives: Rf3 (settles the rook on f3 on a square by the king that no pawn can cover any more): The position is roughly equal, after e7 Rf1 Rb7 Re1+; Kd8: The position is roughly equal, after e7+ Ke8 Ke6 Re1+
-n7 4.Kd6 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+n7 4.Kd6 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from e5 to d6
     ideas: threatens mate with Ra8# | marches the king into the enemy half, to d6
-    alternatives: Kf6 (threatens mate with Ra8#): The position is roughly equal, after Rf1+ Kg5 Re1 e7; Kf5: The position is roughly equal, after Rf1+ Kg5 Re1 e7
+    alternatives: Kd5: The position is roughly equal, after Rd1+ Kc5 Rg1 Kd4; Kf6 (threatens mate with Ra8#): The position is roughly equal, after Rf1+ Kg5 Re1 e7
 n8 4…Rd1+ (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the rook from e1 to d1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc7, Ke5, Kc5, Kc6
     ideas: stops the mate threat Ra8# | puts a rook on the open d-file

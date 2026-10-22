@@ -46,7 +46,7 @@ n7 4.Qe8+ (White, Line A) | excellent | before: The position is roughly equal �
 n8 4…Kg7 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from g8 to g7
     ideas: brings the king toward the centre, a strong piece in the ending | defends the pawn on g6, attacked once and now defended once
-    alternatives: Kh7: The position is roughly equal, after Qf7+ Kh8 Qf8+ Kh7
+    alternatives: Kh7: The position is roughly equal, after Qf7+ Kh8 Qf6+ Kh7
 n9 5.Qe7+ (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from e8 to e7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kg8, Kh8
     ideas: takes f6 from the enemy king | settles the queen on e7 on a square by the king that no pawn can cover any more

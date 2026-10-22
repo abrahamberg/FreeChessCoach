@@ -4,6 +4,7 @@ import { runAnalysisSteps } from '../../src/services/analysis-steps.js';
 import { widenBrilliantCandidates } from '../../src/services/analysis-widen.js';
 import { buildCourseDossierFromEngine } from '../../src/services/courses/dossier.js';
 import type { EngineBackend } from '../../src/services/engine/engine-backend.js';
+import { SearchMemoEngineBackend } from '../../src/services/engine/search-memo-engine-backend.js';
 import { scanPasses } from '../../src/services/pass-scans.js';
 import { createStepTimer } from '../../src/services/step-timer.js';
 import type { CorpusGame } from './corpus.js';
@@ -26,7 +27,11 @@ export interface AnalysedGame {
   tree: CourseTree;
 }
 
-export async function analyseGame(game: CorpusGame, engine: EngineBackend): Promise<AnalysedGame> {
+/** One search per position: the review asks for `REVIEW_MULTI_PV` lines,
+ * and the dossier's three-line and one-line asks of the same positions are
+ * answered from those searches (`SearchMemoEngineBackend`). */
+export async function analyseGame(game: CorpusGame, backend: EngineBackend): Promise<AnalysedGame> {
+  const engine = new SearchMemoEngineBackend(backend);
   const parsedGame = parsePgn(game.pgn);
   const fens = parsedGame.positions.map((position) => position.fen);
   // The worker's own calls (services/analysis-chunks.ts `analyzeReviewEvals`, services/analysis.ts).

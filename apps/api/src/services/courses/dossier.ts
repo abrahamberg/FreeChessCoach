@@ -12,6 +12,7 @@ import type { CourseKind, EngineEval } from '@freechesscoach/shared';
 import { runAnalysisSteps } from '../analysis-steps.js';
 import type { EngineBackend } from '../engine/engine-backend.js';
 import { resolveReviewEngineBackend, type ResolveEngineBackendOptions } from '../engine/resolve-engine-backend.js';
+import { SearchMemoEngineBackend } from '../engine/search-memo-engine-backend.js';
 import { scanPasses } from '../pass-scans.js';
 import { createStepTimer } from '../step-timer.js';
 
@@ -46,9 +47,11 @@ export function courseDossierBuilderFor(options: ResolveEngineBackendOptions): C
 export async function buildCourseDossierFromEngine(
   tree: CourseTree,
   learnerSide: 'white' | 'black',
-  backend: Pick<EngineBackend, 'analyzeGame'>,
+  engine: Pick<EngineBackend, 'analyzeGame'>,
   kind: CourseKind | null = null
 ): Promise<CourseDossierResult> {
+  // A position met twice (a repetition, a tempting move the tree also plays) is searched once.
+  const backend = new SearchMemoEngineBackend(engine);
   const fens = courseTreeFens(tree);
   // minLines 2: the index stores one line for most forced positions, and a
   // quiz is judged on the gap to the second move.

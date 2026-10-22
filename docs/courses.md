@@ -260,7 +260,12 @@ Example directions shown in the form:
 Built by code, per line, by running the existing analysis steps on each line as
 if it were a game (evals shared by position, so a position common to two lines
 is analysed once). Engine calls go through the one engine pipeline (Lichess eval
-index first). Rendered compactly; routine nodes in a long game get one line,
+index first), and every search of one build through one memo
+(`SearchMemoEngineBackend`): a position asked for again with settings an
+earlier search covers (a repetition, a tempting move the tree also plays) is
+answered from that search, cut to the lines asked for. The review audit's
+`analyseGame` puts Game Review's three-line searches of the game under the
+same memo, so its dossier searches no position the review searched. Rendered compactly; routine nodes in a long game get one line,
 candidate nodes get the full block.
 
 Per node:
