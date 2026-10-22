@@ -223,3 +223,16 @@ export const ENGINE_TUNNEL_PER_POSITION_MS = 30_000;
  * index also stores up to 5 per position (lichess-eval-index-format.ts).
  */
 export const ENGINE_MULTI_PV = 5;
+
+/**
+ * Lines per position for game review (the analyze-game job). Three, not
+ * `ENGINE_MULTI_PV`: the labels read the second line (Great, only moves,
+ * credit verdicts, the opportunity witness) and the move story names two
+ * alternatives beside the played move, as the course dossier did with its
+ * own three-line search. At depth 12 a five-line search costs about 2x a
+ * three-line one (4x a two-line one, 12x a one-line one). B7 of a Brilliant candidate is the one reader of lines 3-5;
+ * those few positions are searched again with `ENGINE_MULTI_PV`
+ * (`widenBrilliantCandidates`). Measured on 53 games: keeping two of five
+ * lines changed 6 moves' notes and 7 Brilliant labels, all B7.
+ */
+export const REVIEW_MULTI_PV = 3;

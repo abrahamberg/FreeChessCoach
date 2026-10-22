@@ -288,6 +288,16 @@ longer exists. It was removed (`docs/plan.md` Task 77.2); migration
 `0007_drop_deepen_analysis_jobs.ts` drops any of its jobs still pending in
 `graphile_worker.jobs`.
 
+How many lines: every game position is searched with `REVIEW_MULTI_PV`
+(3) lines, not `ENGINE_MULTI_PV` (5). The labels read the second line (Great,
+only moves, credit verdicts, the opportunity witness), the move story names
+two alternatives, and nothing reads further except B7 of a Brilliant candidate, so those few positions (0-2 a game,
+`brilliantCandidatePositions`) are searched again with 5 lines and the extra
+lines appended to the stored eval (`analysis-widen.ts`). At depth 12 a
+five-line search costs about 2x a three-line one. The pass scans ask for one
+line. A game analysed before keeps its stored five-line evals; they are a
+superset and are reused as they are.
+
 Brilliant-move soundness (`services/brilliant-soundness.ts`) reads the
 opponent's best reply straight out of the stored `evals[move.ply]` instead of
 making its own engine call — the same position, at the same depth, that the

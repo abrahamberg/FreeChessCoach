@@ -4,6 +4,8 @@ import { parseAnnotatedPgn, parsePgn } from '@freechesscoach/chess-analysis';
 import {
   BookReportSchema,
   GameReportSchema,
+  ENGINE_MULTI_PV,
+  REVIEW_MULTI_PV,
   type EngineEval,
   type StoredGameReport
 } from '@freechesscoach/shared';
@@ -341,7 +343,7 @@ describe('runAnalyzeGameJob', () => {
   // verdict needs no engine call beyond the one pass.
   test('a known sound sacrifice is classified brilliant from the stored reply eval', async () => {
     const { gameId } = await setupGame(BRILLIANT_PGN);
-    const analyzeGamePositions = vi.fn(async (fens: string[]) =>
+    const analyzeGamePositions = vi.fn<AnalysisJobDependencies['analyzeGamePositions']>(async (fens) =>
       fens.map((fen): EngineEval =>
         fen === BRILLIANT_SETUP_FEN
           ? {
@@ -362,11 +364,16 @@ describe('runAnalyzeGameJob', () => {
     const game = await gamesRepo.findById(db, gameId);
     const moves = parseAnnotatedPgn(game!.annotatedPgn!, game!.userColor);
     expect(moves.find((move) => move.ply === 1)?.quality).toBe('brilliant');
-    // One chunk of the game's own positions answers the soundness check; the
-    // only calls after it are the in-memory pass scan (turn-flipped positions).
-    const [gameFens = [], ...laterCalls] = analyzeGamePositions.mock.calls.map((call) => call[0]);
-    expect(gameFens).toContain(BRILLIANT_AFTER_FEN);
-    for (const fen of laterCalls.flat()) expect(gameFens).not.toContain(fen);
+    // One chunk of the game's own positions answers the soundness check; after
+    // it come the wider search of the candidate's own position (B7 reads every
+    // line there) and the in-memory pass scan (turn-flipped positions).
+    const [gameCall, wideCall, ...passCalls] = analyzeGamePositions.mock.calls;
+    expect(gameCall).toEqual([expect.arrayContaining([BRILLIANT_AFTER_FEN]), REVIEW_MULTI_PV]);
+    expect(wideCall).toEqual([[BRILLIANT_SETUP_FEN], ENGINE_MULTI_PV]);
+    for (const [fens, multiPv] of passCalls) {
+      expect(multiPv).toBe(1);
+      for (const fen of fens) expect(gameCall?.[0]).not.toContain(fen);
+    }
   });
 
   // The planner's own HttpError-vs-generic-error handling moved with it to

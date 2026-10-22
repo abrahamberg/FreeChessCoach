@@ -7,7 +7,7 @@ import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { EngineUnavailableError, HttpError } from '../lib/errors.js';
-import { analyzeInChunks } from './analysis-chunks.js';
+import { analyzeReviewEvals } from './analysis-chunks.js';
 import type { AnalysisJobDependencies } from './analysis-deps.js';
 import { runAnalysisSteps, type AnalysisStepsResult } from './analysis-steps.js';
 import { refutedComparisons } from './deep-comparison.js';
@@ -58,11 +58,11 @@ export async function runAnalyzeGameJob(
 
     const parsedGame = parsePgn(game.pgn);
     plies = Math.max(0, parsedGame.positions.length - 1);
-    const fens = parsedGame.positions.map((position) => position.fen);
-    const evals = await timer.timed('engine', () => analyzeInChunks(db, counted.deps, analysis.id, fens));
+    const evals = await timer.timed('engine', () => analyzeReviewEvals(db, counted.deps, analysis.id, parsedGame));
     // The pass scans (`pass-scan.ts`) are an in-memory second request: never
-    // stored, so the stored evals stay the game's own positions.
-    const passEvals = await timer.timed('passScan', () => scanPasses(counted.deps.analyzeGamePositions, [parsedGame.positions]));
+    // stored, so the stored evals stay the game's own positions. Their
+    // reader (`inZugzwang`) reads the first line only.
+    const passEvals = await timer.timed('passScan', () => scanPasses((passFens) => counted.deps.analyzeGamePositions(passFens, 1), [parsedGame.positions]));
     const analyzeDeep = counted.deps.analyzeDeepPositions;
     const refutedComparisonPlies = analyzeDeep
       ? await timer.timed('deepCheck', () =>
@@ -143,9 +143,9 @@ function countingEngine(deps: AnalysisJobDependencies): { deps: AnalysisJobDepen
   let calls = 0;
   return {
     deps: {
-      analyzeGamePositions: (fens) => {
+      analyzeGamePositions: (fens, multiPv) => {
         calls += 1;
-        return deps.analyzeGamePositions(fens);
+        return deps.analyzeGamePositions(fens, multiPv);
       },
       ...(deps.analyzeDeepPositions ? { analyzeDeepPositions: deps.analyzeDeepPositions } : {})
     },
