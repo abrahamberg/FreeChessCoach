@@ -7,6 +7,7 @@ Moves:
 n1 21.Qxd7+ (White, Line A) | great | before: White has a forced mate → after: White has a forced mate
     board: moves the queen from a4 to d7 | captures the pawn on d7 | gives check | the check can be answered: no block; take the checking piece with Kxd7; move the king with Kf8 | attacks the knight on e7 | leaves the white queen on d7 hanging
     ideas: stops the mate threat Qxg2# | sacrifices the queen on d7: it can be taken, and the engine still approves | attacks the knight on e7 3 times, while it is defended once | settles the queen on d7 on a square by the king that no pawn can cover any more | controls d5 | leaves Black with an isolated pawn on c7 | defends the bishop on d3, attacked once and now defended twice
+    notes: Won the knight, giving back a queen.
     tactics: You forced mate.
     alternatives: Qe4 (threatens mate with Qxe7#; pins the knight on e7 to the king; attacks the knight on e7 3 times, while it is defended once): Black has a forced mate, after Qxf2+ Kh1 Qxg2+ Qxg2; Qg4 (threatens to win the queen on f3 with gxf3; aims at the pawn on d7, which only the king defends): Black has a forced mate, after Qxf2+ Kh1 Qxg2+ Qxg2
     tempting capture: fxe7? White's fxe7 moves the pawn from f6 to e7 | captures the knight on e7. Black answers Qxg2#: moves the queen from f3 to g2 | captures the pawn on g2 | gives checkmate | why it is mate: the king on g1 is checked by the queen on g2; f2, h2 hold its own pieces; f1 and h1 are covered by the queen on g2; the queen on g2 is guarded by the rook on g8 and the bishop on b7. Over the line White takes a knight; Black takes a pawn; at the end Black is a rook up (Black has a forced mate in 1).
@@ -18,6 +19,7 @@ n1 21.Qxd7+ (White, Line A) | great | before: White has a forced mate → after:
 n2 21…Kxd7 (Black, Line A) | best | before: White has a forced mate → after: White has a forced mate in 3
     board: moves the king from e8 to d7 | captures the queen on d7 | leaves the black pawn on h7 hanging
     ideas: threatens mate with Qxg2# | after the exchange White has two pawns for a queen, a rook and a knight
+    notes: Recaptures the queen on d7
     alternatives: Kf8 (threatens mate with Qxg2#; leaves the knight on e7 pinned to the king): White has a forced mate in 1, after Qxe7#
 n3 22.Bf5+ (White, Line A) | great | before: White has a forced mate in 3 → after: White has a forced mate in 2
     piece: the light-squared bishop

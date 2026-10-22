@@ -23,6 +23,7 @@ n4 2…Ke8 (Black, Line A) | best | before: White is winning → after: White is
 n5 3.e7 (White, Line A) | great | before: White is winning → after: White is winning
     board: moves the pawn from e6 to e7
     ideas: pushes the passed pawn to e7, 1 square from queening
+    notes: The only winning move
     alternatives: Kf5: The position is roughly equal, after Ke7 Ke5 Ke8 Kf6; Ke5: The position is roughly equal, after Ke7 Kd5 Ke8 Ke4
     flags: quiz-eligible, critical
 n6 3…Kd7 (Black, Line A) | forced | before: White is winning → after: White is winning
@@ -31,6 +32,7 @@ n6 3…Kd7 (Black, Line A) | forced | before: White is winning → after: White 
 n7 4.Kf7 (White, Line A) | great | before: White is winning → after: White is winning
     board: moves the king from f6 to f7 | takes the opposition: the kings face each other with one square between, and the other king must give way
     ideas: marches the king into the enemy half, to f7 | prepares e8=Q, which it now supports
+    notes: The only winning move
     alternatives: e8=R: The position is roughly equal, after Kxe8 Ke6 Kd8 Kd6; e8=Q+: The position is roughly equal, after Kxe8 Ke6 Kd8 Kd6
     tempting check: e8=B+? White's e8=B+ moves the pawn from e7 to e8 | promotes to a bishop | gives check | the check can be answered: no block; take the checking piece with Kxe8; move the king with Kc8, Kd8, Kd6, Kc7 | leaves the white bishop on e8 hanging. Black answers Kd6: moves the king from d7 to d6. Then Bf7 Kc6 Bd5+. Over the line nothing is taken; at the end White is a bishop up (The position is roughly equal).
     tempting check: e8=Q+? White's e8=Q+ moves the pawn from e7 to e8 | promotes to a queen | gives check | the check can be answered: no block; take the checking piece with Kxe8; move the king with Kd6, Kc7 | leaves the white queen on e8 hanging. Black answers Kxe8: moves the king from d7 to e8 | captures the queen on e8. Then Ke6 Kd8 Kd6. Over the line Black takes the queen; at the end material is level (The position is roughly equal).

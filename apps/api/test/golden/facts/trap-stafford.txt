@@ -86,6 +86,7 @@ n13 7.Bxd8 (White, Line A) | blunder | before: Black is better → after: Black 
     why Qe2 is better: moves the queen from d1 to e2 | attacks the knight on e4, which is pinned to the king by the queen on e2 | leaves the white bishop on g5 hanging
     board: moves the bishop from g5 to d8 | captures the queen on d8
     ideas: threatens to win the pawn on c7 with Bxc7 | removes the queen on d8, the guard of the pawn on c7 | settles the bishop on d8 on a square by the king that no pawn can cover any more
+    notes: Won a queen, but it allowed mate.
     tactics: They let you force mate in 2 through a mating net with Bxf2+ — closes the net — every answer runs into mate.
     alternatives: Qe2 (pins the knight on e4 to the king; attacks the knight on e4 twice, while nothing defends it; leaves the knight on e4 without a move): Black is better, after Qxg5 f4 Bf2+ Kd1; Be3 (controls d4): Black is much better, after Bxe3 fxe3 Qh4+ g3; d4 (threatens to win the bishop on c5 with dxc5; puts a pawn in the centre on d4; controls c5 and e5): Black is much better, after Qxd4 Qxd4 Bxd4 Bh4
 n14 7…Bxf2+ (Black, Line A) | great | before: Black has a forced mate in 2 → after: Black has a forced mate in 1
@@ -103,6 +104,7 @@ n15 8.Ke2 (White, Line A) | forced | before: Black has a forced mate in 1 → af
 n16 8…Bg4# (Black, Line A) | great | before: Black has a forced mate in 1 → after: checkmate
     piece: the light-squared bishop
     board: moves the bishop from c8 to g4 | gives checkmate | why it is mate: the king on e2 is checked by the bishop on g4; d1, d3, f1 hold its own pieces; d2 is covered by the knight on e4; e1 and e3 are covered by the bishop on f2; f3 is covered by the bishop on g4; the bishop on f2 is guarded by the knight on e4
+    notes: Develops the bishop
     tactics: You delivered checkmate.
     flags: quiz-eligible, critical
 

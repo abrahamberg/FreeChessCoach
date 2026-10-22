@@ -8,6 +8,7 @@ Moves:
 n1 1.Nc7+ (White, Line A) | good | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from b5 to c7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf8, Kf7, Ke7, Kd7, Kd8 | attacks the rook on a8 | the knight on c7 forks the rook on a8 and the king on e8
     ideas: heads for e6, a square no enemy pawn can attack
+    notes: Forks the king on e8 and the rook on a8
     alternatives: Kd2: The position is roughly equal, after Kd8 Nc3 Rb8 Kc2; Ke2: The position is roughly equal, after Kd8 Kd3 Ra5 Nd4; Kf2: The position is roughly equal, after Kf7 Nd4 Rd8
 n2 1…Kd7 (Black, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from e8 to d7 | attacks the knight on c7 | leaves the black rook on a8 hanging
@@ -16,6 +17,7 @@ n2 1…Kd7 (Black, Line A) | excellent | before: The position is roughly equal �
 n3 2.Nxa8 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from c7 to a8 | captures the rook on a8
     ideas: takes the attacked knight to safety on a8 | after the exchange White is a knight up
+    notes: Wins the rook on a8
     alternatives: Nb5: The position is roughly equal, after Ra2 Kf1 Re2 Kxe2; Nd5 (centralises the knight on d5, which reaches 8 squares): The position is roughly equal, after Ra2 Nf4 Re2+ Nxe2
 
 REEL CANDIDATES

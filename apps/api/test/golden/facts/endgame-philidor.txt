@@ -36,6 +36,7 @@ n7 4.Kd6 (White, Line A) | excellent | before: The position is roughly equal →
 n8 4…Rd1+ (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the rook from e1 to d1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc7, Ke5, Kc5, Kc6
     ideas: stops the mate threat Ra8# | puts a rook on the open d-file
+    notes: The only move that holds
     alternatives: Kf8: White is much better, after Ra8+ Kg7 e7 Rd1+; Rxe6+: White is much better, after Kxe6 Kd8 Kd6 Ke8
     flags: quiz-eligible, critical
 n9 5.Ke5 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal

@@ -21,6 +21,7 @@ n13 7.d3 (White, Line A) | inaccuracy | before: White is slightly better → aft
     why Nc3 is better: moves the knight from b1 to c3
     board: moves the pawn from d2 to d3
     ideas: defends the pawn on e4, which was attacked | controls c4 and e4 | supports the centre pawn on e4 | opens the bishop on c1 (from 0 squares to 3)
+    notes: Nc3 was better: it develops the knight
     alternatives: Nc3 (develops the knight to c3, its most useful square; White now has 3 pieces developed to 1 piece; controls d5 and e4): White is slightly better; e5 (attacks the knight on f6; puts a pawn in the centre on e5; controls d6 and f6): The position is roughly equal; Bc4 (moves the bishop for the third time while 2 pieces still wait at home; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal
     flags: critical
 n14 7…Nh5 (Black, Line A) | inaccuracy | before: The position is roughly equal → after: White is slightly better
@@ -28,12 +29,14 @@ n14 7…Nh5 (Black, Line A) | inaccuracy | before: The position is roughly equal
     why c6 is better: moves the pawn from c7 to c6 | attacks the bishop on b5
     board: moves the knight from f6 to h5
     ideas: moves the knight for the second time while 3 pieces still wait at home | prevents g3, a pawn break | defends the pawn on f4, attacked once and now defended twice
+    notes: c6 was better: it attacks the bishop on b5
     alternatives: c6 (attacks the bishop on b5; takes c6 from the knight, whose natural square it is; controls d5): The position is roughly equal; Bc5 (develops the bishop to c5; controls d4; clears the way to castle kingside): The position is roughly equal; Bb7 (attacks the pawn on e4 twice, while it is defended once; develops the bishop to b7; puts pressure on the pawn on e4 and controls d5): The position is roughly equal
 n15 8.Nh4 (White, Line A) | mistake | before: White is slightly better → after: Black is slightly better
     best instead: Rg1; after Rg1, material is level
     why Rg1 is better: moves the rook from h1 to g1
     board: moves the knight from f3 to h4 | allows Qg5, where the queen on g5 forks the bishop on b5 and the knight on h4
     ideas: moves the knight for the second time while 2 pieces still wait at home | opens the queen on d1 (from 3 squares to 6)
+    notes: Allows Qg5, forking the bishop on b5 and the knight on h4
     opens: the queen on d1, from 3 squares to 6
     alternatives: Rg1: White is slightly better; Nc3 (develops the knight to c3, its most useful square; White now has 3 pieces developed to 1 piece; controls d5 and e4): White is slightly better; Ke1: The position is roughly equal
     tempting threat: g4? White's g4 moves the pawn from g2 to g4 | attacks the knight on h5. Black answers Ng3+: moves the knight from h5 to g3 | gives check | the check can be answered: no block; take the checking piece with hxg3; move the king with Kf2, Kg2, Kg1, Ke1 | attacks the rook on h1. Over the line nothing is taken; at the end material is level (Black is better).
@@ -57,6 +60,7 @@ n20 10…Nf6 (Black, Line A) | inaccuracy | before: Black is slightly better →
     why g6 is better: moves the pawn from g7 to g6 | attacks the knight on f5
     board: moves the knight from h5 to f6
     ideas: threatens to win the pawn on g4 with Nxg4 | takes the attacked knight to safety on f6 | puts the knight on f6, the best defender of a king castled short | puts pressure on the pawn on e4 and controls d5 | prepares the pawn's advance to d5, which it now supports
+    notes: g6 was better: it supports the knight on h5 with the pawn
     alternatives: g6 (attacks the knight on f5; controls f5; opens the bishop on f8 (from 5 squares to 7)): Black is slightly better; cxb5 (controls c4; opens the c-file for the rooks (half-open); leaves Black with an isolated pawn on d7): The position is roughly equal; d5 (puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on e4; puts pressure on the pawn on e4 and controls c4): The position is roughly equal
 n21 11.Rg1 (White, Line A) | best
 n22 11…cxb5 (Black, Line A) | mistake | before: The position is roughly equal → after: White is slightly better
@@ -64,11 +68,13 @@ n22 11…cxb5 (Black, Line A) | mistake | before: The position is roughly equal 
     why h5 is better: moves the pawn from h7 to h5
     board: moves the pawn from c6 to b5 | captures the bishop on b5
     ideas: controls c4 | opens the c-file for the rooks (half-open) | leaves Black with an isolated pawn on d7
+    notes: h5 was better: it adds a third attacker to the pawn on g4, which has 2 defenders
     alternatives: h5 (threatens to win the pawn on g4 with hxg4): The position is roughly equal; d5 (threatens to win the pawn on e4 with dxe4; puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on e4): White is slightly better
 n23 12.h4 (White, Line A) | best
 n24 12…Qg6 (Black, Line A) | best | before: White is slightly better → after: White is better
     board: moves the queen from g5 to g6 | attacks the knight on f5 | leaves the black pawn on f4 hanging
     ideas: takes the attacked queen to safety on g6
+    notes: The only move that holds
     alternatives: Qxf5 (attacks the pawn on e4 twice, while it is defended once; puts pressure on the pawn on e4 and controls e5 and d5): White is much better; Qxh4 (leaves White with an isolated pawn on g4): White is much better
     flags: quiz-eligible
 n25 13.h5 (White, Line A) | best
@@ -83,6 +89,7 @@ n28 14…Ng8 (Black, Line A) | inaccuracy | before: White is better → after: W
     why Bb7 is better: moves the bishop from c8 to b7
     board: moves the knight from f6 to g8 | allows Bxf4, where the bishop on f4 forks the knight on b8 and the queen on g5
     ideas: opens the queen on g5 (from 6 squares to 9)
+    notes: Allows Bxf4, forking the knight on b8 and the queen on g5
     opens: the queen on g5, from 6 squares to 9
     alternatives: Bb7 (develops the bishop to b7; puts pressure on the pawn on e4 and controls d5; fianchettoes the bishop on b7, on the long diagonal): White is better; Nc6 (develops the knight to c6, its most useful square; controls e5 and d4): White is better; Nxg4 (threatens to win the pawn on h5 with Qxh5; controls e5; puts the knight on g4 on an outpost no pawn can attack): White is better
     tempting threat: Bc5? Black's Bc5 moves the bishop from f8 to c5 | attacks the rook on g1. White answers Bxf4: moves the bishop from c1 to f4 | captures the pawn on f4 | attacks the knight on b8 | attacks the queen on g5, which is trapped: every square it can reach loses it | the bishop on f4 forks the knight on b8 and the queen on g5. Over the line White takes a pawn; at the end White has a pawn for a bishop (White is better).
@@ -96,12 +103,14 @@ n32 16…Bc5 (Black, Line A) | mistake | before: White is better → after: Whit
     why Qc6 is better: moves the queen from f6 to c6 | attacks the knight on c3 | keeps the pawn on b5 safe: the queen on c6 now defends it
     board: moves the bishop from f8 to c5 | attacks the rook on g1 | leaves the black pawn on b5 hanging
     ideas: threatens to win the rook on g1 with Bxg1 | brings the bishop into the attack: it bears on 2 squares around the king | develops the bishop to c5 | White now has 3 pieces developed to 1 piece | controls d4
+    notes: Leaves the pawn on b5 where it can be won; Qc6 defends it
     alternatives: Qc6 (puts pressure on the pawn on e4 and controls d5): White is better; g5 (attacks the bishop on f4; controls f4; fixes the pawn on g4: it can no longer advance): White is better; h6 (fixes the pawn on h5: it can no longer advance): White is better
 n33 17.Nd5 (White, Line A) | inaccuracy | before: White is much better → after: White is better
     best instead: d4; after d4, White has a pawn for a bishop
     why d4 is better: moves the pawn from d3 to d4 | attacks the bishop on c5 | keeps the pawn on b2 safe
     board: moves the knight from c3 to d5 | attacks the queen on f6 | leaves the white pawn on b2 hanging
     ideas: threatens to win the queen on f6 with Nxf6+ | White now has 3 pieces developed to 1 piece | centralises the knight on d5, which reaches 8 squares | puts the knight on d5 on an outpost no pawn can attack, supported by the pawn on e4 | prepares the pawn's advance to c3, which it now supports
+    notes: Leaves the pawn on b2 undefended
     alternatives: d4 (threatens to win the bishop on c5 with dxc5; puts a pawn in the centre on d4; controls c5 and e5): White is much better; Nxb5 (White now has 3 pieces developed to 1 piece; controls d4; leaves Black with an isolated pawn on a7): White is better; Re1 (controls e4; supports the centre pawn on e4; brings the rook to the e-file, in the centre where files open first): White is better
     tempting capture: Bxb8? White's Bxb8 moves the bishop from f4 to b8 | captures the knight on b8. Black answers Rxb8: moves the rook from a8 to b8 | captures the bishop on b8. Over the line White takes a knight; Black takes a bishop; at the end White has a knight and a pawn for two bishops (Black is slightly better).
     flags: critical
@@ -116,6 +125,7 @@ n35 18.Bd6 (White, Line A) | miss | before: White is better → after: Black is 
     why d4 is better: moves the pawn from d3 to d4 | attacks the bishop on c5 | leaves the white pawn on c2 hanging | leaves the white rook on a1 hanging
     board: moves the bishop from f4 to d6 | attacks the knight on b8 | attacks the bishop on c5 | leaves the white pawn on c2 hanging | leaves the white rook on a1 hanging
     ideas: threatens to win the bishop on c5 with Bxc5 | settles the bishop on d6 on a square by the king that no pawn can cover any more | White now has 3 pieces developed to 1 piece | blockades the pawn on d7
+    notes: Leaves the rook on g1 where it can be won; d4 defends it
     alternatives: d4 (threatens to win the bishop on c5 with dxc5; puts a pawn in the centre on d4; controls c5 and e5): White is better; Re1 (controls e4; supports the centre pawn on e4; brings the rook to the e-file, in the centre where files open first): White is better; Rd1 (brings the rook to the d-file, in the centre where files open first): White is better
     flags: critical
 n36 18…Bxg1 (Black, Line A) | miss | before: Black is better → after: White is better
@@ -124,6 +134,7 @@ n36 18…Bxg1 (Black, Line A) | miss | before: Black is better → after: White 
     why Qxa1+ is better: moves the queen from b2 to a1 | captures the rook on a1 | gives check | the check can be answered: block with Qd1; the checking piece cannot be taken; move the king with Ke2, Kg2
     board: moves the bishop from c5 to g1 | captures the rook on g1
     ideas: removes the rook on g1, a defender of the king | settles the bishop on g1 on a square by the king that no pawn can cover any more | White now has 3 pieces developed to 1 piece
+    notes: Missed Qxa1+, winning material on a1
     alternatives: Qxa1+ (White now has 3 pieces developed to 1 piece): Black is better; Kd8: White is better
     tempting capture: Bxd6? Black's Bxd6 moves the bishop from c5 to d6 | captures the bishop on d6. White answers Nxd6+: moves the knight from f5 to d6 | captures the bishop on d6 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf8, Kd8 | attacks the bishop on c8 | the knight on d6 forks the bishop on c8 and the king on e8. Over the line Black takes a bishop; White takes a bishop; at the end Black is a bishop up (White has a forced mate).
     tempting capture: Qxc2? Black's Qxc2 moves the queen from b2 to c2 | captures the pawn on c2 | leaves the black pawn on g7 hanging. White answers Nxg7+: moves the knight from f5 to g7 | captures the pawn on g7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8. Over the line Black takes a pawn; White takes a pawn; at the end Black is a bishop up (White has a forced mate in 2).
@@ -134,12 +145,14 @@ n37 19.e5 (White, Line A) | blunder | before: White is better → after: Black i
     why Qd1 is better: moves the queen from f3 to d1 | keeps the pawn on c2 safe: the queen on d1 now defends it | keeps the rook on a1 safe: the queen on d1 now defends it
     board: moves the pawn from e4 to e5 | leaves the white pawn on c2 hanging | leaves the white rook on a1 hanging
     ideas: threatens mate in two: Nxg7+ Kd8 Bc7# | threatens to win the pawn on g7 with Nxg7+ | puts a pawn in the centre on e5 | controls f6 | shuts in the bishop on d6 (from 11 squares to 7)
+    notes: Leaves the rook on a1 where it can be won; Qd1 defends it | Qd1 keeps the pawn on c2 safe; after it Black is a rook and a bishop up
     alternatives: Qd1: White is better; Rd1 (brings the rook to the d-file, in the centre where files open first): White is slightly better; Re1 (controls e4; supports the centre pawn on e4; brings the rook to the e-file, in the centre where files open first): White is slightly better
     tempting check: Nc7+? White's Nc7+ moves the knight from d5 to c7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8 | attacks the rook on a8 | the knight on c7 forks the rook on a8 and the king on e8. Black answers Kd8: moves the king from e8 to d8 | attacks the knight on c7 | leaves the black rook on a8 hanging | leaves the black bishop on g1 hanging. Over the line nothing is taken; at the end Black is a rook and a bishop up (The position is roughly equal).
     flags: critical
 n38 19…Qxa1+ (Black, Line A) | great | before: Black is better → after: Black is slightly better
     board: moves the queen from b2 to a1 | captures the rook on a1 | gives check | the check can be answered: block with Qd1; the checking piece cannot be taken; move the king with Ke2, Kg2
     ideas: stops the mate threat Nxg7+ Kd8 Bc7# | removes the rook on a1, a defender of the king | brings the queen into the attack: it bears on 2 squares around the king | takes e1 from the enemy king | White now has 3 pieces developed to 1 piece
+    notes: Wins the rook on a1 | The only winning move
     alternatives: Bb7 (pins the knight on d5 to the queen; develops the bishop to b7; controls d5): The position is roughly equal; Ba6 (develops the bishop to a6): White is better
     tempting capture: Qxe5? Black's Qxe5 moves the queen from b2 to e5 | captures the pawn on e5 | attacks the bishop on d6 | attacks the knight on d5 | attacks the knight on f5 | attacks the rook on a1 | leaves the black queen on e5 hanging | leaves the black bishop on g1 hanging. White answers Nxg7+: moves the knight from f5 to g7 | captures the pawn on g7 | gives check | the check can be answered: no block; take the checking piece with Qxg7; move the king with Kd8 | leaves the white knight on g7 hanging. Over the line Black takes a pawn; White takes a pawn; at the end Black is a rook and a bishop up (White is winning).
     tempting capture: Qxc2? Black's Qxc2 moves the queen from b2 to c2 | captures the pawn on c2 | leaves the black pawn on g7 hanging | leaves the black bishop on g1 hanging. White answers Nxg7+: moves the knight from f5 to g7 | captures the pawn on g7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8. Over the line Black takes a pawn; White takes a pawn; at the end Black is a rook and a bishop up (White has a forced mate in 3).

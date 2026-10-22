@@ -41,6 +41,7 @@ n8 5.Kc7 (White, Line A) | best | before: The position is roughly equal → afte
 n9 5…Na6+ (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from b8 to a6 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc8, Kd8, Kd7, Kd6, Kc6, Kb6
     ideas: takes the attacked knight to safety on a6
+    notes: The only move that holds: the next best, Kg2, loses a knight
     alternatives: Kg2: White is winning, after Kxb8 Kg1 Kc7 Kf1; Kg3: White is winning, after Kxb8 Kf3 Kc7 Ke2
     flags: quiz-eligible, critical
 n10 6.Kb6 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
@@ -50,6 +51,7 @@ n10 6.Kb6 (White, Line A) | best | before: The position is roughly equal → aft
 n11 6…Nb8 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from a6 to b8 | the position has now come twice: a third time is a draw
     ideas: takes the attacked knight to safety on b8 | blockades the pawn on b7
+    notes: The only move that holds
     alternatives: Nb4 (puts the knight on b4 on an outpost no pawn can attack): White is much better, after b8=Q Nc2 Qa8+ Ke3; Nc7: White is winning, after Kxc7 Kf2 b8=Q Ke1
     flags: quiz-eligible, critical
 n12 7.Kc7 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
@@ -59,6 +61,7 @@ n12 7.Kc7 (White, Line A) | excellent | before: The position is roughly equal �
 n13 7…Na6+ (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from b8 to a6 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc8, Kd8, Kd7, Kd6, Kc6, Kb6 | the position has now come twice: a third time is a draw
     ideas: takes the attacked knight to safety on a6
+    notes: The only move that holds: the next best, Nc6, loses a knight
     alternatives: Nc6: White is winning, after Kxc6 Ke2 Kd6 Kf2; Ke2: White is winning, after Kxb8 Kf1 Kc7 Kf2
     flags: quiz-eligible, critical
 

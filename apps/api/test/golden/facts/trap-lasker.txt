@@ -71,6 +71,7 @@ n11 6.Bxb4 (White, Line A) | blunder | before: Black is slightly better → afte
     why fxe3 is better: moves the pawn from f2 to e3 | captures the pawn on e3
     board: moves the bishop from d2 to b4 | captures the bishop on b4
     ideas: takes the attacked bishop to safety on b4 | keeps the king from castling kingside: f8 is covered | opens the queen on d1 (from 8 squares to 15)
+    notes: Missed fxe3, winning material on e3
     opens: the queen on d1, from 8 squares to 15
     alternatives: fxe3 (controls d4 and f4; opens the f-file for the rooks (half-open); leaves White with doubled pawns on the e-file): Black is slightly better, after Qh4+ g3 Qe4 Nf3; Qa4+ (attacks the bishop on b4 twice, while nothing defends it; brings the queen out to a4): Black is better, after Nc6 fxe3 Qh4+ Ke2; a3 (attacks the bishop on b4, which pins the bishop on d2; attacks the bishop on b4 twice, while nothing defends it): Black is much better, after Bxd2+ Nxd2 exd2+ Qxd2
     tempting threat: Bc3? White's Bc3 moves the bishop from d2 to c3 | attacks the bishop on b4. Black answers exf2+: moves the pawn from e3 to f2 | captures the pawn on f2 | gives check | the check can be answered: no block; take the checking piece with Kxf2; move the king with Ke2 | attacks the knight on g1. Then Ke2 fxg1=N+ Ke1. Over the line Black takes a knight and a pawn; at the end Black is two knights up (Black is much better).
@@ -78,6 +79,7 @@ n11 6.Bxb4 (White, Line A) | blunder | before: Black is slightly better → afte
 n12 6…exf2+ (Black, Line A) | great | before: Black is much better → after: Black is much better
     board: moves the pawn from e3 to f2 | captures the pawn on f2 | gives check | the check can be answered: no block; take the checking piece with Kxf2; move the king with Ke2 | attacks the knight on g1
     ideas: gives up the centre: the pawn leaves e3 | opens the e-file for the rooks (half-open) | creates a passed pawn on f2 | leaves White with an isolated pawn on e5 | leaves Black with doubled pawns on the f-file | after the exchange White has a bishop for a pawn
+    notes: Creates a passed pawn on f | Trades pawns on f2
     tactics: You threw in an in-between move — checks first instead of taking back on b4.
     alternatives: Qh4 (threatens mate with Qxf2#; threatens to win the pawn on f2 with exf2+; brings the queen out to h4): White is better, after g3 Qh6 f4 Nc6; Qxd1+ (pins the knight on b1 to the rook; settles the queen on d1 on a square by the king that no pawn can cover any more; brings the queen out to d1): White is better, after Kxd1 Bg4+ f3 Nc6
     flags: quiz-eligible, critical
@@ -97,6 +99,7 @@ n15 8.Rxg1 (White, Line A) | inaccuracy | before: Black is much better → after
     why Ke1 is better: moves the king from e2 to e1
     board: moves the rook from h1 to g1 | captures the knight on g1
     ideas: after the exchange White has a bishop for a knight
+    notes: Recaptures the knight on g1
     alternatives: Ke1: Black is much better, after Qh4+ Kd2 Nc6 Bc3; Ke3: Black is winning, after Qxd1 Rxg1 Nc6 Bd2
 n16 8…Bg4+ (Black, Line A) | best | before: Black is much better → after: Black is much better
     piece: the light-squared bishop
@@ -111,6 +114,7 @@ n17 9.Ke1 (White, Line A) | blunder | before: Black is much better → after: Bl
     why Kf2 is better: moves the king from e2 to f2 | leaves the white queen on d1 hanging
     board: moves the king from e2 to e1
     ideas: threatens to win the bishop on g4 with Qxg4
+    notes: Leaves the queen on d1 where it can be won
     tactics: They let you force mate with Qxd1+.
     alternatives: Kf2 (threatens to win the bishop on g4 with Qxg4): Black is much better, after Bxd1 Bc3 c6 Nd2; Ke3 (threatens to win the bishop on g4 with Qxg4): Black is winning, after Qxd1 Bd2 Nc6 Kf2
 n18 9…Bxd1 (Black, Line A) | miss | before: Black has a forced mate → after: Black is much better
@@ -119,6 +123,7 @@ n18 9…Bxd1 (Black, Line A) | miss | before: Black has a forced mate → after:
     why Qxd1+ is better: moves the queen from d8 to d1 | captures the queen on d1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf2 | attacks the knight on b1
     board: moves the bishop from g4 to d1 | captures the queen on d1
     ideas: takes the attacked bishop to safety on d1 | settles the bishop on d1 on a square by the king that no pawn can cover any more | after the exchange White has a bishop for a queen and a knight
+    notes: Missed a forced mate starting with Qxd1+ | Qxd1+ takes the queen with tempo: it gives check
     tactics: You missed a chance to win a queen through a free piece with Qxd1+ — captures the queen on d1.
     alternatives: Qxd1+ (pins the knight on b1 to the rook; settles the queen on d1 on a square by the king that no pawn can cover any more; brings the queen out to d1): Black has a forced mate, after Kf2 Qd4+ Kg3 Nh6; Qg5 (threatens to win the pawn on e5 with Qxe5+; brings the queen out to g5; puts pressure on the pawn on e5): Black is better, after Qd2 Qxe5+ Be2 Nf6
     tempting check: Qh4+? Black's Qh4+ moves the queen from d8 to h4 | gives check | the check can be answered: block with g3; the checking piece cannot be taken; move the king with Kd2. White answers g3: moves the pawn from g2 to g3 | blocks the check from the queen on h4 | attacks the queen on h4 | leaves the white pawn on h2 hanging. Then Qh5 Qd3 Nc6. Over the line nothing is taken; at the end White has a bishop for a knight (Black is better).

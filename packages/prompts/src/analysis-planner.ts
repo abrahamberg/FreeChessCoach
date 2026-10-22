@@ -127,7 +127,7 @@ function renderMovesTable(moves: ClassifiedMove[], candidates: CandidateMoment[]
 }
 
 function reviewNote(move: ClassifiedMove): string {
-  const texts = reviewMoveTexts(move).map((entry) => entry.text);
+  const texts = reviewMoveTexts(move).filter((entry) => !entry.more).map((entry) => entry.text);
   return texts.length > 0 ? `; ${texts.join('; ')}` : '';
 }
 

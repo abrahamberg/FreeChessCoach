@@ -363,6 +363,11 @@ export const ClassifiedMoveSchema = z.object({
   bestLinePvSan: z.array(z.string()).optional(),
   alternatives: z.array(AlternativeMoveSchema).optional(),
   reasons: z.array(z.string()).optional(),
+  /** Everything checked about the move, as data (`MoveStory` in
+   * chess-analysis, `docs/move-story.md`): what the page renders, and the
+   * course dossier from the same facts. Its types live with its builder;
+   * absent on a move analysed before it. */
+  story: z.record(z.string(), z.unknown()).optional(),
   features: PositionFeaturesSchema.optional(),
   moveFlags: MoveFlagsSchema.optional(),
   featureDelta: FeatureDeltaSchema.optional(),

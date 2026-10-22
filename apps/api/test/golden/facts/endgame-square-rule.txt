@@ -25,6 +25,7 @@ n4 2…Kc4 (Black, Line A) | excellent | before: White is winning → after: Whi
 n5 3.f6 (White, Line A) | great | before: White is winning → after: White is winning
     board: moves the pawn from f5 to f6 | the black king on c4 is outside the pawn's square: it cannot catch the pawn
     ideas: pushes the passed pawn to f6, 2 squares from queening
+    notes: The only winning move
     alternatives: Kg2: The position is roughly equal, after Kd5 Kh3 Ke5 Kg4; Kh2: The position is roughly equal, after Kd5 Kh3 Ke5 Kg4
     flags: quiz-eligible, critical
 n6 3…Kd5 (Black, Line A) | excellent | before: White is winning → after: White is winning
@@ -34,6 +35,7 @@ n6 3…Kd5 (Black, Line A) | excellent | before: White is winning → after: Whi
 n7 4.f7 (White, Line A) | great | before: White is winning → after: White is winning
     board: moves the pawn from f6 to f7 | the black king on d5 is outside the pawn's square: it cannot catch the pawn
     ideas: pushes the passed pawn to f7, 1 square from queening
+    notes: The only winning move
     alternatives: Kg2: The position is roughly equal, after Ke6 Kf3 Kxf6 Kf4; Kh2: The position is roughly equal, after Ke6 Kh3 Kxf6 Kh4
     flags: quiz-eligible, critical
 n8 4…Ke6 (Black, Line A) | excellent | before: White is winning → after: White is winning

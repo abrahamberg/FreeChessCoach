@@ -4,6 +4,7 @@ import { PIECE_NAMES } from '../piece-names.js';
 import { renderBoardFact } from '../board-facts/render.js';
 import { renderMoveIdea } from '../move-ideas/index.js';
 import { CONFIG } from '../config.js';
+import { alternativeText } from '../move-story-text.js';
 import type { CourseDossier, CourseLineFacts, CourseNodeFacts } from './dossier.js';
 import type { CourseTemptingFacts } from './tempting.js';
 
@@ -63,6 +64,8 @@ function renderNode(node: CourseNodeFacts, lineName: string, oneLine: boolean): 
   if (best?.board.length) detail(`why ${best.san} is better`, best.board.map(renderBoardFact).join(' | '));
   if (node.board.length) detail('board', node.board.map(renderBoardFact).join(' | '));
   if (node.ideas.length) detail('ideas', node.ideas.map(renderMoveIdea).join(' | '));
+  // Game Review's own notes (loose pieces, misses, the trade, the principle): what the reader sees.
+  if (node.notes.length) detail('notes', node.notes.join(' | '));
   if (node.opens.length) detail('opens', node.opens.map((each) => `the ${spokenPiece(each.piece, each.square)} on ${each.square}, from ${each.before} squares to ${each.after}`).join('; '));
   if (node.tactics.length) detail('tactics', node.tactics.join(' '));
   if (node.alternatives.length) detail('alternatives', node.alternatives.map(alternativeText).join('; '));
@@ -72,13 +75,6 @@ function renderNode(node: CourseNodeFacts, lineName: string, oneLine: boolean): 
   const flags = [node.quizEligible && 'quiz-eligible', node.critical && 'critical', node.creatorComment && 'creator-comment', ...node.creatorMarks.map((mark) => `creator-${mark}`)].filter(Boolean);
   if (flags.length) detail('flags', flags.join(', '));
   return rows;
-}
-
-/** "Bd6 (blocks the pawn on d7): Black is slightly worse, after d4 exd4 cxd4". */
-function alternativeText(alt: CourseNodeFacts['alternatives'][number]): string {
-  const ideas = alt.ideas.length ? ` (${alt.ideas.map(renderMoveIdea).join('; ')})` : '';
-  const line = alt.line.length ? `, after ${alt.line.join(' ')}` : '';
-  return `${alt.san}${ideas}: ${alt.verdict}${line}`;
 }
 
 /** Each side named, so the model never guesses whose move a fact is: the

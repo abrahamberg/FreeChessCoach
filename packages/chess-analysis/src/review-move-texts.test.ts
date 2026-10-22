@@ -1,5 +1,6 @@
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
+import type { MoveStory } from './move-story.js';
 import { coachReviewTexts, reviewMoveTexts, tacticCardTexts } from './review-move-texts.js';
 
 const move = (patch: Partial<ClassifiedMoveDto>): ClassifiedMoveDto => ({
@@ -37,5 +38,22 @@ describe('coachReviewTexts', () => {
     const noted = coachReviewTexts(move({ quality: 'mistake', reasons: ['Concedes the centre'] }));
     expect(noted).toEqual({ aboutMove: ['Concedes the centre'], bestWasBetter: [] });
     expect(coachReviewTexts(move({ quality: 'mistake' })).bestWasBetter).toEqual(['mistake: better was d4']);
+  });
+});
+
+describe('reviewMoveTexts from a story', () => {
+  const develops = (square: 'c3' | 'f3' | 'e2' | 'd2'): MoveStory['ideas'][number] => ({ kind: 'develops', piece: { piece: 'n', square }, natural: false });
+  const story = (patch: Partial<MoveStory>): Record<string, unknown> => ({ notes: [], ideas: [], alternatives: [], bestInstead: null, ...patch });
+
+  test('a fine move shows its most telling ideas, the rest and the other moves under "more"', () => {
+    const texts = reviewMoveTexts(move({ quality: 'good', story: story({ ideas: [develops('c3'), develops('f3'), develops('e2'), develops('d2')], alternatives: [{ san: 'd4', verdict: 'White is slightly better', ideas: [], line: [] }] }) }));
+    expect(texts.map((each) => [each.kind, Boolean(each.more)])).toEqual([['idea', false], ['idea', false], ['idea', false], ['idea', true], ['alternative', true]]);
+  });
+
+  test('a costly move leads with its fault and the better move, with what that does', () => {
+    const better = { san: 'Re1', verdict: 'White is slightly better', ideas: [], line: ['Nf6'] };
+    const texts = reviewMoveTexts(move({ quality: 'inaccuracy', story: story({ notes: ['Leaves the pawn on a5 where it can be won'], ideas: [develops('c3')], alternatives: [better], bestInstead: { san: 'Re1', line: [], board: [], balance: '' } }) }));
+    expect(texts.map((each) => [each.kind, Boolean(each.more)])).toEqual([['reason', false], ['idea', true], ['better', false]]);
+    expect(texts.at(-1)?.text).toBe('Re1: White is slightly better, after Nf6');
   });
 });

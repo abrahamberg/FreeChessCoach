@@ -59,22 +59,26 @@ n9 5.cxd5 (White, Line A) | best | before: The position is roughly equal → aft
     the book also has: Nf3 (Queen's Gambit Declined: Alekhine Variation); e3 (Queen's Gambit Declined: Capablanca Variation, Anti-Cambridge Springs Variation)
     board: moves the pawn from c4 to d5 | captures the pawn on d5
     ideas: puts a pawn in the centre on d5 | puts pressure on the pawn on e6 and controls c6 | opens the c-file for the rooks (half-open) | leaves White with doubled pawns on the d-file | takes toward the centre
+    notes: Trades pawns on d5
     alternatives: Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after Be7 Rc1 dxc4 e4; e3 (controls d4 and f4; supports the centre pawn on d4; opens the queen on d1 (from 7 squares to 11)): The position is roughly equal, after Be7 Rc1 O-O cxd5
 n10 5…exd5 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from e6 to d5 | captures the pawn on d5
     ideas: puts a pawn in the centre on d5 | controls c4 and e4 | opens the e-file for the rooks (half-open)
+    notes: Recaptures the pawn on d5
     alternatives: h6 (attacks the bishop on g5, which pins the knight on f6): White is slightly better, after Bxf6 Nxf6 dxe6 Bxe6; e5 (puts a pawn in the centre on e5; strikes at the centre: attacks the pawn on d4; puts pressure on the pawn on d4 and controls f4): White is better, after Nf3 exd4 Nxd4 Bc5
 n11 6.Nxd5 (White, Line A) | blunder | before: The position is roughly equal → after: Black is better
     best instead: e3; after e3 h6 Bf4 Bb4 Bd3 O-O, material is level
     why e3 is better: moves the pawn from e2 to e3
     board: moves the knight from c3 to d5 | captures the pawn on d5 | attacks the knight on f6, which is pinned to the queen on d8 by the bishop on g5 | leaves the white knight on d5 hanging
     ideas: centralises the knight on d5, which reaches 8 squares
+    notes: Leaves the knight on d5 undefended | Recaptures the pawn on d5 | Won a pawn, but it cost the bishop.
     tactics: They let you win a knight through a free piece with Nxd5 — captures the knight on d5.
     alternatives: e3 (controls d4 and f4; supports the centre pawn on d4; opens the bishop on f1 (from 0 squares to 5)): The position is roughly equal, after h6 Bf4 Bb4 Bd3; Qc2 (brings the queen out to c2; controls e4; clears the way to castle queenside): The position is roughly equal, after c6 e3 Be7 Bd3; Rc1 (puts a rook on the half-open c-file): The position is roughly equal, after c6 e3 Be7 Bd3
     flags: critical
 n12 6…Nxd5 (Black, Line A) | great | before: Black is better → after: Black is better
     board: moves the knight from f6 to d5 | captures the knight on d5
     ideas: threatens to win the bishop on g5 with Qxg5 | centralises the knight on d5, which reaches 8 squares | prepares the pawn's advance to f6, which it now supports
+    notes: Recaptures the knight on d5
     tactics: You broke the pin — the knight on f6 is free to move again.
     alternatives: h6 (attacks the bishop on g5, which pins the knight on f6): White is slightly better, after Bxf6 Nxf6 Nc3 c5; c6 (attacks the knight on d5; attacks the knight on d5 twice, while nothing defends it; controls d5): White is slightly better, after Nc3 Qb6 Bc1 c5
     tempting threat: Nb6? Black's Nb6 moves the knight from d7 to b6 | attacks the knight on d5. White answers Nc3: moves the knight from d5 to c3. Then Bb4 a3. Over the line nothing is taken; at the end White is a pawn up (White is slightly better).
@@ -83,6 +87,7 @@ n13 7.Bxd8 (White, Line A) | best | before: Black is better → after: Black is 
     piece: the dark-squared bishop
     board: moves the bishop from g5 to d8 | captures the queen on d8
     ideas: settles the bishop on d8 on a square by the king that no pawn can cover any more | after the exchange White has a queen and a pawn for a knight
+    notes: Wins the queen for the bishop on d8
     alternatives: Bd2: Black is better, after Bb4 Bxb4 Nxb4 a3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): Black is much better, after Qxg5 Nxg5 Bb4+ Qd2
 n14 7…Bb4+ (Black, Line A) | great | before: Black is better → after: Black is better
     piece: the dark-squared bishop
@@ -98,10 +103,12 @@ n16 8…Bxd2+ (Black, Line A) | best | before: Black is better → after: Black 
     piece: the dark-squared bishop
     board: moves the bishop from b4 to d2 | captures the queen on d2 | gives check | the check can be answered: no block; take the checking piece with Kxd2; move the king with Kd1
     ideas: settles the bishop on d2 on a square by the king that no pawn can cover any more | Black now has 3 pieces developed to 1 piece
+    notes: Wins the queen for the bishop on d2
     alternatives: Kxd8 (Black now has 3 pieces developed to 0 pieces): Black is better, after e4 Bxd2+ Kxd2 Nb4; f6 (controls e5): The position is roughly equal, after e4 Kxd8 exd5 Re8+
 n17 9.Kxd2 (White, Line A) | best | before: Black is better → after: Black is better
     board: moves the king from e1 to d2 | captures the bishop on d2 | leaves the white bishop on d8 hanging
     ideas: brings the king toward the centre, a strong piece in the ending | prepares the pawn's advance to e3, which it now supports
+    notes: Recaptures the bishop on d2
     alternatives: Kd1: Black is much better, after Be3 fxe3 Kxd8 e4
 n18 9…Kxd8 (Black, Line A) | great | before: Black is better → after: Black is better
     board: moves the king from e8 to d8 | captures the bishop on d8

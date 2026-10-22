@@ -28,6 +28,9 @@ export function reviewSource(kind: ReviewTextKind, text: string, move: Classifie
   if (kind === 'opportunity') return `review:tactic-opportunity:${move.tacticOpportunity?.found ? 'found' : 'missed'}:${move.tacticOpportunity?.type ?? '?'}`;
   if (kind === 'opening') return 'review:opening';
   if (kind === 'betterWas') return 'review:better-was';
+  if (kind === 'better') return 'review:better';
+  if (kind === 'alternative') return 'review:alternative';
+  if (kind === 'idea') return 'review:idea';
   return `review:reason:${REASON_TEMPLATES.find(([pattern]) => pattern.test(text))?.[1] ?? 'other'}`;
 }
 

@@ -5,7 +5,7 @@ import { moveIdeas, renderMoveIdea, type MoveIdea, type MoveIdeaKind } from './m
 
 /** What a move that cost something did wrong, among the ideas: said after
  * the fault notes, never instead of them. */
-const FAULT_KINDS: ReadonlySet<MoveIdeaKind> = new Set([
+export const FAULT_KINDS: ReadonlySet<MoveIdeaKind> = new Set([
   'weakensShield', 'shutsIn', 'opensEnemyLine', 'movesAgain', 'earlyQueen', 'blocksPawn', 'takesKnightSquare', 'losesCastling', 'givesUpCentre', 'leavesKing'
 ]);
 
@@ -43,4 +43,4 @@ export function faultIdeaSentences(ideas: readonly MoveIdea[], small: boolean): 
 /** The fault is the story on a costly move (the owner's rule for pins and
  * kicks, Tasks 126.2–3); only a mate threatened or stopped, or a sound
  * sacrifice, is said beside it. */
-const POINT_KINDS: ReadonlySet<MoveIdeaKind> = new Set(['threatensMate', 'stopsMate', 'sacrifices']);
+export const POINT_KINDS: ReadonlySet<MoveIdeaKind> = new Set(['threatensMate', 'stopsMate', 'sacrifices']);

@@ -94,6 +94,7 @@ n13 7.Bc4 (White, Classical Scotch) | excellent | before: The position is roughl
 n14 7…Ne5 (Black, Classical Scotch) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the knight from c6 to e5 | attacks the bishop on c4
     ideas: threatens to win the bishop on c4 with Nxc4 | centralises the knight on e5, which reaches 8 squares | defends the pawn on f7, attacked once and now defended 3 times | prepares the pawn's advance to c6, which it now supports | heads for d3, a square no enemy pawn can attack
+    notes: Concedes the centre
     alternatives: d6 (controls e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after O-O Ne5 Be2 Qg6; O-O (castles kingside: the king goes to safety and the rook comes to f8): The position is roughly equal, after O-O d6 Kh1 Ne5
 n15 8.Be2 (White, Classical Scotch) | best | before: The position is roughly equal → after: The position is roughly equal
     piece: the light-squared bishop
@@ -188,6 +189,7 @@ n31 6…Nf6 (Black, Scotch Gambit) | inaccuracy | before: Black is slightly bett
     why Bg4 is better: moves the bishop from c8 to g4 | attacks the knight on f3, which is pinned to the queen on d1 by the bishop on g4
     board: moves the knight from g8 to f6
     ideas: threatens to win the pawn on e4 with Nxe4 | puts the knight on f6, the best defender of a king castled short | develops the knight to f6, its most useful square | puts pressure on the pawn on e4 and controls d5 | shuts in the queen on d8 (from 5 squares to 2) | clears the way to castle kingside | prepares the pawn's advance to d5, which it now supports
+    notes: Nf6 cuts off the queen on d8, from 5 squares to 2; Bg4 keeps it open
     alternatives: Bg4 (pins the knight on f3 to the queen; develops the bishop to g4): Black is slightly better, after Qb3 Bxf3 Bxf7+ Kf8; Qf6 (brings the queen out to f6; brings the queen out early, with 2 pieces still at home; controls e5 and d4): The position is roughly equal, after Bb5 Bg4 Bxc6+ bxc6; dxc3 (gives up the centre: the pawn leaves d4; opens the bishop on c5 (from 3 squares to 6); leaves Black with doubled pawns on the c-file): The position is roughly equal, after Qb3 Be6 Bxe6 fxe6
 
 REEL CANDIDATES

@@ -8,6 +8,7 @@ Moves:
 n1 1…Ke7 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from e8 to e7 | takes the opposition: the kings face each other with one square between, and the other king must give way
     ideas: brings the king toward the centre, a strong piece in the ending
+    notes: The only move that holds
     alternatives: Kf7: White is winning, after Kd6 Kf6 e5+ Kg5; Kf8: White is winning, after Kd6 Kf7 e5 Kg7
     flags: quiz-eligible, critical
 n2 2.Kf5 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
@@ -16,6 +17,7 @@ n2 2.Kf5 (White, Line A) | best | before: The position is roughly equal → afte
     alternatives: Kd5: The position is roughly equal, after Kd7 e5 Ke7 e6; Kf4: The position is roughly equal, after Kf6 e5+ Ke7 Kf5
 n3 2…Kf7 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from e7 to f7 | takes the opposition: the kings face each other with one square between, and the other king must give way
+    notes: The only move that holds
     alternatives: Kf8: White is winning, after Ke6 Kg7 e5 Kg6; Kd6: White is winning, after Kf6 Kc5 e5 Kd4
     flags: quiz-eligible, critical
 n4 3.e5 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
@@ -24,6 +26,7 @@ n4 3.e5 (White, Line A) | excellent | before: The position is roughly equal → 
     alternatives: Kg5: The position is roughly equal, after Ke6 Kf4 Kf6 e5+; Ke5: The position is roughly equal, after Ke7 Kf5 Kf7 e5
 n5 3…Ke7 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from f7 to e7
+    notes: The only move that holds
     alternatives: Kg7: White is winning, after Ke6 Kg6 Kd6 Kf5; Kf8: White is winning, after Kf6 Kg8 Ke6 Kg7
     flags: quiz-eligible, critical
 n6 4.e6 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
@@ -32,6 +35,7 @@ n6 4.e6 (White, Line A) | best | before: The position is roughly equal → after
     alternatives: Kg5: The position is roughly equal, after Ke6 Kf4 Ke7 Kf5; Kg4: The position is roughly equal, after Ke6 Kf4 Ke7 Kf5
 n7 4…Ke8 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from e7 to e8
+    notes: The only move that holds
     alternatives: Kd8: White is winning, after Kf6 Kc7 e7 Kb7; Kd6: White is winning, after Kf6 Kc7 e7 Kb7
     flags: quiz-eligible, critical
 n8 5.Kf6 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
@@ -40,6 +44,7 @@ n8 5.Kf6 (White, Line A) | excellent | before: The position is roughly equal →
     alternatives: Ke5: The position is roughly equal, after Ke7 Kd5 Ke8 Kc6; Kg6: The position is roughly equal, after Ke7 Kf5 Ke8 Ke5; Kg4: The position is roughly equal, after Kf8 Kf5 Ke8 Ke5
 n9 5…Kf8 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from e8 to f8 | takes the opposition: the kings face each other with one square between, and the other king must give way
+    notes: The only move that holds
     alternatives: Kd8: White is winning, after Kf7 Kc7 e7 Kb6
     flags: quiz-eligible, critical
 n10 6.e7+ (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
@@ -48,10 +53,12 @@ n10 6.e7+ (White, Line A) | excellent | before: The position is roughly equal �
     alternatives: Kf5: The position is roughly equal, after Ke7 Ke5 Ke8 Kd6; Ke5: The position is roughly equal, after Ke7 Kd5 Ke8 Kd6; Kg6: The position is roughly equal, after Ke7 Kf5 Ke8 Ke5
 n11 6…Ke8 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     board: moves the king from f8 to e8
+    notes: The only move that holds: the next best, Kg8, gets mated
     alternatives: Kg8: White has a forced mate in 2, after Kg6 Kh8 e8=Q#
     flags: quiz-eligible, critical
 n12 7.Ke6 (White, Line A) | excellent | before: The position is roughly equal → after: stalemate
     board: moves the king from f6 to e6
+    notes: Stalemate: Black has no legal move, so the game is a draw
     alternatives: Kf5: The position is roughly equal, after Kxe7 Ke5 Kf7 Kd6; Kg6: The position is roughly equal, after Kxe7 Kg7 Ke6 Kf8; Ke5: The position is roughly equal, after Kxe7 Kd4 Kd8 Kc5
 
 REEL CANDIDATES

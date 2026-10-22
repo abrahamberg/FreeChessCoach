@@ -16,6 +16,7 @@ n1 1…Rg2+ (Black, Line A) | brilliant | before: The position is roughly equal 
     flags: quiz-eligible, critical
 n2 2.Kxg2 (White, Line A) | excellent | before: The position is roughly equal → after: stalemate
     board: moves the king from g3 to g2 | captures the rook on g2
+    notes: Stalemate: Black has no legal move, so the game is a draw
     alternatives: Kh4 (threatens mate in two: Qe5+ Kg8 Qe8#): The position is roughly equal, after Rh2+ Kg5 Rg2+ Kf6; Kf3 (threatens mate in two: Qe5+ Kg8 Qe8#): The position is roughly equal, after Rf2+ Kg3 Rg2+ Kh4; Kf4 (threatens mate in two: Qe5+ Kg8 Qe8#): The position is roughly equal, after Rf2+ Kg5 Rg2+ Kf6
 
 REEL CANDIDATES

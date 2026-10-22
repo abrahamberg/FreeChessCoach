@@ -315,3 +315,19 @@
   background: transparent;
   color: var(--color-on-primary);
 }
+
+/* A move's story beyond the note (MoveNoteContent's StoryNote), folded. */
+.move-explorer__more {
+  margin-top: 8px;
+}
+
+.move-explorer__more-section + .move-explorer__more-section {
+  margin-top: 8px;
+}
+
+.move-explorer__more-title {
+  margin: 8px 0 0;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}

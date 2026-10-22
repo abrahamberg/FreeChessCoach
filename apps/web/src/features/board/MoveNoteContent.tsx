@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { betterWasText, plainReviewReasons } from '@freechesscoach/chess-analysis';
+import { betterWasText, plainReviewReasons, reviewMoveTexts, storyOf, type ReviewText } from '@freechesscoach/chess-analysis';
 import { isImprovableQuality, type ClassifiedMoveDto } from '@freechesscoach/shared';
 import { useMoveAlternatives } from './useMoveAlternatives.js';
 
@@ -17,17 +17,20 @@ export { isImprovableQuality };
  * fallback instead of an empty card for a plain good/excellent move. */
 export function hasMoveNoteText(move: ClassifiedMoveDto, excludeTacticText = false): boolean {
   if (move.quality === 'book') return Boolean(move.reasons?.[0]);
+  if (storyOf(move)) return storyNoteTexts(move, excludeTacticText).length > 0;
   if (excludeTacticText && (move.tacticAllowed || move.tacticOpportunity || move.tacticPrevention)) return true;
   return plainReviewReasons(move, excludeTacticText).length > 0 || betterWasText(move, excludeTacticText) !== null;
 }
 
-/** §11's closing paragraph: a book move's theory label is shown unconditionally
- * via `OpeningLabel` below, not gated behind the notes toggle — so `MoveNote`
- * skips it here to avoid rendering the same "Theory — …" line twice.
+/** A move's notes. A book move's first note is its theory label, shown
+ * unconditionally via `OpeningLabel` below, not gated behind the notes
+ * toggle — so `MoveNote` gives only what follows it (what the move does),
+ * to avoid rendering the same "Theory — …" line twice.
  * `excludeTacticText`: see `plainReviewReasons` (chess-analysis). */
 export function MoveNote({ move, excludeTacticText = false }: { move: ClassifiedMoveDto; excludeTacticText?: boolean }): ReactNode {
-  if (move.quality === 'book') return null;
-  const reasons = plainReviewReasons(move, excludeTacticText);
+  if (storyOf(move)) return <StoryNote texts={storyNoteTexts(move, excludeTacticText)} />;
+  const all = plainReviewReasons(move, excludeTacticText);
+  const reasons = move.quality === 'book' ? all.filter((reason) => reason !== move.reasons?.[0]) : all;
   if (reasons.length > 0) {
     return (
       <ul className="move-explorer__note">
@@ -39,6 +42,59 @@ export function MoveNote({ move, excludeTacticText = false }: { move: Classified
   }
   const better = betterWasText(move, excludeTacticText);
   return better ? <p className="move-explorer__note">{better}</p> : null;
+}
+
+const CARD_KINDS: ReadonlySet<ReviewText['kind']> = new Set(['allowed', 'opportunity', 'prevention']);
+
+/** The story's sentences the note shows (`reviewMoveTexts`): the theory
+ * line is `OpeningLabel`'s, and with `excludeTacticText` the cards are
+ * `TacticReasonList`'s. */
+function storyNoteTexts(move: ClassifiedMoveDto, excludeTacticText: boolean): ReviewText[] {
+  return reviewMoveTexts(move).filter((text) => text.kind !== 'opening' && !(excludeTacticText && CARD_KINDS.has(text.kind)));
+}
+
+/** Under "more", by what they are about. */
+const MORE_SECTIONS: { title: string; kinds: ReadonlySet<ReviewText['kind']> }[] = [
+  { title: 'What the move does', kinds: new Set(['reason', 'idea']) },
+  { title: 'Better was', kinds: new Set(['better']) },
+  { title: 'Other moves the engine considered', kinds: new Set(['alternative']) }
+];
+
+/** The note: what matters about the move, then the rest of its story under
+ * "More about this move" (`docs/move-story.md`). */
+function StoryNote({ texts }: { texts: ReviewText[] }): ReactNode {
+  const shown = texts.filter((text) => !text.more);
+  const more = texts.filter((text) => text.more);
+  if (texts.length === 0) return null;
+  return (
+    <>
+      {shown.length > 0 && (
+        <ul className="move-explorer__note">
+          {shown.map((text) => (
+            <li key={`${text.kind}:${text.text}`}>{text.kind === 'better' ? `Better was ${text.text}` : text.text}</li>
+          ))}
+        </ul>
+      )}
+      {more.length > 0 && (
+        <details className="move-explorer__more">
+          <summary className="move-explorer__notes-summary">More about this move</summary>
+          {MORE_SECTIONS.map(({ title, kinds }) => {
+            const section = more.filter((text) => kinds.has(text.kind));
+            return section.length > 0 ? (
+              <section key={title} className="move-explorer__more-section">
+                <h4 className="move-explorer__more-title">{title}</h4>
+                <ul className="move-explorer__note">
+                  {section.map((text) => (
+                    <li key={`${text.kind}:${text.text}`}>{text.text}</li>
+                  ))}
+                </ul>
+              </section>
+            ) : null;
+          })}
+        </details>
+      )}
+    </>
+  );
 }
 
 /** §11's last trigger row: a book move always shows the opening name/ECO,
@@ -75,7 +131,8 @@ export function AlternativesPanel({ move, hideBestLine }: AlternativesPanelProps
   // this panel then renders nothing at all — so it has to gate the fetch
   // below too, or every best-move ply the student steps past would spend an
   // uncached engine search on runners-up nobody ever sees.
-  const hasSomethingToShow = Boolean(move.bestMoveSan) && move.bestMoveSan !== move.moveSan;
+  // A move with a story says the engine's moves itself, each with what it does (`StoryNote`).
+  const hasSomethingToShow = Boolean(move.bestMoveSan) && move.bestMoveSan !== move.moveSan && !storyOf(move);
   const shouldFetch = hasSomethingToShow && precomputed.length === 0 && Boolean(move.fenBefore);
   const fetched = useMoveAlternatives(move.fenBefore, move.mover, move.bestMoveSan, shouldFetch);
   if (!hasSomethingToShow) return null;

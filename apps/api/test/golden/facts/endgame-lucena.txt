@@ -70,6 +70,7 @@ n16 2…Rh2 (Black, Line B) | mistake | before: White is much better → after: 
     why Rb2 is better: moves the rook from a2 to b2
     board: moves the rook from a2 to h2
     ideas: puts a rook on the open h-file | puts the rook on the seventh rank
+    notes: Would have won the queen, giving back a rook.
     tactics: They missed a chance to take the open file with Rb2 — takes the half-open b-file with the rook.
     alternatives: Rb2 (threatens to win the pawn on b7 with Rxb7; puts a rook on the half-open b-file; puts the rook on the seventh rank): White is much better, after b8=Q Rxb8+ Kxb8 Kc5; Rg2 (puts a rook on the open g-file; puts the rook on the seventh rank): White is winning, after b8=Q Rg8+ Rd8 Rxd8+
 n17 3.b8=Q (White, Line B) | best | before: White is winning → after: White is winning

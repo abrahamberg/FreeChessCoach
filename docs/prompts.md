@@ -688,7 +688,7 @@ THREE PRODUCTS FROM THE SAME MOVES
   tempting moves the dossier lists and say why each fails, the way a strong
   player thinks: checks, captures, threats. "caption" is its on-screen text,
   6 words or fewer, on every move with "video": true.
-- The reel: 30 to 45 seconds, one idea. The first words name the idea ("A
+- The reel: 30 to 61 seconds, one idea. The first words name the idea ("A
   queen sacrifice that wins in the Sicilian"); no greeting, no "today". Short
   lines, the climax slowed down, a specific call to action, and a last line
   that runs straight back into the first.
@@ -955,13 +955,13 @@ Englund Gambit trap for beginners. Make the viewer feel they'd play 6.Bc3 too.
 """
 Learner side: Black
 Learner level: Novice — Around 500–900 chess.com. Knows the rules and basic tactics by name. Biggest wins come from board vision and a consistent blunder-check. Use plain language, no jargon beyond fork/pin/skewer. Show very short lines (a move or two) and always say the idea in words. Celebrate every good habit.
-Budgets: 6 episodes; the YouTube video 3 to 7 minutes, at most 798 spoken words in total.
+Budgets: 6 episodes; the YouTube video 3 to 9.5 minutes, at most 1077 spoken words in total.
 The length is a guide, not a target: speak every point the dossier supports and the principle each stage shows, add nothing to fill time, and a short course makes a short video.
 Make: the course and the YouTube video.
 Speaking budgets, per episode: budgetCourse is how many of its moves speak in the
 course (the moves a learner needs a word on: their key moves, and the opponent's
 where the plan changes); budgetVideo is how many speak in the YouTube video: the important
-moves. Across the whole video, at most 35 moves speak. Neither budget may exceed the episode's moves.
+moves. Across the whole video, at most 47 moves speak. Neither budget may exceed the episode's moves.
 Episode roles: hook, setup, bait, quiz, punish, safety, defence, alternative.
 
 LINES
@@ -1017,69 +1017,91 @@ Moves:
 n1 1.d4 (White, Line A) | book
     book: in book (Queen's Pawn Game)
     board: moves the pawn from d2 to d4
+    ideas: puts a pawn in the centre on d4 | controls c5 and e5 | prevents e5, a pawn advance | opens the bishop on c1 (from 0 squares to 5)
     opens: the dark-squared bishop on c1, from 0 squares to 5
     alternatives: a3: Black is slightly better
 n2 1…e5 (Black, Line A) | book
     book: in book (Englund Gambit)
     board: moves the pawn from e7 to e5 | leaves the black pawn on e5 hanging
+    ideas: offers the pawn on e5: it can be taken, and the engine still approves | puts a pawn in the centre on e5 | strikes at the centre: attacks the pawn on d4 | puts pressure on the pawn on d4 and controls f4 | opens the bishop on f8 (from 0 squares to 5)
     opens: the dark-squared bishop on f8, from 0 squares to 5
-    alternatives: Nc6: White is slightly better
+    alternatives: Nc6 (develops the knight to c6, its most useful square; puts pressure on the pawn on d4 and controls e5): White is slightly better
 n3 2.dxe5 (White, Line A) | book
     book: in book (Englund Gambit)
     board: moves the pawn from d4 to e5 | captures the pawn on e5
+    ideas: puts a pawn in the centre on e5 | controls d6 and f6 | opens the d-file for the rooks (half-open) | opens the queen on d1 (from 2 squares to 6) | leaves White with doubled pawns on the e-file
     opens: the queen on d1, from 2 squares to 6
-    alternatives: d5: Black is slightly better
+    alternatives: d5 (puts a pawn in the centre on d5; controls c6 and e6; gains space: the pawn on d5 takes a natural square from the knight): Black is slightly better
 n4 2…Nc6 (Black, Line A) | book
     book: in book (Englund Gambit)
     the book also has: Qh4 (Englund Gambit: Mosquito Gambit); d6 (Englund Gambit: Hartlaub-Charlick Gambit); f6 (Englund Gambit: Soller Gambit)
     board: moves the knight from b8 to c6
-    alternatives: Na6: White is slightly better
+    ideas: threatens to win the pawn on e5 with Nxe5 | develops the knight to c6, its most useful square | puts pressure on the pawn on e5 and controls d4
+    alternatives: Na6 (develops the knight to a6): White is slightly better
 n5 3.Nf3 (White, Line A) | book
     book: in book (Englund Gambit)
     board: moves the knight from g1 to f3
+    ideas: defends the pawn on e5, which was attacked | puts the knight on f3, the best defender of a king castled short | develops the knight to f3, its most useful square | controls d4 and e5 | supports the centre pawn on e5
     alternatives: e6: Black is slightly better
 n6 3…Qe7 (Black, Line A) | book
     book: in book (Englund Gambit: Main Line)
     the book also has: Bc5 (Englund Gambit: Felbecker Gambit); Nge7 (Englund Gambit: Zilbermints Gambit); f6 (Englund Gambit: Soller Gambit Deferred)
     board: moves the queen from d8 to e7
+    ideas: threatens to win the pawn on e5 with Nxe5 | brings the queen out to e7 | puts pressure on the pawn on e5 | shuts in the bishop on f8 (from 5 squares to 0) | prepares the pawn's advance to d6, which it now supports
     alternatives: Rb8: White is slightly better
 n7 4.Bf4 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     the book also has: Qd5 (Englund Gambit: Stockholm Variation)
     piece: the dark-squared bishop
     board: moves the bishop from c1 to f4 | allows Qb4+, where the queen on b4 forks the bishop on f4 and the king on e1
+    ideas: defends the pawn on e5, which was attacked | develops the bishop to f4 | controls e5 | supports the centre pawn on e5
     alternatives: e6: Black is slightly better
 n8 4…Qb4+ (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from e7 to b4 | gives check | the check can be answered: block with Bd2, Nfd2, c3, Nc3, Nbd2, Qd2; the checking piece cannot be taken; the king cannot move | attacks the bishop on f4 | the queen on b4 forks the bishop on f4 and the king on e1
+    ideas: controls d4 and e4
+    notes: Forks the king on e1 and the bishop on f4
     alternatives: Rb8: White is slightly better
 n9 5.Bd2 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     piece: the dark-squared bishop
     board: moves the bishop from f4 to d2 | blocks the check from the queen on b4 | attacks the queen on b4 | leaves the white pawn on b2 hanging | allows Qxb2, where the queen on b2 forks the rook on a1 and the knight on b1
-    alternatives: Nfd2: Black is slightly better
+    ideas: threatens to win the queen on b4 with Bxb4 | prepares the pawn's advance to c3, which it now supports
+    notes: Concedes the centre
+    alternatives: Nfd2 (leaves the knight on d2 pinned to the king; moves the knight for the second time while 2 pieces still wait at home; controls e4): Black is slightly better
 n10 5…Qxb2 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from b4 to b2 | captures the pawn on b2 | attacks the rook on a1 | attacks the knight on b1 | the queen on b2 forks the rook on a1 and the knight on b1
+    ideas: threatens to win the rook on a1 with Qxa1 | takes the attacked queen to safety on b2 | attacks the pawn on e5 twice, while it is defended once | keeps the king from castling queenside: c1 is covered | puts pressure on the pawn on e5 | opens a line for the opponent's bishop on d2 (from 2 squares to 8) | leaves White with an isolated pawn on a2 and c2
+    notes: Forks the rook on a1 and the knight on b1
     alternatives: Rb8: White is slightly better
 n11 6.Bc3 (White, Line A) | blunder | before: The position is roughly equal → after: Black is winning
     piece: the dark-squared bishop
     best instead: Nc3; after Nc3, material is level
     why Nc3 is better: moves the knight from b1 to c3
     board: moves the bishop from d2 to c3 | attacks the queen on b2
+    ideas: threatens to win the queen on b2 with Bxb2 | defends the pawn on e5, which was attacked | moves the bishop for the third time while 2 pieces still wait at home | controls d4 and e5 | supports the centre pawn on e5 | prevents Nd4, a knight on a strong square | puts the bishop on the long diagonal | opens the queen on d1 (from 1 squares to 7)
+    notes: Missed the only move that holds, Nc3
     opens: the queen on d1, from 1 squares to 7
-    alternatives: Nc3: The position is roughly equal
+    alternatives: Nc3 (develops the knight to c3, its most useful square; White now has 3 pieces developed to 1 piece; controls d5 and e4): The position is roughly equal
     flags: critical
 n12 6…Bb4 (Black, Line A) | great | before: Black is winning → after: Black is winning
     piece: the dark-squared bishop
     board: moves the bishop from f8 to b4 | attacks the bishop on c3, which is pinned to the king by the bishop on b4
-    alternatives: Qb6: The position is roughly equal
+    ideas: threatens to win the bishop on c3 with Bxc3+ | pins the bishop on c3 to the king | develops the bishop to b4 | aims at the king on e1, through the bishop on c3 | shuts in the queen on b2 (from 11 squares to 8)
+    notes: The only winning move
+    alternatives: Qb6 (brings the queen out early, with 3 pieces still at home; controls d4; aims at the pawn on f2, which only the king defends): The position is roughly equal
     flags: quiz-eligible, critical
 n13 7.Qd2 (White, Line A) | best | before: Black is winning → after: Black is winning
     board: moves the queen from d1 to d2
+    ideas: defends the bishop on c3, which was attacked | brings the queen out to d2
     alternatives: e6: Black is winning
 n14 7…Bxc3 (Black, Line A) | best | before: Black is winning → after: Black is winning
     piece: the dark-squared bishop
     board: moves the bishop from b4 to c3 | captures the bishop on c3 | attacks the queen on d2, which is pinned to the king by the bishop on c3
+    ideas: threatens mate with Qc1# | threatens to win the queen on d2 with Bxd2+ | takes the piece that attacked the queen on b2 | pins the queen on d2 to the king | removes the bishop on c3, the guard of the pawn on e5 | attacks the pawn on e5 twice, while it is defended once | leaves the queen on d2 with a single move | settles the bishop on c3 on a square by the king that no pawn can cover any more
+    notes: Trades bishops on c3
     alternatives: Rb8: Black is winning
 n15 8.Qxc3 (White, Line A) | best | before: Black is winning → after: Black is winning
     board: moves the queen from d2 to c3 | captures the bishop on c3 | attacks the knight on c6 | attacks the queen on b2 | the queen stops guarding c1, where Qc1# follows
+    ideas: threatens to win the queen on b2 with Qxb2 | takes the attacked queen to safety on c3 | removes the bishop on c3, the guard of the queen on b2 | controls e5 | supports the centre pawn on e5 | defends the pawn on e5, attacked once and now defended twice
+    notes: Recaptures the bishop on c3
     alternatives: e6: Black is winning
 n16 8…Qc1# (Black, Line A) | best | before: Black is winning → after: checkmate
     board: moves the queen from b2 to c1 | gives checkmate | a back-rank mate | why it is mate: the king on e1 is checked by the queen on c1; e2, f1, f2 hold its own pieces; d1 and d2 are covered by the queen on c1
@@ -1112,7 +1134,7 @@ The plan's key moves: n11
 Quiz: the answer is n12. The app shows the position before it, says quiz.scene, then quiz.prompt, and pauses 3s; the video's moves start at the answer and reveal it.
 Every plies nodeId is one of: n11 (6. Bc3). n10 in the dossier is the move before, for context only: no line on it.
 Speaking budget: at most 1 moves with "course": true, at most 1 with "video": true.
-Video words: at most 199 spoken in this episode's part of the video, at most 45 per move; every video move has a caption of at most 6 words. Fewer is fine when there is less to say.
+Video words: at most 269 spoken in this episode's part of the video, at most 45 per move; every video move has a caption of at most 6 words. Fewer is fine when there is less to say.
 The bait is the one place to take room: its video line has at least 30 words, and each tempting "why" at least 25, in whole sentences. The whys have their own room: they do not count against this episode's video words.
 Say every line as the coach in VOICE would.
 
@@ -1125,18 +1147,24 @@ l1 "Line A" | opening: Englund Gambit: Main Line | leaves book at n7
 Moves:
 n10 5…Qxb2 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from b4 to b2 | captures the pawn on b2 | attacks the rook on a1 | attacks the knight on b1 | the queen on b2 forks the rook on a1 and the knight on b1
+    ideas: threatens to win the rook on a1 with Qxa1 | takes the attacked queen to safety on b2 | attacks the pawn on e5 twice, while it is defended once | keeps the king from castling queenside: c1 is covered | puts pressure on the pawn on e5 | opens a line for the opponent's bishop on d2 (from 2 squares to 8) | leaves White with an isolated pawn on a2 and c2
+    notes: Forks the rook on a1 and the knight on b1
     alternatives: Rb8: White is slightly better
 n11 6.Bc3 (White, Line A) | blunder | before: The position is roughly equal → after: Black is winning
     piece: the dark-squared bishop
     best instead: Nc3; after Nc3, material is level
     why Nc3 is better: moves the knight from b1 to c3
     board: moves the bishop from d2 to c3 | attacks the queen on b2
+    ideas: threatens to win the queen on b2 with Bxb2 | defends the pawn on e5, which was attacked | moves the bishop for the third time while 2 pieces still wait at home | controls d4 and e5 | supports the centre pawn on e5 | prevents Nd4, a knight on a strong square | puts the bishop on the long diagonal | opens the queen on d1 (from 1 squares to 7)
+    notes: Missed the only move that holds, Nc3
     opens: the queen on d1, from 1 squares to 7
-    alternatives: Nc3: The position is roughly equal
+    alternatives: Nc3 (develops the knight to c3, its most useful square; White now has 3 pieces developed to 1 piece; controls d5 and e4): The position is roughly equal
     flags: critical
 n12 6…Bb4 (Black, Line A) | great | before: Black is winning → after: Black is winning
     piece: the dark-squared bishop
     board: moves the bishop from f8 to b4 | attacks the bishop on c3, which is pinned to the king by the bishop on b4
-    alternatives: Qb6: The position is roughly equal
+    ideas: threatens to win the bishop on c3 with Bxc3+ | pins the bishop on c3 to the king | develops the bishop to b4 | aims at the king on e1, through the bishop on c3 | shuts in the queen on b2 (from 11 squares to 8)
+    notes: The only winning move
+    alternatives: Qb6 (brings the queen out early, with 3 pieces still at home; controls d4; aims at the pawn on f2, which only the king defends): The position is roughly equal
     flags: quiz-eligible, critical
 ```

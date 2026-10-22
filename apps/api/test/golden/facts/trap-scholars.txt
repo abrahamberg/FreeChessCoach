@@ -34,6 +34,7 @@ n5 3.Qh5 (White, Line A) | inaccuracy | before: The position is roughly equal �
     why Nf3 is better: moves the knight from g1 to f3
     board: moves the queen from d1 to h5
     ideas: threatens mate with Qxf7# | threatens to win the pawn on f7 with Bxf7+ | brings the queen out to h5 | brings the queen out early, with 3 pieces still at home | puts pressure on the pawn on e5 | aims at the king on e8, through the pawn on f7
+    notes: Nf3 was better: it develops the knight, which the early Qh5 puts off
     alternatives: Nf3 (develops the knight to f3, its most useful square; puts pressure on the pawn on e5 and controls d4; clears the way to castle kingside): The position is roughly equal, after d6 c3 Nf6 Ng5; d3 (controls e4; supports the centre pawn on e4; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after Nf6 a4 Bc5 Nf3; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nf6 d3 Na5 Bg5
     flags: critical
 n6 3…Nf6 (Black, Line A) | blunder | before: The position is roughly equal → after: White has a forced mate in 1

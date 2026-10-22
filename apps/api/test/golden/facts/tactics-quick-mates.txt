@@ -54,6 +54,7 @@ n8 4…g6 (Black, Legal's Mate) | mistake | before: White is slightly better →
     why Nc6 is better: moves the knight from b8 to c6
     board: moves the pawn from g7 to g6
     ideas: loosens the pawns in front of the king: no pawn can cover f6 and h6 any more | controls f5 | opens the bishop on f8 (from 1 squares to 3) | prepares the pawn's advance to f5, which it now supports | makes room for the bishop on f8 to fianchetto on g7
+    notes: Nc6 was better: it develops the knight
     tactics: They let you win a pawn through a free piece with Nxe5 — captures the pawn on e5.
     alternatives: Nc6 (develops the knight to c6, its most useful square; controls e5 and d4; supports the centre pawn on e5): White is slightly better, after h3 Bxf3 Qxf3 Qd7; Nf6 (develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5; shuts in the queen on d8 (from 6 squares to 3)): White is slightly better, after h3 Bxf3 Qxf3 Be7; Be7 (develops the bishop to e7; shuts in the queen on d8 (from 6 squares to 2)): White is slightly better, after h3 Bxf3 Qxf3 Nf6
     flags: critical
@@ -70,6 +71,7 @@ n10 5…Bxd1 (Black, Legal's Mate) | blunder | before: White is better → after
     why dxe5 is better: moves the pawn from d6 to e5 | captures the knight on e5 | leaves the black bishop on g4 hanging
     board: moves the bishop from g4 to d1 | captures the queen on d1
     ideas: threatens to win the pawn on c2 with Bxc2 | removes the queen on d1, the guard of the pawn on c2 | settles the bishop on d1 on a square by the king that no pawn can cover any more | White now has 3 pieces developed to 1 piece
+    notes: Won a queen, but it allowed mate.
     tactics: They let you force mate in 2 through a mating net with Bxf7+ — closes the net — every answer runs into mate.
     alternatives: dxe5 (puts a pawn in the centre on e5; controls d4 and f4; opens the d-file for the rooks (half-open)): White is better, after Qxg4 Nc6 Bb5; Be6 (White now has 3 pieces developed to 1 piece; controls d5): White is better, after Bxe6 dxe5 Bb3 Nc6; d5 (threatens to win the bishop on c4 with dxc4; puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on e4): White is better, after Bb5+ c6 Nxg4 cxb5
 n11 6.Bxf7+ (White, Legal's Mate) | great | before: White has a forced mate in 2 → after: White has a forced mate in 1
@@ -114,6 +116,7 @@ n16 3.Qh5 (White, Scholar's Mate) | inaccuracy | before: The position is roughly
     why Nf3 is better: moves the knight from g1 to f3
     board: moves the queen from d1 to h5
     ideas: threatens mate with Qxf7# | threatens to win the pawn on f7 with Bxf7+ | brings the queen out to h5 | brings the queen out early, with 3 pieces still at home | puts pressure on the pawn on e5 | aims at the king on e8, through the pawn on f7
+    notes: Nf3 was better: it develops the knight, which the early Qh5 puts off
     alternatives: Nf3 (develops the knight to f3, its most useful square; puts pressure on the pawn on e5 and controls d4; clears the way to castle kingside): The position is roughly equal, after d6 c3 Nf6 Ng5; d3 (controls e4; supports the centre pawn on e4; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after Nf6 a4 Bc5 Nf3; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nf6 d3 Na5 Bg5
     tempting check: Bxf7+? White's Bxf7+ moves the bishop from c4 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; take the checking piece with Kxf7; move the king with Ke7 | attacks the knight on g8 | leaves the white bishop on f7 hanging. Black answers Kxf7: moves the king from e8 to f7 | captures the bishop on f7. Then Nc3 Nf6 Nf3. Over the line White takes a pawn; Black takes a bishop; at the end White has a pawn for a bishop (Black is better).
     flags: critical

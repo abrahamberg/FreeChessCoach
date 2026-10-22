@@ -44,6 +44,7 @@ n7 4.Bc4 (White, Line A) | inaccuracy | before: The position is roughly equal �
     why Bb5 is better: moves the bishop from f1 to b5 | attacks the knight on c6
     board: moves the bishop from f1 to c4
     ideas: develops the bishop to c4 | controls d5 | prevents d5, a pawn break | aims at the pawn on f7, which only the king defends | clears the way to castle kingside
+    notes: Bb5 was better: it develops the bishop and attacks the knight on c6
     alternatives: Bb5 (develops the bishop to b5; clears the way to castle kingside): The position is roughly equal, after Bb4 O-O O-O Re1; d4 (threatens to win the pawn on e5 with dxe5; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 Nxd4 Bb4 Nxc6; Be2 (develops the bishop to e2; clears the way to castle kingside): The position is roughly equal, after d5 exd5 Nxd5 O-O
 n8 4…Nxe4 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Four Knights Game: Italian Variation)
@@ -57,11 +58,13 @@ n9 5.Nxe4 (White, Line A) | best | before: The position is roughly equal → aft
     the book also has: Bxf7+ (Four Knights Game: Italian Variation, Noa Gambit)
     board: moves the knight from c3 to e4 | captures the knight on e4 | allows d5, where the pawn on d5 forks the bishop on c4 and the knight on e4
     ideas: White now has 3 pieces developed to 1 piece | centralises the knight on e4, which reaches 8 squares | after the exchange White has a knight for a pawn
+    notes: Recaptures the knight on e4
     alternatives: Qe2 (attacks the knight on e4 twice, while nothing defends it; brings the queen out to e2; controls e4): Black is slightly better, after Nxc3 bxc3 d6 d4; Bd5 (attacks the knight on e4 twice, while nothing defends it; moves the bishop for the second time while 1 piece still wait at home; controls e4): Black is slightly better, after Nxc3 bxc3 d6 O-O
 n10 5…d5 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Italian Game: Two Knights Defense)
     board: moves the pawn from d7 to d5 | attacks the bishop on c4 | attacks the knight on e4 | the pawn on d5 forks the bishop on c4 and the knight on e4
     ideas: attacks the bishop on c4 | puts a pawn in the centre on d5 | controls c4 and e4 | opens the bishop on c8 (from 0 squares to 5)
+    notes: Won the knight, giving back a pawn.
     opens: the light-squared bishop on c8, from 0 squares to 5
     tactics: You won a bishop through a fork two moves away — pawn on d5 forks the bishop on c4 and the knight on e4.
     alternatives: Bb4 (develops the bishop to b4; aims at the king on e1, through the pawn on d2; clears the way to castle kingside): White is better, after Bb5 d5 Bxc6+ bxc6; Be7 (develops the bishop to e7; clears the way to castle kingside): White is better, after Nc3 O-O d3 Nd4

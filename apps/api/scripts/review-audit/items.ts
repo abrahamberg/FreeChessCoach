@@ -110,7 +110,7 @@ function reviewDrafts(move: ClassifiedMoveDto, position: AuditPosition): Draft[]
     if (kind === 'allowed' && reply) context.push(...compact([play(fenAfter, reply)]));
     if (kind === 'prevention' && move.tacticPrevention?.threatSan) context.push(...compact([threatFen(fenBefore, move.tacticPrevention.threatSan)]));
     if (kind === 'opportunity' && (move.tacticOpportunity?.embodiedBySan ?? best)) context.push(...compact([play(fenBefore, move.tacticOpportunity?.embodiedBySan ?? best ?? '')]));
-    if (kind === 'reason' || kind === 'betterWas') context.push(...namedMoveFens(text, fenBefore, fenAfter));
+    if (kind === 'reason' || kind === 'betterWas' || kind === 'idea' || kind === 'better' || kind === 'alternative') context.push(...namedMoveFens(text, fenBefore, fenAfter));
     return { surface: 'review' as const, source, text, data: data ?? null, contextFens: unique(context) };
   });
 }

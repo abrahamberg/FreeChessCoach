@@ -166,3 +166,4 @@ export * from './board-facts/current-move.js';
 export * from './board-facts/focus-facts.js';
 export * from './board-facts/only-move.js';
 export * from './move-ideas/index.js';
+export * from './move-story.js';

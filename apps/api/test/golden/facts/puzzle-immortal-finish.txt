@@ -16,6 +16,7 @@ n1 22.Qf6+ (White, Line A) | best | before: White has a forced mate in 2 → aft
 n2 22…Nxf6 (Black, Line A) | best | before: White has a forced mate in 1 → after: White has a forced mate in 1
     board: moves the knight from g8 to f6 | captures the queen on f6 | attacks the knight on d5 | the knight stops guarding e7, where Be7# follows
     ideas: threatens to win the knight on d5 with Nxd5 | develops the knight to f6, its most useful square | controls e4 and d5 | after the exchange White has a pawn for a queen, two rooks and a bishop
+    notes: Wins the queen for the knight on f6
     alternatives: Ne7 (leaves the knight on e7 pinned to the king; develops the knight to e7; controls d5): White has a forced mate in 1, after Qxe7#
 n3 23.Be7# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     piece: the dark-squared bishop

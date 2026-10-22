@@ -9,6 +9,7 @@ Moves:
 n1 1.c7 (White, Line A) | great | before: White is better → after: White is better
     board: moves the pawn from c6 to c7
     ideas: pushes the passed pawn to c7, 1 square from queening
+    notes: The only good move
     alternatives: Ka7: The position is roughly equal, after Rc5 Kb6 Rxc6+ Kxc6; Kc7: The position is roughly equal, after Rc5 Kd7 Rxc6 Kxc6
     flags: quiz-eligible, critical
 n2 1…Rd6+ (Black, Line A) | excellent | before: White is better → after: White is better
@@ -39,6 +40,7 @@ n7 4.Kb3 (White, Line A) | inaccuracy | before: White is better → after: White
     best instead: Kc3; after Kc3 Rd1 Kc2 Re1 c8=Q Re2+, White has a queen for a rook
     why Kc3 is better: moves the king from b4 to c3 | attacks the rook on d4
     board: moves the king from b4 to b3
+    notes: Kc3 was better: it attacks the rook on d4
     tactics: You missed a chance to win a tempo with Kc3 — hits the rook on d4 with a king.
     alternatives: Kc3 (threatens to win the rook on d4 with Kxd4): White is better, after Rd1 Kc2 Re1 c8=Q; Kb5: White is better, after Rd2 c8=Q Kb2 Qf5
     tempting threat: Kc5? White's Kc5 moves the king from b4 to c5 | attacks the rook on d4. Black answers Rd1: moves the rook from d4 to d1. Then Kc6 Rc1+ Kd7. Over the line nothing is taken; at the end White has a pawn for a rook (The position is roughly equal).
@@ -95,6 +97,7 @@ n15 6…Rc4+ (Black, Line B) | brilliant | before: The position is roughly equal
     flags: quiz-eligible
 n16 7.Qxc4 (White, Line B) | great | before: The position is roughly equal → after: stalemate
     board: moves the queen from c8 to c4 | captures the rook on c4
+    notes: Stalemate: Black has no legal move, so the game is a draw
     tactics: You won a rook through a free piece — captures the rook on c4.
     alternatives: Kd2: Black is much better, after Rxc8 Kd3 Kb2 Ke4; Kb3 (attacks the rook on c4 twice, while nothing defends it): Black is much better, after Rxc8 Kb4 Ra8 Kc5
     flags: quiz-eligible, critical

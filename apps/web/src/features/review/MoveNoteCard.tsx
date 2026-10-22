@@ -130,7 +130,8 @@ export function MoveNoteCard({
         {move ? (
           <>
             <TacticReasonList move={move} selection={tacticSelection} onToggle={onToggleTacticSelection} />
-            {move.quality === 'book' ? <OpeningLabel move={move} /> : <MoveNote move={move} excludeTacticText />}
+            <OpeningLabel move={move} />
+            <MoveNote move={move} excludeTacticText />
             {!hasMoveNoteText(move, true) && <p className="move-note-card__empty-text">Nothing to flag — a solid, natural move.</p>}
             <AlternativesPanel move={move} hideBestLine />
           </>

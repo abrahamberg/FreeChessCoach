@@ -68,6 +68,7 @@ n11 6.hxg4 (White, Line A) | blunder | before: White is better → after: Black 
 n12 6…hxg4 (Black, Line A) | great | before: Black is better → after: Black is better
     board: moves the pawn from h5 to g4 | captures the pawn on g4 | attacks the knight on f3
     ideas: threatens to win the knight on f3 with gxf3 | White now has 3 pieces developed to 1 piece | controls f3 | opens the h-file for the rooks | advances the pawn to g4, toward the enemy king | leaves Black with doubled pawns on the g-file | after the exchange White has a knight for a pawn | takes toward the centre
+    notes: Recaptures the pawn on g4
     opens: the rook on h8, from 3 squares to 8
     tactics: You won a tempo — hits the knight on f3 with a pawn.
     alternatives: a6 (attacks the bishop on b5): White is slightly better, after Bxc6 hxg4 Bd5 gxf3; g5 (controls f4; opens the bishop on f8 (from 5 squares to 7); fixes the pawn on g4: it can no longer advance): White is better, after d4 hxg4 Nxe5 Nxe5
@@ -83,6 +84,7 @@ n13 7.Ne1 (White, Line A) | blunder | before: Black is better → after: Black i
 n14 7…Qh4 (Black, Line A) | great | before: Black is much better → after: Black is much better
     board: moves the queen from d8 to h4
     ideas: threatens mate with Qh2# | defends the pawn on g4, which was attacked | brings the queen into the attack: it bears on 3 squares around the king | brings the queen out to h4 | brings the queen out early, with 2 pieces still at home | lines up queen and rook on the h-file | shuts in the rook on h8 (from 8 squares to 4)
+    notes: Won the queen, giving back a bishop.
     tactics: You took the open file — takes the open h-file with the queen.
     alternatives: a6 (attacks the bishop on b5): Black is better, after Qxg4 axb5 Qg3 b4; d5 (threatens to win the pawn on e4 with dxe4; leaves the knight on c6 pinned to the king; puts a pawn in the centre on d5): Black is better, after Bxc6+ bxc6
     tempting threat: Nd4? Black's Nd4 moves the knight from c6 to d4 | attacks the bishop on b5 | leaves the black pawn on g4 hanging. White answers Qxg4: moves the queen from d1 to g4 | captures the pawn on g4 | leaves the white bishop on b5 hanging. Then Nxb5 Qg3 Rh5. Over the line Black takes a bishop; White takes a pawn; at the end White has a knight for a bishop (Black is slightly better).

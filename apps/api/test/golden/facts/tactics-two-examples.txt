@@ -53,6 +53,7 @@ n8 4…Nf6 (Black, Discovered check) | blunder | before: White is slightly bette
     why Qe7 is better: moves the queen from d8 to e7 | attacks the knight on e5 | leaves the black knight on e4 hanging
     board: moves the knight from e4 to f6 | allows Nc6+, where the knight on c6 forks the knight on b8 and the queen on d8
     ideas: takes the attacked knight to safety on f6 | prevents Qg4, an attack on a bigger piece | puts the knight on f6, the best defender of a king castled short | controls e4 and d5 | defends the pawn on d7, attacked once and now defended 5 times
+    notes: Won a knight, but it cost the queen.
     tactics: They let you win a queen through a fork two moves away with Nc6+ — knight on c6 forks the knight on b8 and the queen on d8.
     alternatives: Qe7 (threatens to win the knight on e5 with Qxe5; brings the queen out to e7; controls e5): White is slightly better, after Qxe4 d6 d4 f5; d5 (puts a pawn in the centre on d5; controls c4; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after d3 Qe7 dxe4 Qxe5; d6 (attacks the knight on e5; controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after Nxf7 Kxf7 Qxe4 c6
     tempting capture: Nxf2? Black's Nxf2 moves the knight from e4 to f2 | captures the pawn on f2 | attacks the rook on h1 | leaves the black knight on f2 hanging. White answers Nc6+: moves the knight from e5 to c6 | gives check | a discovered check from the queen on e2 | the check can be answered: block with Qe7, Be7, Ne4; the checking piece cannot be taken; the king cannot move | attacks the knight on b8 | attacks the queen on d8 | the knight on c6 forks the knight on b8 and the queen on d8. Then Be7 Nxe7 Nd3+. Over the line Black takes a pawn; White takes a bishop; at the end White has a bishop for a pawn (White is much better).
@@ -61,6 +62,7 @@ n8 4…Nf6 (Black, Discovered check) | blunder | before: White is slightly bette
 n9 5.Nc6+ (White, Discovered check) | best | before: White is much better → after: White is much better
     board: moves the knight from e5 to c6 | gives check | a discovered check from the queen on e2 | the check can be answered: block with Qe7, Be7, Ne4; the checking piece cannot be taken; the king cannot move | attacks the knight on b8 | attacks the queen on d8 | the knight on c6 forks the knight on b8 and the queen on d8
     ideas: controls e5 and d4
+    notes: Won the queen, giving back a knight.
     tactics: You won a queen through a fork two moves away — knight on c6 forks the knight on b8 and the queen on d8.
     alternatives: Ng6+ (controls e5): White is better, after Be7 Nxh8 Nc6 c3; Ng4+ (controls e5): White is slightly better, after Be7 Nxf6+ gxf6 d4
     tempting check: Nxd7+? White's Nxd7+ moves the knight from e5 to d7 | captures the pawn on d7 | gives check | a discovered check from the queen on e2 | the check can be answered: block with Qe7, Be7, Ne4; the checking piece cannot be taken; move the king with Kxd7 | attacks the knight on b8 | attacks the bishop on f8 | attacks the knight on f6 | leaves the white knight on d7 hanging. Black answers Kxd7: moves the king from e8 to d7 | captures the knight on d7. Then d4 Qe8 Nc3. Over the line White takes a pawn; Black takes a knight; at the end White has a pawn for a knight (Black is better).
@@ -101,6 +103,7 @@ n14 4…g6 (Black, Legal's mate) | mistake | before: White is slightly better �
     why Nc6 is better: moves the knight from b8 to c6
     board: moves the pawn from g7 to g6
     ideas: loosens the pawns in front of the king: no pawn can cover f6 and h6 any more | controls f5 | opens the bishop on f8 (from 1 squares to 3) | prepares the pawn's advance to f5, which it now supports | makes room for the bishop on f8 to fianchetto on g7
+    notes: Nc6 was better: it develops the knight
     tactics: They let you win a pawn through a free piece with Nxe5 — captures the pawn on e5.
     alternatives: Nc6 (develops the knight to c6, its most useful square; controls e5 and d4; supports the centre pawn on e5): White is slightly better, after h3 Bxf3 Qxf3 Qd7; Nf6 (develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5; shuts in the queen on d8 (from 6 squares to 3)): White is slightly better, after h3 Bxf3 Qxf3 Be7; Be7 (develops the bishop to e7; shuts in the queen on d8 (from 6 squares to 2)): White is slightly better, after h3 Bxf3 Qxf3 Nf6
     flags: critical
@@ -117,6 +120,7 @@ n16 5…Bxd1 (Black, Legal's mate) | blunder | before: White is better → after
     why dxe5 is better: moves the pawn from d6 to e5 | captures the knight on e5 | leaves the black bishop on g4 hanging
     board: moves the bishop from g4 to d1 | captures the queen on d1
     ideas: threatens to win the pawn on c2 with Bxc2 | removes the queen on d1, the guard of the pawn on c2 | settles the bishop on d1 on a square by the king that no pawn can cover any more | White now has 3 pieces developed to 1 piece
+    notes: Won a queen, but it allowed mate.
     tactics: They let you force mate in 2 through a mating net with Bxf7+ — closes the net — every answer runs into mate.
     alternatives: dxe5 (puts a pawn in the centre on e5; controls d4 and f4; opens the d-file for the rooks (half-open)): White is better, after Qxg4 Nc6 Bb5; Be6 (White now has 3 pieces developed to 1 piece; controls d5): White is better, after Bxe6 dxe5 Bb3 Nc6; d5 (threatens to win the bishop on c4 with dxc4; puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on e4): White is better, after Bb5+ c6 Nxg4 cxb5
 n17 6.Bxf7+ (White, Legal's mate) | great | before: White has a forced mate in 2 → after: White has a forced mate in 1

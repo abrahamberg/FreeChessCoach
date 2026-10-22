@@ -7,7 +7,8 @@ import {
   type MoveVerdict,
   type MoveVerdictDeps,
   type ParsedGame,
-  type PassEvals
+  type PassEvals,
+  withMoveStories
 } from '@freechesscoach/chess-analysis';
 import type { BookReport, ClassifiedMoveDto, EngineEval, GameReport } from '@freechesscoach/shared';
 import type { NewDiagnosticObservation } from '../db/repositories/diagnostic-observations.js';
@@ -73,7 +74,7 @@ export async function runAnalysisSteps(input: AnalysisStepsInput, timer: StepTim
 
   const { bookReport, gameReport, annotatedPgn, verdicts } = await timer.timed('report', () => {
     const book = buildBookReport(parsedGame.positions);
-    const { report, verdicts: decided } = buildGameReportForAnalysis({
+    const { report: built, verdicts: decided } = buildGameReportForAnalysis({
       game: parsedGame,
       evals,
       moves: classifiedMoves,
@@ -84,6 +85,8 @@ export async function runAnalysisSteps(input: AnalysisStepsInput, timer: StepTim
       userColor: input.userColor,
       userRating: input.userRating
     });
+    // Each move's story from the finished moves (cards attached): what the page renders (`docs/move-story.md`).
+    const report = { ...built, moves: withMoveStories(built.moves, parsedGame.positions.map((position) => position.fen), evals) };
     // Annotated from the report's own moves, not `classifiedMoves` — see `annotatedPgnForReport`.
     return { bookReport: book, gameReport: report, annotatedPgn: annotatedPgnForReport(input.pgn, report), verdicts: decided };
   });

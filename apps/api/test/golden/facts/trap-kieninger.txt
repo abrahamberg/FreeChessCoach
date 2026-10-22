@@ -82,6 +82,7 @@ n15 8.axb4 (White, Line A) | blunder | before: The position is roughly equal →
     why Nxe5 is better: moves the knight from f3 to e5 | captures the knight on e5 | attacks the knight on c6
     board: moves the pawn from a3 to b4 | captures the bishop on b4
     ideas: breaks the pin on the knight on d2 | controls c5 | opens the a-file for the rooks (half-open) | leaves White with doubled pawns on the b-file | after the exchange White is a bishop up | takes toward the centre | prepares the pawn's advance to c5, which it now supports
+    notes: Won a bishop, but it allowed mate.
     opens: the rook on a1, from 3 squares to 8
     tactics: They let you deliver checkmate with Nd3#.
     alternatives: Nxe5 (centralises the knight on e5, which reaches 8 squares): The position is roughly equal, after Nxe5 e3 Bxd2+ Qxd2; e3 (controls d4; opens the bishop on f1 (from 0 squares to 2)): The position is roughly equal, after Nxf3+ gxf3 Bxd2+ Qxd2; Qc2 (brings the queen out to c2; controls e4; clears the way to castle queenside): The position is roughly equal, after Nxf3+ gxf3 Nd4 Qd3

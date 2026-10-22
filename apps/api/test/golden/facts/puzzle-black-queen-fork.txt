@@ -7,6 +7,7 @@ Moves:
 n1 1…Qe5+ (Black, Line A) | best | before: Black is winning → after: Black is winning
     board: moves the queen from h5 to e5 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd2, Kf2, Kf1, Kd1 | attacks the rook on a1 | the queen on e5 forks the rook on a1 and the king on e1
     ideas: centralises the queen on e5, which reaches 27 squares
+    notes: Forks the king on e1 and the rook on a1
     alternatives: Qh1+: Black is winning, after Kd2 Qxa1 Kd3 Qa4; Qh4+: Black is winning, after Ke2 Qe4+ Kf2 Qd4+
     tempting check: Qa5+? Black's Qa5+ moves the queen from h5 to a5 | gives check | the check can be answered: no block; take the checking piece with Rxa5; move the king with Ke2, Kf2, Kf1, Kd1 | attacks the rook on a1 | leaves the black queen on a5 hanging. White answers Rxa5: moves the rook from a1 to a5 | captures the queen on a5. Then Kd7 Ra4 Kc6. Over the line White takes the queen; at the end White is a rook up (White is much better).
     tempting threat: Qh8? Black's Qh8 moves the queen from h5 to h8 | attacks the rook on a1. White answers Ra8+: moves the rook from a1 to a8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf7, Ke7, Kd7. Then Kd7 Rxh8 Ke7. Over the line White takes the queen; at the end White is a rook up (White is much better).
@@ -16,6 +17,7 @@ n2 2.Kd1 (White, Line A) | excellent | before: Black is winning → after: Black
 n3 2…Qxa1+ (Black, Line A) | best | before: Black is winning → after: Black is winning
     board: moves the queen from e5 to a1 | captures the rook on a1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc2, Kd2, Ke2
     ideas: after the exchange Black is a queen up
+    notes: Wins the rook on a1
     alternatives: Qd4+ (centralises the queen on d4, which reaches 27 squares): Black is winning, after Ke2 Qxa1 Kd3 Qg1; Qd5+ (centralises the queen on d5, which reaches 27 squares): Black is better, after Kc2 Qc4+ Kb2 Qb4+
     tempting check: Qd6+ Black's Qd6+ moves the queen from e5 to d6 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc2, Ke2, Ke1, Kc1. White answers Kc2: moves the king from d1 to c2. Then Qc5+ Kb3 Qd5+. Over the line nothing is taken; at the end White has a rook for a queen (Black is better). Works, but not the answer: Black is still better, but the answer is stronger: Black is winning.
     tempting check: Qh5+ Black's Qh5+ moves the queen from e5 to h5 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc2, Kd2, Ke1, Kc1. White answers Kc2: moves the king from d1 to c2. Then Qc5+ Kb3 Qd5+. Over the line nothing is taken; at the end White has a rook for a queen (Black is better). Works, but not the answer: Black is still better, but the answer is stronger: Black is winning.

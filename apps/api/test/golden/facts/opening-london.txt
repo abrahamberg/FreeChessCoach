@@ -90,6 +90,7 @@ n16 3…c5 (Black, Early c5) | best | before: The position is roughly equal → 
 n17 4.c3 (White, Early c5) | good | before: The position is roughly equal → after: The position is roughly equal
     board: moves the pawn from c2 to c3
     ideas: takes c3 from the knight, whose natural square it is | controls d4 | supports the centre pawn on d4 | opens the queen on d1 (from 7 squares to 10) | defends the pawn on d4, attacked once and now defended 3 times
+    notes: Missed dxc5, winning material on c5
     opens: the queen on d1, from 7 squares to 10
     alternatives: dxc5 (controls d6; gives up the centre: the pawn leaves d4; opens the d-file for the rooks (half-open)): The position is roughly equal, after Nc6 Bb5 Qa5+ Nc3; Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after Qb6 dxc5 Qxb2 Nbd2
 n18 4…Nc6 (Black, Early c5) | best | before: The position is roughly equal → after: The position is roughly equal
