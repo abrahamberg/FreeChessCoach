@@ -110,12 +110,23 @@ function reviewDrafts(move: ClassifiedMoveDto, position: AuditPosition): Draft[]
     if (kind === 'allowed' && reply) context.push(...compact([play(fenAfter, reply)]));
     if (kind === 'prevention' && move.tacticPrevention?.threatSan) context.push(...compact([threatFen(fenBefore, move.tacticPrevention.threatSan)]));
     if (kind === 'opportunity' && (move.tacticOpportunity?.embodiedBySan ?? best)) context.push(...compact([play(fenBefore, move.tacticOpportunity?.embodiedBySan ?? best ?? '')]));
+    if (kind === 'better' || kind === 'alternative') context.push(...alternativeFens(text, fenBefore));
     if (kind === 'reason' || kind === 'betterWas' || kind === 'idea' || kind === 'better' || kind === 'alternative') context.push(...namedMoveFens(text, fenBefore, fenAfter));
     return { surface: 'review' as const, source, text, data: data ?? null, contextFens: unique(context) };
   });
 }
 
 /** A reason that names a move ("Missed Nxe5, …", "Qd1 keeps …", "where Qc1# followed", "better was Nc3 Nf6"): the positions along it. */
+/** An engine move in words ("e5 (puts a pawn in the centre on e5): …, after
+ * Bf5 Nf3"): its ideas are about the board after it, and its verdict about
+ * the end of its line. A pawn push is not a token `namedMoveFens` finds. */
+export function alternativeFens(text: string, fenBefore: string): string[] {
+  const san = /^(\S+?)(?: \(|:)/.exec(text)?.[1];
+  if (!san) return [];
+  const line = / after (.+)$/.exec(text)?.[1]?.split(' ') ?? [];
+  return playLine(fenBefore, [san, ...line]).fens.slice(1);
+}
+
 function namedMoveFens(text: string, fenBefore: string, fenAfter: string): string[] {
   const better = /better was (.+)$/.exec(text);
   if (better?.[1]) return playLine(fenBefore, better[1].split(' ')).fens.slice(1);

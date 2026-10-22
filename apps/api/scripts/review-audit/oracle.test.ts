@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { mateClaims, mateCountExact, mateCountOwed } from './check-mate-count.js';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { checkReviewItem } from './check-review.js';
-import { unmetExpectations } from './items.js';
+import { alternativeFens, unmetExpectations } from './items.js';
 import { checkAnswerSets, decidedFor, exchangeGain, hasPassedPawnOn, mateCountAgrees, pinnersThrough, play, prizeWon, lineGain, mentionOn, mentions, moveIsSound, settledGain } from './oracle.js';
 import type { AuditItem, AuditPosition } from './types.js';
 
@@ -13,6 +13,13 @@ describe('review audit oracle', () => {
   test('a piece defended as often as it is attacked, by an equal trade, cannot be won (the owner game, 13…Bd3)', () => {
     const afterBd3 = 'r2r2k1/p1p2ppp/2n5/1pB1N3/8/2Pb1N2/PP3PPP/R4RK1 w - - 1 14';
     expect(exchangeGain(afterBd3, 'd3', 'w')).toBe(0);
+  });
+
+  test("an engine move's words are checked on the board after it and along its line (golden caro-kann, 3.e5 instead of Nc3)", () => {
+    const before = 'rnbqkbnr/pp2pppp/2p5/3p4/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 0 3';
+    const fens = alternativeFens('e5 (puts a pawn in the centre on e5; controls d6 and f6): The position is roughly equal, after Bf5 Nf3', before);
+    expect(fens).toHaveLength(3);
+    expect(fens[0]).toBe(play(before, 'e5'));
   });
 
   test('an undefended piece can be won whole', () => {
