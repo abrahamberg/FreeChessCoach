@@ -51,7 +51,8 @@ point of the lesson and has no variation. Checked on the stored row:
 
 - **A course with no AI call.** `POST /api/courses` builds the tree
   (`createCourse`, `course-drafts.ts`). `POST /api/courses/:id/skeleton`
-  ("Build without AI", `buildSkeletonDraft`) runs the engine, builds the
+  ("Build without AI", `buildSkeletonDraft`) runs the engine once (the
+  course's kept dossier after that, `courseDossierFor`), builds the
   kind's skeleton and writes template episodes (`buildManualEpisodes`).
   `PUT /api/courses/:id/draft` saves a whole document; it refuses a changed
   tree, and node ids never change. `GET /api/courses/:id/publish-check`

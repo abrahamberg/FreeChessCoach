@@ -34,28 +34,34 @@ export interface GenerationInputs {
   context: CoursePromptContext;
 }
 
-/** The dossier is built once and kept on the course (0014_course_dossier.ts);
- * one from before a fact the film needs was kept is built again. */
 export async function loadGenerationInputs(
   db: Kysely<Database>,
   row: coursesRepo.CourseRow,
   document: CourseDocument,
   buildDossier: CourseDossierBuilder | undefined
 ): Promise<GenerationInputs> {
-  let dossier = row.dossier;
-  if (!dossier || isStaleDossier(dossier)) {
-    if (!buildDossier) throw new Error('No engine is configured');
-    const first = !dossier;
-    dossier = (await buildDossier(courseTreeOf(document), document.learnerSide, row.ownerId, document.kind)).dossier;
-    await coursesRepo.setDossier(db, row.id, dossier);
-    if (first) {
-      // The codes follow the dossier; the creator's later edits are kept, as
-      // they are set only with the first dossier.
-      document = { ...document, diagnosisCodes: courseDiagnosisCodes(courseTreeOf(document), dossier) };
-      await coursesRepo.setDiagnosisCodes(db, row.id, document.diagnosisCodes);
-    }
-  }
-  return generationInputs({ document, dossier, direction: row.direction, sourcePgn: row.sourcePgn });
+  const ready = await courseDossierFor(db, row, document, buildDossier);
+  return generationInputs({ document: ready.document, dossier: ready.dossier, direction: row.direction, sourcePgn: row.sourcePgn });
+}
+
+/** The dossier is built once and kept on the course (0014_course_dossier.ts),
+ * so a generation, a reel or "Build without AI" after it runs no engine; one
+ * from before a fact the film needs was kept is built again. The diagnosis
+ * codes follow the first dossier; the creator's later edits are kept. */
+export async function courseDossierFor(
+  db: Kysely<Database>,
+  row: coursesRepo.CourseRow,
+  document: CourseDocument,
+  buildDossier: CourseDossierBuilder | undefined
+): Promise<{ dossier: CourseDossier; document: CourseDocument }> {
+  if (row.dossier && !isStaleDossier(row.dossier)) return { dossier: row.dossier, document };
+  if (!buildDossier) throw new Error('No engine is configured');
+  const dossier = (await buildDossier(courseTreeOf(document), document.learnerSide, row.ownerId, document.kind)).dossier;
+  await coursesRepo.setDossier(db, row.id, dossier);
+  if (row.dossier) return { dossier, document };
+  const diagnosisCodes = courseDiagnosisCodes(courseTreeOf(document), dossier);
+  await coursesRepo.setDiagnosisCodes(db, row.id, diagnosisCodes);
+  return { dossier, document: { ...document, diagnosisCodes } };
 }
 
 /** A stored dossier whose tempting moves have no evaluation: the video
