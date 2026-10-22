@@ -22,13 +22,13 @@ n2 1…e5 (Black, Kieseritzky) | book
 n3 2.f4 (White, Kieseritzky) | book
     book: in book (King's Gambit)
     board: moves the pawn from f2 to f4 | leaves the white pawn on f4 hanging
-    ideas: offers the pawn on f4: it can be taken, and the engine still approves | threatens to win the pawn on e5 with fxe5 | loosens the pawns in front of the king, and the pawn on f4 can become a target | strikes at the centre: attacks the pawn on e5 | puts pressure on the pawn on e5
+    ideas: offers the pawn on f4: it can be taken, and the engine still approves | loosens the pawns in front of the king, and the pawn on f4 can become a target | strikes at the centre: attacks the pawn on e5 | puts pressure on the pawn on e5
     alternatives: Nf3 (threatens to win the pawn on e5 with Nxe5; develops the knight to f3, its most useful square; puts pressure on the pawn on e5 and controls d4): The position is roughly equal, after Nc6 d4 exd4 Nxd4; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nc6 Nf3 Nf6 Bb5; Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after Nf6 Nc3 Nc6 d3
 n4 2…exf4 (Black, Kieseritzky) | book
     book: in book (King's Gambit Accepted)
     board: moves the pawn from e5 to f4 | captures the pawn on f4
     ideas: takes the attacked pawn to safety on f4 | controls e3 | gives up the centre: the pawn leaves e5 | opens the e-file for the rooks (half-open) | leaves Black with doubled pawns on the f-file | after the exchange Black is a pawn up
-    alternatives: d5 (threatens to win the pawn on e4 with dxe4; puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on e4): The position is roughly equal, after exd5 exf4 Bb5+ c6; Bc5 (develops the bishop to c5; controls d4): The position is roughly equal, after Nc3 d6 fxe5 Nc6
+    alternatives: d5 (puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on e4; puts pressure on the pawn on e4 and controls c4): The position is roughly equal, after exd5 exf4 Bb5+ c6; Bc5 (develops the bishop to c5; controls d4): The position is roughly equal, after Nc3 d6 fxe5 Nc6
 n5 3.Nf3 (White, Kieseritzky) | book
     book: in book (King's Gambit Accepted: King's Knight's Gambit)
     the book also has: Bb5 (King's Gambit Accepted: Schurig Gambit, with Bb5); Bc4 (King's Gambit Accepted: Bishop's Gambit); Bd3 (King's Gambit Accepted: Schurig Gambit, with Bd3); Be2 (King's Gambit Accepted: Tartakower Gambit); Kf2 (King's Gambit Accepted: Tumbleweed)
@@ -45,13 +45,13 @@ n7 4.h4 (White, Kieseritzky) | book
     book: in book (King's Gambit Accepted: King's Knight's Gambit)
     the book also has: Bc4 (King's Gambit Accepted: Australian Gambit); Nc3 (King's Gambit Accepted: Quaade Gambit); d4 (King's Gambit Accepted: Rosentreter Gambit)
     board: moves the pawn from h2 to h4
-    ideas: threatens to win the pawn on g5 with hxg5 | loosens the pawns in front of the king: no pawn can cover g3 and g4 any more
+    ideas: attacks the pawn on g5 twice, while it is defended once | loosens the pawns in front of the king: no pawn can cover g3 and g4 any more
     alternatives: Nc3 (develops the knight to c3, its most useful square; White now has 2 pieces developed to 0 pieces; controls d5 and e4): Black is slightly better, after Nc6 h3 h6 d4; d4 (puts a pawn in the centre on d4; controls c5 and e5; opens the bishop on c1 (from 0 squares to 3)): Black is slightly better, after g4 Ne5 Qh4+ g3
 n8 4…g4 (Black, Kieseritzky) | book
     book: in book (King's Gambit Accepted: King's Knight's Gambit)
     board: moves the pawn from g5 to g4 | attacks the knight on f3
     ideas: takes the attacked pawn to safety on g4 | attacks the knight on f3 | controls f3 | opens the queen on d8 (from 2 squares to 4)
-    alternatives: d5 (threatens to win the pawn on e4 with dxe4; puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on e4): The position is roughly equal, after d4 Bg7 Nc3 dxe4; Bg7 (develops the bishop to g7; controls e5 and d4; fianchettoes the bishop on g7, on the long diagonal): White is slightly better, after hxg5 h6 gxh6 Rxh6
+    alternatives: d5 (puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on e4; puts pressure on the pawn on e4 and controls c4): The position is roughly equal, after d4 Bg7 Nc3 dxe4; Bg7 (develops the bishop to g7; controls e5 and d4; fianchettoes the bishop on g7, on the long diagonal): White is slightly better, after hxg5 h6 gxh6 Rxh6
 n9 5.Ne5 (White, Kieseritzky) | book
     book: in book (King's Gambit Accepted: Kieseritzky Gambit)
     the book also has: Ng5 (King's Gambit Accepted: Allgaier Gambit)
@@ -75,12 +75,12 @@ n12 6…d5 (Black, Kieseritzky) | book
     book: in book (King's Gambit Accepted: Kieseritzky Gambit, Berlin Defense)
     board: moves the pawn from d7 to d5 | attacks the bishop on c4
     ideas: blocks the attack on the pawn on f7 | attacks the bishop on c4 | attacks the pawn on e4 twice, while nothing defends it | puts a pawn in the centre on d5 | strikes at the centre: attacks the pawn on e4 | puts pressure on the pawn on e4 and controls c4 | opens the bishop on c8 (from 0 squares to 3)
-    alternatives: Nc6 (threatens to win the knight on e5 with Nxe5; develops the knight to c6, its most useful square; controls e5 and d4): The position is roughly equal, after Bxf7+ Ke7 d4 d6; Qe7 (threatens to win the knight on e5 with Qxe5; brings the queen out to e7; controls e5): The position is roughly equal, after Bxf7+ Kd8 d4 d6
+    alternatives: Nc6 (develops the knight to c6, its most useful square; controls e5 and d4): The position is roughly equal, after Bxf7+ Ke7 d4 d6; Qe7 (threatens to win the knight on e5 with Qxe5; brings the queen out to e7; controls e5): The position is roughly equal, after Bxf7+ Kd8 d4 d6
 n13 7.exd5 (White, Kieseritzky) | book
     book: in book (King's Gambit Accepted: Kieseritzky Gambit, Berlin Defense)
     board: moves the pawn from e4 to d5 | captures the pawn on d5
     ideas: takes the piece that attacked the bishop on c4 | puts a pawn in the centre on d5 | controls c6 and e6 | opens the e-file for the rooks | leaves White with doubled pawns on the d-file
-    alternatives: Bxd5 (threatens to win the pawn on f7 with Bxf7+; controls e4; supports the centre pawn on e4): Black is better, after Nxd5 exd5 Qxd5 Qe2; Bb3 (aims at the pawn on f7, through the pawn on d5): Black is better, after Nxe4 d4 Ng3 Rh2
+    alternatives: Bxd5 (attacks the pawn on f7 twice, while it is defended once; controls e4; supports the centre pawn on e4): Black is better, after Nxd5 exd5 Qxd5 Qe2; Bb3 (aims at the pawn on f7, through the pawn on d5): Black is better, after Nxe4 d4 Ng3 Rh2
 n14 7…Bd6 (Black, Kieseritzky) | book
     book: in book (King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense)
     the book also has: Bg7 (King's Gambit Accepted: Kieseritzky Gambit, Paulsen Defense Deferred)
@@ -92,14 +92,14 @@ n15 3…d5 (Black, Modern) | book
     book: in book (King's Gambit Accepted: Modern Defense)
     the book also has: Be7 (King's Gambit Accepted: Cunningham Defense); Ne7 (King's Gambit Accepted: Bonsch-Osmolovsky Variation); Nf6 (King's Gambit Accepted: Schallopp Defense); d6 (King's Gambit Accepted: Fischer Defense); f5 (King's Gambit Accepted: Gianutio Countergambit)
     board: moves the pawn from d7 to d5
-    ideas: threatens to win the pawn on e4 with dxe4 | puts a pawn in the centre on d5 | strikes at the centre: attacks the pawn on e4 | puts pressure on the pawn on e4 and controls c4 | opens the bishop on c8 (from 0 squares to 5)
+    ideas: puts a pawn in the centre on d5 | strikes at the centre: attacks the pawn on e4 | puts pressure on the pawn on e4 and controls c4 | opens the bishop on c8 (from 0 squares to 5)
     opens: the light-squared bishop on c8, from 0 squares to 5
     alternatives: g5 (controls f4; opens the bishop on f8 (from 5 squares to 7)): Black is slightly better, after Nc3 g4 Ne5 Qh4+; Be7 (develops the bishop to e7): The position is roughly equal, after Be2 Nf6 e5 Ng4; Nf6 (threatens to win the pawn on e4 with Nxe4; develops the knight to f6, its most useful square; puts pressure on the pawn on e4 and controls d5): The position is roughly equal, after e5 Nh5 d4 d6
 n16 4.exd5 (White, Modern) | book
     book: in book (King's Gambit Accepted: Modern Defense)
     board: moves the pawn from e4 to d5 | captures the pawn on d5
     ideas: puts a pawn in the centre on d5 | controls c6 and e6 | opens the e-file for the rooks | leaves White with doubled pawns on the d-file
-    alternatives: d3 (threatens to win the pawn on f4 with Bxf4; controls c4 and e4; supports the centre pawn on e4): Black is slightly better, after g5 exd5 Bg7 Nc3; Nc3 (threatens to win the pawn on d5 with exd5; develops the knight to c3, its most useful square; White now has 2 pieces developed to 0 pieces): Black is slightly better, after d4 Ne2 Nc6 c3
+    alternatives: d3 (threatens to win the pawn on f4 with Bxf4; controls c4 and e4; supports the centre pawn on e4): Black is slightly better, after g5 exd5 Bg7 Nc3; Nc3 (attacks the pawn on d5 twice, while it is defended once; develops the knight to c3, its most useful square; White now has 2 pieces developed to 0 pieces): Black is slightly better, after d4 Ne2 Nc6 c3
 n17 4…Nf6 (Black, Modern) | book
     book: in book (King's Gambit Accepted: Abbazia Defense)
     board: moves the knight from g8 to f6
@@ -115,11 +115,11 @@ n19 5…c6 (Black, Modern) | book
     book: in book (King's Gambit Accepted: Abbazia Defense)
     board: moves the pawn from c7 to c6 | blocks the check from the bishop on b5 | attacks the bishop on b5
     ideas: attacks the bishop on b5 | attacks the pawn on d5 3 times, while nothing defends it | takes c6 from the knight, whose natural square it is | strikes at the centre: attacks the pawn on d5 | puts pressure on the pawn on d5
-    alternatives: Bd7 (threatens to win the bishop on b5 with Bxb5; develops the bishop to d7): The position is roughly equal, after Bxd7+ Qxd7 O-O Nxd5; Nbd7 (leaves the knight on d7 pinned to the king; develops the knight to d7; controls e5): The position is roughly equal, after O-O Be7 c4 c6
+    alternatives: Bd7 (develops the bishop to d7): The position is roughly equal, after Bxd7+ Qxd7 O-O Nxd5; Nbd7 (leaves the knight on d7 pinned to the king; develops the knight to d7; controls e5): The position is roughly equal, after O-O Be7 c4 c6
 n20 6.dxc6 (White, Modern) | book
     book: in book (King's Gambit Accepted: Abbazia Defense)
     board: moves the pawn from d5 to c6 | captures the pawn on c6
-    ideas: threatens to win the pawn on b7 with cxb7+ | takes the piece that attacked the bishop on b5 | gives up the centre: the pawn leaves d5 | opens a line for the opponent's queen on d8 (from 7 squares to 10) | leaves White with doubled pawns on the c-file
+    ideas: takes the piece that attacked the bishop on b5 | gives up the centre: the pawn leaves d5 | opens a line for the opponent's queen on d8 (from 7 squares to 10) | leaves White with doubled pawns on the c-file
     alternatives: Ba4 (aims at the king on e8, through the pawn on c6): Black is slightly better, after Nxd5 O-O Bd6 c4; Qe2+ (brings the queen out to e2; controls e4 and e5): Black is slightly better, after Be7 dxc6 Nxc6 O-O
 
 REEL CANDIDATES
@@ -133,11 +133,11 @@ REVIEW NOTES
   l1
     n1 1.e4: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
     n2 1…e5: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39); Puts a pawn in the centre on e5; Controls d4 and f4; Opens the bishop on f8 (from 0 squares to 5)
-    n3 2.f4: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39); Offers the pawn on f4: it can be taken, and the engine still approves; Threatens to win the pawn on e5 with fxe5; Loosens the pawns in front of the king, and the pawn on f4 can become a target
+    n3 2.f4: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39); Offers the pawn on f4: it can be taken, and the engine still approves; Loosens the pawns in front of the king, and the pawn on f4 can become a target; Strikes at the centre: attacks the pawn on e5
     n4 2…exf4: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39); Takes the attacked pawn to safety on f4; Controls e3; Gives up the centre: the pawn leaves e5
     n5 3.Nf3: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39); Prevents Qh4+, a check; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
     n6 3…g5: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39); Loosens the pawns in front of the king: no pawn can cover f6, f5, h6 and h5 any more; Controls f4; Opens the bishop on f8 (from 5 squares to 7)
-    n7 4.h4: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39); Threatens to win the pawn on g5 with hxg5; Loosens the pawns in front of the king: no pawn can cover g3 and g4 any more
+    n7 4.h4: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39); Attacks the pawn on g5 twice, while it is defended once; Loosens the pawns in front of the king: no pawn can cover g3 and g4 any more
     n8 4…g4: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39); Takes the attacked pawn to safety on g4; Attacks the knight on f3; Controls f3
     n9 5.Ne5: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39); Threatens to win the pawn on g4 with Nxg4; Takes the attacked knight to safety on e5; Centralises the knight on e5, which reaches 8 squares
     n10 5…Nf6: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39); Threatens to win the pawn on e4 with Nxe4; Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square
@@ -148,12 +148,12 @@ REVIEW NOTES
   l2
     n1 1.e4: Theory — King's Gambit Accepted: Abbazia Defense (C36); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
     n2 1…e5: Theory — King's Gambit Accepted: Abbazia Defense (C36); Puts a pawn in the centre on e5; Controls d4 and f4; Opens the bishop on f8 (from 0 squares to 5)
-    n3 2.f4: Theory — King's Gambit Accepted: Abbazia Defense (C36); Offers the pawn on f4: it can be taken, and the engine still approves; Threatens to win the pawn on e5 with fxe5; Loosens the pawns in front of the king, and the pawn on f4 can become a target
+    n3 2.f4: Theory — King's Gambit Accepted: Abbazia Defense (C36); Offers the pawn on f4: it can be taken, and the engine still approves; Loosens the pawns in front of the king, and the pawn on f4 can become a target; Strikes at the centre: attacks the pawn on e5
     n4 2…exf4: Theory — King's Gambit Accepted: Abbazia Defense (C36); Takes the attacked pawn to safety on f4; Controls e3; Gives up the centre: the pawn leaves e5
     n5 3.Nf3: Theory — King's Gambit Accepted: Abbazia Defense (C36); Prevents Qh4+, a check; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
-    n15 3…d5: Theory — King's Gambit Accepted: Abbazia Defense (C36); Threatens to win the pawn on e4 with dxe4; Puts a pawn in the centre on d5; Strikes at the centre: attacks the pawn on e4
+    n15 3…d5: Theory — King's Gambit Accepted: Abbazia Defense (C36); Puts a pawn in the centre on d5; Strikes at the centre: attacks the pawn on e4; Puts pressure on the pawn on e4 and controls c4
     n16 4.exd5: Theory — King's Gambit Accepted: Abbazia Defense (C36); Puts a pawn in the centre on d5; Controls c6 and e6; Opens the e-file for the rooks
     n17 4…Nf6: Theory — King's Gambit Accepted: Abbazia Defense (C36); Attacks the pawn on d5 twice, while nothing defends it; Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square
     n18 5.Bb5+: Theory — King's Gambit Accepted: Abbazia Defense (C36); Develops the bishop to b5; Clears the way to castle kingside
     n19 5…c6: Theory — King's Gambit Accepted: Abbazia Defense (C36); Attacks the bishop on b5; Attacks the pawn on d5 3 times, while nothing defends it; Takes c6 from the knight, whose natural square it is
-    n20 6.dxc6: Theory — King's Gambit Accepted: Abbazia Defense (C36); Threatens to win the pawn on b7 with cxb7+; Takes the piece that attacked the bishop on b5; Gives up the centre: the pawn leaves d5
+    n20 6.dxc6: Theory — King's Gambit Accepted: Abbazia Defense (C36); Takes the piece that attacked the bishop on b5; Gives up the centre: the pawn leaves d5; Opens a line for the opponent's queen on d8 (from 7 squares to 10)

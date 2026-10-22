@@ -34,7 +34,7 @@ n5 3.Bc4 (White, Main line) | book
     piece: the light-squared bishop
     board: moves the bishop from f1 to c4
     ideas: develops the bishop to c4 | controls d5 | prevents d5, a pawn break | aims at the pawn on f7, which only the king defends | clears the way to castle kingside
-    alternatives: d4 (threatens to win the pawn on e5 with dxe5; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 Nxd4 Nf6 Nxc6; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nf6 Bb5 Bb4 O-O
+    alternatives: d4 (attacks the pawn on e5 twice, while it is defended once; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 Nxd4 Nf6 Nxc6; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nf6 Bb5 Bb4 O-O
 n6 3…Nf6 (Black, Main line) | book
     book: in book (Italian Game: Two Knights Defense)
     the book also has: Nd4 (Italian Game: Blackburne-Kostić Gambit); d6 (Italian Game: Paris Defense); f5 (Italian Game: Rousseau Gambit); h6 (Italian Game: Anti-Fried Liver Defense)
@@ -46,25 +46,25 @@ n7 4.Ng5 (White, Main line) | book
     the book also has: O-O (Italian Game: Giuoco Pianissimo); d3 (Italian Game: Giuoco Pianissimo, Normal)
     board: moves the knight from f3 to g5
     ideas: threatens to win the pawn on f7 with Nxf7 | defends the pawn on e4, which was attacked | moves the knight for the second time while 2 pieces still wait at home | controls e4 | supports the centre pawn on e4
-    alternatives: d4 (threatens to win the pawn on e5 with dxe5; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 O-O Nxe4 Re1; d3 (controls e4; supports the centre pawn on e4; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after Bc5 c3 O-O a4
+    alternatives: d4 (attacks the pawn on e5 twice, while it is defended once; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 O-O Nxe4 Re1; d3 (controls e4; supports the centre pawn on e4; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after Bc5 c3 O-O a4
 n8 4…d5 (Black, Main line) | book
     book: in book (Italian Game: Two Knights Defense, Knight Attack, Normal Variation)
     the book also has: Bc5 (Italian Game: Two Knights Defense, Traxler Counterattack); Nxe4 (Italian Game: Two Knights Defense, Ponziani-Steinitz Gambit)
     board: moves the pawn from d7 to d5 | attacks the bishop on c4
     ideas: blocks the attack on the pawn on f7 | attacks the bishop on c4 | attacks the pawn on e4 twice, while it is defended once | puts a pawn in the centre on d5 | strikes at the centre: attacks the pawn on e4 | puts pressure on the pawn on e4 and controls c4 | opens the bishop on c8 (from 0 squares to 5)
     opens: the light-squared bishop on c8, from 0 squares to 5
-    alternatives: Bc5 (develops the bishop to c5; controls d4; aims at the pawn on f2, which only the king defends): White is slightly better, after Nxf7 Bxf2+ Kf1 Qe7; Nxe4 (threatens to win the knight on g5 with Nxg5; centralises the knight on e4, which reaches 8 squares): White is slightly better, after Bxf7+ Ke7 d4 h6
+    alternatives: Bc5 (develops the bishop to c5; controls d4; aims at the pawn on f2, which only the king defends): White is slightly better, after Nxf7 Bxf2+ Kf1 Qe7; Nxe4 (attacks the knight on g5 twice, while nothing defends it; centralises the knight on e4, which reaches 8 squares): White is slightly better, after Bxf7+ Ke7 d4 h6
 n9 5.exd5 (White, Main line) | book
     book: in book (Italian Game: Two Knights Defense, Knight Attack, Normal Variation)
     board: moves the pawn from e4 to d5 | captures the pawn on d5 | attacks the knight on c6
-    ideas: threatens to win the knight on c6 with dxc6 | takes the piece that attacked the bishop on c4 | puts a pawn in the centre on d5 | controls c6 and e6 | opens the e-file for the rooks (half-open) | leaves White with doubled pawns on the d-file | after the exchange White is a pawn up
+    ideas: takes the piece that attacked the bishop on c4 | puts a pawn in the centre on d5 | controls c6 and e6 | opens the e-file for the rooks (half-open) | leaves White with doubled pawns on the d-file | after the exchange White is a pawn up
     alternatives: Bb3 (aims at the pawn on f7, through the pawn on d5): Black is better, after h6 exd5 Nd4 Nf3; Be2: Black is better, after dxe4 d3 exd3 Bxd3
 n10 5…Na5 (Black, Main line) | book
     book: in book (Italian Game: Two Knights Defense, Polerio Defense)
     the book also has: Nb4 (Italian Game: Two Knights Defense, Kloss Gambit); Nd4 (Italian Game: Two Knights Defense, Fritz Variation); Nxd5 (Italian Game: Two Knights Defense, Fegatello Attack, Leonhardt Variation); b5 (Italian Game: Two Knights Defense, Ulvestad Variation)
     board: moves the knight from c6 to a5 | attacks the bishop on c4
     ideas: threatens to win the bishop on c4 with Nxc4 | takes the attacked knight to safety on a5 | prepares c6 by clearing the way | prepares the pawn's advance to c6, which it now supports
-    alternatives: Nb4 (attacks the pawn on d5 3 times, while it is defended once; puts pressure on the pawn on d5): The position is roughly equal, after O-O h6 Nf3 Bg4; b5 (threatens to win the bishop on c4 with bxc4; controls c4; opens the bishop on c8 (from 5 squares to 7)): The position is roughly equal, after Bf1 Nxd5 Bxb5 Bb7
+    alternatives: Nb4 (attacks the pawn on d5 3 times, while it is defended once; puts pressure on the pawn on d5): The position is roughly equal, after O-O h6 Nf3 Bg4; b5 (controls c4; opens the bishop on c8 (from 5 squares to 7)): The position is roughly equal, after Bf1 Nxd5 Bxb5 Bb7
 n11 6.Bb5+ (White, Main line) | book
     book: in book (Italian Game: Two Knights Defense, Polerio Defense, Bishop Check Line)
     the book also has: d3 (Italian Game: Two Knights Defense, Maróczy Variation)
@@ -76,11 +76,11 @@ n12 6…c6 (Black, Main line) | book
     book: in book (Italian Game: Two Knights Defense, Polerio Defense, Bishop Check Line)
     board: moves the pawn from c7 to c6 | blocks the check from the bishop on b5 | attacks the bishop on b5
     ideas: attacks the bishop on b5 | attacks the pawn on d5 3 times, while nothing defends it | strikes at the centre: attacks the pawn on d5 | puts pressure on the pawn on d5
-    alternatives: Bd7 (threatens to win the bishop on b5 with Bxb5; develops the bishop to d7): White is slightly better, after Qe2 Be7 Nc3 O-O; Nd7 (threatens to win the knight on g5 with Qxg5; leaves the knight on d7 pinned to the king; moves the knight for the second time while 2 pieces still wait at home): White is better, after Ne6 fxe6 dxe6 Bd6
+    alternatives: Bd7 (develops the bishop to d7): White is slightly better, after Qe2 Be7 Nc3 O-O; Nd7 (threatens to win the knight on g5 with Qxg5; leaves the knight on d7 pinned to the king; moves the knight for the second time while 2 pieces still wait at home): White is better, after Ne6 fxe6 dxe6 Bd6
 n13 7.dxc6 (White, Main line) | book
     book: in book (Italian Game: Two Knights Defense, Polerio Defense, Bishop Check Line)
     board: moves the pawn from d5 to c6 | captures the pawn on c6
-    ideas: threatens to win the pawn on b7 with cxb7+ | takes the piece that attacked the bishop on b5 | gives up the centre: the pawn leaves d5 | opens a line for the opponent's queen on d8 (from 6 squares to 9) | leaves White with doubled pawns on the c-file | after bxc6 the opponent has an isolated pawn on a7 and c6
+    ideas: takes the piece that attacked the bishop on b5 | gives up the centre: the pawn leaves d5 | opens a line for the opponent's queen on d8 (from 6 squares to 9) | leaves White with doubled pawns on the c-file | after bxc6 the opponent has an isolated pawn on a7 and c6
     alternatives: Be2: Black is slightly better, after cxd5 Nf3 Bd6 d4; Bd3 (the bishop on d3 blocks the pawn on d2; controls e4; aims at the pawn on h7): Black is slightly better, after cxd5 Bb5+ Nc6 d4
 n14 7…bxc6 (Black, Main line) | book
     book: in book (Italian Game: Two Knights Defense, Polerio Defense, Bishop Check Line)
@@ -93,7 +93,7 @@ n15 8.Be2 (White, Main line) | book
     piece: the light-squared bishop
     board: moves the bishop from b5 to e2
     ideas: takes the attacked bishop to safety on e2 | prevents Bg4, an attack on a bigger piece
-    alternatives: Bd3 (the bishop on d3 blocks the pawn on d2; controls e4; aims at the pawn on h7): The position is roughly equal, after Nd5 Nf3 Nf4 Bf1; Qf3 (attacks the pawn on c6 twice, while it is defended once; brings the queen out to f3; brings the queen out early, with 2 pieces still at home): The position is roughly equal, after cxb5 Qxa8 Qc7 Ne4
+    alternatives: Bd3 (the bishop on d3 blocks the pawn on d2; controls e4; aims at the pawn on h7): The position is roughly equal, after Nd5 Nf3 Nf4 Bf1; Qf3 (attacks the pawn on c6 twice, while it is defended once; brings the queen out early to f3, with 2 pieces still at home; controls e4 and d5): The position is roughly equal, after cxb5 Qxa8 Qc7 Ne4
 n16 8…h6 (Black, Main line) | book
     book: in book (Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense)
     board: moves the pawn from h7 to h6 | attacks the knight on g5
@@ -104,7 +104,7 @@ n17 9.Nf3 (White, Main line) | book
     the book also has: Nh3 (Italian Game: Two Knights Defense, Steinitz Variation)
     board: moves the knight from g5 to f3
     ideas: threatens to win the pawn on e5 with Nxe5 | takes the attacked knight to safety on f3 | puts the knight on f3, the best defender of a king castled short | puts pressure on the pawn on e5 and controls d4 | shuts in the bishop on e2 (from 8 squares to 5) | defends the pawn on d2, attacked once and now defended 5 times | prepares the pawn's advance to d4, which it now supports
-    alternatives: Nh3: The position is roughly equal, after Bc5 Nc3 Nb7 d3; b4 (threatens to win the knight on a5 with bxa5; controls c5; opens the bishop on c1 (from 0 squares to 2)): Black is better, after Bxb4 Nh3 Bc5 O-O
+    alternatives: Nh3: The position is roughly equal, after Bc5 Nc3 Nb7 d3; b4 (controls c5; opens the bishop on c1 (from 0 squares to 2)): Black is better, after Bxb4 Nh3 Bc5 O-O
 n18 9…e4 (Black, Main line) | book
     book: in book (Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense)
     board: moves the pawn from e5 to e4 | attacks the knight on f3
@@ -122,18 +122,18 @@ n20 5…Nxd5 (Black, Fried Liver) | book
     board: moves the knight from f6 to d5 | captures the pawn on d5
     ideas: threatens to win the knight on g5 with Qxg5 | takes the piece that attacked the knight on c6 | centralises the knight on d5, which reaches 8 squares
     tactics: You let them win a pawn through a free piece with Nxf7 — captures the pawn on f7.
-    alternatives: Na5 (threatens to win the bishop on c4 with Nxc4): The position is roughly equal, after Bb5+ c6 dxc6 bxc6; Nb4 (attacks the pawn on d5 3 times, while it is defended once; puts pressure on the pawn on d5): The position is roughly equal, after O-O h6 Nf3 Bg4; b5 (threatens to win the bishop on c4 with bxc4; controls c4; opens the bishop on c8 (from 5 squares to 7)): The position is roughly equal, after Bf1 Nxd5 Bxb5 Bb7
+    alternatives: Na5 (threatens to win the bishop on c4 with Nxc4): The position is roughly equal, after Bb5+ c6 dxc6 bxc6; Nb4 (attacks the pawn on d5 3 times, while it is defended once; puts pressure on the pawn on d5): The position is roughly equal, after O-O h6 Nf3 Bg4; b5 (controls c4; opens the bishop on c8 (from 5 squares to 7)): The position is roughly equal, after Bf1 Nxd5 Bxb5 Bb7
 n21 6.Nxf7 (White, Fried Liver) | book
     book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
     the book also has: d4 (Italian Game: Two Knights Defense, Lolli Attack)
     board: moves the knight from g5 to f7 | captures the pawn on f7 | attacks the queen on d8 | attacks the rook on h8 | leaves the white knight on f7 hanging
-    ideas: sacrifices the knight on f7: it can be taken, and the engine still approves | threatens to win the queen on d8 with Nxd8 | settles the knight on f7 on a square by the king that no pawn can cover any more | puts pressure on the pawn on e5 | leaves Black with an isolated pawn on e5
+    ideas: sacrifices the knight on f7: it can be taken, and the engine still approves | settles the knight on f7 on a square by the king that no pawn can cover any more | puts pressure on the pawn on e5 | leaves Black with an isolated pawn on e5
     alternatives: d4 (puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5; puts pressure on the pawn on e5 and controls c5): White is slightly better, after Nxd4 c3 b5 Bd3; O-O (castles kingside: the king goes to safety and the rook comes to f1): The position is roughly equal, after Qxg5 Bxd5 Bd7 d4
 n22 6…Kxf7 (Black, Fried Liver) | book
     book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
     board: moves the king from e8 to f7 | captures the knight on f7 | allows Qf3+, where the queen on f3 forks the king on f7 and the knight on d5
     ideas: takes the piece that attacked the queen on d8 | leaves the knight on d5 pinned to the king | gives up castling for good | after the exchange White has a pawn for a knight
-    alternatives: Qh4 (threatens to win the bishop on c4 with Qxc4; brings the queen out to h4; brings the queen out early, with 2 pieces still at home): White is better, after Bxd5 Bc5 O-O Rf8; Qd7 (attacks the knight on f7 twice, while nothing defends it; brings the queen out to d7; shuts in the bishop on c8 (from 5 squares to 0)): White is much better, after Nxh8 Nf4 O-O Nxg2
+    alternatives: Qh4 (threatens to win the bishop on c4 with Qxc4; brings the queen out early to h4, with 2 pieces still at home; controls e4 and d4): White is better, after Bxd5 Bc5 O-O Rf8; Qd7 (attacks the knight on f7 twice, while nothing defends it; brings the queen out to d7; shuts in the bishop on c8 (from 5 squares to 0)): White is much better, after Nxh8 Nf4 O-O Nxg2
 n23 7.Qf3+ (White, Fried Liver) | book
     book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
     board: moves the queen from d1 to f3 | gives check | the check can be answered: block with Bf5, Qf6; the checking piece cannot be taken; move the king with Ke8, Kg8, Kg6, Ke6, Ke7 | attacks the knight on d5, which is pinned to the king by the bishop on c4 | the queen on f3 forks the king on f7 and the knight on d5
@@ -146,7 +146,7 @@ n24 7…Ke6 (Black, Fried Liver) | book
     book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
     board: moves the king from f7 to e6
     ideas: supports the centre pawn on e5 | defends the knight on d5, attacked twice and now defended twice
-    alternatives: Ke7: White is slightly better, after Qxd5 Qxd5 Bxd5 Bf5; Qf6 (brings the queen out to f6; brings the queen out early, with 2 pieces still at home; controls e5): White is better, after Bxd5+ Ke7 Bxc6 bxc6
+    alternatives: Ke7: White is slightly better, after Qxd5 Qxd5 Bxd5 Bf5; Qf6 (brings the queen out early to f6, with 2 pieces still at home; controls e5; supports the centre pawn on e5): White is better, after Bxd5+ Ke7 Bxc6 bxc6
 n25 8.Nc3 (White, Fried Liver) | book
     book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
     board: moves the knight from b1 to c3 | attacks the knight on d5, which is pinned to the king by the bishop on c4
@@ -176,11 +176,11 @@ REVIEW NOTES
     n6 3…Nf6: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Threatens to win the pawn on e4 with Nxe4; Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square
     n7 4.Ng5: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Threatens to win the pawn on f7 with Nxf7; Defends the pawn on e4, which was attacked; Moves the knight for the second time while 2 pieces still wait at home
     n8 4…d5: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Blocks the attack on the pawn on f7; Attacks the bishop on c4; Attacks the pawn on e4 twice, while it is defended once
-    n9 5.exd5: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Threatens to win the knight on c6 with dxc6; Takes the piece that attacked the bishop on c4; Puts a pawn in the centre on d5
+    n9 5.exd5: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Takes the piece that attacked the bishop on c4; Puts a pawn in the centre on d5; Controls c6 and e6
     n10 5…Na5: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Threatens to win the bishop on c4 with Nxc4; Takes the attacked knight to safety on a5; Prepares c6 by clearing the way
     n11 6.Bb5+: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Takes the attacked bishop to safety on b5; Prepares the pawn's advance to c4, which it now supports
     n12 6…c6: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Attacks the bishop on b5; Attacks the pawn on d5 3 times, while nothing defends it; Strikes at the centre: attacks the pawn on d5
-    n13 7.dxc6: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Threatens to win the pawn on b7 with cxb7+; Takes the piece that attacked the bishop on b5; Gives up the centre: the pawn leaves d5
+    n13 7.dxc6: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Takes the piece that attacked the bishop on b5; Gives up the centre: the pawn leaves d5; Opens a line for the opponent's queen on d8 (from 6 squares to 9)
     n14 7…bxc6: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Threatens to win the bishop on b5 with cxb5; Takes the attacked pawn to safety on c6; Controls d5
     n15 8.Be2: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Takes the attacked bishop to safety on e2; Prevents Bg4, an attack on a bigger piece
     n16 8…h6: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Attacks the knight on g5; Loosens the pawns in front of the king, and the pawn on h6 can become a target
@@ -196,9 +196,9 @@ REVIEW NOTES
     n6 3…Nf6: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Threatens to win the pawn on e4 with Nxe4; Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square
     n7 4.Ng5: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Threatens to win the pawn on f7 with Nxf7; Defends the pawn on e4, which was attacked; Moves the knight for the second time while 2 pieces still wait at home
     n8 4…d5: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Blocks the attack on the pawn on f7; Attacks the bishop on c4; Attacks the pawn on e4 twice, while it is defended once
-    n9 5.exd5: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Threatens to win the knight on c6 with dxc6; Takes the piece that attacked the bishop on c4; Puts a pawn in the centre on d5
+    n9 5.exd5: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Takes the piece that attacked the bishop on c4; Puts a pawn in the centre on d5; Controls c6 and e6
     n20 5…Nxd5: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Threatens to win the knight on g5 with Qxg5; Takes the piece that attacked the knight on c6; Centralises the knight on d5, which reaches 8 squares; You let them win a pawn through a free piece with Nxf7 — captures the pawn on f7.
-    n21 6.Nxf7: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Sacrifices the knight on f7: it can be taken, and the engine still approves; Threatens to win the queen on d8 with Nxd8; Settles the knight on f7 on a square by the king that no pawn can cover any more
+    n21 6.Nxf7: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Sacrifices the knight on f7: it can be taken, and the engine still approves; Settles the knight on f7 on a square by the king that no pawn can cover any more; Puts pressure on the pawn on e5
     n22 6…Kxf7: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Takes the piece that attacked the queen on d8; Leaves the knight on d5 pinned to the king; Gives up castling for good
     n23 7.Qf3+: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Attacks the knight on d5 twice, while it is defended once; Brings the queen into the attack: it bears on 2 squares around the king; Takes f6 from the enemy king
     n24 7…Ke6: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Supports the centre pawn on e5; Defends the knight on d5, attacked twice and now defended twice

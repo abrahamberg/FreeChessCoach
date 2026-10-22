@@ -31,7 +31,7 @@ n5 3.Nc3 (White, Line A) | book
     book: in book (Three Knights Opening)
     board: moves the knight from b1 to c3
     ideas: develops the knight to c3, its most useful square | controls d5 and e4 | supports the centre pawn on e4 | prevents d5, a pawn break
-    alternatives: Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after Nf6 Ng5 d5 exd5; d4 (threatens to win the pawn on e5 with dxe5; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 Nxd4 Nf6 Nxc6
+    alternatives: Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after Nf6 Ng5 d5 exd5; d4 (attacks the pawn on e5 twice, while it is defended once; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 Nxd4 Nf6 Nxc6
 n6 3…Nf6 (Black, Line A) | book
     book: in book (Four Knights Game)
     board: moves the knight from g8 to f6
@@ -45,7 +45,7 @@ n7 4.Bc4 (White, Line A) | inaccuracy | before: The position is roughly equal �
     board: moves the bishop from f1 to c4
     ideas: develops the bishop to c4 | controls d5 | prevents d5, a pawn break | aims at the pawn on f7, which only the king defends | clears the way to castle kingside
     notes: Bb5 was better: it develops the bishop and attacks the knight on c6
-    alternatives: Bb5 (develops the bishop to b5; clears the way to castle kingside): The position is roughly equal, after Bb4 O-O O-O Re1; d4 (threatens to win the pawn on e5 with dxe5; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 Nxd4 Bb4 Nxc6; Be2 (develops the bishop to e2; clears the way to castle kingside): The position is roughly equal, after d5 exd5 Nxd5 O-O
+    alternatives: Bb5 (develops the bishop to b5; clears the way to castle kingside): The position is roughly equal, after Bb4 O-O O-O Re1; d4 (attacks the pawn on e5 twice, while it is defended once; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 Nxd4 Bb4 Nxc6; Be2 (develops the bishop to e2; clears the way to castle kingside): The position is roughly equal, after d5 exd5 Nxd5 O-O
 n8 4…Nxe4 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Four Knights Game: Italian Variation)
     board: moves the knight from f6 to e4 | captures the pawn on e4 | attacks the knight on c3 | leaves the black knight on e4 hanging

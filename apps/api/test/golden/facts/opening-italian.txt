@@ -34,7 +34,7 @@ n5 3.Bc4 (White, Line A) | book
     piece: the light-squared bishop
     board: moves the bishop from f1 to c4
     ideas: develops the bishop to c4 | controls d5 | prevents d5, a pawn break | aims at the pawn on f7, which only the king defends | clears the way to castle kingside
-    alternatives: d4 (threatens to win the pawn on e5 with dxe5; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 Nxd4 Nf6 Nxc6; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nf6 Bb5 Bb4 O-O
+    alternatives: d4 (attacks the pawn on e5 twice, while it is defended once; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 Nxd4 Nf6 Nxc6; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nf6 Bb5 Bb4 O-O
 n6 3…Bc5 (Black, Line A) | book
     book: in book (Italian Game: Giuoco Piano)
     the book also has: Nd4 (Italian Game: Blackburne-Kostić Gambit); d6 (Italian Game: Paris Defense); f5 (Italian Game: Rousseau Gambit); h6 (Italian Game: Anti-Fried Liver Defense)
@@ -107,7 +107,7 @@ n17 4.d3 (White, Line B) | book
     board: moves the pawn from d2 to d3
     ideas: defends the pawn on e4, which was attacked | controls e4 | supports the centre pawn on e4 | opens the bishop on c1 (from 0 squares to 5) | shuts in the bishop on c4 (from 9 squares to 6)
     opens: the dark-squared bishop on c1, from 0 squares to 5
-    alternatives: d4 (threatens to win the pawn on e5 with dxe5; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 O-O Nxe4 Re1; Ng5 (threatens to win the pawn on f7 with Nxf7; moves the knight for the second time while 2 pieces still wait at home; controls e4): The position is roughly equal, after d5 exd5 Na5 Bb5+
+    alternatives: d4 (attacks the pawn on e5 twice, while it is defended once; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 O-O Nxe4 Re1; Ng5 (threatens to win the pawn on f7 with Nxf7; moves the knight for the second time while 2 pieces still wait at home; controls e4): The position is roughly equal, after d5 exd5 Na5 Bb5+
 n18 4…Be7 (Black, Line B) | book
     book: in book (Italian Game: Two Knights Defense, Modern Bishop's Opening)
     the book also has: Bc5 (Italian Game: Giuoco Pianissimo, Normal); h6 (Italian Game: Two Knights Defense, Modern Bishop's Opening)

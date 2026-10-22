@@ -45,7 +45,7 @@ n8 4…Be7 (Black, Line A) | good | before: The position is roughly equal → af
 n9 5.Bxf6 (White, Line A) | best | before: White is slightly better → after: White is slightly better
     piece: the dark-squared bishop
     board: moves the bishop from g5 to f6 | captures the knight on f6 | attacks the bishop on e7
-    ideas: threatens to win the pawn on g7 with Bxg7 | White now has 3 pieces developed to 1 piece | controls e5 and d4 | supports the centre pawn on d4
+    ideas: White now has 3 pieces developed to 1 piece | controls e5 and d4 | supports the centre pawn on d4
     notes: Trades the bishop for the knight on f6
     alternatives: e3 (controls d4 and f4; supports the centre pawn on d4; opens the bishop on f1 (from 0 squares to 5)): The position is roughly equal, after Nc6 Bb5 O-O Ne2; a3: The position is roughly equal, after d5 e3 O-O Na4
 n10 5…Bxf6 (Black, Line A) | best | before: White is slightly better → after: White is slightly better
@@ -61,7 +61,7 @@ n11 6.e4 (White, Line A) | best | before: White is slightly better → after: Wh
     alternatives: e3 (controls d4 and f4; supports the centre pawn on d4; opens the bishop on f1 (from 0 squares to 5)): The position is roughly equal, after c5 dxc5 Qa5 Qd2; Qd2 (brings the queen out to d2; clears the way to castle queenside): The position is roughly equal, after d5 e3 Bd7 O-O-O
 n12 6…fxe4 (Black, Line A) | excellent | before: White is slightly better → after: White is slightly better
     board: moves the pawn from f5 to e4 | captures the pawn on e4 | attacks the knight on f3
-    ideas: threatens to win the knight on f3 with exf3 | puts a pawn in the centre on e4 | controls d3 and f3 | opens the f-file for the rooks (half-open) | leaves Black with doubled pawns on the e-file | takes toward the centre
+    ideas: puts a pawn in the centre on e4 | controls d3 and f3 | opens the f-file for the rooks (half-open) | leaves Black with doubled pawns on the e-file | takes toward the centre
     notes: Trades pawns on e4
     alternatives: c5 (strikes at the centre: attacks the pawn on d4; puts pressure on the pawn on d4; opens the queen on d8 (from 1 squares to 4)): White is slightly better, after exf5 cxd4 Ne4 Nc6; O-O (castles kingside: the king goes to safety and the rook comes to f8): White is slightly better, after Qd2 fxe4 Nxe4 b6
 n13 7.Nxe4 (White, Line A) | great | before: White is slightly better → after: White is slightly better
@@ -103,7 +103,7 @@ n18 9…Bb7 (Black, Line A) | mistake | before: Black is slightly better → aft
     board: moves the bishop from c8 to b7 | attacks the knight on e4
     ideas: develops the bishop to b7 | controls d5 and e4 | fianchettoes the bishop on b7, on the long diagonal | prepares the pawn's advance to c6, which it now supports
     notes: Bxe5 was better: it takes the knight on e5
-    alternatives: Bxe5 (threatens to win the pawn on d4 with Bxd4; puts pressure on the pawn on d4; centralises the bishop on e5, which reaches 8 squares): Black is slightly better, after dxe5 Nc6 O-O Nxe5; Nc6 (threatens to win the knight on e5 with Nxe5; develops the knight to c6, its most useful square; puts pressure on the pawn on d4 and controls e5): The position is roughly equal, after Nxc6 dxc6 Qe2 Qxd4
+    alternatives: Bxe5 (puts pressure on the pawn on d4; centralises the bishop on e5, which reaches 8 squares; aims at the pawn on h2): Black is slightly better, after dxe5 Nc6 O-O Nxe5; Nc6 (threatens to win the pawn on d4 with Nxd4; attacks the knight on e5 twice, while it is defended once; develops the knight to c6, its most useful square): The position is roughly equal, after Nxc6 dxc6 Qe2 Qxd4
 n19 10.Qh5 (White, Line A) | inaccuracy | before: White is slightly better → after: The position is roughly equal
     best instead: O-O; after O-O d6 Nxf6+ Qxf6 Ng4 Qf4, material is level
     why O-O is better: castles kingside
@@ -119,7 +119,7 @@ n20 10…Qe7 (Black, Line A) | blunder | before: The position is roughly equal �
     ideas: brings the queen out to e7 | prepares the pawn's advance to c5, which it now supports
     notes: Won a queen, but it allowed mate.
     tactics: They let you force mate with Qxh7+.
-    alternatives: Bxe5 (threatens to win the pawn on d4 with Bxd4; puts pressure on the pawn on d4; centralises the bishop on e5, which reaches 8 squares): The position is roughly equal, after dxe5 Rf5 Qg4 Rxe5; g6 (attacks the queen on h5; controls f5; opens the bishop on f6 (from 4 squares to 6)): The position is roughly equal, after Qe2 Bg7 h4 Nc6
+    alternatives: Bxe5 (puts pressure on the pawn on d4; centralises the bishop on e5, which reaches 8 squares; aims at the pawn on h2): The position is roughly equal, after dxe5 Rf5 Qg4 Rxe5; g6 (attacks the queen on h5; controls f5; opens the bishop on f6 (from 4 squares to 6)): The position is roughly equal, after Qe2 Bg7 h4 Nc6
     tempting capture: Bxe4? Black's Bxe4 moves the bishop from b7 to e4 | captures the knight on e4 | attacks the bishop on d3. White answers Bxe4: moves the bishop from d3 to e4 | captures the bishop on e4 | attacks the rook on a8. Then g6 Nxg6 Qe8. Over the line Black takes a knight; White takes a bishop and a pawn; at the end White is a pawn up (White is better).
     tempting threat: d5? Black's d5 moves the pawn from d7 to d5 | attacks the knight on e4. White answers Ng5: moves the knight from e4 to g5. Then h6 Bh7+ Kh8. Over the line nothing is taken; at the end White has a knight for a bishop (White has a forced mate in 3).
     tempting threat: Nc6? Black's Nc6 moves the knight from b8 to c6 | attacks the knight on e5. White answers Ng5: moves the knight from e4 to g5 | leaves the white pawn on d4 hanging. Then h6 Bh7+ Kh8. Over the line nothing is taken; at the end White has a knight for a bishop (White has a forced mate in 3).
@@ -140,7 +140,7 @@ n23 12.Nxf6+ (White, Line A) | great | before: White has a forced mate → after
     board: moves the knight from e4 to f6 | captures the bishop on f6 | gives check | a double check, with the bishop on d3 | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh8, Kh6
     ideas: brings the knight into the attack: it bears on 2 squares around the king | takes g8 from the enemy king | White now has 3 pieces developed to 1 piece | controls e4 and d5 | after the exchange White has a knight and a pawn for a queen | prepares the pawn's advance to d5, which it now supports
     tactics: You forced mate.
-    alternatives: Nc5+ (controls e4): Black is much better, after Kg8 Nxb7 Bxe5 dxe5; Nxd7 (threatens to win the rook on f8 with Nxf8+; controls e5; leaves Black with an isolated pawn on e6): Black is much better, after Nxd7 Nxf6+ Kh6 Nxd7
+    alternatives: Nc5+ (controls e4): Black is much better, after Kg8 Nxb7 Bxe5 dxe5; Nxd7 (controls e5; leaves Black with an isolated pawn on e6): Black is much better, after Nxd7 Nxf6+ Kh6 Nxd7
     tempting check: Nd6+? White's Nd6+ moves the knight from e4 to d6 | gives check | a discovered check from the bishop on d3 | the check can be answered: block with Be4, g6; the checking piece cannot be taken; move the king with Kg8, Kh8, Kh6 | attacks the bishop on b7. Black answers Kg8: moves the king from h7 to g8 | leaves the black bishop on b7 hanging. Then Nxb7 Qb4+ c3. Over the line White takes a bishop; at the end White has a knight and a pawn for a queen (Black is much better).
     tempting check: Ng5+? White's Ng5+ moves the knight from e4 to g5 | gives check | a double check, with the bishop on d3 | the check can be answered: no block; the checking piece cannot be taken; move the king with Kg8, Kh8, Kh6. Black answers Kh6: moves the king from h7 to h6 | attacks the knight on g5. Then Nh7 Bxe5. Over the line Black takes a knight; at the end White has a pawn for a queen and a bishop (Black is much better).
     tempting check: Ng3+? White's Ng3+ moves the knight from e4 to g3 | gives check | a discovered check from the bishop on d3 | the check can be answered: block with Be4, g6; the checking piece cannot be taken; move the king with Kg8, Kh8, Kh6. Black answers Kg8: moves the king from h7 to g8. Then O-O-O Bxe5 dxe5. Over the line White takes a bishop; Black takes a knight; at the end White has a pawn for a queen (Black is much better).
@@ -223,10 +223,10 @@ REVIEW NOTES
     n6 3…Nf6: Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square; Controls e4 and d5
     n7 4.Bg5: Pins the knight on f6 to the queen; Develops the bishop to g5; White now has 3 pieces developed to 1 piece
     n8 4…Be7: Breaks the pin on the knight on f6; Develops the bishop to e7; Defends the knight on f6, attacked once and now defended twice
-    n9 5.Bxf6: Trades the bishop for the knight on f6; Threatens to win the pawn on g7 with Bxg7; White now has 3 pieces developed to 1 piece; Controls e5 and d4
+    n9 5.Bxf6: Trades the bishop for the knight on f6; White now has 3 pieces developed to 1 piece; Controls e5 and d4; Supports the centre pawn on d4
     n10 5…Bxf6: Recaptures the bishop on f6; Puts pressure on the pawn on d4 and controls e5; Puts the bishop on the long diagonal; After the exchange White has a knight for a bishop
     n11 6.e4: Puts a pawn in the centre on e4; Strikes at the centre: attacks the pawn on f5; Puts pressure on the pawn on f5 and controls d5
-    n12 6…fxe4: Trades pawns on e4; Threatens to win the knight on f3 with exf3; Puts a pawn in the centre on e4; Controls d3 and f3
+    n12 6…fxe4: Trades pawns on e4; Puts a pawn in the centre on e4; Controls d3 and f3; Opens the f-file for the rooks (half-open)
     n13 7.Nxe4: Recaptures the pawn on e4; Centralises the knight on e4, which reaches 8 squares; After the exchange White has a knight for a bishop
     n14 7…b6: Controls c5; Prevents Nc5, a knight on a strong square; Opens the bishop on c8 (from 0 squares to 2)
     n15 8.Ne5: Moves the knight for the second time while 1 piece still wait at home

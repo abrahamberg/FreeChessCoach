@@ -33,8 +33,8 @@ n4 2…e5 (Black, Line A) | book
 n5 3.dxe5 (White, Line A) | book
     book: in book (Queen's Gambit Declined: Albin Countergambit)
     board: moves the pawn from d4 to e5 | captures the pawn on e5 | leaves the white pawn on c4 hanging
-    ideas: threatens to win the pawn on d5 with cxd5 | puts a pawn in the centre on e5 | controls d6 and f6 | opens the d-file for the rooks (half-open) | opens the queen on d1 (from 5 squares to 7) | leaves White with doubled pawns on the e-file | after the exchange White is a pawn up
-    alternatives: Nc3 (threatens to win the pawn on d5 with cxd5; develops the knight to c3, its most useful square; puts pressure on the pawn on d5 and controls e4): The position is roughly equal, after exd4 Qxd4 dxc4 Qxd8+; cxd5 (puts a pawn in the centre on d5; controls c6 and e6; opens the c-file for the rooks (half-open)): The position is roughly equal, after Qxd5 dxe5 Qxd1+ Kxd1
+    ideas: puts a pawn in the centre on e5 | controls d6 and f6 | opens the d-file for the rooks (half-open) | opens the queen on d1 (from 5 squares to 7) | leaves White with doubled pawns on the e-file | after the exchange White is a pawn up
+    alternatives: Nc3 (attacks the pawn on d5 twice, while it is defended once; develops the knight to c3, its most useful square; puts pressure on the pawn on d5 and controls e4): The position is roughly equal, after exd4 Qxd4 dxc4 Qxd8+; cxd5 (puts a pawn in the centre on d5; controls c6 and e6; opens the c-file for the rooks (half-open)): The position is roughly equal, after Qxd5 dxe5 Qxd1+ Kxd1
 n6 3…d4 (Black, Line A) | book
     book: in book (Queen's Gambit Declined: Albin Countergambit)
     board: moves the pawn from d5 to d4
@@ -44,7 +44,7 @@ n7 4.e3 (White, Line A) | book
     book: in book (Queen's Gambit Declined: Albin Countergambit)
     the book also has: Nf3 (Queen's Gambit Declined: Albin Countergambit, Balogh Variation); e4 (Queen's Gambit Declined: Albin Countergambit, Spassky Variation)
     board: moves the pawn from e2 to e3
-    ideas: threatens to win the pawn on d4 with exd4 | strikes at the centre: attacks the pawn on d4 | puts pressure on the pawn on d4 and controls f4 | opens the queen on d1 (from 6 squares to 10) | shuts in the bishop on c1 (from 5 squares to 1)
+    ideas: attacks the pawn on d4 twice, while it is defended once | strikes at the centre: attacks the pawn on d4 | puts pressure on the pawn on d4 and controls f4 | opens the queen on d1 (from 6 squares to 10) | shuts in the bishop on c1 (from 5 squares to 1)
     opens: the queen on d1, from 6 squares to 10
     alternatives: Nf3 (threatens to win the pawn on d4 with Nxd4; develops the knight to f3, its most useful square; puts pressure on the pawn on d4 and controls e5): White is slightly better, after Nc6 g3 Nge7 Bg2; g3 (controls f4; opens the bishop on f1 (from 0 squares to 2)): White is slightly better, after Nc6 Nf3 Nge7 Bg2; a3: White is slightly better, after Nc6 Nf3 Nge7 b4
 n8 4…Bb4+ (Black, Line A) | book
@@ -57,12 +57,12 @@ n9 5.Bd2 (White, Line A) | book
     book: in book (Queen's Gambit Declined: Albin Countergambit)
     piece: the dark-squared bishop
     board: moves the bishop from c1 to d2 | blocks the check from the bishop on b4 | attacks the bishop on b4
-    ideas: threatens to win the bishop on b4 with Bxb4 | develops the bishop to d2
+    ideas: develops the bishop to d2
     alternatives: Ke2: Black is slightly better, after Be6 b3 Qe7 Nf3; Nd2 (leaves the knight on d2 pinned to the king; develops the knight to d2; controls e4): Black is slightly better, after dxe3 fxe3 Qh4+ g3
 n10 5…dxe3 (Black, Line A) | book
     book: in book (Queen's Gambit Declined: Albin Countergambit, Lasker Trap)
     board: moves the pawn from d4 to e3 | captures the pawn on e3 | attacks the bishop on d2, which is pinned to the king by the bishop on b4 | leaves the black bishop on b4 hanging
-    ideas: threatens to win the bishop on d2 with exd2+ | pins the bishop on d2 to the queen | the bishop on d2 cannot take it: it is pinned by the queen on d8 | opens the d-file for the rooks | opens the queen on d8 (from 7 squares to 10) | after fxe3 the opponent's pawns are doubled on the e-file
+    ideas: pins the bishop on d2 to the queen | the bishop on d2 cannot take it: it is pinned by the queen on d8 | opens the d-file for the rooks | opens the queen on d8 (from 7 squares to 10) | after fxe3 the opponent's pawns are doubled on the e-file
     opens: the queen on d8, from 7 squares to 10
     alternatives: Bc5 (controls d4; supports the centre pawn on d4): The position is roughly equal, after b4 Be7 Qa4+ Nc6; Bxd2+ (attacks the pawn on e3 twice, while it is defended once; settles the bishop on d2 on a square by the king that no pawn can cover any more): White is slightly better, after Qxd2 Nc6 Nf3 dxe3
 n11 6.Bxb4 (White, Line A) | blunder | before: Black is slightly better → after: Black is much better
@@ -81,7 +81,7 @@ n12 6…exf2+ (Black, Line A) | great | before: Black is much better → after: 
     ideas: gives up the centre: the pawn leaves e3 | opens the e-file for the rooks (half-open) | creates a passed pawn on f2 | leaves White with an isolated pawn on e5 | leaves Black with doubled pawns on the f-file | after the exchange White has a bishop for a pawn
     notes: Creates a passed pawn on f | Trades pawns on f2
     tactics: You threw in an in-between move — checks first instead of taking back on b4.
-    alternatives: Qh4 (threatens mate with Qxf2#; threatens to win the pawn on f2 with exf2+; brings the queen out to h4): White is better, after g3 Qh6 f4 Nc6; Qxd1+ (pins the knight on b1 to the rook; settles the queen on d1 on a square by the king that no pawn can cover any more; brings the queen out to d1): White is better, after Kxd1 Bg4+ f3 Nc6
+    alternatives: Qh4 (threatens mate with Qxf2#; threatens to win the pawn on f2 with exf2+; brings the queen out early to h4, with 3 pieces still at home): White is better, after g3 Qh6 f4 Nc6; Qxd1+ (pins the knight on b1 to the rook; settles the queen on d1 on a square by the king that no pawn can cover any more; brings the queen out to d1): White is better, after Kxd1 Bg4+ f3 Nc6
     flags: quiz-eligible, critical
 n13 7.Ke2 (White, Line A) | best | before: Black is much better → after: Black is much better
     board: moves the king from e1 to e2
@@ -91,7 +91,7 @@ n14 7…fxg1=N+ (Black, Line A) | best | before: Black is much better → after:
     board: moves the pawn from f2 to g1 | promotes to a knight | captures the knight on g1 | gives check | the check can be answered: no block; take the checking piece with Rxg1; move the king with Ke3, Kf2, Ke1
     ideas: after the exchange White has a bishop for two knights
     tactics: You won a knight through an underpromotion — promotes to a knight rather than a queen.
-    alternatives: Qh4 (threatens to win the pawn on c4 with Qxc4+; brings the queen out to h4; brings the queen out early, with 3 pieces still at home): Black is slightly better, after Nf3 Qxc4+ Kxf2 Qxb4; Qxd1+ (pins the knight on b1 to the rook; settles the queen on d1 on a square by the king that no pawn can cover any more; brings the queen out to d1): Black is slightly better, after Kxd1 fxg1=R Rxg1 Nc6
+    alternatives: Qh4 (threatens to win the pawn on c4 with Qxc4+; brings the queen out early to h4, with 3 pieces still at home; controls e4): Black is slightly better, after Nf3 Qxc4+ Kxf2 Qxb4; Qxd1+ (pins the knight on b1 to the rook; settles the queen on d1 on a square by the king that no pawn can cover any more; brings the queen out to d1): Black is slightly better, after Kxd1 fxg1=R Rxg1 Nc6
     tempting check: Bg4+? Black's Bg4+ moves the bishop from c8 to g4 | gives check | the check can be answered: block with Nf3; the checking piece cannot be taken; move the king with Ke3, Kxf2 | leaves the black pawn on f2 hanging. White answers Nf3: moves the knight from g1 to f3 | blocks the check from the bishop on g4. Then Qh4 g3. Over the line nothing is taken; at the end White has a bishop for a pawn (White is better).
     flags: quiz-eligible
 n15 8.Rxg1 (White, Line A) | inaccuracy | before: Black is much better → after: Black is much better
@@ -106,17 +106,16 @@ n16 8…Bg4+ (Black, Line A) | best | before: Black is much better → after: Bl
     board: moves the bishop from c8 to g4 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke3, Kf2, Ke1
     ideas: develops the bishop to g4
     tactics: You won a queen through a skewer two moves away — skewers the king on e2, exposing the queen on d1.
-    alternatives: Qh4 (threatens to win the pawn on c4 with Qxc4+; brings the queen out to h4; brings the queen out early, with 3 pieces still at home): Black is better, after Qe1 Qe4+ Kd1 Qd4+; Qg5 (threatens to win the pawn on e5 with Qxe5+; brings the queen out to g5; brings the queen out early, with 3 pieces still at home): Black is better, after Qd2 Qh5+ Kf2 Nc6
+    alternatives: Qh4 (threatens to win the pawn on c4 with Qxc4+; brings the queen out early to h4, with 3 pieces still at home; controls e4): Black is better, after Qe1 Qe4+ Kd1 Qd4+; Qg5 (threatens to win the pawn on e5 with Qxe5+; brings the queen out early to g5, with 3 pieces still at home; puts pressure on the pawn on e5): Black is better, after Qd2 Qh5+ Kf2 Nc6
     tempting check: Qxd1+? Black's Qxd1+ moves the queen from d8 to d1 | captures the queen on d1 | gives check | the check can be answered: no block; take the checking piece with Kxd1; move the king with Ke3, Kf2 | attacks the knight on b1 | attacks the bishop on f1. White answers Kxd1: moves the king from e2 to d1 | captures the queen on d1. Then Nc6 Bc3 Bf5. Over the line Black takes the queen; White takes the queen; at the end White has a bishop for a knight (Black is slightly better).
     flags: quiz-eligible
 n17 9.Ke1 (White, Line A) | blunder | before: Black is much better → after: Black has a forced mate
     best instead: Kf2; after Kf2 Bxd1 Bc3 c6 Nd2 Qb6+, White has a bishop for a queen and a knight
     why Kf2 is better: moves the king from e2 to f2 | leaves the white queen on d1 hanging
     board: moves the king from e2 to e1
-    ideas: threatens to win the bishop on g4 with Qxg4
     notes: Leaves the queen on d1 where it can be won
     tactics: They let you force mate with Qxd1+.
-    alternatives: Kf2 (threatens to win the bishop on g4 with Qxg4): Black is much better, after Bxd1 Bc3 c6 Nd2; Ke3 (threatens to win the bishop on g4 with Qxg4): Black is winning, after Qxd1 Bd2 Nc6 Kf2
+    alternatives: Kf2: Black is much better, after Bxd1 Bc3 c6 Nd2; Ke3: Black is winning, after Qxd1 Bd2 Nc6 Kf2
 n18 9…Bxd1 (Black, Line A) | miss | before: Black has a forced mate → after: Black is much better
     piece: the light-squared bishop
     best instead: Qxd1+; after Qxd1+ Kf2 Qd4+ Kg3 Nh6 h3, White has a bishop for a queen and a knight
@@ -149,12 +148,12 @@ REVIEW NOTES
     n2 1…d5: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08); Puts a pawn in the centre on d5; Controls c4 and e4; Prevents e4, a pawn advance
     n3 2.c4: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08); Offers the pawn on c4: it can be taken, and the engine still approves; Strikes at the centre: attacks the pawn on d5; Puts pressure on the pawn on d5
     n4 2…e5: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08); Offers the pawn on e5: it can be taken, and the engine still approves; Puts a pawn in the centre on e5; Strikes at the centre: attacks the pawn on d4
-    n5 3.dxe5: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08); Threatens to win the pawn on d5 with cxd5; Puts a pawn in the centre on e5; Controls d6 and f6
+    n5 3.dxe5: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08); Puts a pawn in the centre on e5; Controls d6 and f6; Opens the d-file for the rooks (half-open)
     n6 3…d4: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08); Takes the attacked pawn to safety on d4; Puts a pawn in the centre on d4; Controls c3 and e3
-    n7 4.e3: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08); Threatens to win the pawn on d4 with exd4; Strikes at the centre: attacks the pawn on d4; Puts pressure on the pawn on d4 and controls f4
+    n7 4.e3: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08); Attacks the pawn on d4 twice, while it is defended once; Strikes at the centre: attacks the pawn on d4; Puts pressure on the pawn on d4 and controls f4
     n8 4…Bb4+: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08); Develops the bishop to b4
-    n9 5.Bd2: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08); Threatens to win the bishop on b4 with Bxb4; Develops the bishop to d2
-    n10 5…dxe3: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08); Threatens to win the bishop on d2 with exd2+; Pins the bishop on d2 to the queen; The bishop on d2 cannot take it: it is pinned by the queen on d8
+    n9 5.Bd2: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08); Develops the bishop to d2
+    n10 5…dxe3: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08); Pins the bishop on d2 to the queen; The bishop on d2 cannot take it: it is pinned by the queen on d8; Opens the d-file for the rooks
     n11 6.Bxb4: Missed fxe3, winning material on e3
     n12 6…exf2+: Creates a passed pawn on f; Trades pawns on f2; Gives up the centre: the pawn leaves e3; Opens the e-file for the rooks (half-open); Leaves White with an isolated pawn on e5; You threw in an in-between move — checks first instead of taking back on b4.
     n13 7.Ke2: Gives up castling for good

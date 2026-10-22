@@ -41,7 +41,7 @@ n6 3…Bg7 (Black, Classical) | book
     piece: the dark-squared bishop
     board: moves the bishop from f8 to g7
     ideas: develops the bishop to g7 | fianchettoes the bishop on g7, on the long diagonal | clears the way to castle kingside
-    alternatives: d5 (threatens to win the pawn on c4 with dxc4; puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on c4): The position is roughly equal, after Nf3 Bg7 cxd5 Nxd5; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after e4 Bg7 Nf3 O-O
+    alternatives: d5 (puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on c4; puts pressure on the pawn on c4 and controls e4): The position is roughly equal, after Nf3 Bg7 cxd5 Nxd5; d6 (controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after e4 Bg7 Nf3 O-O
 n7 4.e4 (White, Classical) | book
     book: in book (King's Indian Defense: Normal Variation)
     board: moves the pawn from e2 to e4
@@ -89,12 +89,12 @@ n14 7…Nc6 (Black, Classical) | book
     the book also has: Na6 (King's Indian Defense: Orthodox Variation, Glek Defense); Nbd7 (King's Indian Defense: Orthodox Variation); a5 (King's Indian Defense: Orthodox Variation, Ukrainian Defense); c6 (King's Indian Defense: Orthodox Variation, Donner Defense)
     board: moves the knight from b8 to c6
     ideas: defends the pawn on e5, which was attacked | develops the knight to c6, its most useful square | puts pressure on the pawn on d4 and controls e5 | supports the centre pawn on e5
-    alternatives: exd4 (threatens to win the knight on c3 with dxc3; puts a pawn in the centre on d4; controls c3 and e3): The position is roughly equal, after Nxd4 Nc6 Be3 Nd7; Re8 (controls e5; supports the centre pawn on e5; brings the rook to the e-file, in the centre where files open first): White is slightly better, after d5 a5 Be3 Na6; b6 (controls c5; opens the bishop on c8 (from 5 squares to 7)): White is slightly better, after Be3 a5 dxe5 dxe5
+    alternatives: exd4 (puts a pawn in the centre on d4; controls c3 and e3; opens the e-file for the rooks (half-open)): The position is roughly equal, after Nxd4 Nc6 Be3 Nd7; Re8 (controls e5; supports the centre pawn on e5; brings the rook to the e-file, in the centre where files open first): White is slightly better, after d5 a5 Be3 Na6; b6 (controls c5; opens the bishop on c8 (from 5 squares to 7)): White is slightly better, after Be3 a5 dxe5 dxe5
 n15 8.d5 (White, Classical) | book
     book: in book (King's Indian Defense: Orthodox Variation, Aronin-Taimanov Defense)
     board: moves the pawn from d4 to d5 | attacks the knight on c6
     ideas: attacks the knight on c6 | puts a pawn in the centre on d5 | controls c6 and e6
-    alternatives: Be3 (develops the bishop to e3; controls d4; supports the centre pawn on d4): The position is roughly equal, after Ng4 Bg5 f6 Bh4; dxe5 (threatens to win the knight on f6 with exf6; puts a pawn in the centre on e5; puts pressure on the pawn on d6 and controls f6): The position is roughly equal, after dxe5 Qxd8 Nxd8 Bd1
+    alternatives: Be3 (develops the bishop to e3; controls d4; supports the centre pawn on d4): The position is roughly equal, after Ng4 Bg5 f6 Bh4; dxe5 (puts a pawn in the centre on e5; puts pressure on the pawn on d6 and controls f6; opens the d-file for the rooks (half-open)): The position is roughly equal, after dxe5 Qxd8 Nxd8 Bd1
 n16 8…Ne7 (Black, Classical) | book
     book: in book (King's Indian Defense: Orthodox Variation, Aronin-Taimanov Defense)
     board: moves the knight from c6 to e7

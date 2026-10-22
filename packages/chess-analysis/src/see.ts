@@ -3,7 +3,8 @@ import { attackersOf, FastBoard, type FastMove, indexOf, squareOf, symbolOf } fr
 import { legalMoves } from './fast-board/moves.js';
 import type { ColorName } from './attack-map.js';
 
-const SEE_PIECE_VALUES: Record<PieceSymbol, number> = {
+/** The exchange's piece values, in centipawns. */
+export const SEE_PIECE_VALUES: Record<PieceSymbol, number> = {
   p: 100,
   n: 320,
   b: 330,

@@ -61,7 +61,7 @@ n9 5.Nc3 (White, English Attack) | book
     the book also has: Bc4 (Sicilian Defense: Modern Variations, Ginsberg Gambit); f3 (Sicilian Defense: Prins Variation)
     board: moves the knight from b1 to c3
     ideas: defends the pawn on e4, which was attacked | develops the knight to c3, its most useful square | controls d5 and e4 | supports the centre pawn on e4
-    alternatives: Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after e6 Nc3 a6 Bb3; Qd3 (brings the queen out to d3; brings the queen out early, with 3 pieces still at home; controls e4): The position is roughly equal, after Nbd7 Nc3 g6 Be2
+    alternatives: Bc4 (develops the bishop to c4; controls d5; aims at the pawn on f7, which only the king defends): The position is roughly equal, after e6 Nc3 a6 Bb3; Qd3 (brings the queen out early to d3, with 3 pieces still at home; controls e4; supports the centre pawn on e4): The position is roughly equal, after Nbd7 Nc3 g6 Be2
 n10 5…a6 (Black, English Attack) | book
     book: in book (Sicilian Defense: Najdorf Variation)
     the book also has: Bd7 (Sicilian Defense: Kupreichik Variation); Nc6 (Sicilian Defense: Classical Variation); e5 (Sicilian Defense: Venice Attack); g6 (Sicilian Defense: Dragon Variation)
@@ -145,7 +145,7 @@ n24 7…Be7 (Black, Bg5) | book
     piece: the dark-squared bishop
     board: moves the bishop from f8 to e7
     ideas: breaks the pin on the knight on f6 | develops the bishop to e7 | defends the knight on f6, attacked once and now defended twice | clears the way to castle kingside
-    alternatives: Qb6 (threatens to win the pawn on b2 with Qxb2; brings the queen out to b6; brings the queen out early, with 3 pieces still at home): The position is roughly equal, after Nb3 Be7 Qd2 Qc7; h6 (attacks the bishop on g5, which pins the knight on f6): The position is roughly equal, after Bxf6 Qxf6 Qd2 Nc6
+    alternatives: Qb6 (threatens to win the pawn on b2 with Qxb2; brings the queen out early to b6, with 3 pieces still at home; controls d4): The position is roughly equal, after Nb3 Be7 Qd2 Qc7; h6 (attacks the bishop on g5, which pins the knight on f6): The position is roughly equal, after Bxf6 Qxf6 Qd2 Nc6
 n25 8.Qf3 (White, Bg5) | book
     book: in book (Sicilian Defense: Najdorf Variation)
     board: moves the queen from d1 to f3

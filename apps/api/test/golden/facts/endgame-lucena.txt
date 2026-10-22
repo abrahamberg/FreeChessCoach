@@ -29,7 +29,7 @@ n6 3…Rc1+ (Black, Line A) | best | before: White is much better → after: Whi
     alternatives: Rb1 (puts a rook on the half-open b-file): White is much better, after Rd7+ Ke6 Rd6+ Ke7; Rf1 (puts a rook on the open f-file): White is much better, after Re4+ Kf8 Rb4 Rf7+
 n7 4.Kb6 (White, Line A) | best | before: White is much better → after: White is much better
     board: moves the king from c7 to b6
-    alternatives: Kb8: White is much better, after Ke6 Ra4 Rb1 Ka7; Rc4 (threatens to win the rook on c1 with Rxc1; puts a rook on the open c-file): The position is roughly equal, after Rxc4+ Kb6 Rc3 b8=R
+    alternatives: Kb8: White is much better, after Ke6 Ra4 Rb1 Ka7; Rc4 (puts a rook on the open c-file): The position is roughly equal, after Rxc4+ Kb6 Rc3 b8=R
 n8 4…Rb1+ (Black, Line A) | best | before: White is much better → after: White is much better
     board: moves the rook from c1 to b1 | gives check | the check can be answered: block with Rb4; the checking piece cannot be taken; move the king with Ka7, Kc7, Kc6, Kc5, Ka5, Ka6
     ideas: puts a rook on the half-open b-file
@@ -53,7 +53,6 @@ n12 6…Rb1+ (Black, Line A) | blunder | before: White is much better → after:
     alternatives: Ke6: White is much better, after Re4+ Kd5 Rb4 Rc5+; Kf6: White is winning, after b8=Q Rb1+ Rb4 Rxb4+
 n13 7.Rb4 (White, Line A) | best | before: White is winning → after: White is winning
     board: moves the rook from d4 to b4 | blocks the check from the rook on b1 | attacks the rook on b1
-    ideas: threatens to win the rook on b1 with Rxb1
     tactics: You broke the pin — the king on b5 is free to move again.
     alternatives: Ka6: White is much better, after Rxb7 Kxb7 Ke6 Re4+; Kc6: White is much better, after Rb2 Rd5 Rxb7 Kxb7
     flags: quiz-eligible
@@ -100,7 +99,7 @@ REVIEW NOTES
     n8 4…Rb1+: Puts a rook on the half-open b-file
     n9 5.Kc6: Brings the king toward the centre, a strong piece in the ending
     n10 5…Rc1+: Puts a rook on the open c-file
-    n13 7.Rb4: Threatens to win the rook on b1 with Rxb1; You broke the pin — the king on b5 is free to move again.
+    n13 7.Rb4: You broke the pin — the king on b5 is free to move again.
   l2
     n1 1.Rd1+: Puts a rook on the open d-file
     n14 1…Kc6: Brings the king toward the centre, a strong piece in the ending

@@ -31,7 +31,7 @@ n5 3.Bc4 (White, Line A) | book
     piece: the light-squared bishop
     board: moves the bishop from f1 to c4
     ideas: develops the bishop to c4 | controls d5 | prevents d5, a pawn break | aims at the pawn on f7, which only the king defends | clears the way to castle kingside
-    alternatives: d4 (threatens to win the pawn on e5 with dxe5; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 Nxd4 Nf6 Nxc6; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nf6 Bb5 Bb4 O-O
+    alternatives: d4 (attacks the pawn on e5 twice, while it is defended once; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after exd4 Nxd4 Nf6 Nxc6; Nc3 (develops the knight to c3, its most useful square; controls d5 and e4; supports the centre pawn on e4): The position is roughly equal, after Nf6 Bb5 Bb4 O-O
 n6 3…Nd4 (Black, Line A) | book
     book: in book (Italian Game: Blackburne-Kostić Gambit)
     the book also has: d6 (Italian Game: Paris Defense); f5 (Italian Game: Rousseau Gambit); h6 (Italian Game: Anti-Fried Liver Defense)
@@ -47,8 +47,8 @@ n7 4.Nxe5 (White, Line A) | mistake | before: White is slightly better → after
     alternatives: Nxd4 (White now has 2 pieces developed to 0 pieces; centralises the knight on d4, which reaches 8 squares): White is slightly better, after exd4 O-O d5 exd5; O-O (castles kingside: the king goes to safety and the rook comes to f1; White now has 3 pieces developed to 1 piece): White is slightly better, after d5 exd5 Bd6 Nxd4; a4: White is slightly better, after Nxf3+ Qxf3 Nf6 d4
 n8 4…Qg5 (Black, Line A) | best | before: Black is slightly better → after: The position is roughly equal
     board: moves the queen from d8 to g5 | attacks the knight on e5 | allows Bxf7+, where the bishop on f7 forks the king on e8 and the knight on g8
-    ideas: threatens to win the knight on e5 with Qxe5 | brings the queen out to g5 | brings the queen out early, with 3 pieces still at home | controls e5 | prepares the pawn's advance to f5, which it now supports
-    alternatives: Qe7 (threatens to win the knight on e5 with Qxe5; brings the queen out to e7; controls e5): The position is roughly equal, after Nxf7 Qxe4+ Kf1 Qc6; d5 (threatens to win the bishop on c4 with dxc4; puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on e4): White is slightly better, after Bxd5 Qg5 Bxf7+ Kd8
+    ideas: threatens to win the knight on e5 with Qxe5 | brings the queen out early to g5, with 3 pieces still at home | controls e5 | prepares the pawn's advance to f5, which it now supports
+    alternatives: Qe7 (threatens to win the knight on e5 with Qxe5; brings the queen out to e7; controls e5): The position is roughly equal, after Nxf7 Qxe4+ Kf1 Qc6; d5 (puts a pawn in the centre on d5; strikes at the centre: attacks the pawn on e4; puts pressure on the pawn on e4 and controls c4): White is slightly better, after Bxd5 Qg5 Bxf7+ Kd8
 n9 5.Nxf7 (White, Line A) | blunder | before: The position is roughly equal → after: Black is much better
     best instead: Bxf7+; after Bxf7+ Ke7 O-O Qxe5 Bc4 d5, White has two pawns for a knight
     why Bxf7+ is better: moves the bishop from c4 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke7, Kd8 | attacks the knight on g8 | the bishop on f7 forks the king on e8 and the knight on g8 | keeps the pawn on g2 safe
@@ -65,7 +65,7 @@ n10 5…Qxg2 (Black, Line A) | great | before: Black is much better → after: B
     board: moves the queen from g5 to g2 | captures the pawn on g2 | attacks the rook on h1 | leaves the black rook on h8 hanging
     ideas: threatens to win the rook on h1 with Qxh1+ | takes the attacked queen to safety on g2 | settles the queen on g2 on a square by the king that no pawn can cover any more | keeps the king from castling kingside: f1 is covered | puts pressure on the pawn on e4 | leaves White with an isolated pawn on h2 | after the exchange White is a pawn up
     tactics: You won a rook through an eventual fork.
-    alternatives: Qh4 (threatens to win the pawn on e4 with Qxe4+; brings the queen out early, with 3 pieces still at home; puts pressure on the pawn on e4): White is better, after Nxh8 d5 Be2 Bc5; Qc5 (threatens to win the bishop on c4 with Qxc4; brings the queen out early, with 3 pieces still at home; shuts in the bishop on f8 (from 5 squares to 2)): White is better, after Na3 b5 Bd5 c6
+    alternatives: Qh4 (threatens to win the pawn on e4 with Qxe4+; brings the queen out early to h4, with 3 pieces still at home; puts pressure on the pawn on e4): White is better, after Nxh8 d5 Be2 Bc5; Qc5 (threatens to win the bishop on c4 with Qxc4; brings the queen out early to c5, with 3 pieces still at home; shuts in the bishop on f8 (from 5 squares to 2)): White is better, after Na3 b5 Bd5 c6
     tempting check: Nxc2+? Black's Nxc2+ moves the knight from d4 to c2 | captures the pawn on c2 | gives check | the check can be answered: no block; take the checking piece with Qxc2; move the king with Ke2, Kf1 | attacks the rook on a1 | leaves the black knight on c2 hanging. White answers Kf1: moves the king from e1 to f1 | leaves the white rook on a1 hanging. Then Qc5 Qxc2 b5. Over the line Black takes a pawn; White takes a knight; at the end White is a knight and a pawn up (White is much better).
     flags: quiz-eligible, critical
 n11 6.Rf1 (White, Line A) | inaccuracy | before: Black is much better → after: Black is much better
@@ -87,7 +87,7 @@ n13 7.Be2 (White, Line A) | blunder | before: Black is much better → after: Bl
     ideas: leaves the bishop on e2 pinned to the king | moves the bishop for the second time while 2 pieces still wait at home | prepares the pawn's advance to f3, which it now supports
     notes: Leaves the knight on f7 undefended
     tactics: They let you deliver checkmate with Nf3# — mates the king on e1, smothered by its own pieces.
-    alternatives: Qe2 (threatens to win the queen on e4 with Qxe4+; pins the queen on e4 to the king; brings the queen out to e2): Black is much better, after Nxe2 Bd3 Qe7 Bxe2
+    alternatives: Qe2 (pins the queen on e4 to the king; brings the queen out to e2; controls e4): Black is much better, after Nxe2 Bd3 Qe7 Bxe2
 n14 7…Nf3# (Black, Line A) | best | before: Black has a forced mate in 1 → after: checkmate
     board: moves the knight from d4 to f3 | gives checkmate | why it is mate: the king on e1 is checked by the knight on f3; d1, d2, e2, f1, f2 hold its own pieces
     notes: Puts the knight on an outpost on f3, where no pawn can attack it
@@ -116,7 +116,7 @@ REVIEW NOTES
     n5 3.Bc4: Theory — Italian Game: Blackburne-Kostić Gambit (C50); Develops the bishop to c4; Controls d5; Prevents d5, a pawn break
     n6 3…Nd4: Theory — Italian Game: Blackburne-Kostić Gambit (C50); Moves the knight for the second time while 3 pieces still wait at home; Centralises the knight on d4, which reaches 8 squares; Posts the knight on d4 on a strong square, supported by the pawn on e5
     n7 4.Nxe5: Nxd4 was better: it takes the knight on d4
-    n8 4…Qg5: Threatens to win the knight on e5 with Qxe5; Brings the queen out to g5; Brings the queen out early, with 3 pieces still at home
+    n8 4…Qg5: Threatens to win the knight on e5 with Qxe5; Brings the queen out early to g5, with 3 pieces still at home; Controls e5
     n9 5.Nxf7: Bxf7+ takes the pawn with tempo: it gives check; Opens a line for the opponent's queen on g5 (from 15 squares to 19); They let you win a rook through an eventual fork with Qxg2.; Won a pawn, but it cost the bishop.
     n10 5…Qxg2: Threatens to win the rook on h1 with Qxh1+; Takes the attacked queen to safety on g2; Settles the queen on g2 on a square by the king that no pawn can cover any more; You won a rook through an eventual fork.
     n11 6.Rf1: Leaves the pawn on h2 undefended

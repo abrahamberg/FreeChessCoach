@@ -36,12 +36,12 @@ n6 3…Nc6 (Black, Line A) | book
     book: in book (Petrov's Defense: Stafford Gambit)
     the book also has: Nxe4 (Petrov's Defense: Damiano Variation); d6 (Petrov's Defense)
     board: moves the knight from b8 to c6 | attacks the knight on e5
-    ideas: threatens to win the knight on e5 with Nxe5 | develops the knight to c6, its most useful square | controls e5 and d4
+    ideas: develops the knight to c6, its most useful square | controls e5 and d4
     alternatives: d6 (attacks the knight on e5; controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): The position is roughly equal, after Nf3 Nxe4 Qe2 Qe7; Qe7 (threatens to win the knight on e5 with Qxe5; brings the queen out to e7; controls e5): White is slightly better, after d4 d6 Nc4 d5; Nxe4 (centralises the knight on e4, which reaches 8 squares): White is slightly better, after Qe2 Qe7 Qxe4 d6
 n7 4.Nxc6 (White, Line A) | book
     book: in book (Petrov's Defense: Stafford Gambit)
     board: moves the knight from e5 to c6 | captures the knight on c6 | attacks the queen on d8 | leaves the white pawn on e4 hanging
-    ideas: threatens to win the queen on d8 with Nxd8 | removes the knight on c6, the guard of the queen on d8 | controls e5 and d4 | after dxc6 the opponent's pawns are doubled on the c-file
+    ideas: removes the knight on c6, the guard of the queen on d8 | controls e5 and d4 | after dxc6 the opponent's pawns are doubled on the c-file
     alternatives: d4 (puts a pawn in the centre on d4; controls c5; opens the bishop on c1 (from 0 squares to 5)): White is slightly better, after Nxe4 Qe2 f5 Nxc6; Nf3 (controls d4 and e5): The position is roughly equal, after Nxe4 Qe2 Qe7 Nc3
 n8 4…dxc6 (Black, Line A) | book
     book: in book (Petrov's Defense: Stafford Gambit Accepted)
@@ -77,7 +77,7 @@ n11 6.Bg5 (White, Line A) | blunder | before: White is better → after: Black i
     flags: critical
 n12 6…Nxe4 (Black, Line A) | best | before: Black is better → after: Black is better
     board: moves the knight from f6 to e4 | captures the pawn on e4 | attacks the bishop on g5 | leaves the black knight on e4 hanging
-    ideas: threatens mate in two: Bxf2+ Ke2 Bg4# | sacrifices the knight on e4: it can be taken, and the engine still approves | threatens to win the bishop on g5 with Nxg5 | centralises the knight on e4, which reaches 8 squares | prepares the pawn's advance to f6, which it now supports
+    ideas: threatens mate in two: Bxf2+ Ke2 Bg4# | sacrifices the knight on e4: it can be taken, and the engine still approves | threatens to win the pawn on f2 with Bxf2+ | attacks the bishop on g5 twice, while nothing defends it | centralises the knight on e4, which reaches 8 squares | prepares the pawn's advance to f6, which it now supports
     tactics: You won a bishop through a discovered attack two moves away — unveils the queen on d8 against the bishop on g5.
     alternatives: Bxf2+ (settles the bishop on f2 on a square by the king that no pawn can cover any more): Black is better, after Kxf2 Nxe4+ Ke1 Nxg5; Qd4 (threatens mate with Qxf2#; threatens to win the pawn on b2 with Qxb2; attacks the pawn on e4 twice, while it is defended once): The position is roughly equal, after Bh4 Qxb2 Nd2 Bd4
 n13 7.Bxd8 (White, Line A) | blunder | before: Black is better → after: Black has a forced mate in 2
@@ -85,16 +85,16 @@ n13 7.Bxd8 (White, Line A) | blunder | before: Black is better → after: Black 
     best instead: Qe2; after Qe2 Qxg5 f4 Bf2+ Kd1 Qxf4, Black is a bishop and a pawn up
     why Qe2 is better: moves the queen from d1 to e2 | attacks the knight on e4, which is pinned to the king by the queen on e2 | leaves the white bishop on g5 hanging
     board: moves the bishop from g5 to d8 | captures the queen on d8
-    ideas: threatens to win the pawn on c7 with Bxc7 | removes the queen on d8, the guard of the pawn on c7 | settles the bishop on d8 on a square by the king that no pawn can cover any more
+    ideas: removes the queen on d8, the guard of the pawn on c7 | settles the bishop on d8 on a square by the king that no pawn can cover any more
     notes: Won a queen, but it allowed mate.
     tactics: They let you force mate in 2 through a mating net with Bxf2+ — closes the net — every answer runs into mate.
-    alternatives: Qe2 (pins the knight on e4 to the king; attacks the knight on e4 twice, while nothing defends it; leaves the knight on e4 without a move): Black is better, after Qxg5 f4 Bf2+ Kd1; Be3 (controls d4): Black is much better, after Bxe3 fxe3 Qh4+ g3; d4 (threatens to win the bishop on c5 with dxc5; puts a pawn in the centre on d4; controls c5 and e5): Black is much better, after Qxd4 Qxd4 Bxd4 Bh4
+    alternatives: Qe2 (pins the knight on e4 to the king; attacks the knight on e4 twice, while nothing defends it; leaves the knight on e4 without a move): Black is better, after Qxg5 f4 Bf2+ Kd1; Be3 (controls d4): Black is much better, after Bxe3 fxe3 Qh4+ g3; d4 (puts a pawn in the centre on d4; controls c5 and e5; opens the bishop on f1 (from 1 squares to 5)): Black is much better, after Qxd4 Qxd4 Bxd4 Bh4
 n14 7…Bxf2+ (Black, Line A) | great | before: Black has a forced mate in 2 → after: Black has a forced mate in 1
     piece: the dark-squared bishop
     board: moves the bishop from c5 to f2 | captures the pawn on f2 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke2
     ideas: settles the bishop on f2 on a square by the king that no pawn can cover any more | after the exchange White has a queen for a pawn
     tactics: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
-    alternatives: Nxf2 (threatens to win the queen on d1 with Nxd1; settles the knight on f2 on a square by the king that no pawn can cover any more; controls e4): White is much better, after Qh5 Bd4 Qh4 O-O; Be6 (develops the bishop to e6; Black now has 3 pieces developed to 1 piece; controls d5): White is much better, after Bh4 Nf6 Nd2 O-O-O
+    alternatives: Nxf2 (threatens to win the queen on d1 for a knight with Nxd1; settles the knight on f2 on a square by the king that no pawn can cover any more; controls e4): White is much better, after Qh5 Bd4 Qh4 O-O; Be6 (develops the bishop to e6; Black now has 3 pieces developed to 1 piece; controls d5): White is much better, after Bh4 Nf6 Nd2 O-O-O
     tempting check: Bb4+? Black's Bb4+ moves the bishop from c5 to b4 | gives check | the check can be answered: block with c3, Nc3, Nd2, Qd2; the checking piece cannot be taken; move the king with Ke2. White answers c3: moves the pawn from c2 to c3 | blocks the check from the bishop on b4 | attacks the bishop on b4 | leaves the white bishop on d8 hanging. Then Bd6 dxe4 Kxd8. Over the line Black takes a bishop; White takes a knight; at the end White has a queen and a knight for a bishop (White is much better).
     tempting capture: Kxd8? Black's Kxd8 moves the king from e8 to d8 | captures the bishop on d8 | leaves the black knight on e4 hanging. White answers dxe4+: moves the pawn from d3 to e4 | captures the knight on e4 | gives check | a discovered check from the queen on d1 | the check can be answered: block with Bd7, Bd6, Bd4; the checking piece cannot be taken; move the king with Ke8, Ke7. Then Ke7 Nc3 Rd8. Over the line Black takes a bishop; White takes a knight; at the end White has a queen and a knight for a bishop (White is much better).
     flags: quiz-eligible, critical
@@ -129,13 +129,13 @@ REVIEW NOTES
     n3 2.Nf3: Theory — Petrov's Defense: Stafford Gambit Accepted (C42); Threatens to win the pawn on e5 with Nxe5; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
     n4 2…Nf6: Theory — Petrov's Defense: Stafford Gambit Accepted (C42); Threatens to win the pawn on e4 with Nxe4; Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square
     n5 3.Nxe5: Theory — Petrov's Defense: Stafford Gambit Accepted (C42); Centralises the knight on e5, which reaches 8 squares; After the exchange White is a pawn up
-    n6 3…Nc6: Theory — Petrov's Defense: Stafford Gambit Accepted (C42); Threatens to win the knight on e5 with Nxe5; Develops the knight to c6, its most useful square; Controls e5 and d4
-    n7 4.Nxc6: Theory — Petrov's Defense: Stafford Gambit Accepted (C42); Threatens to win the queen on d8 with Nxd8; Removes the knight on c6, the guard of the queen on d8; Controls e5 and d4
+    n6 3…Nc6: Theory — Petrov's Defense: Stafford Gambit Accepted (C42); Develops the knight to c6, its most useful square; Controls e5 and d4
+    n7 4.Nxc6: Theory — Petrov's Defense: Stafford Gambit Accepted (C42); Removes the knight on c6, the guard of the queen on d8; Controls e5 and d4; After dxc6 the opponent's pawns are doubled on the c-file
     n8 4…dxc6: Theory — Petrov's Defense: Stafford Gambit Accepted (C42); Takes the piece that attacked the queen on d8; Controls d5; Gives up the centre: the pawn leaves d7
     n9 5.d3: Theory — Petrov's Defense: Stafford Gambit Accepted (C42); Defends the pawn on e4, which was attacked; Controls c4 and e4; Supports the centre pawn on e4
     n10 5…Bc5: Theory — Petrov's Defense: Stafford Gambit Accepted (C42); Develops the bishop to c5; Black now has 2 pieces developed to 0 pieces; Controls d4
     n11 6.Bg5: They let you win a bishop through a discovered attack two moves away with Nxe4 — unveils the queen on d8 against the bishop on g5.
-    n12 6…Nxe4: Threatens mate in two: Bxf2+ Ke2 Bg4#; Sacrifices the knight on e4: it can be taken, and the engine still approves; Threatens to win the bishop on g5 with Nxg5; You won a bishop through a discovered attack two moves away — unveils the queen on d8 against the bishop on g5.
+    n12 6…Nxe4: Threatens mate in two: Bxf2+ Ke2 Bg4#; Sacrifices the knight on e4: it can be taken, and the engine still approves; Threatens to win the pawn on f2 with Bxf2+; You won a bishop through a discovered attack two moves away — unveils the queen on d8 against the bishop on g5.
     n13 7.Bxd8: They let you force mate in 2 through a mating net with Bxf2+ — closes the net — every answer runs into mate.; Won a queen, but it allowed mate.
     n14 7…Bxf2+: Settles the bishop on f2 on a square by the king that no pawn can cover any more; After the exchange White has a queen for a pawn; You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
     n15 8.Ke2: Gives up castling for good

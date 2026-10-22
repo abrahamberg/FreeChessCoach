@@ -77,7 +77,7 @@ n11 6.Nxd5 (White, Line A) | blunder | before: The position is roughly equal →
     flags: critical
 n12 6…Nxd5 (Black, Line A) | great | before: Black is better → after: Black is better
     board: moves the knight from f6 to d5 | captures the knight on d5
-    ideas: threatens to win the bishop on g5 with Qxg5 | centralises the knight on d5, which reaches 8 squares | prepares the pawn's advance to f6, which it now supports
+    ideas: centralises the knight on d5, which reaches 8 squares | prepares the pawn's advance to f6, which it now supports
     notes: Recaptures the knight on d5
     tactics: You broke the pin — the knight on f6 is free to move again.
     alternatives: h6 (attacks the bishop on g5, which pins the knight on f6): White is slightly better, after Bxf6 Nxf6 Nc3 c5; c6 (attacks the knight on d5; attacks the knight on d5 twice, while nothing defends it; controls d5): White is slightly better, after Nc3 Qb6 Bc1 c5
@@ -145,7 +145,7 @@ REVIEW NOTES
     n9 5.cxd5: Trades pawns on d5; Puts a pawn in the centre on d5; Puts pressure on the pawn on e6 and controls c6; Opens the c-file for the rooks (half-open)
     n10 5…exd5: Recaptures the pawn on d5; Puts a pawn in the centre on d5; Controls c4 and e4; Opens the e-file for the rooks (half-open)
     n11 6.Nxd5: Leaves the knight on d5 undefended; Recaptures the pawn on d5; They let you win a knight through a free piece with Nxd5 — captures the knight on d5.; Won a pawn, but it cost the bishop.
-    n12 6…Nxd5: Recaptures the knight on d5; Threatens to win the bishop on g5 with Qxg5; Centralises the knight on d5, which reaches 8 squares; Prepares the pawn's advance to f6, which it now supports; You broke the pin — the knight on f6 is free to move again.
+    n12 6…Nxd5: Recaptures the knight on d5; Centralises the knight on d5, which reaches 8 squares; Prepares the pawn's advance to f6, which it now supports; You broke the pin — the knight on f6 is free to move again.
     n13 7.Bxd8: Wins the queen for the bishop on d8; Settles the bishop on d8 on a square by the king that no pawn can cover any more; After the exchange White has a queen and a pawn for a knight
     n14 7…Bb4+: Develops the bishop to b4; Black now has 3 pieces developed to 1 piece; Clears the way to castle kingside; You threw in an in-between move — checks first instead of taking back on d8.
     n15 8.Qd2: Leaves the queen on d2 pinned to the king; Brings the queen out to d2; Clears the way to castle queenside

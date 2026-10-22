@@ -42,7 +42,9 @@ export type MoveIdea =
   | { kind: 'seventhRank'; piece: PieceAt }
   // Threats
   | { kind: 'threatensMate'; line: string[] }
-  | { kind: 'threatensMaterial'; san: string; target: PieceAt }
+  /** `givesBack`: the capturer taken back in the exchange, or null when the
+   * piece is won for nothing. */
+  | { kind: 'threatensMaterial'; san: string; target: PieceAt; givesBack: PieceSymbol | null }
   | { kind: 'pilesOn'; target: PieceAt; attackers: number; defenders: number }
   | { kind: 'pinnedCannotTake'; pinned: PieceAt; by: PieceAt }
   | { kind: 'pins'; pinned: PieceAt; to: PieceAt }

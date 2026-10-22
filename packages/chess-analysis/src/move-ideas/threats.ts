@@ -1,4 +1,4 @@
-import type { Chess, Color, Square } from 'chess.js';
+import type { Chess, Color, Move, Square } from 'chess.js';
 import { colorOf, indexOf, squareOf, symbolOf } from '../fast-board/board.js';
 import { hasLegalMove, isMate, legalMoves } from '../fast-board/moves.js';
 import { kickTarget } from '../kick-reason.js';
@@ -9,6 +9,7 @@ import type { IdeaContext } from './context.js';
 import { looseAt, pinsOf } from './memo.js';
 import { mateThreat } from './mates.js';
 import { attacksFrom, pieceAt } from './squares.js';
+import { threatNet } from './threat-nets.js';
 import type { MoveIdea } from './types.js';
 
 /** What the move threatens to do next, were it the mover's turn again. */
@@ -25,26 +26,28 @@ function threatensMate({ fast }: IdeaContext): MoveIdea | null {
   return had && had[0] === line[0] ? null : { kind: 'threatensMate', line };
 }
 
-/** An enemy piece the move makes winnable (`loosePieces`, at least a
- * pawn's worth on `see`) that was not before. */
-function threatensMaterial({ fenBefore, before, after, again, enemy, move }: IdeaContext): MoveIdea | null {
+/** The most valuable enemy piece the move makes winnable (`loosePieces`, at
+ * least a pawn's worth on `see`) that was not before, and whose capture
+ * really nets it (`threatNet`). */
+function threatensMaterial({ fenBefore, before, after, again, enemy, move, fast }: IdeaContext): MoveIdea | null {
   const changed = again ? pressureChanged(before, after, enemy, move.color) : [];
-  if (!again || changed.length === 0) return null;
+  if (!again || !fast.again || changed.length === 0) return null;
   const had = new Set(looseAt(fenBefore, enemy, changed).map((piece) => piece.square));
-  const [target] = looseAt(after.fen(), enemy, changed)
+  const targets = looseAt(after.fen(), enemy, changed)
     .filter((piece) => !had.has(piece.square))
     .sort((a, b) => PIECE_VALUES[b.piece] - PIECE_VALUES[a.piece]);
-  if (!target) return null;
-  // A piece the move itself hangs and takes back is the exchange, not a threat.
-  if (target.square === move.to) return null;
-  const san = cheapestCapture(again, target.square);
-  return san ? { kind: 'threatensMaterial', san, target: { piece: target.piece, square: target.square } } : null;
+  for (const target of targets) {
+    const capture = cheapestCapture(again, target.square);
+    const net = capture ? threatNet(fast.after, fast.again, capture) : null;
+    if (capture && net) return { kind: 'threatensMaterial', san: capture.san, target: { piece: target.piece, square: target.square }, givesBack: net.givesBack };
+  }
+  return null;
 }
 
-/** The SAN of the cheapest legal capture on `square`: only its attackers generate moves. */
-function cheapestCapture(board: Chess, square: Square): string | null {
+/** The cheapest legal capture on `square`: only its attackers generate moves. */
+function cheapestCapture(board: Chess, square: Square): Move | null {
   const captures = board.attackers(square, board.turn()).flatMap((from) => board.moves({ square: from, verbose: true }).filter((each) => each.to === square && each.captured));
-  return captures.sort((a, b) => PIECE_VALUES[a.piece] - PIECE_VALUES[b.piece])[0]?.san ?? null;
+  return captures.sort((a, b) => PIECE_VALUES[a.piece] - PIECE_VALUES[b.piece])[0] ?? null;
 }
 
 /** The enemy men that gained an attacker or lost a defender: the only ones

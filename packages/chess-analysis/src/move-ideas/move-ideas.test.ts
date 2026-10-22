@@ -87,6 +87,21 @@ describe('moveIdeas precision', () => {
     expect(kinds(ideas)).not.toContain('develops');
   });
 
+  it('threatens to win a piece for what the exchange gives back, and not when the reply undoes it', () => {
+    const threatened = (fen: string, san: string): string[] => moveIdeas({ fenBefore: fen, san, previous: [] }).flatMap((idea) => (idea.kind === 'threatensMaterial' ? [`${idea.target.square} for ${idea.givesBack ?? 'nothing'}`] : []));
+    // An undefended rook is won; defended by the queen, Bxb6 Qxb6 wins it for the bishop.
+    expect(threatened('6k1/8/1r6/8/8/8/8/2B3K1 w - - 0 1', 'Be3')).toEqual(['b6 for nothing']);
+    expect(threatened('6k1/2q5/1r6/8/8/8/8/2B3K1 w - - 0 1', 'Be3')).toEqual(['b6 for b']);
+    // 2.d4 against …c5: the pawn takes first (cxd4 Qxd4), nothing is won.
+    expect(threatened('rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2', 'd4')).toEqual([]);
+    // The knight that would take the bishop on h4 is itself taken by the g4-pawn.
+    expect(threatened('4k3/8/8/8/6pb/8/8/K5N1 w - - 0 1', 'Nf3')).toEqual([]);
+    // Qxf1 is mate: the mate threat says it, not a rook won.
+    const mating = moveIdeas({ fenBefore: '6k1/8/1q6/8/8/8/6PP/5R1K b - - 0 1', san: 'Qb5', previous: [] });
+    expect(mating).toContainEqual({ kind: 'threatensMate', line: ['Qxf1#'] });
+    expect(kinds(mating)).not.toContain('threatensMaterial');
+  });
+
   it('states the material only once the exchange is over', () => {
     const fen = '1r4k1/r4ppp/pqR1b3/R2p4/1P1Q4/P3PPP1/7P/5BK1 b - - 0 27';
     const after = new Chess(fen).move('Qxc6').after;

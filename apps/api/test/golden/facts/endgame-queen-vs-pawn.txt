@@ -54,7 +54,7 @@ n11 6.Qd3 (White, Line A) | excellent | before: White is much better → after: 
 n12 6…Kc1 (Black, Line A) | best | before: White is much better → after: White is much better
     board: moves the king from b2 to c1 | the king stops guarding c3, where Qc3+ follows
     ideas: defends the pawn on d2, which was attacked | marches the king into the enemy half, to c1
-    alternatives: d1=Q (threatens to win the queen on d3 with Qxd3): White is winning, after Qxd1 Kc3 Kg8 Kb4; Ka2: White is winning, after Qxd2+ Ka3 Kh7 Kb3
+    alternatives: d1=Q: White is winning, after Qxd1 Kc3 Kg8 Kb4; Ka2: White is winning, after Qxd2+ Ka3 Kh7 Kb3
     flags: quiz-eligible
 n13 7.Qc3+ (White, Line A) | best | before: White is much better → after: White is much better
     board: moves the queen from d3 to c3 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd1, Kb1

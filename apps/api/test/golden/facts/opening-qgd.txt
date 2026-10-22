@@ -105,7 +105,7 @@ n16 8…dxc4 (Black, Orthodox) | book
     book: in book (Queen's Gambit Declined: Orthodox Defense, Bd3 Line)
     the book also has: h6 (Queen's Gambit Declined: Orthodox Defense, Bd3 Line)
     board: moves the pawn from d5 to c4 | captures the pawn on c4 | attacks the bishop on d3
-    ideas: threatens to win the bishop on d3 with cxd3 | controls d3 | gives up the centre: the pawn leaves d5 | opens the d-file for the rooks (half-open) | leaves Black with doubled pawns on the c-file
+    ideas: controls d3 | gives up the centre: the pawn leaves d5 | opens the d-file for the rooks (half-open) | leaves Black with doubled pawns on the c-file
     alternatives: h6 (attacks the bishop on g5): The position is roughly equal, after Bh4 dxc4 Bxc4 a6; a6: The position is roughly equal, after c5 e5 dxe5 Ne8
 n17 9.Bxc4 (White, Orthodox) | book
     book: in book (Queen's Gambit Declined: Orthodox Defense, Bd3 Line)
@@ -154,7 +154,7 @@ n24 7.Bd3 (White, Exchange) | best | before: The position is roughly equal → a
     piece: the light-squared bishop
     board: moves the bishop from f1 to d3
     ideas: prevents Ne4, an attack on a bigger piece | develops the bishop to d3 | controls e4 | aims at the pawn on h7 | prepares the pawn's advance to e4, which it now supports
-    alternatives: Qc2 (brings the queen out to c2; controls e4; clears the way to castle queenside): The position is roughly equal, after h6 Bh4 Ne4 Bxe7; Qb3 (brings the queen out to b3; brings the queen out early, with 2 pieces still at home; puts pressure on the pawn on d5): The position is roughly equal, after O-O Nf3 h6 Bh4
+    alternatives: Qc2 (brings the queen out to c2; controls e4; clears the way to castle queenside): The position is roughly equal, after h6 Bh4 Ne4 Bxe7; Qb3 (brings the queen out early to b3, with 2 pieces still at home; puts pressure on the pawn on d5; clears the way to castle queenside): The position is roughly equal, after O-O Nf3 h6 Bh4
 
 REEL CANDIDATES
 
@@ -180,7 +180,7 @@ REVIEW NOTES
     n13 7.Rc1: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
     n14 7…c6: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66); Controls d5; Supports the centre pawn on d5; Prevents Nb5, an invasion
     n15 8.Bd3: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66); Develops the bishop to d3; Controls e4; Prevents Ne4, a knight on a strong square
-    n16 8…dxc4: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66); Threatens to win the bishop on d3 with cxd3; Controls d3; Gives up the centre: the pawn leaves d5
+    n16 8…dxc4: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66); Controls d3; Gives up the centre: the pawn leaves d5; Opens the d-file for the rooks (half-open)
     n17 9.Bxc4: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66); Takes the attacked bishop to safety on c4; Controls d5; Aims at the pawn on f7, through the pawn on e6
   l2
     n1 1.d4: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance

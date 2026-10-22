@@ -86,7 +86,7 @@ function renderLater(idea: MoveIdea): string {
     case 'threatensMate':
       return idea.line.length === 1 ? `threatens mate with ${idea.line[0]}` : `threatens mate in two: ${idea.line.join(' ')}`;
     case 'threatensMaterial':
-      return `threatens to win ${the(idea.target)} with ${idea.san}`;
+      return `threatens to win ${the(idea.target)}${idea.givesBack ? ` for a ${PIECE_NAMES[idea.givesBack]}` : ''} with ${idea.san}`;
     case 'pilesOn':
       return `attacks ${the(idea.target)} ${times(idea.attackers)}, while ${idea.defenders === 0 ? 'nothing defends it' : `it is defended ${times(idea.defenders)}`}`;
     case 'pinnedCannotTake':
