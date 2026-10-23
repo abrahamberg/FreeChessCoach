@@ -3,7 +3,7 @@ import { COACH_PERSONAS, RATING_BANDS } from './constants.js';
 import { DiagnosisCodeIdSchema } from './diagnosis/catalog-types.js';
 
 /** docs/courses.md §3. The creator picks the kind; the AI never guesses it. */
-export const COURSE_KINDS = ['trap', 'opening', 'tactics', 'puzzle', 'master_game', 'endgame', 'lesson'] as const;
+export const COURSE_KINDS = ['trap', 'opening', 'tactics', 'puzzle', 'master_game', 'endgame', 'lesson', 'reading'] as const;
 export const CourseKindSchema = z.enum(COURSE_KINDS);
 export type CourseKind = z.infer<typeof CourseKindSchema>;
 
@@ -266,6 +266,15 @@ export const CourseClipLinksSchema = z.object({
 });
 export type CourseClipLinks = z.infer<typeof CourseClipLinksSchema>;
 
+/** A `reading` course's page: text read aloud, with the position of a
+ * diagram beside it when the text has one. No moves, no drill. */
+export const CourseSectionSchema = z.object({
+  id: z.string().min(1),
+  text: z.string(),
+  fen: z.string().min(1).optional()
+});
+export type CourseSection = z.infer<typeof CourseSectionSchema>;
+
 /**
  * docs/courses.md §4. Stored as jsonb (`courses.document` for the draft,
  * `published_document` for the frozen copy). A draft may have fewer than 3
@@ -301,9 +310,19 @@ export const CourseDocumentSchema = z.object({
   /** §13.1: the videos besides the course (absent: the kind's default). */
   videos: CourseVideosSchema.optional(),
   video: CourseVideoSchema.optional(),
-  reel: CourseReelSchema.optional()
+  reel: CourseReelSchema.optional(),
+  /** Only a `reading` course: its pages, in order (docs/courses.md §3). */
+  sections: z.array(CourseSectionSchema).optional(),
+  /** A course read to the learner, move by move, with nothing to drill (a
+   * book's game). A `reading` course always is. */
+  readAlong: z.boolean().optional()
 });
 export type CourseDocument = z.infer<typeof CourseDocumentSchema>;
+
+/** The learner reads and listens; Practice and the drills are not offered. */
+export function isReadAlong(document: { kind: CourseKind; readAlong?: boolean }): boolean {
+  return document.kind === 'reading' || document.readAlong === true;
+}
 
 /** The video's line for a move: its own when it has one, else the course's. */
 export function videoLine(ply: CoursePly): string {
@@ -347,7 +366,8 @@ export const COURSE_ROLES: Record<CourseKind, readonly string[]> = {
   puzzle: ['question', 'solve', 'recap'],
   master_game: ['intro', 'moves', 'moment', 'variation'],
   endgame: ['goal', 'technique', 'defence', 'recap'],
-  lesson: ['concept', 'example', 'recap']
+  lesson: ['concept', 'example', 'recap'],
+  reading: ['section']
 };
 
 /** The outline call's answer (docs/courses.md §6.4). Fields the model may

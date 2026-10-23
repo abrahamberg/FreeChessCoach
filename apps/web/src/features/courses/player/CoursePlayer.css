@@ -1152,3 +1152,30 @@
   background: var(--color-surface);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
+
+/* A reading course's pages, in the explorer column. */
+.reading-pages {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.reading-pages__page {
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.reading-pages__page--current {
+  background: var(--color-surface-subtle);
+  font-weight: 600;
+}

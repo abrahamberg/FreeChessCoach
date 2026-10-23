@@ -37,6 +37,7 @@ export * from './course/learner-side.js';
 export * from './course/line-game.js';
 export * from './course/node-path.js';
 export * from './course/outline-check.js';
+export * from './course/reading.js';
 export * from './course/reel-candidates.js';
 export * from './course/moves.js';
 export * from './course/review-schedule.js';

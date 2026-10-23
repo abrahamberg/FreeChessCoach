@@ -3,6 +3,7 @@ import {
   courseLineGames,
   inferLearnerSide,
   parseCourseTreeOfKind,
+  parseReadingSections,
   endgameShapeProblems,
   quizSideProblems,
   puzzleShapeProblems,
@@ -17,6 +18,7 @@ import {
   type CourseListResponse,
   type CourseResponse
 } from '@freechesscoach/shared';
+import { Chess } from 'chess.js';
 import type { Kysely } from 'kysely';
 import type { z } from 'zod';
 import * as coursesRepo from '../../db/repositories/courses.js';
@@ -58,6 +60,7 @@ export async function createCourse(db: Kysely<Database>, ownerId: string, intake
 /** The new draft for an intake: the tree, the learner side (inferred when
  * not given) and empty episodes. Throws a `ValidationError` the creator can read. */
 export function draftFromIntake(intake: CourseIntake, order = 1): CourseDocument {
+  if (intake.kind === 'reading') return readingDraft(intake, order);
   const tree = parseCourseTreeOfKind(intake.pgn, intake.kind);
   if (tree.errors.length) throw new ValidationError(tree.errors.map((error) => error.message).join('; '));
   if (!tree.nodes.length) throw new ValidationError('The PGN has no moves');
@@ -85,6 +88,37 @@ export function draftFromIntake(intake: CourseIntake, order = 1): CourseDocument
     lines: tree.lines,
     chapters: [],
     episodes: [],
+    diagnosisCodes: [],
+    takeaways: [],
+    hookOptions: [],
+    clipLinks: {}
+  };
+}
+
+/** A reading course: the pasted text is the pages (no moves, nothing to drill);
+ * the direction is its title. */
+function readingDraft(intake: CourseIntake, order: number): CourseDocument {
+  const { sections, errors } = parseReadingSections(intake.pgn);
+  if (errors.length) throw new ValidationError(errors.join('; '));
+  if (!sections.length) throw new ValidationError('The text has nothing to read');
+  return {
+    version: 1,
+    kind: 'reading',
+    title: courseTitle('', intake.direction),
+    promise: '',
+    learnerSide: intake.learnerSide ?? 'white',
+    levelBand: intake.rating === undefined ? intake.levelBand : bandForRating(intake.rating),
+    coachPersona: intake.coachPersona,
+    ...(intake.rating === undefined ? {} : { level: { rating: intake.rating, order: Math.min(Math.max(order, 1), 99) } }),
+    ...(intake.series === undefined ? {} : { series: intake.series }),
+    ...(intake.tags === undefined ? {} : { tags: intake.tags }),
+    startFen: new Chess().fen(),
+    nodes: [],
+    lines: [],
+    chapters: [],
+    episodes: [],
+    sections,
+    readAlong: true,
     diagnosisCodes: [],
     takeaways: [],
     hookOptions: [],

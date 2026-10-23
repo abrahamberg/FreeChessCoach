@@ -27,6 +27,8 @@ function kindPlaybook(context: CoursePromptContext, budget: CourseBudget): strin
       return endgamePlaybook(context, context.skeleton?.kind === 'endgame' ? context.skeleton : null);
     case 'lesson':
       return lessonPlaybook(context);
+    case 'reading':
+      return '';
   }
 }
 
@@ -39,7 +41,8 @@ const VIDEO_PLAYBOOK: Record<CoursePromptContext['kind'], string> = {
   puzzle: 'the thinking method: at every learner move, the checks, captures and threats in that order, which look right, why they fail, then the move.',
   master_game: 'a storytelling recap: the players (headers only), the turning points, and at each the tempting moves and why the master avoided them.',
   endgame: 'the goal and the one idea that decides it, then the technique move by move with the moves that spoil it, and each defensive try with its answer.',
-  lesson: 'the idea in plain words, then each example with the tempting moves and why they fail, then the recap.'
+  lesson: 'the idea in plain words, then each example with the tempting moves and why they fail, then the recap.',
+  reading: 'the text as written; a reading course is never filmed.'
 };
 
 const REEL_PLAYBOOK: Record<CoursePromptContext['kind'], string> = {
@@ -49,7 +52,8 @@ const REEL_PLAYBOOK: Record<CoursePromptContext['kind'], string> = {
   puzzle: 'the position and the question ("White to play. Mate in 3." or "White to play and win."), then the solution.',
   master_game: 'the single brilliant move, blunder or finish, never a summary of the game.',
   endgame: 'one only move of the technique, as a puzzle ("White to play and win", "Black to play and draw"); with no only move, the point the technique builds to, played as a highlight.',
-  lesson: 'the clearest example, as a puzzle.'
+  lesson: 'the clearest example, as a puzzle.',
+  reading: 'the text as written; a reading course is never filmed.'
 };
 
 function productsPlaybook(context: CoursePromptContext): string {
@@ -77,6 +81,8 @@ export function episodeRange(context: CoursePromptContext): string {
     case 'endgame':
       // Goal, one or two technique, a defence per sideline, the recap.
       return `${context.lines.length + 2} to ${context.lines.length + 3}`;
+    case 'reading':
+      return '0';
   }
 }
 

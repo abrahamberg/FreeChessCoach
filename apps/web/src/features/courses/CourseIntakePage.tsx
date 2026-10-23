@@ -32,7 +32,8 @@ const KIND_ICONS: Record<CourseKind, ComponentType<IconProps>> = {
   puzzle: SearchIcon,
   master_game: KnightIcon,
   endgame: PawnIcon,
-  lesson: BoardIcon
+  lesson: BoardIcon,
+  reading: BookIcon
 };
 
 /** docs/courses.md §5.3: only what the AI can't infer, in four steps: the

@@ -25,5 +25,10 @@ export const COURSE_KIND_INFO: Record<CourseKind, { label: string; summary: stri
     label: 'Lesson',
     summary: 'Any topic, from a few examples: how a piece moves, a pattern, a plan.',
     example: 'How the knight moves, for complete beginners. Start with the easiest squares; end on a fork.'
+  },
+  reading: {
+    label: 'Reading',
+    summary: 'Text read aloud, page by page, with a diagram where it has one.',
+    example: 'A chapter introduction. Paste the text; a ```fen block puts that position on the board.'
   }
 };

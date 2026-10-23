@@ -16,6 +16,8 @@ const WHOLE_COURSE = 'course';
 export function publishBlockers(document: CourseDocument): string[] {
   const blockers: string[] = [];
   if (!document.title.trim()) blockers.push('Give the course a title');
+  // A reading course is its pages: no episodes to write, no takeaways to give.
+  if (document.kind === 'reading') return document.sections?.some((section) => section.text.trim()) ? blockers : [...blockers, 'Write the text first'];
   if (!document.episodes.some((episode) => episode.plies.some((ply) => (ply.course || ply.video) && ply.text.trim()))) blockers.push('Write the course first');
   if (document.takeaways.filter((takeaway) => takeaway.trim()).length !== 3) blockers.push('Write the three takeaways');
   return blockers;
@@ -26,6 +28,7 @@ export function publishBlockers(document: CourseDocument): string[] {
  * then the reel and the whole course (§13.9), as a generation checks them,
  * so a draft written by hand is held to the same checks. */
 export function draftCheckProblems(document: CourseDocument, row: coursesRepo.CourseRow): CourseCheckProblem[] {
+  if (document.kind === 'reading') return [];
   const byId = new Map(document.nodes.map((node) => [node.id, node]));
   const moveOf = (nodeId: string | null): string | null => {
     const node = nodeId ? byId.get(nodeId) : undefined;

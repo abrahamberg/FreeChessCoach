@@ -602,7 +602,8 @@ export const CONFIG = {
       puzzle: { min: 90, max: 324 },
       master_game: { min: 480, max: 1215 },
       endgame: { min: 180, max: 648 },
-      lesson: { min: 180, max: 648 }
+      lesson: { min: 180, max: 648 },
+      reading: { min: 180, max: 648 }
     },
     /** Lengths (video words, the hook, the reel's seconds) may run over by
      * this share before they count as a problem: a 41-word hook against 40
