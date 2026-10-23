@@ -310,8 +310,10 @@
   margin: 0;
 }
 
+/* A note written in paragraphs (a book's commentary) keeps its line breaks. */
 .course-pane__note {
   line-height: var(--line-height-reading);
+  white-space: pre-line;
 }
 
 .course-pane__footer {
@@ -1105,4 +1107,48 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 40vw;
+}
+
+/* A move or square the note names: points at it on the board while hovered or focused. */
+.course-pane__mention {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: help;
+}
+
+/* The sentence the voice is reading. */
+.course-pane__reading {
+  background: color-mix(in srgb, #ffc400 38%, transparent);
+  color: inherit;
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.course-pane__reader {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+/* The buttons ride just above the sentence being read, floating, so the text never moves. */
+.course-pane__anchor {
+  position: relative;
+  display: inline-block;
+  width: 0;
+  height: 0;
+}
+
+.course-pane__anchor .course-pane__reader {
+  position: absolute;
+  left: 0;
+  bottom: 1.4em;
+  z-index: 2;
+  margin: 0;
+  padding: 2px 4px;
+  gap: 4px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 8px;
+  background: var(--color-surface);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }

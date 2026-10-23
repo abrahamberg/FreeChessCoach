@@ -18,6 +18,7 @@ import {
 import type { CourseDocument } from '@freechesscoach/shared';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ChevronRightIcon } from '../../../components/Icon.js';
+import { EvalBar } from '../../board/EvalBar.js';
 import { CoachBoard } from '../../board/CoachBoard.js';
 import { LineMoveExplorer } from '../../board/LineMoveExplorer.js';
 import { MoveStrip } from '../../board/MoveStrip.js';
@@ -46,6 +47,8 @@ export interface DrillRunPlace {
 
 export interface CourseDrillProps {
   document: CourseDocument;
+  /** The engine's figures for the course's moves, for the evaluation bar. */
+  evals?: CourseEvals;
   stage: PlayedStage;
   /** Where results go; absent in the editor's preview, which saves nothing. */
   progress?: CourseProgressStore | null;
@@ -105,7 +108,7 @@ interface RoundResult {
  * move is the answer, and the course's own word on the move tried (a
  * tempting move's "why") is said when it has one.
  */
-export function CourseDrill({ document, stage, progress, courseSlug, knownMoves, onKnownMoves, startRun, onRun, onStageDone, onNextStage, onExit, isDesktop = false }: CourseDrillProps): ReactNode {
+export function CourseDrill({ document, evals = NO_EVALS, stage, progress, courseSlug, knownMoves, onKnownMoves, startRun, onRun, onStageDone, onNextStage, onExit, isDesktop = false }: CourseDrillProps): ReactNode {
   const reviewed = stage !== 'practice';
   const sides = stage === 'full_drill' ? 'both' : 'learner';
   const [states, setStates] = useState<Map<string, CourseReviewState> | null>(progress && reviewed ? null : new Map());
@@ -192,6 +195,7 @@ export function CourseDrill({ document, stage, progress, courseSlug, knownMoves,
       resume={round === 0 ? resumeRef.current : null}
       onAt={onRun}
       document={document}
+      evals={evals}
       stage={stage}
       drill={run.drill}
       introText={round === 0 ? intro(stage, drill) : stage === 'practice' ? 'Again, with fewer arrows.' : null}
@@ -301,6 +305,7 @@ interface DrillRunProps {
   resume: DrillRunPlace | null;
   onAt: ((run: DrillRunPlace | null) => void) | undefined;
   document: CourseDocument;
+  evals: CourseEvals;
   stage: PlayedStage;
   drill: Drill;
   introText: string | null;
@@ -317,7 +322,7 @@ interface DrillRunProps {
   onExit: () => void;
 }
 
-function DrillRun({ resume, onAt, document, stage, drill, introText, arrowKeys, roundLabel, progressBar, isDesktop, onResult, onFinished, onExit }: DrillRunProps): ReactNode {
+function DrillRun({ resume, onAt, document, evals, stage, drill, introText, arrowKeys, roundLabel, progressBar, isDesktop, onResult, onFinished, onExit }: DrillRunProps): ReactNode {
   const [at, setAt] = useState(() => {
     const index = resume ? drill.episodes.findIndex((each) => each.episodeId === resume.episode) : -1;
     const found = drill.episodes[index];
@@ -354,6 +359,9 @@ function DrillRun({ resume, onAt, document, stage, drill, introText, arrowKeys, 
   const done = !episode;
   const lastPlayed = episode && at.step > 0 ? episode.steps[at.step - 1] : undefined;
   const fen = step ? (pausing ? step.node.fenAfter : (tried ?? step.fenBefore)) : (lastPlayed?.node.fenAfter ?? '');
+  // The bar reads the position on the board: the last move's figure, else the one before it, else even.
+  const onBoard = step ? (pausing ? step.node.id : step.node.parentId) : lastPlayed?.node.id;
+  const barCp = (onBoard ? evals[onBoard]?.cp : undefined) ?? 0;
   const asked = drill.episodes.flatMap((each) => each.steps.filter((each) => each.asked));
 
   /** The coach reads the note on a move as it comes in (the app's own voice, when the learner has it on). */
@@ -584,6 +592,7 @@ function DrillRun({ resume, onAt, document, stage, drill, introText, arrowKeys, 
             {pausing && <BoardFlash content={{ kind: 'success' }} ms={SUCCESS_FLASH_MS} />}
             {tried && <BoardFlash content={{ kind: 'wrong' }} ms={SUCCESS_FLASH_MS} />}
             {announcing && lineTitle && <BoardFlash content={{ kind: 'line', title: lineTitle }} ms={LINE_FLASH_MS} onDone={() => setAnnounced(null)} />}
+            <EvalBar ply={0} classifiedMoves={[]} orientation={document.learnerSide} cpOverride={barCp} />
             <CoachBoard
               fen={fen}
               orientation={document.learnerSide}

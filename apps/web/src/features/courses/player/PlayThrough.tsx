@@ -1,6 +1,6 @@
-import type { CourseDocument, CourseEnrollmentPlace, CourseEpisode, CourseTempting } from '@freechesscoach/shared';
-import { useMemo, useRef, useState, type ReactNode } from 'react';
-import { ChevronRightIcon, CloseIcon, PlayCircleIcon, PlaySmallIcon } from '../../../components/Icon.js';
+import type { CourseArrow, CourseDocument, CourseEnrollmentPlace, CourseEpisode, CourseTempting } from '@freechesscoach/shared';
+import { Fragment, useMemo, useRef, useState, type ReactNode } from 'react';
+import { ChevronRightIcon, CloseIcon, PauseIcon, PlayCircleIcon, PlaySmallIcon, SkipBackIcon } from '../../../components/Icon.js';
 import { CoachBoard } from '../../board/CoachBoard.js';
 import { EvalBar } from '../../board/EvalBar.js';
 import { GameEvalChart } from '../../board/GameEvalChart.js';
@@ -17,6 +17,7 @@ import { STAGE_LABELS } from './CourseStageBar.js';
 import { boardSoundLengthMs, playBoardSound } from '../../../sounds/board-sounds.js';
 import { readMoveSoundsEnabled } from '../../../sounds/move-sounds-setting.js';
 import { courseMoveList, courseMoveSound, type CourseEvals } from './course-move-list.js';
+import { noteSegments, readingSentence, sentenceRanges, sentenceStart } from './note-marks.js';
 import { drillLine } from './drill-line.js';
 import { climaxNode } from '../courseEdits.js';
 import { episodeWalk, stepView } from './course-steps.js';
@@ -169,6 +170,11 @@ interface EpisodeViewProps {
   onDone: () => void;
 }
 
+/** The sentence being read stays in view when the note is longer than the pane. */
+function scrollIntoReach(element: HTMLElement | null): void {
+  element?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+}
+
 function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop, startStep, onStep, nextLabel, onDone }: EpisodeViewProps): ReactNode {
   const walk = useMemo(() => episodeWalk(document, episode), [document, episode]);
   // The line this episode belongs to, named over the board as it opens.
@@ -195,23 +201,47 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
   const asking = quiz && answer && step === walk.quizAt && !solved;
   const atEnd = step >= walk.moves.length;
   // The arrows often point at the answer, so none while the quiz asks.
-  const marks = toBoardMarks(asking ? [] : view.arrows);
+  const list = useMemo(() => courseMoveList(document, walk.moves, evals), [document, walk, evals]);
+  // What the note names is drawn only while the reader points at it.
+  const [pointed, setPointed] = useState<CourseArrow[]>([]);
+  const noteParts = useMemo(() => (view.note ? noteSegments(view.note, list.positions.slice(0, -1).map((each) => each.fen)) : []), [view.note, list.positions]);
+  // The sentence being read is marked, and what it names is drawn on the board with it.
+  const reading = !view.note ? null : audio.voiceSentence !== null ? audio.voiceSentence : audio.progress !== null ? readingSentence(view.note, audio.progress) : null;
+  const readRange = reading === null || !view.note ? null : sentenceRanges(view.note)[reading];
+  const reads = readRange ? noteParts.filter((part) => part.marks && part.start >= readRange.start && part.start < readRange.end).flatMap((part) => part.marks!) : [];
+  // The note in pieces, the sentence being read set apart (a piece never crosses its edge).
+  const shown = noteParts.flatMap((part) => {
+    if (!readRange) return [{ ...part, reading: false }];
+    const cuts = [readRange.start, readRange.end].filter((cut) => cut > part.start && cut < part.start + part.text.length);
+    const edges = [part.start, ...cuts, part.start + part.text.length];
+    return edges.slice(0, -1).map((from, index) => ({
+      text: part.text.slice(from - part.start, edges[index + 1]! - part.start),
+      start: from,
+      marks: part.marks,
+      reading: from >= readRange.start && from < readRange.end
+    }));
+  });
+  const marks = toBoardMarks(asking ? [] : view.arrows, asking ? [] : pointed.length ? pointed : reads);
   // The move on the board, as the course's film shows it: its squares lit
   // and the engine's badge on the square it landed on.
   const played = climax ?? view.move;
   const lastMove = played ? [played.uci.slice(0, 2), played.uci.slice(2, 4)].map((square) => ({ square, color: 'var(--last-move)' })) : [];
   const playedQuality = played ? evals[played.id]?.quality : undefined;
 
-  const list = useMemo(() => courseMoveList(document, walk.moves, evals), [document, walk, evals]);
   const shownPlies = list.leadIn + reached;
   const ply = list.leadIn + step;
   const sanMoves = list.sanMoves.slice(0, shownPlies);
   const positions = list.positions.slice(0, shownPlies + 1);
   const rated = list.classifiedMoves.filter((move) => move.ply <= shownPlies);
   const hasEvals = list.classifiedMoves.length > 0;
+  // Always there: the board's own figure, else the last one the engine gave on the way here (even at 0 before any).
+  const barCp = climax
+    ? evals[climax.id]?.cp
+    : [...list.classifiedMoves].reverse().find((move) => move.ply <= ply)?.evalAfterCp;
 
   const goTo = (next: number, great = false): void => {
     setWrong(null);
+    setPointed([]);
     setStep(next);
     setReached((prev) => Math.max(prev, next));
     onStep(next);
@@ -270,11 +300,47 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
     </div>
   );
 
+  const controls =
+    view.move && audio.soundOn ? (
+            <div className="course-pane__reader">
+              <button
+                type="button"
+                className="coach-voice-button"
+                aria-label="Read the previous section again"
+                title="Read the previous section again"
+                disabled={reading === null}
+                onClick={() => {
+                  const previous = Math.max((reading ?? 0) - 1, 0);
+                  if (audio.voiceSentence !== null) audio.readFrom(previous);
+                  else audio.seek(sentenceStart(view.note!, previous));
+                }}
+              >
+                <SkipBackIcon width={11} height={11} />
+              </button>
+              <button
+                type="button"
+                className="coach-voice-button"
+                data-state={audio.loading ? 'loading' : 'idle'}
+                aria-label={reading === null ? 'Hear it again' : audio.paused ? 'Resume reading' : 'Pause reading'}
+                title={reading === null ? 'Hear it again' : audio.paused ? 'Resume reading' : 'Pause reading'}
+                onClick={() => (reading === null ? audio.play(episode.id, view.move!.id) : audio.togglePause())}
+              >
+                {audio.loading ? (
+                  <span className="coach-voice-button__spinner" aria-hidden="true" />
+                ) : reading === null || audio.paused ? (
+                  <PlaySmallIcon width={11} height={11} />
+                ) : (
+                  <PauseIcon width={11} height={11} />
+                )}
+              </button>
+            </div>
+    ) : null;
+
   const board = (
     <>
       <div className="session-board-row course-board-host">
         {startStep === 0 && lineName && <BoardFlash content={{ kind: 'line', title: lineName }} ms={LINE_FLASH_MS} />}
-        {hasEvals && !climax && <EvalBar ply={ply} classifiedMoves={rated} orientation={document.learnerSide} />}
+        <EvalBar ply={ply} classifiedMoves={rated} orientation={document.learnerSide} cpOverride={barCp} />
         <CoachBoard
           fen={view.fen}
           orientation={document.learnerSide}
@@ -311,21 +377,31 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
       {view.move && !climax && isDesktop && <p className="course-player__move">{view.move.san}</p>}
       {revealed && <p className="course-player__reveal">{solvedLine(solved, answer?.san)} {quiz.reveal}</p>}
       {view.note ? (
+        <>
+        {controls && reading === null && controls}
         <p className="course-pane__note">
-          {view.note}
-          {view.move && audio.soundOn && (
-            <button
-              type="button"
-              className="coach-voice-button"
-              data-state={audio.loading ? 'loading' : 'idle'}
-              aria-label="Hear it again"
-              title="Hear it again"
-              onClick={() => audio.play(episode.id, view.move!.id)}
-            >
-              {audio.loading ? <span className="coach-voice-button__spinner" aria-hidden="true" /> : <PlaySmallIcon width={11} height={11} />}
-            </button>
-          )}
+          {shown.map((part, index) => {
+            const inner = part.marks ? (
+              <span
+                className="course-pane__mention"
+                tabIndex={0}
+                onMouseEnter={() => setPointed(part.marks!)}
+                onMouseLeave={() => setPointed([])}
+                onFocus={() => setPointed(part.marks!)}
+                onBlur={() => setPointed([])}
+              >
+                {part.text}
+              </span>
+            ) : (
+              part.text
+            );
+            const first = part.reading && !shown[index - 1]?.reading;
+            // A zero-size anchor just before the sentence carries the buttons above it, out of the text's flow.
+            const anchor = first ? <span className="course-pane__anchor">{controls}</span> : null;
+            return part.reading ? <Fragment key={index}>{anchor}<mark className="course-pane__reading" ref={scrollIntoReach}>{inner}</mark></Fragment> : <Fragment key={index}>{inner}</Fragment>;
+          })}
         </p>
+        </>
       ) : (
         !revealed && !asking && <p className="meta">{step === 0 ? 'Press Next to play through the moves.' : 'No note on this move.'}</p>
       )}

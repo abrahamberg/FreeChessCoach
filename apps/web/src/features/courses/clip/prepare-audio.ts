@@ -16,6 +16,17 @@ export interface CourseSpeech {
 export interface SpokenAudio {
   mimeType: string;
   chunks: ArrayBuffer[];
+  /** Chunk indexes a new paragraph starts at: the join leaves a pause there. */
+  breaks?: number[];
+}
+
+/** The silence between two paragraphs of a note, in seconds. */
+export const PARAGRAPH_PAUSE_S = 0.8;
+
+/** Where the pauses fall in a joined recording: the sample offset of each
+ * chunk, and the silence added before it. */
+export function pauseBefore(breaks: readonly number[] | undefined, chunk: number, sampleRate: number): number {
+  return breaks?.includes(chunk) ? Math.round(PARAGRAPH_PAUSE_S * sampleRate) : 0;
 }
 
 export interface AudioCache {
@@ -106,17 +117,23 @@ export async function prepareCourseAudio(options: {
  * edit only re-synthesises the sentences that changed. `studio` marks the
  * course recordings, so audio kept from before them is made again. */
 export function audioCacheKey(backend: CourseVoice, persona: CoachPersona, text: string): string {
-  return `${backend}|studio|${persona}|${text}`;
+  return `${backend}|studio-paragraphs|${persona}|${text}`;
 }
 
 async function synthesise(client: TtsClient, persona: CoachPersona, text: string): Promise<SpokenAudio> {
-  const chunks: ArrayBuffer[] = [];
-  await client.speak({ text: translateChessNotationForSpeech(text), persona, studio: true }, (index, audio) => {
-    chunks[index] = audio;
-  });
-  const present = chunks.filter(Boolean);
+  const present: ArrayBuffer[] = [];
+  const breaks: number[] = [];
+  // A paragraph at a time, so the join can leave a pause between them.
+  for (const paragraph of text.split(/\n+/).filter((each) => each.trim())) {
+    const chunks: ArrayBuffer[] = [];
+    await client.speak({ text: translateChessNotationForSpeech(paragraph), persona, studio: true }, (index, audio) => {
+      chunks[index] = audio;
+    });
+    if (present.length && chunks.some(Boolean)) breaks.push(present.length);
+    present.push(...chunks.filter(Boolean));
+  }
   if (!present.length) throw new Error(`No audio came back for "${text.slice(0, 40)}"`);
-  return { mimeType: client.studioMimeType ?? client.mimeType, chunks: present };
+  return { mimeType: client.studioMimeType ?? client.mimeType, chunks: present, ...(breaks.length ? { breaks } : {}) };
 }
 
 const DB_NAME = 'course-audio';

@@ -12,6 +12,7 @@ import type { CourseEvals } from './course-move-list.js';
 import { PlayThrough, type AskCoach } from './PlayThrough.js';
 import { SeriesNav } from './SeriesNav.js';
 import { useCourseEnrollment } from './useCourseEnrollment.js';
+import { useProfileCoachVoice } from '../../../hooks/useProfileCoachVoice.js';
 import { useNoteAudio, type NoteAudioSource } from './useNoteAudio.js';
 import '../CourseEditor.css';
 import './CoursePlayer.css';
@@ -54,7 +55,14 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
   const [place, setPlace] = useState<CourseEnrollmentPlace>(START);
   /** Remounts the stage's view when a saved place or "Start over" replaces it. */
   const [viewKey, setViewKey] = useState(0);
-  const audio = useNoteAudio(noteAudio);
+  const voice = useProfileCoachVoice(document.coachPersona);
+  const audio = useNoteAudio(noteAudio, {
+    voice,
+    textOf: (episodeId, nodeId) => {
+      const ply = document.episodes.find((episode) => episode.id === episodeId)?.plies.find((each) => each.nodeId === nodeId);
+      return ply?.course && ply.text.trim() ? ply.text : null;
+    }
+  });
   const { confirm, dialog } = useConfirmDialog();
   const enrollment = useCourseEnrollment(courseSlug, progress);
   /** The learner has done something here, so there is a place worth saving. */
@@ -160,6 +168,7 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
           <CourseDrill
             key={`${stage}:${viewKey}`}
             document={document}
+            evals={evals}
             stage={stage}
             progress={progress}
             courseSlug={courseSlug}

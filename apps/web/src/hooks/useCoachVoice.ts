@@ -59,10 +59,16 @@ export interface UseCoachVoiceResult {
   setAutoplayEnabled: (enabled: boolean) => void;
   /** Play (or replay) one message's audio, always restarting from 0.
    * Interrupts anything currently playing/queued — a click always wins. */
-  play: (messageId: string, text: string) => void;
+  play: (messageId: string, text: string, onEnd?: () => void) => void;
   stop: () => void;
   playingMessageId: string | null;
   loadingMessageId: string | null;
+  /** Which sentence (0-based) of the message being read is being spoken now. */
+  spokenIndex: number | null;
+  /** The read is held part-way. */
+  paused: boolean;
+  /** Holds the read, or carries on from where it was held. */
+  togglePause: () => void;
 }
 
 /** Reads each coach reply aloud as it streams in, voiced per the active
@@ -91,6 +97,8 @@ export function useCoachVoice({
   const [autoplayEnabled, setAutoplayEnabledState] = useState(readStoredAutoplay);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [loadingMessageId, setLoadingMessageId] = useState<string | null>(null);
+  const [spokenIndex, setSpokenIndex] = useState<number | null>(null);
+  const [paused, setPaused] = useState(false);
   // Board sounds step aside while the coach speaks (docs/plan.md Phase 88).
   const voiceId = useId();
   useEffect(() => {
@@ -138,6 +146,8 @@ export function useCoachVoice({
   // Cancels the in-flight native (speechSynthesis) read, if any. Native
   // playback bypasses the chunk/<audio> machinery above entirely.
   const cancelNativeRef = useRef<(() => void) | null>(null);
+  // What to do when the message being played ends by itself (not when stopped or replaced).
+  const onEndRef = useRef<(() => void) | null>(null);
 
   function cancelNative(): void {
     cancelNativeRef.current?.();
@@ -172,6 +182,11 @@ export function useCoachVoice({
     currentMessageIdRef.current = null;
     currentStateRef.current = null;
     setPlayingMessageId(null);
+    setSpokenIndex(null);
+    setPaused(false);
+    const onEnd = onEndRef.current;
+    onEndRef.current = null;
+    onEnd?.();
     advanceQueue();
   }
 
@@ -185,6 +200,7 @@ export function useCoachVoice({
       audio.currentTime = 0;
       nextChunkIndexRef.current = index + 1;
       setPlayingMessageId(messageId);
+      setSpokenIndex(index);
       console.log(`[useCoachVoice] playing chunk ${index} for ${messageId}`);
       Promise.resolve(audio.play()).catch((error: unknown) => {
         console.log(`[useCoachVoice] audio.play() rejected for ${messageId} chunk ${index}`, error);
@@ -248,12 +264,12 @@ export function useCoachVoice({
 
   function playNative(messageId: string, text: string): void {
     setPlayingMessageId(messageId);
-    cancelNativeRef.current = speakNative(text, personaRef.current, finishMessage);
+    cancelNativeRef.current = speakNative(text, personaRef.current, finishMessage, setSpokenIndex);
   }
 
   function playNativeLive(messageId: string, live: LiveMessage): void {
     setPlayingMessageId(messageId);
-    const native = createNativeSpeechQueue(personaRef.current, finishMessage);
+    const native = createNativeSpeechQueue(personaRef.current, finishMessage, setSpokenIndex);
     for (const sentence of live.sentences) native.append(sentence);
     if (live.final) native.finish();
     live.native = native;
@@ -309,8 +325,9 @@ export function useCoachVoice({
     advanceQueue();
   }
 
-  const play = useCallback((messageId: string, text: string) => {
+  const play = useCallback((messageId: string, text: string, onEnd?: () => void) => {
     if (!enabledRef.current) return;
+    onEndRef.current = onEnd ?? null;
     queueRef.current = [];
     audioRef.current?.pause();
     cancelNative();
@@ -322,6 +339,7 @@ export function useCoachVoice({
   }, []);
 
   const stop = useCallback(() => {
+    onEndRef.current = null;
     queueRef.current = [];
     audioRef.current?.pause();
     cancelNative();
@@ -330,6 +348,23 @@ export function useCoachVoice({
     currentMessageIdRef.current = null;
     currentStateRef.current = null;
     setPlayingMessageId(null);
+    setSpokenIndex(null);
+    setPaused(false);
+  }, []);
+
+  const togglePause = useCallback(() => {
+    if (backendRef.current === 'native') {
+      const synth = window.speechSynthesis;
+      if (synth.paused) synth.resume();
+      else synth.pause();
+      setPaused(synth.paused);
+      return;
+    }
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (audio.paused) void audio.play().catch(() => undefined);
+    else audio.pause();
+    setPaused(audio.paused);
   }, []);
 
   // Readies the chosen backend once per page, so the first reply isn't also
@@ -385,7 +420,10 @@ export function useCoachVoice({
     play,
     stop,
     playingMessageId,
-    loadingMessageId
+    loadingMessageId,
+    spokenIndex,
+    paused,
+    togglePause
   };
 }
 

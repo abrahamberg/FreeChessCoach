@@ -32,13 +32,14 @@ export interface NativeSpeechQueue {
  * errors, and never after `cancel()` (so a click that interrupts one
  * message can't be mistaken for it finishing). Unsupported browsers end as
  * soon as the queue is finished. */
-export function createNativeSpeechQueue(persona: CoachPersona, onEnd: () => void): NativeSpeechQueue {
+export function createNativeSpeechQueue(persona: CoachPersona, onEnd: () => void, onSentence?: (index: number) => void): NativeSpeechQueue {
   const synth = isNativeSpeechSupported() ? window.speechSynthesis : null;
   // Empty until the browser has loaded its list (Chrome loads it on the
   // first call); the default voice, with the persona's rate and pitch, is
   // used until then.
   const { voice, rate, pitch } = chooseNativeVoice(persona, synth?.getVoices?.() ?? []);
   let pending = 0;
+  let appended = 0;
   let finished = false;
   let cancelled = false;
   let ended = false;
@@ -64,6 +65,10 @@ export function createNativeSpeechQueue(persona: CoachPersona, onEnd: () => void
         utterance.voice = voice;
         utterance.lang = voice.lang;
       }
+      const index = appended++;
+      utterance.onstart = () => {
+        if (!cancelled) onSentence?.(index);
+      };
       utterance.rate = rate;
       utterance.pitch = pitch;
       utterance.onerror = () => {
@@ -90,8 +95,8 @@ export function createNativeSpeechQueue(persona: CoachPersona, onEnd: () => void
 
 /** Reads a whole, already-finished `text` aloud (see createNativeSpeechQueue).
  * Returns a `cancel` function. */
-export function speakNative(text: string, persona: CoachPersona, onEnd: () => void): () => void {
-  const queue = createNativeSpeechQueue(persona, onEnd);
+export function speakNative(text: string, persona: CoachPersona, onEnd: () => void, onSentence?: (index: number) => void): () => void {
+  const queue = createNativeSpeechQueue(persona, onEnd, onSentence);
   const sentences = splitIntoSentences(text);
   for (const sentence of sentences.length > 0 ? sentences : [text]) queue.append(sentence);
   queue.finish();

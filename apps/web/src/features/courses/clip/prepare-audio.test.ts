@@ -56,6 +56,16 @@ function memoryCache(): AudioCache & { entries: Map<string, SpokenAudio> } {
 }
 
 describe('prepareCourseAudio', () => {
+  test('a note in paragraphs is voiced paragraph by paragraph, the break marked where the second starts', async () => {
+    const doc = course();
+    doc.episodes[0]!.plies[0]!.text = 'First one. First two.\nSecond one.';
+    const audio = await prepareCourseAudio({ document: doc, backend: 'browser', cache: memoryCache(), client: fakeClient(), keys: new Set(['note:e1:n1']) });
+    const note = audio.get('note:e1:n1')!;
+    expect(note.chunks.length).toBeGreaterThan(1);
+    expect(note.breaks).toHaveLength(1);
+    expect(note.breaks![0]).toBeGreaterThan(0);
+  });
+
   test('the video hook, the video lines and the course lines, each text synthesised once, chunks kept in order', async () => {
     const client = fakeClient();
     const progress: string[] = [];

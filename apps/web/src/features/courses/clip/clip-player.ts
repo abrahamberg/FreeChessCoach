@@ -1,6 +1,6 @@
 import type { ClipSound } from './clip-sounds.js';
 import { drawClipFrame, type FrameInput } from './draw-frame.js';
-import type { SpokenAudio } from './prepare-audio.js';
+import { pauseBefore, type SpokenAudio } from './prepare-audio.js';
 import { segmentAt, type ClipTimeline } from './timeline.js';
 
 /** One AudioBuffer per spoken text (the backend's chunks joined). */
@@ -12,7 +12,7 @@ export async function decodeCourseAudio(context: BaseAudioContext, prepared: Map
     if (!buffer) {
       // decodeAudioData detaches its input, and the cache still holds it.
       const parts = await Promise.all(audio.chunks.map((chunk) => context.decodeAudioData(chunk.slice(0))));
-      buffer = joinBuffers(context, parts);
+      buffer = joinBuffers(context, parts, audio.breaks);
       decoded.set(audio, buffer);
     }
     buffers.set(key, buffer);
@@ -20,12 +20,15 @@ export async function decodeCourseAudio(context: BaseAudioContext, prepared: Map
   return buffers;
 }
 
-function joinBuffers(context: BaseAudioContext, parts: AudioBuffer[]): AudioBuffer {
+function joinBuffers(context: BaseAudioContext, parts: AudioBuffer[], breaks?: number[]): AudioBuffer {
   const channels = Math.max(...parts.map((part) => part.numberOfChannels));
-  const length = parts.reduce((total, part) => total + part.length, 0);
-  const joined = context.createBuffer(channels, Math.max(length, 1), parts[0]?.sampleRate ?? context.sampleRate);
+  const rate = parts[0]?.sampleRate ?? context.sampleRate;
+  const pauses = parts.map((_, index) => pauseBefore(breaks, index, rate));
+  const length = parts.reduce((total, part, index) => total + part.length + pauses[index]!, 0);
+  const joined = context.createBuffer(channels, Math.max(length, 1), rate);
   let offset = 0;
-  for (const part of parts) {
+  for (const [index, part] of parts.entries()) {
+    offset += pauses[index]!;
     for (let channel = 0; channel < channels; channel++) joined.getChannelData(channel).set(part.getChannelData(Math.min(channel, part.numberOfChannels - 1)), offset);
     offset += part.length;
   }

@@ -1,5 +1,5 @@
 import { Mp3Encoder } from '@breezystack/lamejs';
-import type { SpokenAudio } from './prepare-audio.js';
+import { pauseBefore, type SpokenAudio } from './prepare-audio.js';
 
 const MP3_KBPS = 64;
 const MP3_BLOCK = 1152 * 10;
@@ -11,10 +11,12 @@ export async function noteAudioFile(audio: SpokenAudio, playbackRate: number): P
   const decoder = new OfflineAudioContext(1, 1, 24_000);
   const parts = await Promise.all(audio.chunks.map((chunk) => decoder.decodeAudioData(chunk.slice(0))));
   const sampleRate = parts[0]?.sampleRate ?? 24_000;
-  const length = parts.reduce((total, part) => total + part.length, 0);
+  const pauses = parts.map((_, index) => pauseBefore(audio.breaks, index, sampleRate));
+  const length = parts.reduce((total, part, index) => total + part.length + pauses[index]!, 0);
   const joined = new Float32Array(length);
   let offset = 0;
-  for (const part of parts) {
+  for (const [index, part] of parts.entries()) {
+    offset += pauses[index]!;
     joined.set(part.getChannelData(0), offset);
     offset += part.length;
   }
