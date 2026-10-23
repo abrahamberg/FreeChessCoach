@@ -39,7 +39,7 @@ export async function lookup(db: Kysely<Database>, userId: string, keys: string[
  * of each course's place) wins. */
 export async function importProgress(db: Kysely<Database>, userId: string, items: CourseProgressItem[], enrollments: ImportCourseEnrollment[] = []): Promise<void> {
   for (const enrollment of enrollments) {
-    const course = await coursesRepo.findPublishedBySlug(db, enrollment.slug);
+    const course = await coursesRepo.findPublishedBySlug(db, enrollment.slug, userId);
     if (!course) continue;
     await enrollmentsRepo.save(db, userId, course.id, enrollment, notAhead(enrollment.updatedAt));
   }
@@ -78,7 +78,7 @@ function notAhead(iso: string, now = Date.now()): Date {
 
 /** docs/courses.md §11: where the learner is in a published course. */
 export async function saveEnrollment(db: Kysely<Database>, userId: string, slug: string, request: SaveCourseEnrollmentRequest): Promise<void> {
-  await enrollmentsRepo.save(db, userId, await publishedCourseId(db, slug), request);
+  await enrollmentsRepo.save(db, userId, await publishedCourseId(db, slug, userId), request);
 }
 
 export async function listEnrollments(db: Kysely<Database>, userId: string): Promise<CourseEnrollment[]> {
@@ -97,11 +97,11 @@ export async function listEnrollments(db: Kysely<Database>, userId: string): Pro
 }
 
 export async function removeEnrollment(db: Kysely<Database>, userId: string, slug: string): Promise<void> {
-  await enrollmentsRepo.remove(db, userId, await publishedCourseId(db, slug));
+  await enrollmentsRepo.remove(db, userId, await publishedCourseId(db, slug, userId));
 }
 
-async function publishedCourseId(db: Kysely<Database>, slug: string): Promise<string> {
-  const course = await coursesRepo.findPublishedBySlug(db, slug);
+async function publishedCourseId(db: Kysely<Database>, slug: string, userId: string): Promise<string> {
+  const course = await coursesRepo.findPublishedBySlug(db, slug, userId);
   if (!course) throw new NotFoundError('Course not found');
   return course.id;
 }

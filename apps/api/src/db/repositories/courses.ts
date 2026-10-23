@@ -1,6 +1,6 @@
 import type { CourseDossier } from '@freechesscoach/chess-analysis';
 import { CourseDocumentSchema, CourseGenerationSchema, type CourseDocument, type CourseGeneration, type CourseKind, type CourseStatus } from '@freechesscoach/shared';
-import { sql, type Kysely, type Selectable } from 'kysely';
+import { sql, type Kysely, type RawBuilder, type Selectable } from 'kysely';
 import type { CoursesTable, Database } from '../schema.js';
 
 export type CourseRow = Selectable<CoursesTable>;
@@ -51,15 +51,26 @@ export function findByIdForOwner(db: Kysely<Database>, id: string, ownerId: stri
   return db.selectFrom('courses').selectAll().where('id', '=', id).where('ownerId', '=', ownerId).executeTakeFirst();
 }
 
+/** docs/courses.md §9: whether `userId` (null: signed out) may open a
+ * course. Level 0 is everyone's; a members-only course is its owner's and
+ * that of users at its level or above. Every learner-side read of courses
+ * filters by this. */
+export function readableBy(userId: string | null): RawBuilder<boolean> {
+  if (userId === null) return sql<boolean>`courses.access_level = 0`;
+  return sql<boolean>`(courses.access_level = 0 OR courses.owner_id = ${userId} OR courses.access_level <= (SELECT course_access_level FROM users WHERE users.id = ${userId}))`;
+}
+
 /** A course anyone with the link may see: unlisted or public, with a
- * published copy. Drafts and removed courses are not found. */
-export function findPublishedBySlug(db: Kysely<Database>, slug: string): Promise<Pick<CourseRow, 'id' | 'ownerId' | 'slug' | 'publishedDocument' | 'publishedAt' | 'dossier'> | undefined> {
+ * published copy, and readable by `userId`. Drafts, removed courses and
+ * another level's members-only courses are not found. */
+export function findPublishedBySlug(db: Kysely<Database>, slug: string, userId: string | null): Promise<Pick<CourseRow, 'id' | 'ownerId' | 'slug' | 'publishedDocument' | 'publishedAt' | 'dossier'> | undefined> {
   return db
     .selectFrom('courses')
     .select(['id', 'ownerId', 'slug', 'publishedDocument', 'publishedAt', 'dossier'])
     .where('slug', '=', slug)
     .where('status', 'in', ['unlisted', 'public'])
     .where('publishedDocument', 'is not', null)
+    .where(readableBy(userId))
     .executeTakeFirst();
 }
 
@@ -81,16 +92,17 @@ export interface CatalogRow {
   diagnosisCodes: string[];
   series: { name: string; position: number; total?: number; module?: string } | null;
   tags: string[];
+  accessLevel: number;
 }
 
-/** docs/courses.md §9: `public` courses with a published copy, newest first
+/** docs/courses.md §9: `public` courses readable by `userId` with a published copy, newest first
  * (or, `curriculum`, by level: rating, then place, then newest; paged by
  * position, `offset`),
  * read from the published copy (the title a learner sees). `before` is the
  * last row of the previous page. */
 export function listPublic(
   db: Kysely<Database>,
-  options: { kind?: CourseKind; code?: string; before?: { cursorAt: string; id: string }; limit: number; sort?: 'curriculum' | 'newest'; offset?: number }
+  options: { userId: string | null; kind?: CourseKind; code?: string; before?: { cursorAt: string; id: string }; limit: number; sort?: 'curriculum' | 'newest'; offset?: number }
 ): Promise<CatalogRow[]> {
   let query = db
     .selectFrom('courses')
@@ -99,6 +111,7 @@ export function listPublic(
       'slug',
       'kind',
       'publishedAt',
+      'accessLevel',
       sql<string>`published_at::text`.as('cursorAt'),
       sql<string>`published_document->>'title'`.as('title'),
       sql<string | null>`published_document->>'promise'`.as('promise'),
@@ -114,7 +127,8 @@ export function listPublic(
     ])
     .where('status', '=', 'public')
     .where('publishedDocument', 'is not', null)
-    .where('publishedAt', 'is not', null);
+    .where('publishedAt', 'is not', null)
+    .where(readableBy(options.userId));
   if (options.kind) query = query.where('kind', '=', options.kind);
   if (options.code) query = query.where(sql<boolean>`published_document->'diagnosisCodes' @> ${JSON.stringify([options.code])}::jsonb`);
   if (options.before) {
@@ -136,9 +150,9 @@ export interface SeriesEntry {
   position: number;
 }
 
-/** The owner's public courses in the series called `name`, in order: what
- * the lesson pages' next and previous links are taken from. */
-export function listPublicInSeries(db: Kysely<Database>, ownerId: string, name: string): Promise<SeriesEntry[]> {
+/** The owner's public courses in the series called `name` that `userId` may
+ * open, in order: what the lesson pages' next and previous links are taken from. */
+export function listPublicInSeries(db: Kysely<Database>, ownerId: string, name: string, userId: string | null): Promise<SeriesEntry[]> {
   return db
     .selectFrom('courses')
     .select(['slug', sql<string>`published_document->>'title'`.as('title'), sql<number>`(published_document->'series'->>'position')::int`.as('position')])
@@ -146,6 +160,7 @@ export function listPublicInSeries(db: Kysely<Database>, ownerId: string, name: 
     .where('status', '=', 'public')
     .where('publishedDocument', 'is not', null)
     .where(sql<boolean>`published_document->'series'->>'name' = ${name}`)
+    .where(readableBy(userId))
     .orderBy(sql`(published_document->'series'->>'position')::int`)
     .orderBy('slug')
     .execute();
@@ -287,12 +302,13 @@ export async function publish(
   id: string,
   ownerId: string,
   document: CourseDocument,
-  status: 'unlisted' | 'public'
+  status: 'unlisted' | 'public',
+  accessLevel: number
 ): Promise<CourseRow> {
   const parsed = CourseDocumentSchema.parse(document);
   return db
     .updateTable('courses')
-    .set({ publishedDocument: JSON.stringify(parsed), status, publishedAt: new Date(), updatedAt: new Date() })
+    .set({ publishedDocument: JSON.stringify(parsed), status, accessLevel, publishedAt: new Date(), updatedAt: new Date() })
     .where('id', '=', id)
     .where('ownerId', '=', ownerId)
     .returningAll()

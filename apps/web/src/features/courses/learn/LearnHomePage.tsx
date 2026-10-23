@@ -404,6 +404,9 @@ function CatalogueCard({
             {status}
           </span>
         )}
+        {course.accessLevel > 0 && (
+          <span className="badge courses-home__status">Members</span>
+        )}
       </span>
       <span className="rail-card__title rail-card__title-wrap">
         {course.title}

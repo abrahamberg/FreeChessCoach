@@ -33,7 +33,7 @@ async function publishCourse(slug: string, title: string): Promise<string> {
     startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], hookOptions: [], clipLinks: {}, takeaways: ['A.', 'B.', 'C.'], episodes: []
   };
   const row = await coursesRepo.insert(db, { ownerId: owner.id, slug, kind: 'trap', title, sourcePgn: ENGLUND, direction: '', document });
-  await coursesRepo.publish(db, row.id, owner.id, document, 'unlisted');
+  await coursesRepo.publish(db, row.id, owner.id, document, 'unlisted', 0);
   return row.id;
 }
 

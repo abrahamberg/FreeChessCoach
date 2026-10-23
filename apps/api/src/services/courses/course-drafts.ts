@@ -214,6 +214,7 @@ export async function toCourseResponse(db: Kysely<Database>, row: coursesRepo.Co
     slug: row.slug,
     kind: row.kind,
     status: row.status,
+    accessLevel: row.accessLevel,
     title: row.title,
     direction: row.direction,
     document: storedDocument(row),

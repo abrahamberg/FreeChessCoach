@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ApiError, apiGet } from '../../../api/client.js';
+import { courseReadPath } from '../learn/course-read-path.js';
 import { CoursePlayer } from './CoursePlayer.js';
 import { useCourseProgressStore } from './useCourseProgressStore.js';
 
@@ -22,9 +23,11 @@ export function PublishedCourse({ slug, startStage }: PublishedCourseProps): Rea
   const signedIn = progress?.signedIn ?? false;
   const home = <Link to="/learn">All courses</Link>;
   const back = { label: 'Back to Courses', onBack: () => navigate('/learn') };
+  // Waits to know who is asking: a members-only course is only on the signed-in route.
   const course = useQuery({
-    queryKey: ['public-course', slug],
-    queryFn: ({ signal }) => apiGet(`/api/public/courses/${encodeURIComponent(slug)}`, PublicCourseResponseSchema, signal)
+    queryKey: ['public-course', signedIn, slug],
+    enabled: progress !== null,
+    queryFn: ({ signal }) => apiGet(`${courseReadPath(signedIn)}/${encodeURIComponent(slug)}`, PublicCourseResponseSchema, signal)
   });
   const noteAudio = course.data?.noteAudio;
   const source = useCallback(
@@ -42,7 +45,7 @@ export function PublishedCourse({ slug, startStage }: PublishedCourseProps): Rea
     return (
       <div className="course-player">
         <h1>{missing ? 'No course here' : 'Could not load the course'}</h1>
-        <p className="meta">{missing ? 'The link may be wrong, or the course was taken down.' : 'Try again in a moment.'}</p>
+        <p className="meta">{missing ? missingReason(signedIn) : 'Try again in a moment.'}</p>
         {home}
       </div>
     );
@@ -68,4 +71,10 @@ export function stageFromSearch(search: URLSearchParams): CourseStage | undefine
   const stage = search.get('stage');
   if ((COURSE_STAGES as readonly string[]).includes(stage ?? '')) return stage as CourseStage;
   return search.get('drill') === '1' ? 'drill' : undefined;
+}
+
+/** A members-only course is 404 to whoever may not open it, like a wrong link. */
+function missingReason(signedIn: boolean): string {
+  if (signedIn) return 'The link may be wrong, the course was taken down, or it is for members only.';
+  return 'The link may be wrong or the course was taken down. If it is for members only, sign in to open it.';
 }

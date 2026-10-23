@@ -1348,6 +1348,18 @@ Decided with the owner:
 
 - Status: `draft` → `unlisted` (link works, not listed) → `public` (listed) →
   `removed` (moderator). New courses publish as `unlisted` by default.
+- Members-only courses: besides its status, a course has an access level
+  (`courses.access_level`, picked in the Publish dialog; 0 is everyone). A
+  course at level N opens for its owner and for users whose
+  `users.course_access_level` is N or more (set by a moderator with
+  `apps/api/scripts/course-access.ts <email> <level>`; no route writes it).
+  Levels stack: level 2 opens level 1's courses too. Today the highest is 1
+  (`COURSE_MAX_ACCESS_LEVEL`). The no-login `/api/public/courses*` routes
+  never return one (404, like a wrong link); signed in, the player and the
+  catalogue read `/api/learn/courses*`, the same answers plus the
+  members-only courses the user may open (`readableBy` in the courses
+  repository). Enrollments, due reviews and Ask my coach use the same rule,
+  so a user whose level is lowered loses those courses everywhere.
 - The creator deletes a course, published or not, from its studio card
   (trash can, then a dialog naming it; `DELETE /api/courses/:id`, refused
   while the AI writes it). The row goes with its audio rows, AI calls and

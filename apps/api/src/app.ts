@@ -7,6 +7,7 @@ import { registerAnalysesRoutes } from './routes/analyses.js';
 import { registerBugReportsRoutes } from './routes/bug-reports.js';
 import { registerChesscomRoutes } from './routes/chesscom.js';
 import { registerPublicCoursesRoutes } from './routes/public-courses.js';
+import { registerLearnCoursesRoutes } from './routes/learn-courses.js';
 import type { AudioStore } from './services/courses/audio-store.js';
 import { registerCoursesRoutes } from './routes/courses.js';
 import { registerCourseProgressRoutes } from './routes/course-progress.js';
@@ -126,6 +127,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     registerUsersRoutes(app, options.db);
     registerBugReportsRoutes(app, options.db);
     registerPublicCoursesRoutes(app, options.db, options.audioStore);
+    registerLearnCoursesRoutes(app, options.db, options.audioStore);
     registerCourseProgressRoutes(app, options.db);
     registerCoursesRoutes(app, options.db, {
       buildDossier: options.courseDossierBuilder ?? (options.engineBackendOptions ? courseDossierBuilderFor(options.engineBackendOptions) : undefined),

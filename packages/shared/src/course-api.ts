@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { MoveQualitySchema } from './analysis.js';
 import { COACH_PERSONAS, RATING_BANDS } from './constants.js';
 import { DiagnosisCodeIdSchema } from './diagnosis/catalog-types.js';
-import { COURSE_MAX_RATING, COURSE_MIN_RATING, CourseDocumentSchema, CourseGenerationSchema, CourseKindSchema, CourseLevelSchema, CourseSeriesSchema, CourseStatusSchema, CourseTagsSchema, CourseVideosSchema } from './course.js';
+import { COURSE_MAX_RATING, COURSE_MIN_RATING, CourseAccessLevelSchema, CourseDocumentSchema, CourseGenerationSchema, CourseKindSchema, CourseLevelSchema, CourseSeriesSchema, CourseStatusSchema, CourseTagsSchema, CourseVideosSchema } from './course.js';
 
 /** The intake form (docs/courses.md §5.3). `learnerSide` null lets code
  * infer it (§3); the route refuses when it can't. */
@@ -31,6 +31,7 @@ export const CourseResponseSchema = z.object({
   slug: z.string(),
   kind: CourseKindSchema,
   status: CourseStatusSchema,
+  accessLevel: CourseAccessLevelSchema,
   title: z.string(),
   direction: z.string(),
   document: CourseDocumentSchema,
@@ -104,6 +105,8 @@ export type StartCourseGenerationRequest = z.input<typeof StartCourseGenerationR
  * "I checked these" when the checks still report problems. */
 export const PublishCourseRequestSchema = z.object({
   visibility: z.enum(['unlisted', 'public']).default('unlisted'),
+  /** 0 for everyone; N for members at level N or above. */
+  accessLevel: CourseAccessLevelSchema.default(0),
   warningsChecked: z.boolean().default(false)
 });
 export type PublishCourseRequest = z.input<typeof PublishCourseRequestSchema>;
@@ -155,7 +158,8 @@ export const PublicCourseResponseSchema = z.object({
 export type PublicCourseResponse = z.infer<typeof PublicCourseResponseSchema>;
 
 /** docs/courses.md §9: the catalogue lists `public` courses only; unlisted
- * ones are reached by their link alone. `cursor` is the last page's
+ * ones are reached by their link alone. Members-only courses are listed for
+ * signed-in members only (`/api/learn/courses`). `cursor` is the last page's
  * `nextCursor`. */
 export const CourseCatalogQuerySchema = z.object({
   kind: CourseKindSchema.optional(),
@@ -186,7 +190,9 @@ export const CourseCatalogItemSchema = z.object({
   /** The series it belongs to; null when it is a single course. */
   series: CourseSeriesSchema.nullable(),
   /** The creator's diagnostic tags. */
-  tags: CourseTagsSchema
+  tags: CourseTagsSchema,
+  /** 0 for everyone; above 0 only members see it. */
+  accessLevel: CourseAccessLevelSchema
 });
 export type CourseCatalogItem = z.infer<typeof CourseCatalogItemSchema>;
 

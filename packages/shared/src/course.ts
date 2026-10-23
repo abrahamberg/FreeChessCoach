@@ -23,6 +23,12 @@ export const COURSE_STATUSES = ['draft', 'unlisted', 'public', 'removed'] as con
 export const CourseStatusSchema = z.enum(COURSE_STATUSES);
 export type CourseStatus = z.infer<typeof CourseStatusSchema>;
 
+/** docs/courses.md §9: who may open a published course. 0 is everyone; a
+ * course at level N is for its owner and for users whose access level
+ * (set by scripts/course-access.ts) is N or more. */
+export const COURSE_MAX_ACCESS_LEVEL = 1;
+export const CourseAccessLevelSchema = z.number().int().min(0).max(COURSE_MAX_ACCESS_LEVEL);
+
 const SquareSchema = z.string().regex(/^[a-h][1-8]$/);
 const NodeIdSchema = z.string().regex(/^n\d+$/);
 

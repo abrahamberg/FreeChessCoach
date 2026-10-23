@@ -26,6 +26,8 @@ export interface UsersTable {
   chessApiRateLimitedAt: Date | null;
   /** 0012_course_creators.ts — set only by scripts/course-creator.ts. */
   canCreateCourses: Generated<boolean>;
+  /** 0028_course_access_levels.ts — set only by scripts/course-access.ts. */
+  courseAccessLevel: Generated<number>;
   createdAt: Generated<Date>;
 }
 
@@ -333,6 +335,8 @@ export interface CoursesTable {
   slug: string;
   kind: CourseKind;
   status: Generated<CourseStatus>;
+  /** 0028_course_access_levels.ts — 0 for everyone, else members at this level or above. */
+  accessLevel: Generated<number>;
   title: string;
   sourcePgn: string;
   direction: Generated<string>;

@@ -43,12 +43,12 @@ async function insertCourse(
   status: 'draft' | 'unlisted' | 'public' | 'removed',
   level?: CourseDocument['level'],
   diagnosisCodes: CourseDocument['diagnosisCodes'] = [],
-  extra: { series?: CourseDocument['series']; tags?: string[]; ownerId?: string } = {}
+  extra: { series?: CourseDocument['series']; tags?: string[]; ownerId?: string; accessLevel?: number } = {}
 ): Promise<string> {
   const owner = extra.ownerId ? { id: extra.ownerId } : await usersRepo.insert(db, { email: `${slug}@example.com`, displayName: 'Creator', engineMode: 'chess_api' });
   const document = { ...trapDocument(), diagnosisCodes, ...(level ? { level } : {}), ...(extra.series ? { series: extra.series } : {}), ...(extra.tags ? { tags: extra.tags } : {}), ...(extra.series ? { title: slug } : {}) };
   const row = await coursesRepo.insert(db, { ownerId: owner.id, slug, kind: 'trap', title: document.title, sourcePgn: ENGLUND, direction: '', document });
-  if (status !== 'draft') await coursesRepo.publish(db, row.id, owner.id, document, 'unlisted');
+  if (status !== 'draft') await coursesRepo.publish(db, row.id, owner.id, document, 'unlisted', extra.accessLevel ?? 0);
   if (status === 'public' || status === 'removed') await coursesRepo.setStatus(db, row.id, status);
   await courseAudioRepo.upsert(db, row.id, noteTextHash('The centre pawn.'), 'courses/' + slug + '/audio/0b9b8d1e-aaaa-4bbb-8ccc-000000000001.mp3', 10);
   return row.id;
@@ -88,6 +88,35 @@ describe('public course routes', () => {
     // The creator's routes stay behind the login, however the path is dressed up.
     for (const url of ['/api/courses', '/api/public/../courses', '/api/public/%2E%2E/courses', '/api/public/..%2Fcourses']) {
       expect((await app.inject({ method: 'GET', url })).statusCode, url).toBeOneOf([401, 404]);
+    }
+    await app.close();
+  });
+
+  test('a members-only course opens for its owner and users at its level, and nowhere without the login', async () => {
+    const app = buildTestApp({ db, authMode: 'proxy', audioStore: fakeAudioStore() });
+    await app.ready();
+    const owner = await usersRepo.insert(db, { email: 'members-owner@example.com', displayName: 'Creator', engineMode: 'chess_api' });
+    await usersRepo.insert(db, { email: 'members-none@example.com', displayName: 'Learner', engineMode: 'chess_api' });
+    await usersRepo.insert(db, { email: 'members-one@example.com', displayName: 'Member', engineMode: 'chess_api' });
+    await usersRepo.setCourseAccessLevel(db, 'members-one@example.com', 1);
+    await insertCourse('englund-members-aaaaaaaaaaaa', 'public', undefined, [], { ownerId: owner.id, accessLevel: 1 });
+    const as = (email: string, url: string) => app.inject({ method: 'GET', url, headers: { 'x-forwarded-email': email } });
+    const listed = async (email: string | null) => {
+      const url = email ? '/api/learn/courses' : '/api/public/courses';
+      const response = email ? await as(email, url) : await app.inject({ method: 'GET', url });
+      return CourseCatalogResponseSchema.parse(response.json()).items.map((item) => item.slug);
+    };
+
+    expect((await app.inject({ method: 'GET', url: '/api/public/courses/englund-members-aaaaaaaaaaaa' })).statusCode).toBe(404);
+    expect(await listed(null)).not.toContain('englund-members-aaaaaaaaaaaa');
+    expect((await app.inject({ method: 'GET', url: '/api/learn/courses/englund-members-aaaaaaaaaaaa' })).statusCode).toBe(401);
+    expect((await as('members-none@example.com', '/api/learn/courses/englund-members-aaaaaaaaaaaa')).statusCode).toBe(404);
+    expect(await listed('members-none@example.com')).not.toContain('englund-members-aaaaaaaaaaaa');
+    for (const email of ['members-one@example.com', 'members-owner@example.com']) {
+      const course = await as(email, '/api/learn/courses/englund-members-aaaaaaaaaaaa');
+      expect(course.statusCode, email).toBe(200);
+      expect(course.headers['cache-control']).toBe('private, no-store');
+      expect(await listed(email), email).toContain('englund-members-aaaaaaaaaaaa');
     }
     await app.close();
   });
@@ -217,7 +246,8 @@ describe('public course routes', () => {
       level: null,
       diagnosisCodes: [],
       series: null,
-      tags: []
+      tags: [],
+      accessLevel: 0
     });
     expect(JSON.stringify(listed)).not.toContain('example.com');
 

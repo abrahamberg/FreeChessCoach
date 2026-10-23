@@ -1,4 +1,4 @@
-import type { CourseCheckProblem, CourseClipLinks, CourseDocument, CourseResponse } from '@freechesscoach/shared';
+import { COURSE_MAX_ACCESS_LEVEL, type CourseCheckProblem, type CourseClipLinks, type CourseDocument, type CourseResponse } from '@freechesscoach/shared';
 import { useEffect, useState, type ReactNode } from 'react';
 import { describeApiError } from '../../api/client.js';
 import { Modal } from '../../components/Modal.js';
@@ -26,6 +26,9 @@ const LINKS: { key: keyof CourseClipLinks; label: string; placeholder: string }[
 
 const cache = openCourseAudioCache();
 
+/** 0 is everyone; 1..max are the members' levels (docs/courses.md §9). */
+const ACCESS_LEVELS = Array.from({ length: COURSE_MAX_ACCESS_LEVEL + 1 }, (_, level) => level);
+
 /** docs/courses.md §9: the three takeaways, where the clips were posted, who
  * sees it, the checks; then save, voice the notes that have no audio yet,
  * upload them, and publish. */
@@ -36,6 +39,7 @@ export function PublishDialog({ course, document, onDocumentChange, onPublished,
   const [takeaways, setTakeaways] = useState<string[]>([0, 1, 2].map((index) => document.takeaways[index] ?? ''));
   const [links, setLinks] = useState<CourseClipLinks>(document.clipLinks);
   const [visibility, setVisibility] = useState<'unlisted' | 'public'>(course.status === 'public' ? 'public' : 'unlisted');
+  const [accessLevel, setAccessLevel] = useState(course.accessLevel);
   const [checked, setChecked] = useState(false);
   /** The full checks, with the engine facts, over the saved draft; null until read. */
   const [problems, setProblems] = useState<CourseCheckProblem[] | null>(null);
@@ -84,7 +88,7 @@ export function PublishDialog({ course, document, onDocumentChange, onPublished,
         }
       }
       setStep('Publishing…');
-      await publish.mutateAsync({ visibility, warningsChecked: checked });
+      await publish.mutateAsync({ visibility, accessLevel, warningsChecked: checked });
       onPublished();
     } catch (failure) {
       setError(describeApiError(failure) ?? (failure instanceof Error ? failure.message : 'Could not publish.'));
@@ -118,6 +122,16 @@ export function PublishDialog({ course, document, onDocumentChange, onPublished,
           <label className="publish-dialog__choice">
             <input type="radio" name="visibility" checked={visibility === 'public'} onChange={() => setVisibility('public')} />
             Public: listed on the site
+          </label>
+          <label className="course-field">
+            <span>Who can open it</span>
+            <select value={accessLevel} onChange={(event) => setAccessLevel(Number(event.target.value))}>
+              {ACCESS_LEVELS.map((level) => (
+                <option key={level} value={level}>
+                  {level === 0 ? 'Everyone' : `Members only: level ${level} and up`}
+                </option>
+              ))}
+            </select>
           </label>
         </fieldset>
         <fieldset className="publish-dialog__group" disabled={busy}>

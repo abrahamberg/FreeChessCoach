@@ -13,10 +13,11 @@ const NOT_FOUND = 'No course at this link';
 /** docs/courses.md §9: the frozen published copy, each note's audio file URL
  * in the bucket (a key made once per upload, so the URL never serves different
  * audio and Cloudflare can keep it at the edge), and each move's evaluation
- * from the engine pass (the eval bar and graph). Drafts and removed courses
- * are 404, like a wrong link. */
-export async function publicCourse(db: Kysely<Database>, slug: string, store?: AudioStore): Promise<PublicCourseResponse> {
-  const row = await coursesRepo.findPublishedBySlug(db, slug);
+ * from the engine pass (the eval bar and graph). Drafts, removed courses and
+ * members-only courses `viewerId` (null: signed out) may not open are 404,
+ * like a wrong link. */
+export async function publicCourse(db: Kysely<Database>, slug: string, viewerId: string | null, store?: AudioStore): Promise<PublicCourseResponse> {
+  const row = await coursesRepo.findPublishedBySlug(db, slug, viewerId);
   if (!row?.publishedDocument || !row.publishedAt) throw new NotFoundError(NOT_FOUND);
   const document = CourseDocumentSchema.parse(row.publishedDocument);
   const files = new Map((await courseAudioRepo.files(db, row.id)).map((file) => [file.textHash, file]));
@@ -26,15 +27,15 @@ export async function publicCourse(db: Kysely<Database>, slug: string, store?: A
       return file && store ? [[`${note.episodeId}:${note.nodeId}`, `${store.publicUrl}/${file.objectKey}`]] : [];
     })
   );
-  return { slug: row.slug, publishedAt: row.publishedAt.toISOString(), document, noteAudio, evals: courseEvals(document, row.dossier), seriesNeighbours: await seriesNeighbours(db, row.ownerId, row.slug, document) };
+  return { slug: row.slug, publishedAt: row.publishedAt.toISOString(), document, noteAudio, evals: courseEvals(document, row.dossier), seriesNeighbours: await seriesNeighbours(db, row.ownerId, row.slug, document, viewerId) };
 }
 
 /** The public lessons just before and after this one in its series; null at
  * the ends and for a course in no series. */
-async function seriesNeighbours(db: Kysely<Database>, ownerId: string, slug: string, document: CourseDocument): Promise<PublicCourseResponse['seriesNeighbours']> {
+async function seriesNeighbours(db: Kysely<Database>, ownerId: string, slug: string, document: CourseDocument, viewerId: string | null): Promise<PublicCourseResponse['seriesNeighbours']> {
   const { series } = document;
   if (!series) return { previous: null, next: null };
-  const others = (await coursesRepo.listPublicInSeries(db, ownerId, series.name)).filter((entry) => entry.slug !== slug);
+  const others = (await coursesRepo.listPublicInSeries(db, ownerId, series.name, viewerId)).filter((entry) => entry.slug !== slug);
   const previous = others.filter((entry) => entry.position < series.position).at(-1) ?? null;
   const next = others.find((entry) => entry.position > series.position) ?? null;
   return { previous, next };
@@ -64,11 +65,12 @@ const PG_TIMESTAMP = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,6})?[+-]\d{2
 /** docs/courses.md §9: one page of the catalogue. The cursor is the last
  * row's published time (to the microsecond) and id, so a course published
  * meanwhile neither repeats nor skips a row. */
-export async function courseCatalogue(db: Kysely<Database>, query: CourseCatalogQuery): Promise<CourseCatalogResponse> {
+export async function courseCatalogue(db: Kysely<Database>, query: CourseCatalogQuery, viewerId: string | null): Promise<CourseCatalogResponse> {
   const curriculum = query.sort === 'curriculum';
   // Curriculum order has no stable key to page after, so it pages by position.
   const offset = curriculum && query.cursor ? decodeOffset(query.cursor) : 0;
   const rows = await coursesRepo.listPublic(db, {
+    userId: viewerId,
     kind: query.kind,
     code: query.code,
     sort: query.sort,
@@ -94,7 +96,8 @@ export async function courseCatalogue(db: Kysely<Database>, query: CourseCatalog
         level: row.level ?? null,
         diagnosisCodes: row.diagnosisCodes,
         series: row.series,
-        tags: row.tags
+        tags: row.tags,
+        accessLevel: row.accessLevel
       })
     ),
     nextCursor:

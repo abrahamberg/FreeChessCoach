@@ -39,7 +39,7 @@ export interface AskCourseCoachDependencies {
  * published copy here, never from the browser.
  */
 export async function askCourseCoach(deps: AskCourseCoachDependencies, userId: string, request: AskCourseCoachRequest): Promise<CoachTurnStream> {
-  const course = await coursesRepo.findPublishedBySlug(deps.db, request.slug);
+  const course = await coursesRepo.findPublishedBySlug(deps.db, request.slug, userId);
   const document = course?.publishedDocument;
   if (!document) throw new NotFoundError('Course not found');
   const position = coursePosition(document, request.episodeId, request.nodeId);

@@ -19,6 +19,7 @@ export interface UserRow {
   onboardedAt: Date | null;
   chessApiRateLimitedAt: Date | null;
   canCreateCourses: boolean;
+  courseAccessLevel: number;
   createdAt: Date;
 }
 
@@ -94,6 +95,17 @@ export function setCanCreateCourses(db: Kysely<Database>, email: string, value: 
   return db
     .updateTable('users')
     .set({ canCreateCourses: value })
+    .where('email', '=', email)
+    .returningAll()
+    .executeTakeFirst();
+}
+
+/** scripts/course-access.ts only — like `canCreateCourses`, no route sets it.
+ * Returns undefined when the email is unknown. */
+export function setCourseAccessLevel(db: Kysely<Database>, email: string, level: number): Promise<UserRow | undefined> {
+  return db
+    .updateTable('users')
+    .set({ courseAccessLevel: level })
     .where('email', '=', email)
     .returningAll()
     .executeTakeFirst();

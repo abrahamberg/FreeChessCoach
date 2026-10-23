@@ -1,5 +1,6 @@
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../schema.js';
+import { readableBy } from './courses.js';
 
 export interface CourseProgressRow {
   drillKey: string;
@@ -72,7 +73,7 @@ export interface DueCourse {
 }
 
 /** Moves due on or before `today`, by the course they were drilled from;
- * a course taken down drops out. */
+ * a course taken down, or no longer open to them, drops out. */
 export async function dueByCourse(db: Kysely<Database>, userId: string, today: string): Promise<DueCourse[]> {
   const rows = await db
     .selectFrom('courseProgress')
@@ -87,6 +88,7 @@ export async function dueByCourse(db: Kysely<Database>, userId: string, today: s
     .where(sql<boolean>`course_progress.due_on <= ${today}::date`)
     .where('courses.status', 'in', ['unlisted', 'public'])
     .where('courses.publishedDocument', 'is not', null)
+    .where(readableBy(userId))
     .groupBy(['courseProgress.courseSlug', sql`courses.published_document->>'title'`])
     .orderBy(sql`min(course_progress.due_on)`)
     .execute();

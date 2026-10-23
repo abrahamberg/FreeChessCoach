@@ -495,6 +495,11 @@ tactics, puzzle, master game.
   `/api/public/courses/*` (skip-auth at the proxy): the published course with
   note audio URLs and per-move evaluations, the audio files, and the
   catalogue of `public` courses.
+- **Members-only**: a course with an access level above 0 is for its owner
+  and users at that level or above (`users.course_access_level`, set by
+  `scripts/course-access.ts`). It is never on `/api/public/*`; signed-in
+  learners read courses through `/api/learn/courses*`, which add the ones
+  they may open (docs/courses.md §9).
 - **The move tree**: the move explorer draws a tree, not a line. The pure
   tree code is `packages/chess-analysis/src/pgn-tree/` (`parsePgnTree` reads
   a PGN with variations, the creator's sections and marks; `edit.ts` adds and

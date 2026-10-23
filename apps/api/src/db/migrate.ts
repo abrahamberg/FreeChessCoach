@@ -28,6 +28,7 @@ import * as progressMemory from './migrations/0024_progress_memory.js';
 import * as courseAudioInBucket from './migrations/0025_course_audio_in_bucket.js';
 import * as courseKindLesson from './migrations/0026_course_kind_lesson.js';
 import * as witchCoach from './migrations/0027_witch_coach.js';
+import * as courseAccessLevels from './migrations/0028_course_access_levels.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -59,7 +60,8 @@ const provider: MigrationProvider = {
       '0024_progress_memory': progressMemory,
       '0025_course_audio_in_bucket': courseAudioInBucket,
       '0026_course_kind_lesson': courseKindLesson,
-      '0027_witch_coach': witchCoach
+      '0027_witch_coach': witchCoach,
+      '0028_course_access_levels': courseAccessLevels
     })
 };
 

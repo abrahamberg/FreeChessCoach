@@ -1,6 +1,7 @@
 import type { CourseEnrollmentPlace, CourseKind, CourseStage } from '@freechesscoach/shared';
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../schema.js';
+import { readableBy } from './courses.js';
 
 export interface CourseEnrollmentWrite {
   stage: CourseStage;
@@ -48,7 +49,8 @@ export interface CourseEnrollmentRow extends CourseEnrollmentWrite {
   completedAt: Date | null;
 }
 
-/** The learner's courses, latest activity first; a course taken down drops out. */
+/** The learner's courses, latest activity first; a course taken down, or
+ * no longer open to them, drops out. */
 export function list(db: Kysely<Database>, userId: string): Promise<CourseEnrollmentRow[]> {
   return db
     .selectFrom('courseEnrollments')
@@ -67,6 +69,7 @@ export function list(db: Kysely<Database>, userId: string): Promise<CourseEnroll
     .where('courseEnrollments.userId', '=', userId)
     .where('courses.status', 'in', ['unlisted', 'public'])
     .where('courses.publishedDocument', 'is not', null)
+    .where(readableBy(userId))
     .orderBy('courseEnrollments.updatedAt', 'desc')
     .execute();
 }

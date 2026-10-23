@@ -66,7 +66,7 @@ describe('course questions', () => {
   test('the learner’s own coach answers with the course position, notes and rules in its prompt', async () => {
     const owner = await usersRepo.insert(db, { email: 'creator@example.com', displayName: 'Creator', engineMode: 'chess_api' });
     const row = await coursesRepo.insert(db, { ownerId: owner.id, slug: 'englund-ask-aaaaaaaaaaaa', kind: 'trap', title: document.title, sourcePgn: ENGLUND, direction: '', document });
-    await coursesRepo.publish(db, row.id, owner.id, document, 'unlisted');
+    await coursesRepo.publish(db, row.id, owner.id, document, 'unlisted', 0);
     await usersRepo.insert(db, { email: 'learner@example.com', displayName: 'Learner', engineMode: 'chess_api' });
 
     const { model, doStream } = textModel('Nc6 attacks e5 again.');

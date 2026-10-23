@@ -68,7 +68,7 @@ export async function publishCourse(
   if (problems.length && !request.warningsChecked) {
     throw new ConflictError(`The checks found ${problems.length} ${problems.length === 1 ? 'problem' : 'problems'}; look at them and tick "I checked these" to publish anyway`);
   }
-  const published = await coursesRepo.publish(db, id, ownerId, document, request.visibility);
+  const published = await coursesRepo.publish(db, id, ownerId, document, request.visibility, request.accessLevel);
   const dropped = await courseAudioRepo.keepOnly(db, id, noteHashes(document).map((note) => note.hash));
   if (audio) await Promise.all(dropped.map((key) => audio.store.delete(key).catch(audio.onError)));
   return toCourseResponse(db, published);
