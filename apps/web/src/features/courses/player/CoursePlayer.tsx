@@ -1,5 +1,5 @@
 import { nextCourseStage, type CourseStage } from '@freechesscoach/chess-analysis';
-import type { CourseDocument, CourseEnrollmentPlace, PublicCourseResponse } from '@freechesscoach/shared';
+import { isReadAlong, type CourseDocument, type CourseEnrollmentPlace, type PublicCourseResponse } from '@freechesscoach/shared';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { OverflowMenuItem } from '../../../components/OverflowMenu.js';
 import { useConfirmDialog } from '../../../hooks/useConfirmDialog.js';
@@ -10,6 +10,7 @@ import { CourseHeader } from './CourseHeader.js';
 import type { CourseProgressStore } from './course-progress.js';
 import type { CourseEvals } from './course-move-list.js';
 import { PlayThrough, type AskCoach } from './PlayThrough.js';
+import { READING_EPISODE, ReadingView } from './ReadingView.js';
 import { SeriesNav } from './SeriesNav.js';
 import { useCourseEnrollment } from './useCourseEnrollment.js';
 import { useProfileCoachVoice } from '../../../hooks/useProfileCoachVoice.js';
@@ -59,6 +60,7 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
   const audio = useNoteAudio(noteAudio, {
     voice,
     textOf: (episodeId, nodeId) => {
+      if (episodeId === READING_EPISODE) return document.sections?.find((section) => section.id === nodeId)?.text ?? null;
       const ply = document.episodes.find((episode) => episode.id === episodeId)?.plies.find((each) => each.nodeId === nodeId);
       return ply?.course && ply.text.trim() ? ply.text : null;
     }
@@ -139,11 +141,25 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
         menuItems={menuItems}
         inApp={inApp}
         isDesktop={isDesktop}
+        showStages={!isReadAlong(document)}
       />
       {document.series && <SeriesNav series={document.series} neighbours={seriesNeighbours} />}
       {notice}
       {dialog}
-      {stage === 'play_through' ? (
+      {document.kind === 'reading' ? (
+        <ReadingView
+          key={viewKey}
+          document={document}
+          audio={audio}
+          isDesktop={isDesktop}
+          start={place.step}
+          onPage={(page) => {
+            touch();
+            setPlace((prev) => (prev.step === page ? prev : { ...prev, episode: 0, step: page, where: `Page ${page + 1}` }));
+          }}
+          onFinished={() => finish('play_through')}
+        />
+      ) : stage === 'play_through' ? (
         <PlayThrough
           key={viewKey}
           document={document}
@@ -160,7 +176,7 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
           }}
           onFinished={() => {
             finish('play_through');
-            openNext();
+            if (!isReadAlong(document)) openNext();
           }}
         />
       ) : (

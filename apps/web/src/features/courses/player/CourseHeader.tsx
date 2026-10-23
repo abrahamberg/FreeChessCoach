@@ -17,12 +17,14 @@ export interface CourseHeaderProps {
   /** Signed in inside the app: the board views' account menu; else a plain one. */
   inApp: boolean;
   isDesktop: boolean;
+  /** False for a course with nothing to practise (a read-along): no stages. */
+  showStages?: boolean;
 }
 
 /** The course's header, in the board views' style (SessionHeader): back,
  * the title, the four stages (the stage bar on a desktop, a compact picker
  * on a phone) and the "⋮" menu. */
-export function CourseHeader({ title, stage, done, onStage, back, menuItems, inApp, isDesktop }: CourseHeaderProps): ReactNode {
+export function CourseHeader({ title, stage, done, onStage, back, menuItems, inApp, isDesktop, showStages = true }: CourseHeaderProps): ReactNode {
   return (
     <header className="session-header course-header">
       {back && (
@@ -32,7 +34,7 @@ export function CourseHeader({ title, stage, done, onStage, back, menuItems, inA
       )}
       <h1 className="session-header__players course-header__title">{title}</h1>
       <span className="session-header__actions">
-        {isDesktop ? (
+        {!showStages ? null : isDesktop ? (
           <CourseStageBar current={stage} done={done} onSelect={onStage} />
         ) : (
           <label className="course-header__stage">

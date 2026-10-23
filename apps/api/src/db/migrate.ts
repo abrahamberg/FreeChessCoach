@@ -30,6 +30,7 @@ import * as courseKindLesson from './migrations/0026_course_kind_lesson.js';
 import * as witchCoach from './migrations/0027_witch_coach.js';
 import * as courseAccessLevels from './migrations/0028_course_access_levels.js';
 import * as reportOpeningMistakes from './migrations/0029_report_opening_mistakes.js';
+import * as courseKindReading from './migrations/0030_course_kind_reading.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -63,7 +64,8 @@ const provider: MigrationProvider = {
       '0026_course_kind_lesson': courseKindLesson,
       '0027_witch_coach': witchCoach,
       '0028_course_access_levels': courseAccessLevels,
-      '0029_report_opening_mistakes': reportOpeningMistakes
+      '0029_report_opening_mistakes': reportOpeningMistakes,
+      '0030_course_kind_reading': courseKindReading
     })
 };
 

@@ -1,5 +1,4 @@
 import type { CourseSection } from '@freechesscoach/shared';
-import { Chess } from 'chess.js';
 
 /** A page of a reading course is about this many characters: a few
  * paragraphs, then the next page. */
@@ -14,6 +13,8 @@ const PAGE_CHARS = 700;
  */
 export function parseReadingSections(text: string): { sections: CourseSection[]; errors: string[] } {
   const errors: string[] = [];
+  // A page mark in the middle of a sentence does not end the paragraph; a word cut at the line's end ("won-") is whole again.
+  text = text.replace(/([^\n])\n\n<!--[^>]*-->\n\n(?!```)/g, (_whole, last: string) => (/[.!?:"”'’)]/.test(last) ? `${last}\n\n` : last === '-' ? '' : `${last} `));
   const pages: { text: string; fen?: string }[] = [];
   let pending: string | undefined;
   let open: { text: string; fen?: string } | null = null;
@@ -54,13 +55,10 @@ export function parseReadingSections(text: string): { sections: CourseSection[];
   return { sections: pages.map((page, index) => ({ id: `s${index + 1}`, text: page.text, ...(page.fen ? { fen: page.fen } : {}) })), errors };
 }
 
+/** A diagram may show part of a position (a castled king and no enemy king), so only the board is checked: eight ranks of eight squares. */
 function isFen(fen: string): boolean {
-  try {
-    new Chess(fen);
-    return true;
-  } catch {
-    return false;
-  }
+  const ranks = (fen.split(' ')[0] ?? '').split('/');
+  return ranks.length === 8 && ranks.every((rank) => /^[1-8pnbrqkPNBRQK]+$/.test(rank) && [...rank].reduce((sum, char) => sum + (/\d/.test(char) ? Number(char) : 1), 0) === 8);
 }
 
 /** The position a page shows: its own diagram, else the nearest one before it. */

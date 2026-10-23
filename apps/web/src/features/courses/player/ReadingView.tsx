@@ -36,7 +36,6 @@ export function ReadingView({ document, audio, isDesktop, start, onPage, onFinis
     onPage(page);
     if (first.current) first.current = false;
     else if (section) audio.play(READING_EPISODE, section.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- a page change is the only trigger
   }, [page]);
 
   const go = (next: number): void => {
