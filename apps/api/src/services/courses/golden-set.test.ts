@@ -8,7 +8,8 @@ describe('course golden set', () => {
   test('every kind, each file named for its kind, a legal PGN with a learner side, under 5 KB', () => {
     const golden = loadGoldenSet();
 
-    expect(new Set(golden.map((course) => course.kind))).toEqual(new Set(COURSE_KINDS));
+    // A reading course is book text with no move tree, so the audit has nothing to check in it.
+    expect(new Set(golden.map((course) => course.kind))).toEqual(new Set(COURSE_KINDS.filter((kind) => kind !== 'reading')));
     for (const course of golden) {
       expect(course.name.startsWith(`${course.kind}-`)).toBe(true);
       expect(['white', 'black']).toContain(draftFromIntake(course.intake).learnerSide);
