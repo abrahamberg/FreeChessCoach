@@ -29,6 +29,7 @@ import * as courseAudioInBucket from './migrations/0025_course_audio_in_bucket.j
 import * as courseKindLesson from './migrations/0026_course_kind_lesson.js';
 import * as witchCoach from './migrations/0027_witch_coach.js';
 import * as courseAccessLevels from './migrations/0028_course_access_levels.js';
+import * as reportOpeningMistakes from './migrations/0029_report_opening_mistakes.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -61,7 +62,8 @@ const provider: MigrationProvider = {
       '0025_course_audio_in_bucket': courseAudioInBucket,
       '0026_course_kind_lesson': courseKindLesson,
       '0027_witch_coach': witchCoach,
-      '0028_course_access_levels': courseAccessLevels
+      '0028_course_access_levels': courseAccessLevels,
+      '0029_report_opening_mistakes': reportOpeningMistakes
     })
 };
 

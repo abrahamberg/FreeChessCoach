@@ -98,7 +98,8 @@ function buildGameReportFixture(): GameReport {
     },
     acpl: 24.6,
     estimatedRating: { value: 1550, range: [1400, 1700] as [number, number], confidence: 'medium' as const },
-    tacticMotifs: Object.fromEntries(TACTIC_MOTIF_TYPES.map((type) => [type, { opportunities: 0, found: 0 }])) as GameReport['players']['white']['tacticMotifs']
+    tacticMotifs: Object.fromEntries(TACTIC_MOTIF_TYPES.map((type) => [type, { opportunities: 0, found: 0 }])) as GameReport['players']['white']['tacticMotifs'],
+    openingMistakes: 0
   };
 
   return {

@@ -2,9 +2,8 @@ import { buildAnnotatedPgn, parseAnnotatedPgn, toAnnotatedMoveData } from '@free
 import type { GameReport, PlayerColor, StoredGameReport } from '@freechesscoach/shared';
 
 /** The two fields `composeGameReport` actually needs — deliberately not
- * `GameRow`, so a caller with only those two columns in hand (e.g. the
- * stats dashboard's `StatsSourceRow`, which doesn't otherwise fetch a full
- * game row) can compose too without a wider join or a second query. */
+ * `GameRow`, so a caller with only those two columns in hand can compose
+ * too without a wider join or a second query. */
 export interface ComposeGameReportSource {
   annotatedPgn: string | null;
   userColor: PlayerColor;

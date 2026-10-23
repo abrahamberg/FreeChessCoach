@@ -42,7 +42,8 @@ function fakeGameReport(whiteTacticMotifs: Partial<PlayerReport['tacticMotifs']>
     ) as PlayerReport['counts'],
     acpl: 20,
     estimatedRating: { value: 1500, range: [1400, 1600], confidence: 'medium' },
-    tacticMotifs: { ...zeroTacticMotifs, ...whiteTacticMotifs }
+    tacticMotifs: { ...zeroTacticMotifs, ...whiteTacticMotifs },
+    openingMistakes: 0
   };
   return {
     engine: { name: 'stockfish', depth: 18, multiPv: 3 },

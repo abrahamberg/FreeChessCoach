@@ -5,7 +5,6 @@ import {
   type TacticMotifCounts
 } from '@freechesscoach/shared';
 import { mergeStatsBuckets } from './merge-stats-buckets.js';
-import { openingMistakeCount } from './opening-mistakes.js';
 import type { StatsEntry } from './stats-entry.js';
 
 export type { StatsBucket, SumCount } from '@freechesscoach/shared';
@@ -75,12 +74,12 @@ function tacticsOf(motifs: TacticMotifCounts): TacticMotifCounts {
 }
 
 function openingBucketOf(entry: StatsEntry): StatsBucket['opening'] {
-  const { book, players, moves } = entry.gameReport;
+  const { book, players } = entry.gameReport;
   const player = players[entry.userColor];
   return {
     bookMoves: sumCountOf(book.players[entry.userColor].lastBookPly),
     accuracy: sumCountOf(player.phaseAccuracy.opening),
-    mistakes: sumCountOf(openingMistakeCount(moves, entry.userColor)),
+    mistakes: sumCountOf(player.openingMistakes),
     byOpening: {
       [book.name ?? book.eco ?? UNKNOWN_OPENING]: {
         games: 1,

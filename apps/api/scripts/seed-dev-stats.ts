@@ -214,7 +214,9 @@ function buildPlayerReport(rng: () => number, isUser: boolean, resultLabel: 'win
       range: [Math.round(1100 + accuracy * 7), Math.round(1300 + accuracy * 7)],
       confidence: 'medium'
     },
-    tacticMotifs: tacticMotifs(rng)
+    tacticMotifs: tacticMotifs(rng),
+    // No moves are seeded (the report's `moves` is empty), so none to count.
+    openingMistakes: 0
   };
 }
 

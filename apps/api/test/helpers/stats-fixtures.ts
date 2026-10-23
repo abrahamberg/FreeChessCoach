@@ -23,7 +23,8 @@ function playerReport(accuracy: number): PlayerReport {
     counts,
     acpl: 20,
     estimatedRating: { value: 1500, range: [1400, 1600], confidence: 'medium' },
-    tacticMotifs
+    tacticMotifs,
+    openingMistakes: 0
   };
 }
 

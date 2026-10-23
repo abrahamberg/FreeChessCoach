@@ -24,7 +24,8 @@ function buildPlayerReport(estimatedRating: EstimatedRatingReport): PlayerReport
     counts: zeroCounts,
     acpl: 20,
     estimatedRating,
-    tacticMotifs: zeroTacticMotifs()
+    tacticMotifs: zeroTacticMotifs(),
+    openingMistakes: 0
   };
 }
 

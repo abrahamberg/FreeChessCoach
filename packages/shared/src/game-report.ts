@@ -131,7 +131,11 @@ export const PlayerReportSchema = z.object({
   acpl: z.number().nonnegative(),
   estimatedRating: EstimatedRatingReportSchema,
   tacticMotifs: TacticMotifCountsSchema,
-  onlyMoves: OnlyMovesSchema.optional()
+  onlyMoves: OnlyMovesSchema.optional(),
+  /** Opening-phase moves classified inaccuracy or worse (`openingMistakeCount`)
+   * — the one per-move fact the stats dashboard needs, stored here so it reads
+   * the small report and never the game's annotated PGN. */
+  openingMistakes: z.number().int().nonnegative()
 });
 export type PlayerReport = z.infer<typeof PlayerReportSchema>;
 

@@ -23,7 +23,6 @@ import {
   type TacticMotifCounts,
   type TacticMotifType
 } from '@freechesscoach/shared';
-import { openingMistakeCount } from './opening-mistakes.js';
 import type { StatsEntry } from './stats-entry.js';
 
 function mean(values: number[]): number | null {
@@ -71,9 +70,7 @@ export function referenceOpeningStats(entries: StatsEntry[]): OpeningStats {
   const openingAccuracies = entries
     .map((entry) => entry.gameReport.players[entry.userColor].phaseAccuracy.opening)
     .filter((value): value is number => value !== null);
-  const openingMistakes = entries.map((entry) =>
-    openingMistakeCount(entry.gameReport.moves, entry.userColor)
-  );
+  const openingMistakes = entries.map((entry) => entry.gameReport.players[entry.userColor].openingMistakes);
 
   return {
     averageBookMoves: mean(bookMoves),

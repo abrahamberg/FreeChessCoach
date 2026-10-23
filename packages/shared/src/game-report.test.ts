@@ -79,7 +79,8 @@ describe('GameReportSchema', () => {
       counts: { ...zeroCounts(), best: 10, good: 15, inaccuracy: 2 },
       acpl: 24.6,
       estimatedRating: { value: 1550, range: [1400, 1700], confidence: 'medium' },
-      tacticMotifs: zeroTacticMotifCounts()
+      tacticMotifs: zeroTacticMotifCounts(),
+      openingMistakes: 0
     };
   }
 

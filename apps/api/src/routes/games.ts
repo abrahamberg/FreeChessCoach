@@ -121,12 +121,16 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
     // commitBotTurn when the game ends) completes, a real Game Report —
     // unlike coach_play, which never gets one.
     if (game.source === 'vs_bot') {
-      const botAnalysis = await analysesRepo.findByGameId(db, game.id);
+      const [botAnalysis, storedBotReport] = await Promise.all([
+        analysesRepo.findByGameId(db, game.id),
+        analysesRepo.findGameReportByGameId(db, game.id)
+      ]);
+      const botGameReport = storedBotReport ? composeGameReport(storedBotReport, game) : null;
       // A rated game shows no per-move feedback until it has been analysed
       // (i.e. kept and reviewed after the game) — see CreateBotSessionRequest.rated.
-      const liveMoveQualities = game.rated === true && botAnalysis?.status !== 'ready' ? [] : movesFromAnnotatedPgn(game);
-      const storedBotReport = await analysesRepo.findGameReportByGameId(db, game.id);
-      const botGameReport = storedBotReport ? composeGameReport(storedBotReport, game) : null;
+      // The report's moves are this same annotatedPgn already parsed.
+      const liveMoveQualities =
+        game.rated === true && botAnalysis?.status !== 'ready' ? [] : (botGameReport?.moves ?? movesFromAnnotatedPgn(game));
       return {
         ...withoutAnnotatedPgn(game),
         analysisStatus: botAnalysis?.status ?? null,
@@ -143,14 +147,17 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
       };
     }
 
-    const analysis = await analysesRepo.findByGameId(db, game.id);
-    const storedReport = await analysesRepo.findGameReportByGameId(db, game.id);
+    const [analysis, storedReport] = await Promise.all([
+      analysesRepo.findByGameId(db, game.id),
+      analysesRepo.findGameReportByGameId(db, game.id)
+    ]);
     const gameReport = storedReport ? composeGameReport(storedReport, game) : null;
-    // Sourced straight from annotatedPgn (like the two branches above), not
-    // from gameReport.moves: the batch job writes annotatedPgn well before
-    // the game report is ready (0032_annotated_pgn.ts), so classifiedMoves
-    // stays available on its own timeline, same as before that migration.
-    const classifiedMoves = game.annotatedPgn ? movesFromAnnotatedPgn(game) : null;
+    // Sourced from annotatedPgn (like the two branches above), not only from
+    // gameReport.moves: the batch job writes annotatedPgn well before the
+    // game report is ready (0032_annotated_pgn.ts), so classifiedMoves stays
+    // available on its own timeline. Once the report exists its moves are
+    // that same annotatedPgn already parsed — a large PGN is parsed once.
+    const classifiedMoves = game.annotatedPgn ? (gameReport?.moves ?? movesFromAnnotatedPgn(game)) : null;
     return {
       ...withoutAnnotatedPgn(game),
       analysisStatus: analysis?.status ?? null,

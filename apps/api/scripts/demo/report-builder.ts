@@ -10,6 +10,7 @@ import {
   type PlayerColor,
   type PlayerReport
 } from '@freechesscoach/shared';
+import { openingMistakeCount } from '@freechesscoach/chess-analysis';
 import type { DemoOpening } from './openings.js';
 import { clamp, gaussian, pickWeighted, type Rng } from './rng.js';
 import { accuracyAt, ENDGAME_THEME_PROFILE, phaseOffsets, strategyOffsets, tacticCountsForGame } from './skill-model.js';
@@ -64,7 +65,15 @@ function endgameStanding(rng: Rng, result: DemoResult): EndgameStanding {
   return pickWeighted(rng, weights[result].map(([item, weight]) => ({ item, weight })));
 }
 
-function buildPlayerReport(rng: Rng, rating: number, result: DemoResult, reachedEndgame: boolean, openingSkill: number, isUser: boolean): PlayerReport {
+/** All but `openingMistakes`, which `buildDemoReport` counts off the opening moves it generates. */
+function buildPlayerReport(
+  rng: Rng,
+  rating: number,
+  result: DemoResult,
+  reachedEndgame: boolean,
+  openingSkill: number,
+  isUser: boolean
+): Omit<PlayerReport, 'openingMistakes'> {
   const resultLift = result === 'win' ? 2.5 : result === 'loss' ? -2.5 : 0;
   const accuracy = percent(gaussian(rng, accuracyAt(rating) + openingSkill * 0.4 + resultLift, 3));
   const offsets = phaseOffsets(rating);
@@ -167,13 +176,16 @@ export function buildDemoReport(rng: Rng, input: DemoGameInput): DemoReport {
   const userReport = buildPlayerReport(rng, estimatedRating, result, reachedEndgame, opening.skill, true);
   const opponentReport = buildPlayerReport(rng, input.opponentRating, opponentResult, reachedEndgame, 0, false);
   const [whiteBook, blackBook] = userColor === 'white' ? [userBookPly, opponentBookPly] : [opponentBookPly, userBookPly];
+  const moves = openingMoves(rng, opening, userColor, estimatedRating, userBookPly);
+  const userColour = { ...userReport, openingMistakes: openingMistakeCount(moves, userColor) };
+  const opponentColour = { ...opponentReport, openingMistakes: openingMistakeCount(moves, userColor === 'white' ? 'black' : 'white') };
 
   const report = GameReportSchema.parse({
     engine: { name: 'stockfish', depth: 18, multiPv: 3 },
     book: bookReport(opening, whiteBook, blackBook),
     phases: { openingEndPly: 12, endgameStartPly: reachedEndgame ? 46 : null, openingSource: opening.name ? 'book' : 'heuristic' },
-    players: userColor === 'white' ? { white: userReport, black: opponentReport } : { white: opponentReport, black: userReport },
-    moves: openingMoves(rng, opening, userColor, estimatedRating, userBookPly)
+    players: userColor === 'white' ? { white: userColour, black: opponentColour } : { white: opponentColour, black: userColour },
+    moves
   });
   return { report, userBookPly };
 }

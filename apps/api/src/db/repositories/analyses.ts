@@ -345,11 +345,9 @@ export interface StatsSourceRow {
    * the player's *other* games without re-querying (see
    * `getGameTacticBaselineNote`). */
   gameId: string;
-  /** Moves-less, as actually stored (0032_annotated_pgn.ts). Some
-   * aggregators (`aggregate-opening-stats.ts`'s `openingMistakeCount`)
-   * genuinely need per-move data, not just the aggregate fields — callers
-   * that do compose the full report via `services/game-report.ts`'s
-   * `composeGameReport(gameReport, { annotatedPgn, userColor })`. */
+  /** Moves-less, as actually stored (0032_annotated_pgn.ts). Every reader of
+   * these rows needs only its per-player aggregates, so the game's
+   * `annotated_pgn` (hundreds of KB a game) is deliberately not selected. */
   gameReport: StoredGameReport;
   /** The PGN `Result` header — resolved to a per-colour outcome at the
    * service layer, same as `buildGameReportForAnalysis`'s own resultForColour. */
@@ -360,7 +358,6 @@ export interface StatsSourceRow {
    * convention the range filter above uses. */
   createdAt: Date;
   timeControl: string | null;
-  annotatedPgn: string | null;
 }
 
 /** Shared select for the two readers below: a ready analysis joined to its
@@ -376,8 +373,7 @@ function readyReportsQuery(db: Kysely<Database>) {
       'games.userColor as userColor',
       'games.playedAt as playedAt',
       'games.createdAt as createdAt',
-      'games.timeControl as timeControl',
-      'games.annotatedPgn as annotatedPgn'
+      'games.timeControl as timeControl'
     ])
     .where('analyses.status', '=', 'ready')
     .where('games.source', 'in', ImportableGameSourceSchema.options);
