@@ -9,6 +9,17 @@ function limitOf(error: unknown): ImportLimitKind | null {
   return parsed.success ? parsed.data : null;
 }
 
+/** Oldest first; undated games keep their relative order at the end. */
+function byDatePlayed<T extends { playedAt: string | null }>(games: T[]): T[] {
+  const time = (game: T): number => (game.playedAt ? Date.parse(game.playedAt) : Number.NaN);
+  return [...games].sort((a, b) => {
+    const ta = time(a);
+    const tb = time(b);
+    if (Number.isNaN(ta) || Number.isNaN(tb)) return Number(Number.isNaN(ta)) - Number(Number.isNaN(tb));
+    return ta - tb;
+  });
+}
+
 export interface BulkImportArgs {
   games: { id: string; pgn: string; playedAt: string | null }[];
   source: RemoteTab;
@@ -31,11 +42,15 @@ export interface BulkImportArgs {
  * older, already-deferred rows) — engine analysis has no AI/BYOK-unlock
  * dependency (services/analysis.ts), so there's no cost left to defer by
  * making the student click into every row by hand; every bulk-imported game
- * gets the same free engine pass a single-game import already does. */
+ * gets the same free engine pass a single-game import already does.
+ *
+ * Games go in the order they were played, oldest first (the pickers list
+ * them newest first), so the library and the batch's progress follow the
+ * games' own chronology; a game with no date goes last. */
 export async function importBatch({ games, source, onGameSettled }: BulkImportArgs): Promise<BulkResult> {
   const imported: BulkResult['games'] = [];
   let limit: ImportLimitKind | null = null;
-  for (const game of games) {
+  for (const game of byDatePlayed(games)) {
     let ok = false;
     try {
       const body = ImportGameRequestSchema.parse({ pgn: game.pgn, source, playedAt: game.playedAt });
