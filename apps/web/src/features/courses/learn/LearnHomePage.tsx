@@ -16,6 +16,7 @@ import {
   BookIcon,
   CheckIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
   PlaySmallIcon,
 } from "../../../components/Icon.js";
 import { CourseContinueCard } from "../../games/CourseContinueCard.js";
@@ -122,7 +123,7 @@ export function LearnHomePage(): ReactNode {
       {(next.todo.length > 0 || next.coming.length > 0) && (
         <section aria-label="Up next" className="games-page__section">
           <h2 className="games-page__section-heading">Up next</h2>
-          <ul className="courses-home__next">
+          <ul className="card courses-home__next">
             {[...next.todo, ...next.coming].map((each, index) => (
               <UpNextRow
                 key={each.slug}
@@ -358,15 +359,26 @@ function UpNextRow({
     >
       <Link
         to={`/learn/${encodeURIComponent(item.slug)}${item.action.startsWith("Review") ? "?stage=drill" : ""}`}
-        className="courses-home__title-link"
+        className="courses-home__next-link"
       >
-        {item.title}
+        <span className="courses-home__next-title">{item.title}</span>
+        {item.action && (
+          <span
+            className={
+              coming
+                ? "courses-home__next-action"
+                : "badge badge--primary courses-home__next-action"
+            }
+          >
+            {item.action}
+          </span>
+        )}
+        <ChevronRightIcon
+          width={16}
+          height={16}
+          className="courses-home__next-chevron"
+        />
       </Link>
-      {item.action && (
-        <span className={coming ? "meta" : "badge badge--primary"}>
-          {item.action}
-        </span>
-      )}
     </li>
   );
 }

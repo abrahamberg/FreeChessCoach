@@ -30,12 +30,18 @@ export function CourseContinueCard({ course, onRemove }: CourseContinueCardProps
           <BookIcon width={16} height={16} />
           Course
         </span>
+        <time className="rail-card__date" dateTime={course.updatedAt}>
+          {shortDate(course.updatedAt)}
+        </time>
       </div>
-      <span className="rail-card__title rail-card__title-wrap">{course.title}</span>
-      <span className="rail-card__meta">
-        <span>{`Stage ${stageNumber} of ${COURSE_STAGES.length}: ${STAGE_LABELS[course.stage]}`}</span>
-        {course.place.where && <span>{`· ${course.place.where}`}</span>}
-        <time dateTime={course.updatedAt}>· {shortDate(course.updatedAt)}</time>
+      <span className="rail-card__title rail-card__title-wrap" title={course.title}>
+        {course.title}
+      </span>
+      <span className="rail-card__meta rail-card__meta--stack">
+        <span>{`Stage ${stageNumber} of ${COURSE_STAGES.length} · ${STAGE_LABELS[course.stage]}`}</span>
+        <span className="rail-card__meta-line" title={course.place.where || undefined}>
+          {course.place.where || '\u00a0'}
+        </span>
       </span>
       <progress className="rail-card__progress" value={done} max={COURSE_STAGES.length} aria-label={`${done} of ${COURSE_STAGES.length} stages done`} />
       <div className="rail-card__actions">
