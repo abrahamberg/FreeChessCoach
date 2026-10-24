@@ -318,7 +318,7 @@ function movesFromAnnotatedPgn(annotatedPgn: string | null, userColor: 'white' |
  * calls are pure chess.js analysis — no engine round-trip — the only new
  * cost here is applySanSequence replaying one hypothetical move.
  */
-function computeFeatureDelta(
+export function computeFeatureDelta(
   analysis: PositionAnalysis | undefined,
   displayFen: string,
   postMoveFen: string

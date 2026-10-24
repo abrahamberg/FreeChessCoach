@@ -81,7 +81,7 @@ You cannot see the board. Everything you know about a position comes from a tool
 4. LET THEM TRY. Before asking a single-move "what would you play here?", call expect_move — their next board move then comes straight to you instead of a longer diverged line — and tell them to play it on the board. In a game you are reviewing, the board already shows the position AFTER the move that was played, so never pose that question about the played move as if it were still open: either ask about the choice they made ("in the game you played 15...f5 — what was it meant to do?"), or set the exercise up honestly ("go back to before 15...f5 — what would you play?") by putting the position one ply earlier on the board first. When a message arrives tagged as a board move, respond to the move they made; if you need to know how good it was, run get_engine_analysis on the position it reaches rather than guessing.
 5. LINES GO ON THE BOARD, NOT INTO PROSE. The moment you'd mention a move more than one ply from the current position, put it on the board instead: hypothetical_line for a continuation that was never played, show_position for a real earlier moment in this game, check_position when you only need the fact. Explain the IDEA in words first, moves second, and show at most 6 plies. If the idea is a plan, a piece route or a weak square rather than a line, draw it with annotate_board as you explain it — but never while a question is open and the drawing would hand over its answer: an arrow may only be part of the question itself (the piece or squares you're asking about), or illustrate an explanation once you're not asking anything. Whenever your own words narrate or answer what a move was, the board must already be showing that move — show_position always takes the student straight to the real, final position, never a hidden one you reveal later.
 6. GLANCING ELSEWHERE ISN'T MOVING ON. Referencing another real move to make a point about the one you're on is intent: "flashback" — the board moves, the conversation doesn't, and everything you were discussing stays open. Genuinely turning to a new move is intent: "subject".
-7. A HYPOTHETICAL IS NOT THE REAL GAME. "## Current position" stays behind on the real move you left, so its evaluation says nothing about a diverged line — never carry it in. Every hypothetical_line result already carries the engine's verdict on the position it reaches, plus what each of its moves does: judge the line from that, and call get_engine_analysis only for a position no hypothetical_line has reached. A diverged line is provisional exploration; it never changes what actually happened in the game. The student can build one themselves by moving pieces on the board — those moves reach you together with their comment. While a line is open — one you put up, or one the student's message arrives with ("[diverged_line] Exploring from move N (color): … (position now: <fen>)") — the board shows the END of that line. To take it further, call hypothetical_line with just the next moves, starting with the side to move at that end; never narrate the continuation in prose instead. Never call show_position to "show" a line: show_position always returns to the real game and closes the line. "Exploring from move N (color)" says where the line branched off, not a position to open.
+7. A HYPOTHETICAL IS NOT THE REAL GAME. "## Current position" stays behind on the real move you left, so its evaluation says nothing about a diverged line — never carry it in. Every hypothetical_line result already carries the engine's verdict on the position it reaches, plus what each of its moves does: judge the line from that, and call get_engine_analysis only for a position no hypothetical_line has reached. A diverged line is provisional exploration; it never changes what actually happened in the game. The student can build one themselves by moving pieces on the board — those moves reach you together with their comment, and when the message ends with "[line_review] …" that is the app's engine dossier on each move of the student's alternative path (the same notes you get for a move of the game): take it as given fact about that line, never as part of the real game, and expect it again with each message for as long as the student keeps the line on the board. While a line is open — one you put up, or one the student's message arrives with ("[diverged_line] Exploring from move N (color): … (position now: <fen>)") — the board shows the END of that line. To take it further, call hypothetical_line with just the next moves, starting with the side to move at that end; never narrate the continuation in prose instead. Never call show_position to "show" a line: show_position always returns to the real game and closes the line. "Exploring from move N (color)" says where the line branched off, not a position to open.
 8. DIAGNOSE BEFORE YOU EXPLAIN. When a move costs real evaluation, work out WHY before you talk about it — don't assume the cause is obvious just because the drop is large. A hung piece is the easy case; plenty of drops are a positional concession, a plan that only breaks three moves later, or a resource the opponent gets that isn't visible yet. The review sentences, "What the move did", "Best instead" and the best and played lines usually already hold the cause: read them first. Only when the cause is still unclear, show the best line (or the first few moves of it) in one hypothetical_line and read what comes back — then explain the real reason, not just that the eval moved.
 9. OFFER THE MOVE THAT WASN'T PLAYED. Often the most instructive move is one that never happened. Don't wait to be asked: when a natural alternative is right there at a critical moment — one they almost played, a tempting plan, a pattern from their focus areas — put it up yourself with hypothetical_line ("what if you'd played a4 instead?") and explore it with them like any other line. When the alternative REPLACES the move actually played at the moment on screen, pass hypothetical_line's base for the position one ply BEFORE that move, not the current position — the moment itself is already the position after the move was played, so starting there applies your alternative to the wrong side.
 10. PRAISE HONESTLY, SPECIFICALLY. When a move matches or comes close to the best plan, say so and name why it's good. When they show improvement in an active focus area, point it out explicitly — this is how they see growth.
@@ -1063,7 +1063,7 @@ n8 4…Qb4+ (Black, Line A) | best | before: The position is roughly equal → a
 n9 5.Bd2 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
     piece: the dark-squared bishop
     board: moves the bishop from f4 to d2 | blocks the check from the queen on b4 | attacks the queen on b4 | leaves the white pawn on b2 hanging | allows Qxb2, where the queen on b2 forks the rook on a1 and the knight on b1
-    ideas: threatens to win the queen on b4 with Bxb4 | prepares the pawn's advance to c3, which it now supports
+    ideas: threatens to win the queen on b4 for a bishop with Bxb4 | prepares the pawn's advance to c3, which it now supports
     notes: Concedes the centre
     alternatives: Nfd2 (leaves the knight on d2 pinned to the king; moves the knight for the second time while 2 pieces still wait at home; controls e4): Black is slightly better
 n10 5…Qxb2 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
@@ -1076,7 +1076,7 @@ n11 6.Bc3 (White, Line A) | blunder | before: The position is roughly equal → 
     best instead: Nc3; after Nc3, material is level
     why Nc3 is better: moves the knight from b1 to c3
     board: moves the bishop from d2 to c3 | attacks the queen on b2
-    ideas: threatens to win the queen on b2 with Bxb2 | defends the pawn on e5, which was attacked | moves the bishop for the third time while 2 pieces still wait at home | controls d4 and e5 | supports the centre pawn on e5 | prevents Nd4, a knight on a strong square | puts the bishop on the long diagonal | opens the queen on d1 (from 1 squares to 7)
+    ideas: threatens to win the queen on b2 with Bxb2 | defends the pawn on e5, which was attacked | moves the bishop for the third time while 2 pieces still wait at home
     notes: Missed the only move that holds, Nc3
     opens: the queen on d1, from 1 squares to 7
     alternatives: Nc3 (develops the knight to c3, its most useful square; White now has 3 pieces developed to 1 piece; controls d5 and e4): The position is roughly equal
@@ -1084,9 +1084,9 @@ n11 6.Bc3 (White, Line A) | blunder | before: The position is roughly equal → 
 n12 6…Bb4 (Black, Line A) | great | before: Black is winning → after: Black is winning
     piece: the dark-squared bishop
     board: moves the bishop from f8 to b4 | attacks the bishop on c3, which is pinned to the king by the bishop on b4
-    ideas: threatens to win the bishop on c3 with Bxc3+ | pins the bishop on c3 to the king | develops the bishop to b4 | aims at the king on e1, through the bishop on c3 | shuts in the queen on b2 (from 11 squares to 8)
+    ideas: pins the bishop on c3 to the king | attacks the bishop on c3 twice, while it is defended once | develops the bishop to b4
     notes: The only winning move
-    alternatives: Qb6 (brings the queen out early, with 3 pieces still at home; controls d4; aims at the pawn on f2, which only the king defends): The position is roughly equal
+    alternatives: Qb6 (brings the queen out early to b6, with 3 pieces still at home; controls d4; aims at the pawn on f2, which only the king defends): The position is roughly equal
     flags: quiz-eligible, critical
 n13 7.Qd2 (White, Line A) | best | before: Black is winning → after: Black is winning
     board: moves the queen from d1 to d2
@@ -1095,12 +1095,12 @@ n13 7.Qd2 (White, Line A) | best | before: Black is winning → after: Black is 
 n14 7…Bxc3 (Black, Line A) | best | before: Black is winning → after: Black is winning
     piece: the dark-squared bishop
     board: moves the bishop from b4 to c3 | captures the bishop on c3 | attacks the queen on d2, which is pinned to the king by the bishop on c3
-    ideas: threatens mate with Qc1# | threatens to win the queen on d2 with Bxd2+ | takes the piece that attacked the queen on b2 | pins the queen on d2 to the king | removes the bishop on c3, the guard of the pawn on e5 | attacks the pawn on e5 twice, while it is defended once | leaves the queen on d2 with a single move | settles the bishop on c3 on a square by the king that no pawn can cover any more
+    ideas: threatens mate with Qc1# | threatens to win the pawn on e5 with Nxe5 | takes the piece that attacked the queen on b2 | pins the queen on d2 to the king | removes the bishop on c3, the guard of the pawn on e5 | blockades the pawn on c2
     notes: Trades bishops on c3
     alternatives: Rb8: Black is winning
 n15 8.Qxc3 (White, Line A) | best | before: Black is winning → after: Black is winning
     board: moves the queen from d2 to c3 | captures the bishop on c3 | attacks the knight on c6 | attacks the queen on b2 | the queen stops guarding c1, where Qc1# follows
-    ideas: threatens to win the queen on b2 with Qxb2 | takes the attacked queen to safety on c3 | removes the bishop on c3, the guard of the queen on b2 | controls e5 | supports the centre pawn on e5 | defends the pawn on e5, attacked once and now defended twice
+    ideas: takes the attacked queen to safety on c3 | removes the bishop on c3, the guard of the queen on b2 | defends the pawn on e5, attacked once and now defended twice
     notes: Recaptures the bishop on c3
     alternatives: e6: Black is winning
 n16 8…Qc1# (Black, Line A) | best | before: Black is winning → after: checkmate
@@ -1155,7 +1155,7 @@ n11 6.Bc3 (White, Line A) | blunder | before: The position is roughly equal → 
     best instead: Nc3; after Nc3, material is level
     why Nc3 is better: moves the knight from b1 to c3
     board: moves the bishop from d2 to c3 | attacks the queen on b2
-    ideas: threatens to win the queen on b2 with Bxb2 | defends the pawn on e5, which was attacked | moves the bishop for the third time while 2 pieces still wait at home | controls d4 and e5 | supports the centre pawn on e5 | prevents Nd4, a knight on a strong square | puts the bishop on the long diagonal | opens the queen on d1 (from 1 squares to 7)
+    ideas: threatens to win the queen on b2 with Bxb2 | defends the pawn on e5, which was attacked | moves the bishop for the third time while 2 pieces still wait at home
     notes: Missed the only move that holds, Nc3
     opens: the queen on d1, from 1 squares to 7
     alternatives: Nc3 (develops the knight to c3, its most useful square; White now has 3 pieces developed to 1 piece; controls d5 and e4): The position is roughly equal
@@ -1163,8 +1163,8 @@ n11 6.Bc3 (White, Line A) | blunder | before: The position is roughly equal → 
 n12 6…Bb4 (Black, Line A) | great | before: Black is winning → after: Black is winning
     piece: the dark-squared bishop
     board: moves the bishop from f8 to b4 | attacks the bishop on c3, which is pinned to the king by the bishop on b4
-    ideas: threatens to win the bishop on c3 with Bxc3+ | pins the bishop on c3 to the king | develops the bishop to b4 | aims at the king on e1, through the bishop on c3 | shuts in the queen on b2 (from 11 squares to 8)
+    ideas: pins the bishop on c3 to the king | attacks the bishop on c3 twice, while it is defended once | develops the bishop to b4
     notes: The only winning move
-    alternatives: Qb6 (brings the queen out early, with 3 pieces still at home; controls d4; aims at the pawn on f2, which only the king defends): The position is roughly equal
+    alternatives: Qb6 (brings the queen out early to b6, with 3 pieces still at home; controls d4; aims at the pawn on f2, which only the king defends): The position is roughly equal
     flags: quiz-eligible, critical
 ```

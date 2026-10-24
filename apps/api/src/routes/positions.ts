@@ -1,4 +1,4 @@
-import { AnalyzePositionRequestSchema, HintMovesRequestSchema } from '@freechesscoach/shared';
+import { AnalyzePositionRequestSchema, HintMovesRequestSchema, LineDossierRequestSchema } from '@freechesscoach/shared';
 import type { FastifyInstance } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema.js';
@@ -8,6 +8,7 @@ import {
   resolveRawEngineBackend,
   type ResolveEngineBackendOptions
 } from '../services/engine/resolve-engine-backend.js';
+import { buildLineDossier } from '../services/line-dossier.js';
 import * as userProfileService from '../services/user-profile.js';
 import { ROUTE_RATE_LIMITS, rateLimitConfig } from '../plugins/route-rate-limit.js';
 
@@ -42,6 +43,20 @@ export function registerPositionAnalysisRoutes(
     const user = await userProfileService.getOrCreate(db, request.user);
     const backend = await resolveEngineBackend(engineBackendOptions, user.id);
     return backend.analyzePosition(parsed.data.fen);
+  });
+
+  // The coach's dossier on a line the student explores off the game: the same
+  // text it reads for a move of the game, made now and sent with the student's
+  // message (docs: the line_review block, divergedLine.ts).
+  app.post('/api/positions/line-dossier', rateLimitConfig(ROUTE_RATE_LIMITS.engineInteractive), async (request) => {
+    const parsed = LineDossierRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      throw new ValidationError(parsed.error.issues.map((issue) => issue.message).join('; '));
+    }
+
+    const user = await userProfileService.getOrCreate(db, request.user);
+    const backend = await resolveEngineBackend(engineBackendOptions, user.id);
+    return { text: await buildLineDossier((fen, options) => backend.analyzePosition(fen, options), parsed.data) };
   });
 
   // The bot session's hint feature — see HintMovesRequestSchema's doc

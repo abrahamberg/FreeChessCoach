@@ -278,6 +278,13 @@ function findLineFor(lines: PositionAnalysisLine[], moveSan: string | null): Pos
   return moveSan === null ? undefined : lines.find((line) => line.moveSan === moveSan);
 }
 
+/** The same curated dossier the coach reads for a move of the game (the
+ * engine lines, the review sentences, what the move did and the better one
+ * would have), for one move of a line the student explores off the game. */
+export function renderMoveDossier(ply: number, playedMove: string, ctx: CurrentMoveAnalysisContext): string {
+  return renderAnalysisSection(ply, playedMove, ctx).trim();
+}
+
 /**
  * Curated summary of the engine analysis — replaces the old raw-JSON dump
  * (design feedback: the model shouldn't have to parse/re-derive a delta the

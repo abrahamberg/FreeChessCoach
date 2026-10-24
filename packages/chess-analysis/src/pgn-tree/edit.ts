@@ -58,6 +58,27 @@ export function removeBranch(tree: EditableTree, nodeId: string): EditableTree {
   return { ...tree, nodes: tree.nodes.filter((node) => !gone.has(node.id)), nextExtraId: tree.nextExtraId ?? nextExtraIdOf(tree) };
 }
 
+/** Makes the branch holding `nodeId` the main line: at every point on the way
+ * back to the start where it is a later alternative, it moves ahead of the
+ * moves that were first. Nothing is removed. */
+export function promoteBranch(tree: EditableTree, nodeId: string): EditableTree {
+  let nodes = [...tree.nodes];
+  let current = nodes.find((node) => node.id === nodeId);
+  while (current) {
+    const here: PgnTreeNode = current;
+    const first = nodes.find((node) => node.parentId === here.parentId);
+    if (first && first.id !== here.id) {
+      const moving = descendantIds({ ...tree, nodes }, here.id);
+      const block = nodes.filter((node) => moving.has(node.id));
+      const rest = nodes.filter((node) => !moving.has(node.id));
+      const at = rest.findIndex((node) => node.id === first.id);
+      nodes = [...rest.slice(0, at), ...block, ...rest.slice(at)];
+    }
+    current = here.parentId === null ? undefined : nodes.find((node) => node.id === here.parentId);
+  }
+  return { ...tree, nodes };
+}
+
 /** The first move, then each node's first child. */
 export function mainLine(tree: PgnTree): PgnTreeNode[] {
   const line: PgnTreeNode[] = [];

@@ -131,6 +131,23 @@ export const AnalyzePositionRequestSchema = z.object({
 });
 export type AnalyzePositionRequest = z.infer<typeof AnalyzePositionRequestSchema>;
 
+/** The most moves of a student's explored line the coach is given a dossier for. */
+export const LINE_DOSSIER_MAX_MOVES = 12;
+
+/** The coach's dossier on a line the student explores off the game: POST
+ * /api/positions/line-dossier. `basePly` is the number of plies before the
+ * first move, so each move is numbered where it would be in the game. */
+export const LineDossierRequestSchema = z.object({
+  startFen: z.string(),
+  basePly: z.number().int().nonnegative(),
+  moves: z.array(z.string()).min(1).max(LINE_DOSSIER_MAX_MOVES),
+  studentColor: z.enum(['white', 'black'])
+});
+export type LineDossierRequest = z.infer<typeof LineDossierRequestSchema>;
+
+export const LineDossierResponseSchema = z.object({ text: z.string() });
+export type LineDossierResponse = z.infer<typeof LineDossierResponseSchema>;
+
 /** The bot session's hint feature ("top 3 moves"), fetched once when the
  * student first opens a hint — POST /api/positions/hint-moves. Deliberately
  * its own endpoint rather than reusing /api/positions/analyze: that one

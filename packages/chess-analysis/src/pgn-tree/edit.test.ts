@@ -1,6 +1,6 @@
 import { DEFAULT_POSITION } from 'chess.js';
 import { describe, expect, test } from 'vitest';
-import { addMove, childrenOf, gameLine, lineTree, mainLine, pathTo, removeBranch, type EditableTree } from './edit.js';
+import { addMove, childrenOf, gameLine, lineTree, mainLine, pathTo, promoteBranch, removeBranch, type EditableTree } from './edit.js';
 import { parsePgnTree } from './parse.js';
 
 function added(tree: EditableTree, parentId: string | null, san: string): { tree: EditableTree; nodeId: string } {
@@ -101,5 +101,20 @@ describe('pathTo', () => {
 
     expect(pathTo(tree, sideline?.id ?? '').map((node) => node.san)).toEqual(['e4', 'c5', 'Nf3']);
     expect(pathTo(tree, 'nope')).toEqual([]);
+  });
+});
+
+describe('promoteBranch', () => {
+  test('a variation inside a variation becomes the main line all the way back, and nothing is lost', () => {
+    const line = lineTree(DEFAULT_POSITION, ['e4', 'e5', 'Nf3']);
+    const side = added(line, 'x1', 'c5');
+    const deep = added(side.tree, side.nodeId, 'Nf3');
+    const nested = added(deep.tree, side.nodeId, 'Nc3');
+
+    const promoted = promoteBranch(nested.tree, nested.nodeId);
+
+    expect(mainLine(promoted).map((node) => node.san)).toEqual(['e4', 'c5', 'Nc3']);
+    expect(promoted.nodes.map((node) => node.id).sort()).toEqual(nested.tree.nodes.map((node) => node.id).sort());
+    expect(childrenOf(promoted, 'x1').map((node) => node.san)).toEqual(['c5', 'e5']);
   });
 });
