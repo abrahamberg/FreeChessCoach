@@ -36,15 +36,15 @@ export function AnalyzePage(): ReactNode {
 
   return (
     <div className="page analyze-page">
-      <h1>Temporary review</h1>
+      <h1>Analyze board</h1>
       <p>
-        Paste a game (PGN) or a position (FEN), or leave it empty for the starting position. Move the pieces and the engine reviews each move as you go.
+        Paste a game (PGN) or a position (FEN), or leave the box empty for the starting position. Move the pieces and the engine reviews each move as you go.
         Nothing is saved, and none of it counts toward your stats.
       </p>
       <label htmlFor="analyze-input" className="analyze-page__label">
         PGN or FEN
       </label>
-      <textarea id="analyze-input" className="analyze-page__input" rows={8} value={text} onChange={(event) => setText(event.target.value)} spellCheck={false} />
+      <textarea id="analyze-input" className="analyze-page__input" rows={8} placeholder="Default start position" value={text} onChange={(event) => setText(event.target.value)} spellCheck={false} />
       {error && (
         <p role="alert" className="analyze-page__error">
           {error}

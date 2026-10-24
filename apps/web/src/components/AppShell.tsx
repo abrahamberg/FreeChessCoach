@@ -8,7 +8,7 @@ import { ChessApiPauseNotice } from './ChessApiPauseNotice.js';
 import { EngineActivityIndicator } from './EngineActivityIndicator.js';
 import { FullscreenPrompt } from './FullscreenPrompt.js';
 import { RateLimitNotice } from './RateLimitNotice.js';
-import { BarChartIcon, BoardIcon, BookIcon, TrendingUpIcon } from './Icon.js';
+import { BarChartIcon, BoardIcon, BookIcon, EyeIcon, TrendingUpIcon } from './Icon.js';
 import { PageMenuProvider } from './PageMenu.js';
 import { UserMenu } from './UserMenu.js';
 import './AppShell.css';
@@ -25,6 +25,7 @@ export interface AppShellProps {
 // 2026-09-28; its nav place went to Courses (docs/courses.md §11).
 const NAV_DESTINATIONS = [
   { to: '/games', label: 'Games', Icon: BoardIcon },
+  { to: '/analyze', label: 'Analyze', Icon: EyeIcon },
   { to: '/learn', label: 'Courses', Icon: BookIcon },
   { to: '/progress', label: 'Progress', Icon: TrendingUpIcon },
   { to: '/stats', label: 'Stats', Icon: BarChartIcon }
