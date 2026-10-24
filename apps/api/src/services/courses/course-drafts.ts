@@ -14,6 +14,7 @@ import {
   defaultCourseVideos,
   CreateCourseRequestSchema,
   type CourseDocument,
+  type CourseNodeEvals,
   type CourseGeneration,
   type CourseListResponse,
   type CourseResponse
@@ -190,14 +191,14 @@ export async function replaceCourse(
   db: Kysely<Database>,
   ownerId: string,
   id: string,
-  request: { pgn: string; direction: string; document: CourseDocument; dossier: CourseDossier }
+  request: { pgn: string; direction: string; document: CourseDocument; dossier: CourseDossier; evals?: CourseNodeEvals }
 ): Promise<CourseResponse> {
   const row = await ownedCourse(db, ownerId, id);
   notBeingWritten(row);
   const { document } = request;
   const problem = draftProblem({ ...document, kind: row.kind }, document);
   if (problem) throw new ValidationError(problem);
-  const saved = await coursesRepo.replaceTree(db, id, ownerId, { sourcePgn: request.pgn, direction: request.direction, document, dossier: request.dossier });
+  const saved = await coursesRepo.replaceTree(db, id, ownerId, { sourcePgn: request.pgn, direction: request.direction, document, dossier: request.dossier, evals: request.evals });
   if (!saved) throw new NotFoundError('Course not found');
   return toCourseResponse(db, saved);
 }
@@ -256,6 +257,6 @@ export async function toCourseResponse(db: Kysely<Database>, row: coursesRepo.Co
     updatedAt: row.updatedAt.toISOString(),
     publishedAt: row.publishedAt?.toISOString() ?? null,
     missingNoteAudio: await missingNoteAudio(db, row.id, storedDocument(row)),
-    evals: courseEvals(storedDocument(row), row.dossier)
+    evals: courseEvals(storedDocument(row), row.dossier, row.evals)
   };
 }

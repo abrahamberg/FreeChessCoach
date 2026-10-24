@@ -31,6 +31,7 @@ import * as witchCoach from './migrations/0027_witch_coach.js';
 import * as courseAccessLevels from './migrations/0028_course_access_levels.js';
 import * as reportOpeningMistakes from './migrations/0029_report_opening_mistakes.js';
 import * as courseKindReading from './migrations/0030_course_kind_reading.js';
+import * as courseEvals from './migrations/0031_course_evals.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -65,7 +66,8 @@ const provider: MigrationProvider = {
       '0027_witch_coach': witchCoach,
       '0028_course_access_levels': courseAccessLevels,
       '0029_report_opening_mistakes': reportOpeningMistakes,
-      '0030_course_kind_reading': courseKindReading
+      '0030_course_kind_reading': courseKindReading,
+      '0031_course_evals': courseEvals
     })
 };
 

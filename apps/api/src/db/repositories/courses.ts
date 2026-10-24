@@ -1,5 +1,5 @@
 import type { CourseDossier } from '@freechesscoach/chess-analysis';
-import { CourseDocumentSchema, CourseGenerationSchema, type CourseDocument, type CourseGeneration, type CourseKind, type CourseStatus } from '@freechesscoach/shared';
+import { CourseDocumentSchema, CourseGenerationSchema, type CourseDocument, type CourseGeneration, type CourseKind, type CourseNodeEvals, type CourseStatus } from '@freechesscoach/shared';
 import { sql, type Kysely, type RawBuilder, type Selectable } from 'kysely';
 import type { CoursesTable, Database } from '../schema.js';
 
@@ -63,10 +63,10 @@ export function readableBy(userId: string | null): RawBuilder<boolean> {
 /** A course anyone with the link may see: unlisted or public, with a
  * published copy, and readable by `userId`. Drafts, removed courses and
  * another level's members-only courses are not found. */
-export function findPublishedBySlug(db: Kysely<Database>, slug: string, userId: string | null): Promise<Pick<CourseRow, 'id' | 'ownerId' | 'slug' | 'publishedDocument' | 'publishedAt' | 'dossier'> | undefined> {
+export function findPublishedBySlug(db: Kysely<Database>, slug: string, userId: string | null): Promise<Pick<CourseRow, 'id' | 'ownerId' | 'slug' | 'publishedDocument' | 'publishedAt' | 'dossier' | 'evals'> | undefined> {
   return db
     .selectFrom('courses')
-    .select(['id', 'ownerId', 'slug', 'publishedDocument', 'publishedAt', 'dossier'])
+    .select(['id', 'ownerId', 'slug', 'publishedDocument', 'publishedAt', 'dossier', 'evals'])
     .where('slug', '=', slug)
     .where('status', 'in', ['unlisted', 'public'])
     .where('publishedDocument', 'is not', null)
@@ -206,6 +206,11 @@ export async function setDossier(db: Kysely<Database>, id: string, dossier: Cour
   await db.updateTable('courses').set({ dossier: JSON.stringify(dossier) }).where('id', '=', id).execute();
 }
 
+/** The rated moves, replacing any before; the owner's course only. */
+export async function setEvals(db: Kysely<Database>, id: string, ownerId: string, evals: CourseNodeEvals): Promise<CourseRow | undefined> {
+  return db.updateTable('courses').set({ evals: JSON.stringify(evals) }).where('id', '=', id).where('ownerId', '=', ownerId).returningAll().executeTakeFirst();
+}
+
 /** Only the codes, so a generation that holds an older copy of the document
  * does not undo the creator's other edits. The frozen copy gets them too
  * (`jsonb_set` on a null column stays null). */
@@ -244,7 +249,7 @@ export async function replaceTree(
   db: Kysely<Database>,
   id: string,
   ownerId: string,
-  values: { sourcePgn: string; direction: string; document: CourseDocument; dossier: CourseDossier }
+  values: { sourcePgn: string; direction: string; document: CourseDocument; dossier: CourseDossier; evals?: CourseNodeEvals }
 ): Promise<CourseRow | undefined> {
   const parsed = CourseDocumentSchema.parse(values.document);
   return db
@@ -255,6 +260,7 @@ export async function replaceTree(
       sourcePgn: values.sourcePgn,
       direction: values.direction,
       dossier: JSON.stringify(values.dossier),
+      evals: values.evals ? JSON.stringify(values.evals) : null,
       generation: null,
       updatedAt: new Date()
     })

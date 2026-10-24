@@ -1,5 +1,5 @@
 import type { CourseDossier } from '@freechesscoach/chess-analysis';
-import { CourseCatalogItemSchema, CourseDocumentSchema, temptingEvalKey, type CourseCatalogQuery, type CourseCatalogResponse, type CourseDocument, type PublicCourseResponse } from '@freechesscoach/shared';
+import { CourseCatalogItemSchema, CourseDocumentSchema, temptingEvalKey, type CourseCatalogQuery, type CourseCatalogResponse, type CourseDocument, type CourseNodeEvals, type PublicCourseResponse } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as courseAudioRepo from '../../db/repositories/course-audio.js';
 import * as coursesRepo from '../../db/repositories/courses.js';
@@ -27,7 +27,7 @@ export async function publicCourse(db: Kysely<Database>, slug: string, viewerId:
       return file && store ? [[`${note.episodeId}:${note.nodeId}`, `${store.publicUrl}/${file.objectKey}`]] : [];
     })
   );
-  return { slug: row.slug, publishedAt: row.publishedAt.toISOString(), document, noteAudio, evals: courseEvals(document, row.dossier), seriesNeighbours: await seriesNeighbours(db, row.ownerId, row.slug, document, viewerId) };
+  return { slug: row.slug, publishedAt: row.publishedAt.toISOString(), document, noteAudio, evals: courseEvals(document, row.dossier, row.evals), seriesNeighbours: await seriesNeighbours(db, row.ownerId, row.slug, document, viewerId) };
 }
 
 /** The public lessons just before and after this one in its series; null at
@@ -41,20 +41,22 @@ async function seriesNeighbours(db: Kysely<Database>, ownerId: string, slug: str
   return { previous, next };
 }
 
-/** Each of the course's moves' evaluation and quality, from its engine pass
- * (`{}` without one): the player's eval bar and graph, the board sounds. The
- * tempting moves' too, under `temptingEvalKey`, for the video that plays
- * them out. */
-export function courseEvals(document: CourseDocument, dossier: CourseDossier | null): PublicCourseResponse['evals'] {
+/** Each of the course's moves' evaluation and quality, from its dossier or
+ * its own rated moves (`{}` without either; the rated moves win): the
+ * player's eval bar and graph, the board sounds. The tempting moves' too,
+ * under `temptingEvalKey`, for the video that plays them out. */
+export function courseEvals(document: CourseDocument, dossier: CourseDossier | null, rated: CourseNodeEvals | null = null): PublicCourseResponse['evals'] {
   // By id and move: after a tree is replaced, the published copy keeps the
   // old tree until the next publish, and the dossier is already the new one's.
   const sans = new Map(document.nodes.map((node) => [node.id, node.san]));
   // No evaluation is shown for an example the creator marked "no evaluation".
   const nodes = (dossier?.nodes ?? []).filter((facts) => sans.get(facts.nodeId) === facts.san && !facts.noEvaluation);
+  const own = Object.entries(rated ?? {}).filter(([nodeId, move]) => sans.get(nodeId) === move.san).map(([nodeId, move]) => [nodeId, { cp: move.cp, quality: move.quality }] as const);
   return Object.fromEntries([
     ...nodes.map((facts) => [facts.nodeId, { cp: facts.evalAfterCp, quality: facts.quality }] as const),
     // A dossier from before the tempting moves kept their evaluation has none.
-    ...nodes.flatMap((facts) => (facts.tempting ?? []).filter((tempting) => typeof tempting.evalAfterCp === 'number').map((tempting) => [temptingEvalKey(facts.nodeId, tempting.san), { cp: tempting.evalAfterCp, quality: tempting.quality }] as const))
+    ...nodes.flatMap((facts) => (facts.tempting ?? []).filter((tempting) => typeof tempting.evalAfterCp === 'number').map((tempting) => [temptingEvalKey(facts.nodeId, tempting.san), { cp: tempting.evalAfterCp, quality: tempting.quality }] as const)),
+    ...own
   ]);
 }
 

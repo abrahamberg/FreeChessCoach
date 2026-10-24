@@ -4,6 +4,13 @@ import { COACH_PERSONAS, RATING_BANDS } from './constants.js';
 import { DiagnosisCodeIdSchema } from './diagnosis/catalog-types.js';
 import { COURSE_MAX_RATING, COURSE_MIN_RATING, CourseAccessLevelSchema, CourseDocumentSchema, CourseGenerationSchema, CourseKindSchema, CourseLevelSchema, CourseSeriesSchema, CourseStatusSchema, CourseTagsSchema, CourseVideosSchema } from './course.js';
 
+/** Each rated move of a hand-made course: the move (so an edited tree never
+ * reads a stale figure), White's evaluation after it and its quality. Kept
+ * on the course without a dossier; the player's eval bar and move icons read
+ * it. */
+export const CourseNodeEvalsSchema = z.record(z.string(), z.object({ san: z.string(), cp: z.number(), quality: MoveQualitySchema }));
+export type CourseNodeEvals = z.infer<typeof CourseNodeEvalsSchema>;
+
 /** The intake form (docs/courses.md §5.3). `learnerSide` null lets code
  * infer it (§3); the route refuses when it can't. */
 export const CreateCourseRequestSchema = z.object({
@@ -89,7 +96,10 @@ export const ReplaceCourseRequestSchema = CreateCourseRequestSchema.pick({ pgn: 
       nodes: z.array(z.object({ nodeId: z.string(), san: z.string() }).passthrough()),
       lines: z.array(z.object({}).passthrough())
     })
-    .passthrough()
+    .passthrough(),
+  /** Moves the creator rated already; absent, the course keeps none and
+   * `POST /api/courses/:id/analyze` rates them. */
+  evals: CourseNodeEvalsSchema.optional()
 });
 export type ReplaceCourseRequest = z.input<typeof ReplaceCourseRequestSchema>;
 

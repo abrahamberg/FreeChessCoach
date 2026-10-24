@@ -1,6 +1,6 @@
 import type { ColumnType, Generated } from 'kysely';
 import type { CourseDossier, GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
-import type { BotConfig, CoachPersona, CourseDebugCall, CourseDocument, CourseEnrollmentPlace, CourseGeneration, CourseKind, CourseStage, CourseStatus, CoachPhase, DiagnosisCodeId, Direction, EngineMode, GameReviewTier, Mechanism, MistakeCategory, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
+import type { BotConfig, CoachPersona, CourseDebugCall, CourseDocument, CourseEnrollmentPlace, CourseNodeEvals, CourseGeneration, CourseKind, CourseStage, CourseStatus, CoachPhase, DiagnosisCodeId, Direction, EngineMode, GameReviewTier, Mechanism, MistakeCategory, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
 
 /** jsonb columns: pg parses them to JS values on select; inserts/updates must pass a JSON string. */
 type Jsonb<T> = ColumnType<T, string, string>;
@@ -346,6 +346,8 @@ export interface CoursesTable {
   generation: Jsonb<CourseGeneration> | null;
   /** 0014_course_dossier.ts: the engine pass, kept for resume and regeneration. */
   dossier: Jsonb<CourseDossier> | null;
+  /** 0031_course_evals.ts: the moves' evaluations and qualities, with no dossier. */
+  evals: Jsonb<CourseNodeEvals> | null;
   createdAt: Generated<Date>;
   updatedAt: Generated<Date>;
 }

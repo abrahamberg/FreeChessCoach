@@ -3,7 +3,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { describeApiError } from '../../api/client.js';
 import type { BoardArrow } from '../board/CoachBoard.js';
-import { isGenerating, useBuildCourseSkeleton, useCourse, useSaveCourseDraft, useStartCourseGeneration } from './courseApi.js';
+import { isGenerating, useAnalyzeCourse, useBuildCourseSkeleton, useCourse, useSaveCourseDraft, useStartCourseGeneration } from './courseApi.js';
 import { CourseDetails } from './CourseDetails.js';
 import { episodeNodeIds, updateEpisode } from './courseEdits.js';
 import { CourseBoardPanel } from './CourseBoardPanel.js';
@@ -32,6 +32,7 @@ export function CourseEditorPage(): ReactNode {
 function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
   const save = useSaveCourseDraft(course.id);
   const build = useBuildCourseSkeleton(course.id);
+  const analyze = useAnalyzeCourse(course.id);
   const [document, setDocument] = useState<CourseDocument>(course.document);
   const [dirty, setDirty] = useState(false);
   const [startingOver, setStartingOver] = useState(false);
@@ -90,7 +91,18 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
     });
   }
 
-  const error = save.error ?? build.error ?? start.error;
+  /** The server rates its own copy, so unsaved edits are saved first. */
+  function runAnalyze(): void {
+    if (!dirty) return analyze.mutate();
+    save.mutate(document, {
+      onSuccess: () => {
+        setDirty(false);
+        analyze.mutate();
+      }
+    });
+  }
+
+  const error = save.error ?? build.error ?? start.error ?? analyze.error;
   const videos = courseVideos(document);
   const sections: [Section, string][] = [
     ['episodes', document.episodes.length ? `Episodes · ${document.episodes.length}` : 'Episodes'],
@@ -117,7 +129,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
         onPreviewLearner={document.episodes.length ? () => setLearnerPreview(true) : undefined}
         onPublish={document.episodes.length ? () => setPublishing(true) : undefined}
         published={course.publishedAt !== null}
-        more={[{ label: build.isPending || start.isPending ? 'Starting over…' : 'Start over…', disabled: writing || build.isPending || start.isPending, onSelect: () => setStartingOver(true) }]}
+        more={[{ label: analyze.isPending ? 'Analyzing…' : 'Analyze moves', disabled: writing || analyze.isPending || save.isPending, onSelect: runAnalyze }, { label: build.isPending || start.isPending ? 'Starting over…' : 'Start over…', disabled: writing || build.isPending || start.isPending, onSelect: () => setStartingOver(true) }]}
       />
       {error && (
         <p className="course-intake__errors" role="alert">

@@ -18,4 +18,9 @@ describe('courseEvals', () => {
     expect(courseEvals(document, dossier)).toEqual({ n2: { cp: 30, quality: 'best' } });
     expect(courseEvals(document, null)).toEqual({});
   });
+
+  test("a course's own rated moves need no dossier, and a move edited since is dropped", () => {
+    const rated = { n1: { san: 'd4', cp: 20, quality: 'best' }, n2: { san: 'c5', cp: -10, quality: 'good' } } as const;
+    expect(courseEvals(document, null, rated)).toEqual({ n1: { cp: 20, quality: 'best' } });
+  });
 });

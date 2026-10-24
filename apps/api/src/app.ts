@@ -42,6 +42,7 @@ import { createLichessClient, type LichessClient } from './services/lichess.js';
 import type { CoachAgentBaseDependencies } from './bootstrap.js';
 import type { BrowserTunnel } from './services/engine/browser-tunnel.js';
 import { getModelForUser, type GatewayConfig, type ModelResolution } from './llm/gateway.js';
+import { courseEvalsBuilderFor, type CourseEvalsBuilder } from './services/courses/course-evals.js';
 import { courseDossierBuilderFor, type CourseDossierBuilder } from './services/courses/dossier.js';
 import type { ResolveEngineBackendOptions } from './services/engine/resolve-engine-backend.js';
 import type { TtsConfig } from './services/tts.js';
@@ -63,6 +64,7 @@ export interface BuildAppOptions {
   /** The course skeleton's engine pass; defaults to one built from
    * `engineBackendOptions` (tests inject a fake). */
   courseDossierBuilder?: CourseDossierBuilder;
+  courseEvalsBuilder?: CourseEvalsBuilder;
   /** The creator's model for course writing; defaults to the gateway's
    * standard tier (tests inject a mock). */
   courseModelResolver?: (userId: string) => Promise<ModelResolution>;
@@ -131,6 +133,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     registerCourseProgressRoutes(app, options.db);
     registerCoursesRoutes(app, options.db, {
       buildDossier: options.courseDossierBuilder ?? (options.engineBackendOptions ? courseDossierBuilderFor(options.engineBackendOptions) : undefined),
+      buildEvals: options.courseEvalsBuilder ?? (options.engineBackendOptions ? courseEvalsBuilderFor(options.engineBackendOptions) : undefined),
       jobQueue: options.jobQueue ?? noopJobQueue,
       resolveModel: options.courseModelResolver ?? courseModelResolver(options.db, options.coachAgentBaseDeps?.gatewayConfig),
       audioStore: options.audioStore

@@ -23,6 +23,7 @@ import { EngineUnavailableError, NotFoundError, ValidationError } from '../lib/e
 import { parseRequest } from '../lib/parse-request.js';
 import type { JobQueue } from '../jobs/queue.js';
 import type { ModelResolution } from '../llm/gateway.js';
+import { analyzeCourse, type CourseEvalsBuilder } from '../services/courses/course-evals.js';
 import type { CourseDossierBuilder } from '../services/courses/dossier.js';
 import * as courseGenerate from '../services/courses/generation.js';
 import * as coursesService from '../services/courses/course-drafts.js';
@@ -39,6 +40,7 @@ const NoteParamsSchema = EpisodeParamsSchema.extend({ nodeId: z.string().regex(/
 export interface CoursesRouteDeps {
   /** Absent when the app has no engine; then building the skeleton is refused. */
   buildDossier: CourseDossierBuilder | undefined;
+  buildEvals: CourseEvalsBuilder | undefined;
   jobQueue: JobQueue;
   /** The creator's standard-tier model, for regenerating one episode in the request. */
   resolveModel: ((userId: string) => Promise<ModelResolution>) | undefined;
@@ -97,6 +99,14 @@ export function registerCoursesRoutes(app: FastifyInstance, db: Kysely<Database>
     const ownerId = await creatorId(request);
     if (!buildDossier) throw new EngineUnavailableError('No engine is configured');
     return coursesService.buildSkeletonDraft(db, ownerId, courseId(request), buildDossier);
+  });
+
+  /** On demand: rates the draft's moves (the eval bar and move icons), no
+   * dossier. Run again after the tree changes. */
+  app.post('/api/courses/:id/analyze', async (request): Promise<CourseResponse> => {
+    const ownerId = await creatorId(request);
+    if (!deps.buildEvals) throw new EngineUnavailableError('No engine is configured');
+    return analyzeCourse(db, ownerId, courseId(request), deps.buildEvals);
   });
 
   /** The content studio's finished course, in place; the published copy

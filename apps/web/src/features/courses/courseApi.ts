@@ -87,6 +87,15 @@ export function useBuildCourseSkeleton(id: string): UseMutationResult<CourseResp
   });
 }
 
+/** "Analyze moves": rates the saved draft's moves now (eval bar and move icons). */
+export function useAnalyzeCourse(id: string): UseMutationResult<CourseResponse, Error, void> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiPost(`/api/courses/${id}/analyze`, {}, CourseResponseSchema),
+    onSuccess: (course) => queryClient.setQueryData(['course', id], course)
+  });
+}
+
 /** "Write with AI": queues the job, or resumes a failed one. */
 export function useStartCourseGeneration(id: string): UseMutationResult<CourseResponse, Error, { restart: boolean }> {
   const queryClient = useQueryClient();
