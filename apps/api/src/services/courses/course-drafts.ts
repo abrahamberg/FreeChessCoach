@@ -32,7 +32,7 @@ import { missingNoteAudio } from './note-audio.js';
 import { courseEvals } from './public-course.js';
 import { buildManualEpisodes } from './manual-episodes.js';
 import { courseDossierFor, courseTreeOf } from './generation-inputs.js';
-import { courseSlug, courseTitle, resultHeader } from './intake-text.js';
+import { coursePlayers, courseSlug, courseTitle, resultHeader } from './intake-text.js';
 
 /** Bounds the one engine batch the skeleton runs (a long master game with
  * a few sidelines fits; a whole repertoire does not). */
@@ -257,6 +257,7 @@ export async function toCourseResponse(db: Kysely<Database>, row: coursesRepo.Co
     updatedAt: row.updatedAt.toISOString(),
     publishedAt: row.publishedAt?.toISOString() ?? null,
     missingNoteAudio: await missingNoteAudio(db, row.id, storedDocument(row)),
-    evals: courseEvals(storedDocument(row), row.dossier, row.evals)
+    evals: courseEvals(storedDocument(row), row.dossier, row.evals),
+    players: coursePlayers(row.sourcePgn)
   };
 }

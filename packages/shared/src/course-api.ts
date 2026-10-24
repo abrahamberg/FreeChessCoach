@@ -33,6 +33,10 @@ export const CreateCourseRequestSchema = z.object({
 });
 export type CreateCourseRequest = z.input<typeof CreateCourseRequestSchema>;
 
+/** A side's player from the source PGN's headers, for the reel's labels. */
+export const CoursePlayerSchema = z.object({ name: z.string(), rating: z.number().int().nullable() });
+export type CoursePlayer = z.infer<typeof CoursePlayerSchema>;
+
 export const CourseResponseSchema = z.object({
   id: z.string(),
   slug: z.string(),
@@ -51,7 +55,9 @@ export const CourseResponseSchema = z.object({
   missingNoteAudio: z.array(z.object({ episodeId: z.string(), nodeId: z.string() })),
   /** Each move's evaluation and quality from the engine pass (`{}` before
    * it ran): the clip's board sounds. */
-  evals: z.record(z.string(), z.object({ cp: z.number(), quality: MoveQualitySchema }))
+  evals: z.record(z.string(), z.object({ cp: z.number(), quality: MoveQualitySchema })),
+  /** The players the source PGN names (`[White]`, `[WhiteElo]`); null for a side it does not. */
+  players: z.object({ white: CoursePlayerSchema.nullable(), black: CoursePlayerSchema.nullable() })
 });
 export type CourseResponse = z.infer<typeof CourseResponseSchema>;
 
