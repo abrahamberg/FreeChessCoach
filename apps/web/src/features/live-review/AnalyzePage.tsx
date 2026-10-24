@@ -51,7 +51,7 @@ export function AnalyzePage(): ReactNode {
         </p>
       )}
       <button type="button" className="btn-primary" onClick={open}>
-        Start review
+        Analyze board
       </button>
     </div>
   );
