@@ -1,7 +1,8 @@
 import type { CourseNode } from '@freechesscoach/shared';
 import { courseMoveSound } from '../player/course-move-list.js';
 import { clipSoundLengthMs, type ClipSound } from './clip-sounds.js';
-import { boardAt, landingMs, marksFor, movePaceMs, SegmentWriter, type ClipTimeline, type TimelineOptions } from './timeline.js';
+import { speechWords } from './speech-marks.js';
+import { boardAt, landingMs, marksFor, movePaceMs, SegmentWriter, type ClipSegment, type ClipTimeline, type TimelineOptions } from './timeline.js';
 
 /** docs/courses.md §13.3, the reel's pace, in ms. */
 export const REEL_TIMING = {
@@ -22,9 +23,7 @@ export const REEL_TIMING = {
   /** The climax, slowed down, before its line. */
   climaxMs: 1400,
   /** A puzzle's countdown, over the riser. */
-  countdownMs: 5000,
-  /** The reel's length (CONFIG.courses.reelSeconds). */
-  minMs: 30_000
+  countdownMs: 5000
 };
 
 /**
@@ -32,17 +31,11 @@ export const REEL_TIMING = {
  * position (the top band on from frame one), a puzzle's countdown, the
  * build-up at 650 ms a move, half a second of silence, the climax slowed
  * with the payoff in the bottom band, the moves after it, the call to
- * action and the loop line. A promo stops before the climax. Code stretches
- * the climax, never the build-up, to reach 30 s.
+ * action, and the loop line over the first position again, so the replay
+ * runs on without a jump. A promo stops before the climax. Nothing is
+ * stretched to a length: a still board loses the viewer.
  */
 export function buildReelTimeline(options: TimelineOptions & { timing?: typeof REEL_TIMING }): ClipTimeline {
-  const first = reelPass(options, 0);
-  const timing = options.timing ?? REEL_TIMING;
-  const short = timing.minMs - first.durationMs;
-  return short > 0 && options.document.reel?.style !== 'promo' ? reelPass(options, short) : first;
-}
-
-function reelPass(options: TimelineOptions & { timing?: typeof REEL_TIMING }, climaxHoldMs: number): ClipTimeline {
   const { document, audioMs, timing = REEL_TIMING, sounds = null } = options;
   const reel = document.reel;
   const out = new SegmentWriter();
@@ -54,6 +47,12 @@ function reelPass(options: TimelineOptions & { timing?: typeof REEL_TIMING }, cl
     const ms = text.trim() ? audioMs(key) : undefined;
     return ms === undefined ? { key: null, length: text.trim() ? timing.silentBeatMs : 0 } : { key, length: ms + timing.gapMs };
   };
+  // The words as they are said, for the captions; none without audio.
+  const wordsOf = (key: string | null, text: string): Pick<ClipSegment, 'words'> => {
+    const ms = key ? audioMs(key) : undefined;
+    const words = ms === undefined ? [] : speechWords(text, ms);
+    return words.length ? { words } : {};
+  };
   const path = spanOf(byId, reel.startNodeId, reel.endNodeId);
   const startBoard = path[0]?.parentId ? (byId.get(path[0].parentId) ?? null) : null;
   let shown: CourseNode | null = startBoard;
@@ -61,13 +60,13 @@ function reelPass(options: TimelineOptions & { timing?: typeof REEL_TIMING }, cl
 
   const hook = spoken('reel:hook', reel.hook);
   const hookMarks = marksFor(reel.hook, board(shown).fen, hook.key ? audioMs(hook.key) : undefined);
-  out.push({ kind: 'beat', ...board(shown), lastMove: null, moveLabel: null, arrows: [], caption: '', audioKey: hook.key, pauseMs: 0, ...hookMarks }, Math.max(hook.length, timing.silentBeatMs));
+  out.push({ kind: 'beat', ...board(shown), lastMove: null, moveLabel: null, arrows: [], caption: '', audioKey: hook.key, pauseMs: 0, ...hookMarks, ...wordsOf(hook.key, reel.hook) }, Math.max(hook.length, timing.silentBeatMs));
   if (reel.style === 'puzzle') {
     out.push({ kind: 'quiz', ...board(shown), lastMove: null, moveLabel: null, arrows: [], caption: '', audioKey: null, pauseMs: timing.countdownMs, sound: sounds ? 'riser' : null }, timing.countdownMs);
   }
 
   const beatOf = (nodeId: string) => reel.beats.find((beat) => beat.nodeId === nodeId);
-  const playMove = (node: CourseNode, extra: { caption?: string; holdMs?: number } = {}): void => {
+  const playMove = (node: CourseNode, extra: { caption?: string; holdMs?: number; climax?: boolean } = {}): void => {
     const beat = beatOf(node.id);
     const sound = soundOf(node);
     const line = beat ? spoken(`reel:beat:${node.id}`, beat.say) : { key: null, length: 0 };
@@ -77,7 +76,8 @@ function reelPass(options: TimelineOptions & { timing?: typeof REEL_TIMING }, cl
     const land = extra.holdMs ?? (line.key ? landingMs(node.san, timing) : 0);
     const length = Math.max(pace, line.length + lead + (node.marks.includes('slow') ? timing.slowHoldMs : 0)) + land;
     const marks = beat && line.key ? marksFor(beat.say, node.fenAfter, audioMs(line.key)) : {};
-    out.push({ kind: beat ? 'beat' : 'move', ...board(node), arrows: [], caption: extra.caption ?? beat?.caption ?? '', audioKey: line.key, pauseMs: 0, sound, audioOffsetMs: lead, ...marks }, length);
+    const words = beat ? wordsOf(line.key, beat.say) : {};
+    out.push({ kind: beat ? 'beat' : 'move', ...board(node), arrows: [], caption: extra.caption ?? beat?.caption ?? '', audioKey: line.key, pauseMs: 0, sound, audioOffsetMs: lead, ...marks, ...words, ...(extra.climax ? { climax: true } : {}) }, length);
     shown = node;
   };
 
@@ -86,16 +86,17 @@ function reelPass(options: TimelineOptions & { timing?: typeof REEL_TIMING }, cl
   const climax = path[climaxAt];
   if (climax && reel.style !== 'promo') {
     out.push({ kind: 'silence', ...board(shown), arrows: [], caption: '', audioKey: null, pauseMs: 0 }, timing.silenceMs);
-    playMove(climax, { caption: reel.payoff || beatOf(climax.id)?.caption, holdMs: timing.climaxMs + climaxHoldMs });
+    playMove(climax, { caption: reel.payoff || beatOf(climax.id)?.caption, holdMs: timing.climaxMs, climax: true });
     path.slice(climaxAt + 1).forEach((node) => playMove(node));
   } else if (climax) {
     // A promo stops on the question: what happens next is in the video.
     out.push({ kind: 'silence', ...board(shown), arrows: [], caption: '', audioKey: null, pauseMs: 0 }, timing.silenceMs);
   }
   const cta = spoken('reel:cta', reel.cta);
-  out.push({ kind: 'cta', ...board(shown), lastMove: null, moveLabel: null, arrows: [], caption: reel.cta, audioKey: cta.key, pauseMs: 0 }, Math.max(cta.length, timing.silentBeatMs));
+  out.push({ kind: 'cta', ...board(shown), lastMove: null, moveLabel: null, arrows: [], caption: reel.cta, audioKey: cta.key, pauseMs: 0, ...wordsOf(cta.key, reel.cta) }, Math.max(cta.length, timing.silentBeatMs));
+  // The loop line runs back into the hook on the hook's own board.
   const loop = spoken('reel:loop', reel.loop);
-  if (loop.length) out.push({ kind: 'beat', ...board(shown), lastMove: null, moveLabel: null, arrows: [], caption: '', audioKey: loop.key, pauseMs: 0 }, loop.length);
+  if (loop.length) out.push({ kind: 'beat', ...board(startBoard), lastMove: null, moveLabel: null, arrows: [], caption: '', audioKey: loop.key, pauseMs: 0, ...wordsOf(loop.key, reel.loop) }, loop.length);
   return { product: 'reel', format: 'vertical', segments: out.segments, durationMs: out.clock, topText: reel.topText };
 }
 

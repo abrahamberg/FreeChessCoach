@@ -1,7 +1,7 @@
 import type { ClipSound } from './clip-sounds.js';
 import { drawClipFrame, type FrameInput } from './draw-frame.js';
 import { pauseBefore, type SpokenAudio } from './prepare-audio.js';
-import { segmentAt, type ClipTimeline } from './timeline.js';
+import { segmentAt, type ClipSegment, type ClipTimeline } from './timeline.js';
 
 /** One AudioBuffer per spoken text (the backend's chunks joined). */
 export async function decodeCourseAudio(context: BaseAudioContext, prepared: Map<string, SpokenAudio>): Promise<Map<string, AudioBuffer>> {
@@ -48,7 +48,7 @@ export interface ClipPlayerOptions {
   /** The board and cut sounds (`clipSoundBuffers`), when the clip has them on. */
   soundBuffers?: Record<ClipSound, AudioBuffer> | null;
   playbackRate: number;
-  frame: Omit<FrameInput, 'timeline' | 'segment' | 'ms'>;
+  frame: Omit<FrameInput, 'timeline' | 'segment' | 'ms' | 'voiceLevel'>;
   onTime?: (ms: number) => void;
   onEnd?: () => void;
 }
@@ -144,7 +144,20 @@ export class ClipPlayer {
   private draw(ms: number): void {
     const ctx = this.options.canvas.getContext('2d');
     const segment = segmentAt(this.options.timeline, ms);
-    if (ctx && segment) drawClipFrame(ctx, { ...this.options.frame, timeline: this.options.timeline, segment, ms });
+    if (ctx && segment) drawClipFrame(ctx, { ...this.options.frame, timeline: this.options.timeline, segment, ms, voiceLevel: this.voiceLevel(segment, ms) });
+  }
+
+  /** How loud the segment's voice is at `ms`, 0–1, from its samples. */
+  private voiceLevel(segment: ClipSegment, ms: number): number {
+    const buffer = segment.audioKey ? this.options.buffers.get(segment.audioKey) : undefined;
+    if (!buffer) return 0;
+    const at = Math.floor(((ms - segment.start - segment.audioOffsetMs) / 1000) * this.options.playbackRate * buffer.sampleRate);
+    if (at < 0 || at >= buffer.length) return 0;
+    const samples = buffer.getChannelData(0);
+    const end = Math.min(buffer.length, at + 1024);
+    let sum = 0;
+    for (let index = at; index < end; index++) sum += samples[index]! ** 2;
+    return Math.min(1, Math.sqrt(sum / (end - at)) * 4);
   }
 
   /** A board sound, `inMs` from the moment play started. */
