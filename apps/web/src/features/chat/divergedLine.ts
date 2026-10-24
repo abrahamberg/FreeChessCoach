@@ -8,7 +8,8 @@ export interface DivergedMoveSan {
 export interface DivergedLineState {
   basePly: number;
   baseFen: string;
-  moves: { san: string; fen: string; uci: string }[];
+  /** `nodeId` is the move's node in the session's move tree, to find the engine's verdict on it. */
+  moves: { nodeId: string; san: string; fen: string; uci: string }[];
 }
 
 /**
@@ -55,15 +56,25 @@ export function decodeDivergedLineStart(text: string): DivergedLineSan | null {
   }
 }
 
+/** Where the app's own review of the line starts in a message: after the
+ * student's words, so the transcript can show the words alone. */
+const LINE_REVIEW_MARK = '\n\n[line_review] ';
+
 /** The student's submitted diverged line + optional commentary — becomes
  * the actual user turn sent to the coach, human-readable like [board_move]/
  * [position_context], e.g. "[diverged_line] Exploring from move 26 (white):
- * 26.a3 f6 27.a4 (position now: <fen>): <content>". */
-export function encodeDivergedLine(line: DivergedLineState, content: string): string {
+ * 26.a3 f6 27.a4 (position now: <fen>): <content>". `dossier` is the app's
+ * engine dossier on each move of the line (POST /api/positions/line-dossier,
+ * the notes the coach reads for a move of the game); it follows as a
+ * "[line_review]" block that says outright this is an alternative path being
+ * explored, so the coach never takes the moves for the game. The app sends it
+ * with every message for as long as the line is on the board. */
+export function encodeDivergedLine(line: DivergedLineState, content: string, dossier: string | null = null): string {
   const { moveNumber, color } = describePly(line.basePly + 1);
   const sanText = formatDivergedSanSequence(line.basePly, line.moves);
   const resultFen = line.moves.at(-1)?.fen ?? line.baseFen;
-  return `${LINE_PREFIX} Exploring from move ${moveNumber} (${color}): ${sanText} (position now: ${resultFen}): ${content}`;
+  const review = dossier ? `${LINE_REVIEW_MARK}This is an ALTERNATIVE PATH the student is exploring on the board, not the real game: none of these moves were played. The app's engine dossier on each move of it, the same notes you get for a move of the game:\n\n${dossier}` : '';
+  return `${LINE_PREFIX} Exploring from move ${moveNumber} (${color}): ${sanText} (position now: ${resultFen}): ${content}${review}`;
 }
 
 export function decodeDivergedLine(
@@ -71,7 +82,9 @@ export function decodeDivergedLine(
 ): { basePly: number; sanText: string; resultFen: string; content: string } | null {
   const match = LINE_PATTERN.exec(text);
   if (!match) return null;
-  const [, moveNumber, color, sanText, resultFen, content] = match;
+  const [, moveNumber, color, sanText, resultFen, rest] = match;
   const basePly = moveRefToPly(Number(moveNumber), color as 'white' | 'black') - 1;
-  return { basePly, sanText: sanText ?? '', resultFen: resultFen ?? '', content: content ?? '' };
+  // The transcript shows what the student wrote, not the app's review block.
+  const content = (rest ?? '').split(LINE_REVIEW_MARK)[0] ?? '';
+  return { basePly, sanText: sanText ?? '', resultFen: resultFen ?? '', content };
 }

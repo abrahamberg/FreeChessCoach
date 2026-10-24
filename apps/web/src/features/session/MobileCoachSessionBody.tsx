@@ -37,6 +37,8 @@ export interface MobileCoachSessionBodyProps {
    * (isExploring flips back to false — see SessionPage's own effect). */
   isExploring: boolean;
   exploreFeedback: UseExploreFeedbackResult;
+  /** "Back to game", in the explore card's header. */
+  onExitExplore: () => void;
 }
 
 /** SessionPage's own mobile layout — the exact same structure
@@ -81,13 +83,14 @@ export function MobileCoachSessionBody({
   boardArrows,
   hasPendingLine,
   isExploring,
-  exploreFeedback
+  exploreFeedback,
+  onExitExplore
 }: MobileCoachSessionBodyProps): ReactNode {
   return (
     <StackedSessionBody
       card={
         isExploring ? (
-          <ExploreNoteCard status={exploreFeedback.status} evaluation={exploreFeedback.evaluation} note={exploreFeedback.note} />
+          <ExploreNoteCard status={exploreFeedback.status} evaluation={exploreFeedback.evaluation} note={exploreFeedback.note} onExit={onExitExplore} />
         ) : (
           <PagedMessageCard
             messagePaging={messagePaging}

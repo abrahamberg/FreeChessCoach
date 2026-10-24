@@ -1,6 +1,8 @@
 import { childrenOf, gameLine, pathTo, type PgnTree } from '@freechesscoach/chess-analysis';
 
 export interface DivergedMove {
+  /** The move's node in the session's move tree. */
+  nodeId: string;
   san: string;
   fen: string;
   uci: string;
@@ -41,7 +43,7 @@ export function divergedLineOf(tree: PgnTree, nodeId: string | null): { line: Di
     line: {
       basePly: index + 1,
       baseFen: anchor?.fenAfter ?? tree.startFen,
-      moves: nodes.map((node) => ({ san: node.san, fen: node.fenAfter, uci: node.uci }))
+      moves: nodes.map((node) => ({ nodeId: node.id, san: node.san, fen: node.fenAfter, uci: node.uci }))
     },
     stepIndex: path.length - 1 - index
   };

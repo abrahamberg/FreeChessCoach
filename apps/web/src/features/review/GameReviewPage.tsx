@@ -1,6 +1,7 @@
 import { isTopReviewTier } from '@freechesscoach/shared';
 import { useMemo, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useEscapeKey } from '../../hooks/useEscapeKey.js';
 import { useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { useMoveStepSounds } from '../../sounds/useMoveStepSounds.js';
@@ -81,7 +82,7 @@ export function GameReviewPage(): ReactNode {
     continueWithCoachError
   } = useGameReviewPageData(gameId ?? '');
 
-  const explore = useGameReviewExplore(moveTree, currentNode, inVariation, fen);
+  const explore = useGameReviewExplore(moveTree, currentNode, inVariation);
   // Stepping the game (or picking a variation move) ends an Explore the
   // student had open; the variations they made stay in the move list.
   const stepTo = (next: number): void => {
@@ -94,6 +95,7 @@ export function GameReviewPage(): ReactNode {
   };
   const allQualities = useMemo(() => ({ ...qualities, ...explore.scored }), [qualities, explore.scored]);
   const showFeedback = explore.isExploring || inVariation;
+  useEscapeKey(showFeedback, explore.close);
   // Board sounds (docs/plan.md Phase 88): an analyzed game, so bad and great
   // for either side; stepping one move forward only.
   useMoveStepSounds({ ply, sanMoves, learnerSide: gameQuery.data?.userColor ?? 'white', classifiedMoves, disabled: showFeedback });
@@ -121,8 +123,6 @@ export function GameReviewPage(): ReactNode {
       explore={{
         isExploring: explore.isExploring,
         inVariation,
-        open: explore.open,
-        close: explore.close,
         exploreFeedback: explore.exploreFeedback,
         onLocalMove: explore.handleLocalMove
       }}
@@ -130,7 +130,7 @@ export function GameReviewPage(): ReactNode {
   );
 
   const noteCard = showFeedback ? (
-    <ExploreNoteCard status={explore.exploreFeedback.status} evaluation={explore.exploreFeedback.evaluation} note={explore.exploreFeedback.note} />
+    <ExploreNoteCard status={explore.exploreFeedback.status} evaluation={explore.exploreFeedback.evaluation} note={explore.exploreFeedback.note} onExit={explore.close} />
   ) : (
     <MoveNoteCard
       ply={ply}

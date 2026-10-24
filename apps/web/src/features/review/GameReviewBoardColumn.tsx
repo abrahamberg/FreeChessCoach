@@ -1,11 +1,8 @@
 import type { ReactNode } from 'react';
 import type { ClassifiedMoveDto, MoveQuality } from '@freechesscoach/shared';
-import { ChevronLeftIcon } from '../../components/Icon.js';
 import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
 import { CoachBoard, type BoardArrow, type BoardHighlight, type LocalMoveInfo } from '../board/CoachBoard.js';
 import { EvalBar } from '../board/EvalBar.js';
-import { ExploreNoteCard } from '../board/ExploreNoteCard.js';
-import { ExplorePanel } from '../board/ExplorePanel.js';
 import { GameEvalChart } from '../board/GameEvalChart.js';
 import type { UseExploreFeedbackResult } from '../board/useExploreFeedback.js';
 // session-board-column/-row, peek-pill and undo-pill all live here; without
@@ -37,26 +34,21 @@ export interface GameReviewBoardColumnProps {
    * plain-language notes a mobile Review page has no chat to convey
    * otherwise). */
   isDesktop: boolean;
-  /** useGameReviewExplore — "explore on your own" (design.md §5.6's Explore
-   * panel, ported from the live Coach session). When open, the board stops
-   * being inert: dragging a piece plays a real, engine-scored local move
-   * that never touches the stored game. */
+  /** useGameReviewExplore: the board always takes a move. The learner's own
+   * line is scored live and replaces the game's arrows and eval while it is
+   * on the board. Leaving it is the note card's button, not a control here. */
   explore: {
     isExploring: boolean;
     /** The board shows a variation move: its engine feedback replaces the game's arrows. */
     inVariation: boolean;
-    open: () => void;
-    /** Back to the game; the variations stay in the move list. */
-    close: () => void;
     exploreFeedback: UseExploreFeedbackResult;
     onLocalMove: (fen: string, move: LocalMoveInfo) => void;
   };
 }
 
-/** The board + its eval indicators for the Game Review page. Read-only by
- * default — stepping through the game is done via MoveExplorer's own nav
- * pills/move list, never by dragging pieces here — but `explore.isExploring`
- * flips it into a local sandbox (mode="peek", the same one the live Coach
+/** The board + its eval indicators for the Game Review page. Stepping through
+ * the game is done via MoveExplorer's own nav pills/move list; dragging a
+ * piece starts the learner's own line, a local sandbox (mode="peek", the same one the live Coach
  * session's SessionBoardColumn uses): legal-move dots return (respecting
  * Settings > Board), `disabled` drops, and every dropped move is scored by
  * the real engine pipeline (useGameReviewExplore/useExploreFeedback) and can
@@ -91,26 +83,14 @@ export function GameReviewBoardColumn({
           fen={fen}
           orientation={orientation}
           mode="peek"
-          isExploring={isExploring}
+          isExploring={inVariation}
           arrows={showFeedback ? [...arrows, ...exploreFeedback.arrows] : arrows}
           highlights={showFeedback ? [...highlights, ...exploreFeedback.highlights] : highlights}
           onLocalMove={explore.onLocalMove}
           moveQualityBadge={showFeedback ? exploreMoveQualityBadge : moveQualityBadge}
-          showLegalMoveDots={isExploring && showLegalMoveDots}
-          disabled={!isExploring}
+          showLegalMoveDots={showLegalMoveDots}
         />
       </div>
-      {showFeedback && (
-        <p className="peek-pill">
-          {isExploring ? 'exploring' : 'in a variation'} —{' '}
-          <button type="button" onClick={explore.close}>
-            <ChevronLeftIcon width={13} height={13} />
-            back to game
-          </button>
-        </p>
-      )}
-      <ExplorePanel isOpen={isExploring} onOpen={explore.open} onClose={explore.close} status={exploreFeedback.status} evaluation={exploreFeedback.evaluation} />
-      {isDesktop && showFeedback && <ExploreNoteCard status={exploreFeedback.status} evaluation={exploreFeedback.evaluation} note={exploreFeedback.note} />}
       {isDesktop && classifiedMoves.length > 0 && <GameEvalChart classifiedMoves={classifiedMoves} currentPly={ply} onSelect={onSelect} />}
     </div>
   );

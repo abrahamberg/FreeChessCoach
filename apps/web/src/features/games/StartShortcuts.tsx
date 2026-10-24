@@ -2,7 +2,7 @@ import type { CoachPersona } from '@freechesscoach/shared';
 import type { ComponentType, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { CoachAvatar } from '../../components/CoachAvatar.js';
-import { ClipboardIcon, ImportIcon, KnightIcon, PawnIcon, PlayCircleIcon, type IconProps } from '../../components/Icon.js';
+import { ClipboardIcon, EyeIcon, ImportIcon, KnightIcon, PawnIcon, PlayCircleIcon, type IconProps } from '../../components/Icon.js';
 import './StartShortcuts.css';
 
 export interface StartShortcutsProps {
@@ -50,6 +50,12 @@ export function StartShortcuts({ persona, quota }: StartShortcutsProps): ReactNo
               <PlayCircleIcon width={18} height={18} />
             </span>
             Play a Bot
+          </Link>
+          <Link to="/analyze" className="start-shortcuts__tile" title="Review any game or position without saving it">
+            <span className="start-shortcuts__icon" aria-hidden="true">
+              <EyeIcon width={18} height={18} />
+            </span>
+            Temporary review
           </Link>
         </div>
       </section>

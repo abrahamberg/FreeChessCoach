@@ -1,3 +1,4 @@
+import { lineTree, type EditableTree } from '@freechesscoach/chess-analysis';
 import type { CourseArrow, CourseDocument, CourseEnrollmentPlace, CourseEpisode, CourseTempting } from '@freechesscoach/shared';
 import { Fragment, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ChevronRightIcon, CloseIcon, PauseIcon, PlayCircleIcon, PlaySmallIcon, SkipBackIcon } from '../../../components/Icon.js';
@@ -6,6 +7,7 @@ import { EvalBar } from '../../board/EvalBar.js';
 import { GameEvalChart } from '../../board/GameEvalChart.js';
 import { LineMoveExplorer } from '../../board/LineMoveExplorer.js';
 import { MoveStrip, moveStripIndexToPly, plyToMoveStripIndex } from '../../board/MoveStrip.js';
+import { LiveReviewView } from '../../live-review/LiveReviewView.js';
 import { toBoardMarks } from '../courseArrows.js';
 import { AskCoachPanel, AskCoachSignIn } from './AskCoachPanel.js';
 import { BoardFlash, LINE_FLASH_MS } from './BoardFlash.js';
@@ -190,6 +192,10 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
   /** A quiz try that is not the course's move, and the course's own word on
    * it when it has one. No engine: the piece is back, the question stands. */
   const [wrong, setWrong] = useState<{ san: string; why: string | null } | null>(null);
+  /** The learner moved a piece outside the lesson: their moves from this
+   * position, reviewed live by the engine and saved nowhere, until they go
+   * back to the lesson. */
+  const [tryOut, setTryOut] = useState<EditableTree | null>(null);
 
   // A hook episode says where the course ends up, so its board is the climax, as the video's hook shows it.
   const climax = episode.role === 'hook' ? climaxNode(document) : undefined;
@@ -345,12 +351,17 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
           fen={view.fen}
           orientation={document.learnerSide}
           mode={asking ? 'answer' : 'peek'}
-          disabled={!asking}
+          showLegalMoveDots
           arrows={marks.arrows}
           highlights={[...lastMove, ...marks.highlights]}
           moveQualityBadge={played && playedQuality ? { square: played.uci.slice(2, 4), quality: playedQuality } : undefined}
           mateEffect
           onUserMove={onQuizMove}
+          onLocalMove={(_fen, move) => {
+            if (asking) return;
+            audio.stop();
+            setTryOut(lineTree(move.fenBefore, [move.san]));
+          }}
         />
       </div>
       {isDesktop && nav}
@@ -406,6 +417,7 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
         !revealed && !asking && <p className="meta">{step === 0 ? 'Press Next to play through the moves.' : 'No note on this move.'}</p>
       )}
       {tempting.length > 0 && !asking && <TemptingMoves tempting={tempting} />}
+      {!asking && <p className="meta">Move a piece to try your own idea: the engine reviews it, and nothing is saved.</p>}
       {asking && (
         <QuizAsking
           quiz={quiz}
@@ -422,6 +434,12 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
       )}
     </CoursePane>
   );
+
+  if (tryOut) {
+    return (
+      <LiveReviewView base={tryOut} openAt="x1" orientation={document.learnerSide} isDesktop={isDesktop} onBack={() => setTryOut(null)} />
+    );
+  }
 
   return (
     <CourseBoardLayout

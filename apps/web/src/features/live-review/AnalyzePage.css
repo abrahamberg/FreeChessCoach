@@ -1,0 +1,17 @@
+.analyze-page p {
+  color: var(--color-text-secondary);
+  margin: 0 0 16px;
+}
+.analyze-page__label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.analyze-page__input {
+  width: 100%;
+  margin-bottom: 16px;
+  font-family: var(--font-mono, monospace);
+}
+.analyze-page__error {
+  color: var(--quality-blunder);
+}

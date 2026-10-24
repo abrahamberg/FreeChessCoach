@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { CoachCard } from '../../components/CoachCard.js';
-import { EyeIcon } from '../../components/Icon.js';
+import { ChevronLeftIcon, EyeIcon } from '../../components/Icon.js';
 import { AlternativesPanel, hasMoveNoteText, MoveNote } from './MoveNoteContent.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 import type { ExploreFeedbackStatus } from './useExploreFeedback.js';
@@ -11,6 +11,8 @@ export interface ExploreNoteCardProps {
   status: ExploreFeedbackStatus;
   evaluation: string | null;
   note: ClassifiedMoveDto | undefined;
+  /** Leaves the mode and returns to the main board. It lives in the card's header, so nothing sits under the board. */
+  onExit?: () => void;
 }
 
 /** The Explore panel sandbox's own coach box — same CoachCard shell every
@@ -26,14 +28,22 @@ export interface ExploreNoteCardProps {
  * always classifies with isBookMove: false — a sandbox move has no
  * opening-book walk of its own to check against), so unlike MoveNoteCard
  * this never needs an OpeningLabel branch. */
-export function ExploreNoteCard({ status, evaluation, note }: ExploreNoteCardProps): ReactNode {
+export function ExploreNoteCard({ status, evaluation, note, onExit }: ExploreNoteCardProps): ReactNode {
+  const header = onExit && (
+    <button type="button" className="explore-note-card__exit" onClick={onExit}>
+      <ChevronLeftIcon width={14} height={14} />
+      Back to game
+    </button>
+  );
   if (!note) {
     return (
-      <CoachCard avatar={<EyeIcon width={16} height={16} />} className="explore-note-card explore-note-card--empty">
+      <CoachCard avatar={<EyeIcon width={16} height={16} />} header={header} className="explore-note-card explore-note-card--empty">
         <p className="explore-note-card__prompt">
           {status === 'error'
             ? "Couldn't reach the engine — try again."
-            : 'Exploring on your own, off the record — play a move and I\'ll flag it here.'}
+            : status === 'loading'
+              ? 'Looking at your move…'
+              : 'Your own line, off the record. Play a move and I will review it.'}
         </p>
         {evaluation && <p className="explore-note-card__eval">{evaluation}</p>}
       </CoachCard>
@@ -43,7 +53,7 @@ export function ExploreNoteCard({ status, evaluation, note }: ExploreNoteCardPro
   const quality = note.quality;
 
   return (
-    <CoachCard avatar={<EyeIcon width={16} height={16} />} className={`explore-note-card explore-note-card--${quality}`}>
+    <CoachCard avatar={<EyeIcon width={16} height={16} />} header={header} className={`explore-note-card explore-note-card--${quality}`}>
       <div className="explore-note-card__header">
         <MoveQualityBadge quality={quality} size="md" />
         <span className="explore-note-card__move">{note.moveSan}</span>

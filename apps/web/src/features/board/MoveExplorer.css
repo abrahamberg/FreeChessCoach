@@ -331,3 +331,34 @@
   font-weight: 600;
   color: var(--color-text-secondary);
 }
+
+/* The way out of the learner's own line: strong and vivid, at the top of the notes. */
+.move-explorer__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  margin: 6px 0 8px;
+  font-weight: 600;
+}
+
+/* The notes' title is the move itself: its icon, the move and what it was. */
+.move-explorer__notes-move {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-md, 1rem);
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--color-text);
+}
+.move-explorer__notes-headline {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+.move-explorer__back + .move-explorer__notes {
+  border-top: none;
+  padding-top: 0;
+}

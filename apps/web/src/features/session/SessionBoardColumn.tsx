@@ -93,6 +93,7 @@ export interface SessionBoardColumnProps {
    * also needs it (the "coach box" swap in MobileCoachSessionBody).
    * Available in every sessionMode (analyze, play, play_bot). */
   isExploring?: boolean;
+  /** Play vs Bot's eye toggle under the board; a coach session has none (a move starts the line). */
   onOpenExplore?: () => void;
   onCloseExplore?: () => void;
   exploreFeedback?: UseExploreFeedbackResult;
@@ -299,7 +300,7 @@ export function SessionBoardColumn({
           fen={fen}
           orientation={orientation}
           mode={boardState.mode}
-          isExploring={isExploring}
+          isExploring={isExploring || divergedLine.currentId !== null}
           arrows={[...boardState.arrows, ...hoverMoveArrowsFor(hoverMove), ...(showHint ? hintMoves.arrows : []), ...exploreFeedback.arrows]}
           highlights={[
             ...boardState.highlights,
@@ -329,15 +330,7 @@ export function SessionBoardColumn({
           </button>
         </p>
       )}
-      {!pendingMove && divergedLine.line && (
-        <p className="undo-pill">
-          <button type="button" onClick={divergedLine.undoLastMove}>
-            <UndoIcon width={13} height={13} />
-            undo last move
-          </button>
-        </p>
-      )}
-      {boardState.mode === 'peek' && (
+      {boardState.mode === 'peek' && !isExploring && (
         <p className="peek-pill">
           {/* isExploring, not just sessionMode, decides the wording now that
               Explore also opens play_bot into peek mode — "reviewing" is
@@ -375,11 +368,11 @@ export function SessionBoardColumn({
           per-mode toolbars (bot-move-toolbar's `< >` included — that step
           navigation already lives in MoveExplorer/MoveNavStrip above) were
           replaced with this single component. */}
-      {!restricted && (
+      {!restricted && (onOpenExplore || onUndoMove || showHint) && (
         <BoardActionBar
           isExploring={isExploring}
-          onOpenExplore={() => onOpenExplore?.()}
-          onCloseExplore={() => onCloseExplore?.()}
+          onOpenExplore={onOpenExplore}
+          onCloseExplore={onCloseExplore}
           exploreStatus={exploreFeedback.status}
           exploreEvaluation={exploreFeedback.evaluation}
           onUndo={onUndoMove}
@@ -390,7 +383,7 @@ export function SessionBoardColumn({
       {/* Mobile gets the same note through MobileCoachSessionBody's own
           "coach box" swap instead (SessionPage) — rendering it here too
           would just be the same card twice, stacked below the board. */}
-      {isDesktop && isExploring && (
+      {isDesktop && isExploring && onOpenExplore && (
         <ExploreNoteCard status={exploreFeedback.status} evaluation={exploreFeedback.evaluation} note={exploreFeedback.note} />
       )}
       {isDesktop && showEvalIndicators && classifiedMoves && classifiedMoves.length > 0 && (

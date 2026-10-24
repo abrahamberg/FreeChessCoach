@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { betterWasText, plainReviewReasons, reviewMoveTexts, storyOf, type ReviewText } from '@freechesscoach/chess-analysis';
-import { isImprovableQuality, type ClassifiedMoveDto } from '@freechesscoach/shared';
+import { isImprovableQuality, type ClassifiedMoveDto, type MoveQuality } from '@freechesscoach/shared';
 import { useMoveAlternatives } from './useMoveAlternatives.js';
 
 /** Tiers worth a "better was" coaching note — everything else (book, forced,
@@ -10,6 +10,22 @@ import { useMoveAlternatives } from './useMoveAlternatives.js';
  * printing, and two copies of it drift. Re-exported here because
  * MoveExplorer and MoveNoteCard have always imported it from this module. */
 export { isImprovableQuality };
+
+/** 'good'/'excellent' still get a badge and a border accent color (see
+ * MoveNoteCard.css) like every other tier, just no headline text — these
+ * are non-events, not worth a text callout pulling focus the way "Blunder"
+ * or "Best move" should. */
+export const QUALITY_HEADLINES: Partial<Record<MoveQuality, string>> = {
+  brilliant: 'Brilliant move',
+  great: 'Great move',
+  best: 'Best move',
+  book: 'Book move',
+  inaccuracy: 'Inaccuracy',
+  mistake: 'Mistake',
+  miss: 'Miss',
+  blunder: 'Blunder',
+  forced: 'Forced move'
+};
 
 /** True once MoveNote/OpeningLabel below (or, with `excludeTacticText`,
  * TacticReasonList alongside them) would actually render something for this

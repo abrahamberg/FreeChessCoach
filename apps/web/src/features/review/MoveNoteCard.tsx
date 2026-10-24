@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from 'react';
-import type { ClassifiedMoveDto, CoachPersona, MoveQuality } from '@freechesscoach/shared';
+import type { ClassifiedMoveDto, CoachPersona } from '@freechesscoach/shared';
 import { CoachAvatar } from '../../components/CoachAvatar.js';
 import { CoachCard } from '../../components/CoachCard.js';
 import { MessageCircleIcon } from '../../components/Icon.js';
-import { AlternativesPanel, hasMoveNoteText, MoveNote, OpeningLabel } from '../board/MoveNoteContent.js';
+import { AlternativesPanel, hasMoveNoteText, MoveNote, OpeningLabel, QUALITY_HEADLINES } from '../board/MoveNoteContent.js';
 import { MoveQualityBadge } from '../board/MoveQualityBadge.js';
 import { TacticReasonList } from '../board/TacticReasonList.js';
 import type { TacticSelectionKey } from '../board/tacticSelection.js';
@@ -35,22 +35,6 @@ export interface MoveNoteCardProps {
   /** The comment the PGN gave this move (a game imported with annotations). */
   pgnComment?: string | null;
 }
-
-/** 'good'/'excellent' still get a badge and a border accent color (see
- * MoveNoteCard.css) like every other tier, just no headline text — these
- * are non-events, not worth a text callout pulling focus the way "Blunder"
- * or "Best move" should. */
-const QUALITY_HEADLINES: Partial<Record<MoveQuality, string>> = {
-  brilliant: 'Brilliant move',
-  great: 'Great move',
-  best: 'Best move',
-  book: 'Book move',
-  inaccuracy: 'Inaccuracy',
-  mistake: 'Mistake',
-  miss: 'Miss',
-  blunder: 'Blunder',
-  forced: 'Forced move'
-};
 
 function CoachButton({ onContinueWithCoach, isContinuingWithCoach }: Pick<MoveNoteCardProps, 'onContinueWithCoach' | 'isContinuingWithCoach'>): ReactNode {
   if (!onContinueWithCoach) return null;

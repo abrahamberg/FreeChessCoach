@@ -1,4 +1,4 @@
-import { childrenOf, gameLine, type PgnTree, type PgnTreeNode } from '@freechesscoach/chess-analysis';
+import { childrenOf, gameLine, mainLine, type PgnTree, type PgnTreeNode } from '@freechesscoach/chess-analysis';
 import { moveListStart, type MoveListStart } from './moveListStart.js';
 
 export interface ExplorerCell {
@@ -20,7 +20,8 @@ export interface PairRow {
 export type VariationItem =
   | { type: 'move'; nodeId: string; san: string; number: string | null }
   | { type: 'open' }
-  | { type: 'close' };
+  /** Ends the variation that began with `nodeId`; only a branch made in the explorer (an `x` id) may be removed. */
+  | { type: 'close'; nodeId: string; removable: boolean };
 
 /** A variation block under the row of the move it replaces (or after the last row, a move explored from the game's end). */
 export interface VariationRow {
@@ -35,12 +36,12 @@ export type ExplorerRow = PairRow | VariationRow;
 /** The rows to draw for a tree: the main line in numbered rows, each variation
  * of a main-line move as a block under that move's row. After a block that
  * follows White's move, the row that continues starts with Black's move alone. */
-export function explorerRows(tree: PgnTree): ExplorerRow[] {
+export function explorerRows(tree: PgnTree, wholeMainLine = false): ExplorerRow[] {
   const start = moveListStart(tree.startFen);
   const rows: ExplorerRow[] = [];
   let open: PairRow | null = null;
 
-  const game = gameLine(tree);
+  const game = wholeMainLine ? mainLine(tree) : gameLine(tree);
   game.forEach((node, index) => {
     const { moveNumber, black } = numberAt(start, index + 1);
     const cell: ExplorerCell = { nodeId: node.id, san: node.san };
@@ -83,13 +84,23 @@ function appendLine(tree: PgnTree, start: MoveListStart, first: PgnTreeNode, fir
       for (const alternative of childrenOf(tree, node.parentId).slice(1)) {
         items.push({ type: 'open' });
         appendLine(tree, start, alternative, ply, items);
-        items.push({ type: 'close' });
+        items.push({ type: 'close', nodeId: alternative.id, removable: alternative.id.startsWith('x') });
         needsNumber = true;
       }
     }
     node = childrenOf(tree, node.id)[0];
     ply += 1;
   }
+}
+
+/** "8… Bxa5" / "9. h3": the node's move as the list writes it. */
+export function moveLabelOf(tree: PgnTree, nodeId: string): string {
+  const path: PgnTreeNode[] = [];
+  for (let node = tree.nodes.find((each) => each.id === nodeId); node; node = tree.nodes.find((each) => each.id === node?.parentId)) path.unshift(node);
+  const last = path.at(-1);
+  if (!last) return '';
+  const { moveNumber, black } = numberAt(moveListStart(tree.startFen), path.length);
+  return `${moveNumber}${black ? '…' : '.'} ${last.san}`;
 }
 
 /** The move number and side of the move at 1-based `ply` of a tree starting at `start`. */

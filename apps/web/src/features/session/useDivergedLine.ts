@@ -56,6 +56,8 @@ export interface UseDivergedLineResult {
    * consumeExpectingMove once the next move has been handled either way
    * (sent as [board_move] or folded into an active line). */
   expectingMove: boolean;
+  /** The line on the board is the student's own, not one the coach showed: only that one is reviewed live. */
+  studentLine: boolean;
   /** Plays a move from the variation on the board, or from `real` when the
    * board shows the game: a new move is a variation, a move already there is
    * followed. Returns the resulting line synchronously (not just via the
@@ -137,6 +139,8 @@ export function useDivergedLine(base: EditableTree | null): UseDivergedLineResul
     setHeld(fresh);
   }
   const [expectingMove, setExpectingMove] = useState(false);
+  /** The line on the board is the student's (they dropped a move on it), not one the coach showed. */
+  const [studentLine, setStudentLine] = useState(false);
 
   const commit = useCallback((state: MoveTreeState): void => {
     heldRef.current = { base: heldRef.current.base, state };
@@ -168,6 +172,7 @@ export function useDivergedLine(base: EditableTree | null): UseDivergedLineResul
       const active = state.currentId !== null && !isMainNode(state.tree, state.currentId);
       const from = active ? state.currentId : mainNodeAtPly(state.tree, real.ply);
       playFrom(from, [move.san]);
+      setStudentLine(true);
       const after = heldRef.current.state;
       return divergedLineOf(after.tree, after.currentId)?.line ?? null;
     },
@@ -182,6 +187,7 @@ export function useDivergedLine(base: EditableTree | null): UseDivergedLineResul
   const exit = useCallback(() => {
     commit(back(heldRef.current.state));
     setExpectingMove(false);
+    setStudentLine(false);
   }, [commit]);
 
   const removeBranch = useCallback((nodeId: string) => {
@@ -230,6 +236,7 @@ export function useDivergedLine(base: EditableTree | null): UseDivergedLineResul
         const startFen = startNode?.fenAfter ?? state.tree.startFen;
         const applied = applySanSequence(startFen, sanMoves);
         const basePly = continuing && state.currentId ? anchorPly(state.tree, state.currentId) : effectiveReal.ply;
+        setStudentLine(false);
         if (applied.moves.length > 0) playFrom(fromId, applied.moves.map((move) => move.san));
         const moves = applied.moves.map((m) => ({ san: m.san }));
         const resultFen = applied.moves.at(-1)?.fen;
@@ -267,6 +274,7 @@ export function useDivergedLine(base: EditableTree | null): UseDivergedLineResul
     line: divergence?.line ?? null,
     fen: current?.fenAfter ?? null,
     expectingMove,
+    studentLine,
     appendMove,
     select: selectNode,
     undoLastMove,

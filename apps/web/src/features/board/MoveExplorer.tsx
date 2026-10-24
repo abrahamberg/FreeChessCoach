@@ -1,15 +1,15 @@
 import { useState, type ReactNode } from 'react';
-import { childrenOf, gameLine, pathTo, type PgnTree, type PgnTreeNode } from '@freechesscoach/chess-analysis';
+import { childrenOf, gameLine, mainLine, pathTo, type PgnTree, type PgnTreeNode } from '@freechesscoach/chess-analysis';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { ChevronLeftIcon, ChevronRightIcon, SkipBackIcon, SkipForwardIcon } from '../../components/Icon.js';
 import { ExplorerAutoplay } from './ExplorerAutoplay.js';
 import { ExplorerVariation } from './ExplorerVariation.js';
 import { MoveAnalysisModal } from './MoveAnalysisModal.js';
-import { AlternativesPanel, MoveNote, OpeningLabel } from './MoveNoteContent.js';
+import { AlternativesPanel, MoveNote, OpeningLabel, QUALITY_HEADLINES } from './MoveNoteContent.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 import { TacticMotifBadge } from './TacticMotifBadge.js';
 import type { ExplorerNodeExtra, ExplorerNodeExtras } from './explorer-extras.js';
-import { explorerRows } from './explorer-rows.js';
+import { explorerRows, moveLabelOf } from './explorer-rows.js';
 import { stripPath } from './variation-path.js';
 import './MoveExplorer.css';
 
@@ -35,8 +35,14 @@ export interface MoveExplorerProps {
   hideNav?: boolean;
   /** Removes a variation made in the explorer (the id of its first move). */
   onRemoveBranch?: (nodeId: string) => void;
+  /** Makes a variation the main line, with a button on each one. */
+  onPromoteBranch?: (nodeId: string) => void;
   /** Badges, a comment tooltip or a fade for moves, by node id. */
   nodeExtras?: ExplorerNodeExtras;
+  /** The first line played is the main line, moves made in the explorer included (a review that starts from nothing has no game of its own). */
+  wholeMainLine?: boolean;
+  /** The learner's own line is on the board: the Notes box says so and carries the way back to the game. */
+  onBackToGame?: () => void;
 }
 
 /** design.md-adjacent move explorer (not yet in design.md — Daniel requested
@@ -54,12 +60,15 @@ export function MoveExplorer({
   dimmedThroughPly = 0,
   hideNav = false,
   onRemoveBranch,
-  nodeExtras
+  onPromoteBranch,
+  nodeExtras,
+  wholeMainLine = false,
+  onBackToGame
 }: MoveExplorerProps): ReactNode {
   const [inspecting, setInspecting] = useState<{ fen: string; label: string } | null>(null);
-  const rows = explorerRows(tree);
+  const rows = explorerRows(tree, wholeMainLine);
   const nodeById = new Map(tree.nodes.map((node) => [node.id, node]));
-  const game = gameLine(tree);
+  const game = wholeMainLine ? mainLine(tree) : gameLine(tree);
   const gameIds = new Set(game.map((node) => node.id));
   const dimmedIds = new Set(game.slice(0, dimmedThroughPly).map((node) => node.id));
   const currentMove = currentNodeId === null ? undefined : qualities[currentNodeId];
@@ -106,6 +115,7 @@ export function MoveExplorer({
                 currentNodeId={currentNodeId}
                 onSelect={onSelect}
                 onRemove={onRemoveBranch}
+                onPromote={onPromoteBranch}
               />
             );
           }
@@ -145,16 +155,32 @@ export function MoveExplorer({
       </ol>
       {showNotes && (
         <>
+          {onBackToGame && (
+            <button type="button" className="btn-primary move-explorer__back" onClick={onBackToGame}>
+              <ChevronLeftIcon width={16} height={16} />
+              Back to game
+            </button>
+          )}
           {currentMove && <OpeningLabel move={currentMove} />}
           <details className="move-explorer__notes" open>
-            <summary className="move-explorer__notes-summary">Notes</summary>
+            <summary className="move-explorer__notes-summary">
+              {current ? (
+                <span className="move-explorer__notes-move">
+                  <MoveQualityBadge quality={currentMove?.quality} size="md" />
+                  <span>{moveLabelOf(tree, current.id)}</span>
+                  {currentMove && QUALITY_HEADLINES[currentMove.quality] && <span className="move-explorer__notes-headline">{QUALITY_HEADLINES[currentMove.quality]}</span>}
+                </span>
+              ) : (
+                'Notes'
+              )}
+            </summary>
             {currentMove ? (
               <>
                 <MoveNote move={currentMove} />
                 <AlternativesPanel move={currentMove} />
               </>
             ) : (
-              <p className="move-explorer__notes-empty">Select a move to see notes.</p>
+              <p className="move-explorer__notes-empty">{onBackToGame ? 'Reviewing your move…' : 'Select a move to see notes.'}</p>
             )}
           </details>
         </>

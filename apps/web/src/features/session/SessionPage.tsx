@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { OverflowMenuItem } from '../../components/OverflowMenu.js';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog.js';
@@ -10,11 +11,15 @@ import { useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicat
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { GameReportSummary } from '../board/GameReportSummary.js';
-import { useExploreFeedback } from '../board/useExploreFeedback.js';
+import { exploreFeedbackOf } from '../live-review/explore-feedback.js';
+import { isLearnerMove, latestNodeId } from '../live-review/review-order.js';
+import { useLiveReview } from '../live-review/useLiveReview.js';
+import { useEscapeKey } from '../../hooks/useEscapeKey.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
 import { ChatPane } from '../chat/ChatPane.js';
 import { DebugPanel } from '../chat/DebugPanel.js';
-import { encodeDivergedLine } from '../chat/divergedLine.js';
+import { encodeDivergedLine, type DivergedLineState } from '../chat/divergedLine.js';
+import { lineDossierQuery, usePrefetchLineDossier } from './useLineDossier.js';
 import { CoachActivityContext } from '../chat/coach-activity-context.js';
 import { KickoffFactsContext } from '../chat/kickoff-facts-context.js';
 import type { HoverMove } from '../chat/MessageList.js';
@@ -82,20 +87,26 @@ export function SessionPage(): ReactNode {
   // MobileCoachSessionBody (the mobile "coach box" swap) need — lifted up
   // to their common ancestor rather than owned inside either sibling.
   const fen = divergedLine.fen ?? boardState.fen;
-  const [isExploring, setIsExploring] = useState(false);
   const { confirm, dialog: confirmDialog } = useConfirmDialog();
-  // Leaving peek mode any other way (the peek pill's "back to coach", a new
-  // coach show_position, the move strip) must collapse this too — otherwise
-  // its pill/note stay stuck on screen even once the coach is watching
-  // again.
-  useEffect(() => {
-    if (boardState.mode !== 'peek') setIsExploring(false);
-  }, [boardState.mode]);
-  const exploreFeedback = useExploreFeedback({ enabled: isExploring, fen, lastMove: boardState.lastLocalMove });
-  function openExplore(): void {
-    setIsExploring(true);
-    boardState.setMode('peek');
+  // No button: a move dropped off the game starts a line of the student's own
+  // (divergedLine), and while one is on the board the engine reviews it live
+  // (the same review Game Review gives). The line goes to the coach only with
+  // the next message the student sends (handleSendMessage). A new coach
+  // position, the move strip or "Back to game" leaves it.
+  const isExploring = divergedLine.currentId !== null && divergedLine.studentLine;
+  // Every line off the game gets its icons, whichever is on the board; the
+  // verdict, arrows and eval follow the board only while the student's line is on it.
+  const hasLines = divergedLine.tree.nodes.some((node) => isLearnerMove(node.id));
+  const liveReview = useLiveReview(divergedLine.tree, isExploring ? divergedLine.currentId : null, latestNodeId(divergedLine.tree), hasLines, isLearnerMove);
+  const exploreFeedback = exploreFeedbackOf(liveReview, isExploring);
+  const studentColor = gameQuery.data?.userColor ?? 'white';
+  const queryClient = useQueryClient();
+  usePrefetchLineDossier(isExploring ? divergedLine.line : null, studentColor);
+  function leaveExplore(): void {
+    divergedLine.exit();
+    boardState.backToCoach();
   }
+  useEscapeKey(isExploring, leaveExplore);
   // AppShell hides its own top bar (Settings, the engine indicator) for
   // every board route, session included — SessionHeader's own overflow menu
   // is the only place left to reach them, and the coach voice autoplay
@@ -158,7 +169,7 @@ export function SessionPage(): ReactNode {
 
   function handleSendMessage(content: string): void {
     if (divergedLine.line) {
-      void chat.sendMessage(encodeDivergedLine(divergedLine.line, content));
+      void sendLine(divergedLine.line, content);
       // The line stays active — the coach may continue the hypothetical.
       return;
     }
@@ -169,6 +180,12 @@ export function SessionPage(): ReactNode {
       return;
     }
     void chat.sendMessage(content);
+  }
+
+  /** The line goes with the coach's dossier on it (ready already when the line stood still before sending). A dossier that cannot be made sends the line without it. */
+  async function sendLine(line: DivergedLineState, content: string): Promise<void> {
+    const dossier = await queryClient.fetchQuery(lineDossierQuery(line, studentColor)).catch(() => null);
+    void chat.sendMessage(encodeDivergedLine(line, content, dossier));
   }
 
   const orientation = gameQuery.data?.userColor ?? 'white';
@@ -193,8 +210,6 @@ export function SessionPage(): ReactNode {
       onUndoMove={session.mode === 'play' ? undoLastMove : undefined}
       undoDisabled={!canUndo}
       isExploring={isExploring}
-      onOpenExplore={openExplore}
-      onCloseExplore={boardState.backToCoach}
       exploreFeedback={exploreFeedback}
     />
   );
@@ -306,6 +321,8 @@ export function SessionPage(): ReactNode {
                 classifiedMoves={gameQuery.data?.classifiedMoves ?? []}
                 currentPly={boardState.ply}
                 onSelectPly={peekAt}
+                liveQualities={liveReview.scored}
+                onBackToGame={divergedLine.currentId !== null ? leaveExplore : undefined}
               />
               {gameQuery.data?.gameReport && <GameReportSummary report={gameQuery.data.gameReport} userColor={orientation} />}
             </div>
@@ -333,6 +350,7 @@ export function SessionPage(): ReactNode {
           hasPendingLine={Boolean(divergedLine.line)}
           isExploring={isExploring}
           exploreFeedback={exploreFeedback}
+          onExitExplore={leaveExplore}
         />
       )}
     </div>

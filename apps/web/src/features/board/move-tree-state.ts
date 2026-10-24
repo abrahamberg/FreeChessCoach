@@ -1,4 +1,4 @@
-import { addMove, childrenOf, lineTree, gameLine, parsePgnTree, pathTo, removeBranch, type EditableTree } from '@freechesscoach/chess-analysis';
+import { addMove, childrenOf, lineTree, gameLine, parsePgnTree, pathTo, promoteBranch, removeBranch, type EditableTree } from '@freechesscoach/chess-analysis';
 
 /** The explorer's state: a move tree and the node on the board (null = the
  * start). The tree's own nodes are never removed or reordered; moves the
@@ -8,8 +8,8 @@ export interface MoveTreeState {
   currentId: string | null;
 }
 
-export function initialMoveTree(tree: EditableTree): MoveTreeState {
-  return { tree, currentId: null };
+export function initialMoveTree(tree: EditableTree, currentId: string | null = null): MoveTreeState {
+  return { tree, currentId };
 }
 
 /** The game's tree: the PGN's own variations when its main line is the game
@@ -64,6 +64,11 @@ export function remove(state: MoveTreeState, nodeId: string): MoveTreeState {
   if (!node) return state;
   const insideCurrent = state.currentId !== null && pathTo(state.tree, state.currentId).some((each) => each.id === nodeId);
   return { tree: removeBranch(state.tree, nodeId), currentId: insideCurrent ? node.parentId : state.currentId };
+}
+
+/** Makes the branch holding `nodeId` the main line; the board stays where it is. */
+export function promote(state: MoveTreeState, nodeId: string): MoveTreeState {
+  return state.tree.nodes.some((node) => node.id === nodeId) ? { ...state, tree: promoteBranch(state.tree, nodeId) } : state;
 }
 
 /** The ply of the game the node is on, or branches from: the number of

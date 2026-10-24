@@ -1,0 +1,11 @@
+.live-review__others {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+}
+.live-review__others-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}

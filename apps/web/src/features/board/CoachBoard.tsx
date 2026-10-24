@@ -394,7 +394,7 @@ export function CoachBoard({
   const frameClassName = [
     'coach-board-frame',
     mode === 'peek' && 'coach-board-frame--peek',
-    mode === 'peek' && isExploring && 'coach-board-frame--exploring',
+    isExploring && 'coach-board-frame--exploring',
     disabled && 'coach-board-frame--pending'
   ]
     .filter(Boolean)

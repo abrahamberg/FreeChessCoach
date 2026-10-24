@@ -7,8 +7,9 @@ import './BoardActionBar.css';
 
 export interface BoardActionBarProps {
   isExploring: boolean;
-  onOpenExplore: () => void;
-  onCloseExplore: () => void;
+  /** Omitted where a move starts the learner's own line and the way out is the note card's button. */
+  onOpenExplore?: () => void;
+  onCloseExplore?: () => void;
   exploreStatus: ExploreFeedbackStatus;
   exploreEvaluation: string | null;
   /** Omitted entirely where a real move can't be self-undone (analyze mode,
@@ -40,7 +41,9 @@ export function BoardActionBar({
 }: BoardActionBarProps): ReactNode {
   return (
     <div className="board-action-bar">
-      <ExplorePanel isOpen={isExploring} onOpen={onOpenExplore} onClose={onCloseExplore} status={exploreStatus} evaluation={exploreEvaluation} />
+      {onOpenExplore && onCloseExplore && (
+        <ExplorePanel isOpen={isExploring} onOpen={onOpenExplore} onClose={onCloseExplore} status={exploreStatus} evaluation={exploreEvaluation} />
+      )}
       {onUndo && (
         <button type="button" className="board-action-bar__undo" onClick={onUndo} disabled={undoDisabled}>
           <UndoIcon width={14} height={14} />
