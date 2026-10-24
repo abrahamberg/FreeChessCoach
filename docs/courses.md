@@ -8,7 +8,7 @@ A **course** is a chess lesson built from a PGN: a public board where anyone
 can play the lesson through, hear the coach, and drill it. Signed-in learners
 get their progress kept and are reminded to review. Made from the same moves,
 a course can have a **YouTube video** (16:9, 5–20 min) and a **reel** (9:16,
-30–61 s, for Shorts, Reels and TikTok), both recorded in the creator's
+25–40 s, for Shorts, Reels and TikTok), both recorded in the creator's
 browser. The course is the product; the videos bring people to it (§13).
 
 **Who uses it now.** The owner, to turn a PGN and one line of direction into a
@@ -151,9 +151,9 @@ Arrow = { from: Square, to: Square, kind: 'idea' | 'threat' | 'best' }
 (`defaultCourseVideos`). The video's length is a guide range per kind,
 `CONFIG.courses.videoSeconds` (trap 3–9.5 minutes, opening 8–20, tactics
 5–13.5, puzzle 1.5–5.5, master game 8–20, endgame and lesson 3–11; the words
-cap is the top); the reel's `reelSeconds` (30–61 s). The tops are 35% above the
-first ones (the owner, 2026-10-18: moves play slower, and good content is not
-cut to fit). Lengths may run over by `lengthSlack` (10%) before the verifier
+cap is the top); the reel's `reelSeconds` (25–40 s; the owner, 2026-10-25).
+The video's tops are 35% above the first ones (the owner, 2026-10-18: moves
+play slower, and good content is not cut to fit). Lengths may run over by `lengthSlack` (10%) before the verifier
 counts them, and a whole length over its guide (an episode's video words, the
 reel's seconds) is **advisory**: a warning for the creator, never a reason for
 a repair call, and never sent to one.
@@ -543,7 +543,7 @@ THREE PRODUCTS FROM THE SAME MOVES
   tempting moves the dossier lists and say why each fails, the way a strong
   player thinks: checks, captures, threats. "caption" is its on-screen text,
   6 words or fewer, on every move with "video": true.
-- The reel: 30 to 61 seconds, one idea. The first words name the idea ("A
+- The reel: 25 to 40 seconds, one idea. The first words name the idea ("A
   queen sacrifice that wins in the Sicilian"); no greeting, no "today". Short
   lines, the climax slowed down, a specific call to action, and a last line
   that runs straight back into the first.
@@ -1677,7 +1677,7 @@ short" model (a course and one clip recorded in two shapes) and the kinds
 |---|---|---|---|
 | **Course** | our board (`/learn/:slug`) | Teach. Holds everything: every episode, every note, the tempting moves and why they fail, the quizzes and the drills. | as long as the lesson |
 | **Video** (long clip) | YouTube, 16:9 | Build trust and subscribers: storytelling commentary, stops on every important move, weighs the moves that look right and says why they are not. | 5–20 min |
-| **Reel** (short clip) | YouTube Shorts, Instagram Reels, TikTok, 9:16 | Reach: one idea, or one puzzle, that stops the scroll. | 30–61 s |
+| **Reel** (short clip) | YouTube Shorts, Instagram Reels, TikTok, 9:16 | Reach: one idea, or one puzzle, that stops the scroll. | 25–40 s |
 
 The course is the product: every video exists to bring people to a course,
 so the course is always made and holds everything. The intake asks which
@@ -1748,19 +1748,19 @@ reel: {
   topText: string,     // the top band, the whole reel: "White to play", "Mate in 3?" (≤ 5 words)
   beats: [{ nodeId, say, caption }],      // the moves that speak; caption = bottom band
   payoff: string,      // bottom band at the climax: "Mate in three" (≤ 5 words)
-  cta: string,         // specific: "Follow for a daily mate-in-3" — never "subscribe for more"
+  cta: string,         // asks to subscribe, specific: "Subscribe for a daily mate-in-3" — never the bare "subscribe for more"
   loop: string         // the last line, written to run straight back into `hook`
 }
 ```
 
 Timing (code, `clip/reel-timeline.ts`):
 
-| Seconds | What |
+| Seconds (about) | What |
 |---|---|
 | 0–3 | the spoken hook over the first position; the top band is on from frame one |
-| 3–20 | the build-up: moves at 650 ms, an arrow flashes on each threat, the board never still for more than 4 s |
-| 20–30 | the climax: the move before plays at normal speed, then 0.5 s of silence (board sounds and voice cut), then the climax move at half speed with its sound; the payoff appears |
-| 30–40 | the explanation beat(s), the CTA card, the loop line |
+| 3–15 | the build-up: moves at 650 ms, an arrow flashes on each threat, the board never still for more than 4 s |
+| 15–22 | the climax: the move before plays at normal speed, then 0.5 s of silence (board sounds and voice cut), then the climax move at half speed with its sound, the board zooming in and its quality popping; the payoff appears |
+| 22–40 | the explanation beat(s), the call to action over the board (a pulsing Subscribe button pointing down to the platform's own, the course's link), the loop line over the first position, so the replay runs on without a jump |
 
 A move marked `@fast` plays in `fastMoveMs` (250 ms in the reel, 350 ms in
 the video) and never speaks; a move marked `@slow` holds `slowHoldMs`
@@ -1784,9 +1784,10 @@ belongs to its segment and is gone when the next one starts. Every arrow on
 a knight's jump, this one and the coach's, bends into an L: the long leg
 first, then the short one.
 **The site on screen** (`SITE_NAME`, `draw-frame.ts`): `freechesscoach.org`
-stands under the coach's name in the video's panel and in the reel's bottom
-left the whole time; the outro, end and call-to-action cards carry the logo
-and the address above the title, and the course's link is
+stands under the coach's name in the video's panel, and with the logo above
+the reel's board, the whole time; the video's outro and end cards carry the
+logo and the address above the title, the reel's call to action the
+course's link under the board, and the course's link is
 `freechesscoach.org/learn/<slug>`, never the host the creator recorded on.
 
 The king in check is lit red on the board, as in the app; a mated king's
@@ -1795,8 +1796,8 @@ are attacked are tinted and crossed out (`checkedKing`, `shut`).
 The board also carries the engine's word, as the app's review does: the
 move's quality as a badge on the corner of the square it landed on (`rated`
 on the segment, from the course's evaluations) and the evaluation bar,
-upright left of the board in the YouTube video with the figure under it,
-lying above the board in the reel. On checkmate the bar goes all the way to
+upright left of the board, in the YouTube video with the figure under it,
+in the reel with the figure inside it. On checkmate the bar goes all the way to
 the winner. Moves played out off the lesson's line are rated too: a
 tempting move carries its own evaluation and quality (kept on the dossier's
 tempting facts, sent in `evals` under `temptingEvalKey`), and its answer,
@@ -1829,14 +1830,35 @@ The reel's prompt carries HOW WE GOT HERE: the moves before its span and
 the opening names they reach, so its first words can place the viewer
 ("Petrov's Defense. White took a pawn, and you let them keep it").
 
-The whole reel is 30–61 s (`CONFIG.courses.reelSeconds`); code stretches
-the climax and the explanation, never the build-up. A puzzle's countdown
+`CONFIG.courses.reelSeconds` (25–40 s) is the script's guide; code never
+stretches a reel to reach it (the owner, 2026-10-25: a still board loses
+the viewer, and shorter reels are watched to the end). A puzzle's countdown
 counts toward it.
 
-Layout (1080×1920): the top band (y 0–420) holds `topText`, bold, at least
-72 px, high contrast; the board takes the full width (1080) in the middle;
-the bottom band (y 1500–1920) holds the caption burned in, and the coach's
-avatar small in a corner. No title card: the reel starts on the board.
+Layout (1080×1920; the owner, 2026-10-25, `REEL` in `draw-frame.ts`).
+TikTok, Shorts and Reels cover the top ~270 px, the bottom ~480 px and a
+column of buttons right of x ~940 from about y 1000 down, so:
+
+- top left (y 270–390), the coach's avatar, growing a little with the
+  loudness of their voice; beside it `topText` on one line, as large as
+  fits (76 px down to 48, else two lines), with the series under it;
+- above the board, the player at the top of the board (`[White]`,
+  `[WhiteElo]` from the source PGN, `CourseResponse.players`; none when the
+  PGN names none) and the logo with `freechesscoach.org`;
+- the board, 832 px from x 108 to x 940, with the evaluation bar upright on
+  its left and the figure inside it at the end of the side ahead; the bar
+  swings to each new figure over 400 ms;
+- below it, the other player and the move's label;
+- the captions word by word: the line being said, three words at a time,
+  the word being said in yellow (timed like the marks, `speechWords`); the
+  segment's caption (the payoff at the climax) when nothing is being said;
+- the climax zooms the board 12% in on the square the move landed on and
+  pops its quality large over it, only "!!", "!", "??" or "#" on mate;
+- a puzzle's countdown asks "Pause and comment your move".
+
+No title card: the reel starts on the board. The preview saves a cover PNG
+for the platforms' cover picker: "Cover: first frame" (the bait and the
+question, the usual pick) or "Cover: climax", which gives the answer away.
 
 ### 13.4 The video
 
@@ -1953,7 +1975,7 @@ its warnings carry the episode id `'reel'`).
 | Check | Rule |
 |---|---|
 | Tempting | Every `tempting[].san` is one of the dossier's tempting moves at that node; its `why` names no move outside the refutation. |
-| Reel | "White/Black to play" names the side that plays the climax; span within 8 moves before the climax and 2 after; the style fits (promo only with a video; puzzle only where the climax side has a forced win); `hook` ≤ 10 words and names no greeting; `topText` and `payoff` ≤ 5 words; `cta` is not generic (`GENERIC_CTAS`: "subscribe for more", "like and subscribe", "follow for more"); the estimated length is 30–61 s (advisory: a warning only, no repair). |
+| Reel | "White/Black to play" names the side that plays the climax; span within 8 moves before the climax and 2 after; the style fits (promo only with a video; puzzle only where the climax side has a forced win); `hook` ≤ 10 words and names no greeting; `topText` and `payoff` ≤ 5 words; `cta` is not generic (`GENERIC_CTAS`: "subscribe for more", "like and subscribe", "follow for more"); the estimated length is 25–40 s (advisory: a warning only, no repair). |
 | Video | `title` ≤ 55 characters; `thumbnailText` ≤ 4 words; `hook` ≤ 40 words and not an intro ("hey guys", "welcome back", "today we"); `outro` asks a question. |
 | Voice | At most 2 lines in an episode start with the same word ("Execute …"); no stock line repeated across episodes. |
 | Key moves | As Phase 91, for the course and the video. |
