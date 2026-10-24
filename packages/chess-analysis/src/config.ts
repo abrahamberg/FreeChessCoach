@@ -609,8 +609,8 @@ export const CONFIG = {
      * this share before they count as a problem: a 41-word hook against 40
      * is not worth a repair call that may bend the wording. */
     lengthSlack: 0.1,
-    /** §13.3 the reel's length; the top 35% above the first 45 s (the owner, 2026-10-18). */
-    reelSeconds: { min: 30, max: 61 },
+    /** §13.3 the reel's length (the owner, 2026-10-25: short reels are watched to the end). */
+    reelSeconds: { min: 25, max: 40 },
     hookWords: 12,
     maxWordsPerBeat: 45,
     quizPauseSeconds: 3,

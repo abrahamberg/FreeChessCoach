@@ -18,7 +18,7 @@ function withReel(reel: Partial<CourseReel>): CourseDocument {
 }
 
 const audio: Record<string, number> = { 'reel:hook': 2000, 'reel:beat:n14': 1000, 'reel:cta': 1500, 'reel:loop': 1200 };
-const TIMING = { ...REEL_TIMING, landMs: 0, mateMs: 0, minMs: 0 };
+const TIMING = { ...REEL_TIMING, landMs: 0, mateMs: 0 };
 const summary = (document: CourseDocument, timing = TIMING) =>
   buildReelTimeline({ document, audioMs: (key) => audio[key], timing, sounds: { evals: {}, lengthMs: () => 100 } }).segments.map((segment) => [segment.kind, segment.moveLabel, segment.caption, segment.sound, segment.end - segment.start]);
 
@@ -44,12 +44,13 @@ describe('buildReelTimeline (§13.3)', () => {
     expect(promo.map((segment) => segment[0])).toEqual(['beat', 'move', 'beat', 'move', 'silence', 'cta', 'beat']);
   });
 
-  test('under 30 s, code holds the climax longer, never the build-up', () => {
+  test('the climax keeps its own hold, never stretched to a length; the loop line is on the first board, so the replay has no jump', () => {
     const timeline = buildReelTimeline({ document: withReel({}), audioMs: (key) => audio[key], sounds: null });
-    expect(timeline.durationMs).toBe(REEL_TIMING.minMs);
-    const climax = timeline.segments.find((segment) => segment.moveLabel === '8…Qc1#' && segment.kind === 'move');
-    expect(climax!.end - climax!.start).toBeGreaterThan(REEL_TIMING.moveMs + REEL_TIMING.climaxMs);
-    expect(timeline.segments.find((segment) => segment.moveLabel === '7.Qd2')!.end - timeline.segments.find((segment) => segment.moveLabel === '7.Qd2')!.start).toBe(REEL_TIMING.moveMs);
+    const climax = timeline.segments.find((segment) => segment.climax);
+    expect(climax).toMatchObject({ moveLabel: '8…Qc1#' });
+    expect(climax!.end - climax!.start).toBe(REEL_TIMING.moveMs + REEL_TIMING.climaxMs);
+    expect(timeline.segments.at(-1)!.fen).toBe(timeline.segments[0]!.fen);
+    expect(timeline.segments[0]!.words?.map((word) => word.text)).toEqual(['The', 'Englund', 'trap', 'that', 'mates', 'in', 'eight.']);
   });
 
   test('the build-up moves the creator marked play at their pace: @fast quicker, @slow held', () => {

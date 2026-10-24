@@ -53,3 +53,17 @@ export function markAlpha(mark: ClipMark, ms: number): number {
   if (t < 0 || t >= MARK_MS) return 0;
   return Math.min(1, t / 200, (MARK_MS - t) / 400);
 }
+
+/** A spoken word, `atMs` after the line's audio starts. */
+export interface ClipWord {
+  text: string;
+  atMs: number;
+}
+
+/** The reel's captions word by word: each word timed at its place in the
+ * text times the audio's length, as `speechMarks` times a square. */
+export function speechWords(text: string, audioMs: number): ClipWord[] {
+  const length = text.length;
+  if (!length || audioMs <= 0) return [];
+  return [...text.matchAll(/\S+/g)].map((match) => ({ text: match[0], atMs: Math.round(((match.index ?? 0) / length) * audioMs) }));
+}

@@ -220,7 +220,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
         />
       )}
       {learnerPreview && <LearnerPreview document={document} evals={course.evals} onClose={() => setLearnerPreview(false)} />}
-      {previewing && <ClipPreview document={document} slug={course.slug} evals={course.evals} onClose={() => setPreviewing(false)} />}
+      {previewing && <ClipPreview document={document} slug={course.slug} evals={course.evals} players={course.players} onClose={() => setPreviewing(false)} />}
       {startingOver && (
         <StartOverDialog
           dirty={dirty}

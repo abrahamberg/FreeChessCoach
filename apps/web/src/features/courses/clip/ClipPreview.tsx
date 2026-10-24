@@ -1,10 +1,10 @@
-import { COACH_PERSONA_INFO, seriesLabel, type CourseDocument } from '@freechesscoach/shared';
+import { COACH_PERSONA_INFO, seriesLabel, type CourseDocument, type CourseResponse } from '@freechesscoach/shared';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { VolumeOffIcon, VolumeOnIcon } from '../../../components/Icon.js';
 import { Modal } from '../../../components/Modal.js';
 import { personaPlaybackRate } from '../../../tts/persona-voices.js';
 import { audioLengths, ClipPlayer } from './clip-player.js';
-import { loadClipAssets, SITE_NAME, type ClipAssets } from './draw-frame.js';
+import { drawClipFrame, loadClipAssets, SITE_NAME, type ClipAssets } from './draw-frame.js';
 import { recordClip, type RecordedClip } from './record-clip.js';
 import { clipSoundBuffers, type ClipSound } from './clip-sounds.js';
 import { buildReelTimeline } from './reel-timeline.js';
@@ -19,6 +19,8 @@ export interface ClipPreviewProps {
   slug: string;
   /** The moves' evaluations (bad and great sounds for either side). */
   evals: CourseEvals;
+  /** The source PGN's players, for the reel's labels. */
+  players: CourseResponse['players'];
   onClose: () => void;
 }
 
@@ -35,7 +37,7 @@ const PRODUCT_LABELS: Record<ClipProduct, string> = { video: 'YouTube video (16:
 /** "Preview": the draft's YouTube video or reel played live on the canvas
  * with the coach's voice, and recorded from the same playback (docs/courses.md
  * §13.3–13.4). Unsaved edits are included. */
-export function ClipPreview({ document, slug, evals, onClose }: ClipPreviewProps): ReactNode {
+export function ClipPreview({ document, slug, evals, players, onClose }: ClipPreviewProps): ReactNode {
   const { voice: backend, setVoice: setPicked, voices, ready } = useCourseVoice();
   const audio = useClipAudio(document, backend);
   const products = previewableProducts(document);
@@ -117,6 +119,7 @@ export function ClipPreview({ document, slug, evals, onClose }: ClipPreviewProps
             playbackRate={personaPlaybackRate(document.coachPersona, backend)}
             sounds={sounds}
             evals={evals}
+            players={players}
           />
         )}
       </div>
@@ -134,8 +137,9 @@ function ClipStage(props: {
   playbackRate: number;
   sounds: { evals: CourseEvals; buffers: Record<ClipSound, AudioBuffer> } | null;
   evals: CourseEvals;
+  players: CourseResponse['players'];
 }): ReactNode {
-  const { document, product, context, buffers, assets, playbackRate, sounds, evals } = props;
+  const { document, product, context, buffers, assets, playbackRate, sounds, evals, players } = props;
   const format = PRODUCT_FORMAT[product];
   const canvas = useRef<HTMLCanvasElement>(null);
   const player = useRef<ClipPlayer | null>(null);
@@ -151,6 +155,19 @@ function ClipStage(props: {
     return product === 'reel' ? buildReelTimeline(options) : buildVideoTimeline(options);
   }, [document, product, buffers, playbackRate, sounds, evals]);
   const size = CLIP_SIZES[format];
+  const frame = useMemo(
+    () => ({
+      title: document.title,
+      series: document.series ? seriesLabel(document.series) : null,
+      persona: document.coachPersona,
+      coachName: COACH_PERSONA_INFO[document.coachPersona].label,
+      orientation: document.learnerSide,
+      link: `${SITE_NAME}/learn/${props.slug}`,
+      assets,
+      players
+    }),
+    [document, props.slug, assets, players]
+  );
 
   useEffect(() => {
     if (!canvas.current) return;
@@ -161,15 +178,7 @@ function ClipStage(props: {
       buffers,
       soundBuffers: sounds?.buffers ?? null,
       playbackRate,
-      frame: {
-        title: document.title,
-        series: document.series ? seriesLabel(document.series) : null,
-        persona: document.coachPersona,
-        coachName: COACH_PERSONA_INFO[document.coachPersona].label,
-        orientation: document.learnerSide,
-        link: `${SITE_NAME}/learn/${props.slug}`,
-        assets
-      },
+      frame,
       onTime: setMs,
       onEnd: () => {
         setPlaying(false);
@@ -178,7 +187,7 @@ function ClipStage(props: {
     });
     player.current = created;
     return () => created.destroy();
-  }, [timeline, context, buffers, sounds, playbackRate, assets, document, props.slug]);
+  }, [timeline, context, buffers, sounds, playbackRate, frame]);
 
   useEffect(() => () => {
     if (recorded) URL.revokeObjectURL(recorded.url);
@@ -194,6 +203,31 @@ function ClipStage(props: {
       void current.play();
       setPlaying(true);
     }
+  }
+
+  /** The reel's cover, for the platforms' cover picker and the profile
+   * grid: the first frame (the bait and the question, nothing given away),
+   * or the climax with its quality popped. */
+  function downloadCover(frameOf: 'start' | 'climax'): void {
+    const start = timeline.segments[0];
+    const climax = frameOf === 'climax' ? (timeline.segments.find((segment) => segment.climax) ?? start) : start;
+    if (!climax) return;
+    // The start's cover holds no caption: before the hook's first word.
+    const ms = frameOf === 'climax' ? Math.min(climax.start + 700, climax.end - 1) : climax.start + climax.audioOffsetMs - 1;
+    const cover = window.document.createElement('canvas');
+    cover.width = size.width;
+    cover.height = size.height;
+    const ctx = cover.getContext('2d');
+    if (!ctx) return;
+    drawClipFrame(ctx, { ...frame, timeline, segment: climax, ms });
+    cover.toBlob((blob) => {
+      if (!blob) return;
+      const link = window.document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${props.slug}-reel-cover-${frameOf}.png`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    }, 'image/png');
   }
 
   function record(): void {
@@ -241,6 +275,16 @@ function ClipStage(props: {
         <button type="button" className="btn-secondary" onClick={record} disabled={recording}>
           {recording ? 'Recording… (plays to the end)' : 'Record'}
         </button>
+        {product === 'reel' && (
+          <>
+            <button type="button" className="btn-secondary" onClick={() => downloadCover('start')} disabled={recording}>
+              Cover: first frame
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => downloadCover('climax')} disabled={recording}>
+              Cover: climax
+            </button>
+          </>
+        )}
         {recorded && (
           <a className="btn-secondary" href={recorded.url} download={`${props.slug}-${product === 'reel' ? 'reel' : 'youtube'}.${recorded.extension}`}>
             Download .{recorded.extension}

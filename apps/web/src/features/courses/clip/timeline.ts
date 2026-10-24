@@ -8,7 +8,7 @@ import { checkedKing, type CheckedKing } from '../../board/checked-king.js';
 import { clipSoundLengthMs, cutSoundOf, type ClipSound } from './clip-sounds.js';
 
 export { checkedKing, type CheckedKing };
-import { speechMarks, type ClipMark } from './speech-marks.js';
+import { speechMarks, type ClipMark, type ClipWord } from './speech-marks.js';
 
 /** docs/courses.md §13.1: the YouTube video is 16:9, the reel 9:16. */
 export type ClipFormat = 'vertical' | 'landscape';
@@ -91,6 +91,11 @@ export interface ClipSegment {
    * and the move's quality for its badge. Absent on a board the engine pass
    * did not rate (the start, a move played out off the lesson's line). */
   rated?: { cp: number; quality: MoveQuality };
+  /** The reel's words as they are said, timed from the audio's start, for
+   * its captions word by word (draw-frame.ts); absent when silent. */
+  words?: ClipWord[];
+  /** The reel's climax: the board zooms in on it and its quality pops. */
+  climax?: boolean;
 }
 
 export interface ClipTimeline {

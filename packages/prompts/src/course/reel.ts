@@ -8,7 +8,7 @@ export const REEL_SCRIPT_JSON_SCHEMA = `{
   "topText": string (the top band for the whole reel, at most 5 words),
   "beats": [{ "nodeId": string, "say": string (at most 16 words), "caption": string (the bottom band, at most 6 words) }] (in move order, at most 4),
   "payoff": string (shown at the climax, at most 5 words),
-  "cta": string (what the viewer gets for following),
+  "cta": string (asks to subscribe, and what the viewer gets),
   "loop": string (the last line, runs straight back into the hook)
 }`;
 
@@ -55,9 +55,10 @@ ${moves}
 - Lines only on the moves that carry the idea; the rest play without a word.
 - The app plays the build-up fast, cuts the sound for half a second before the climax,
   then plays it slowly: the words at the climax can wait for it.
-- The call to action says what the viewer gets from following, in this course's own
-  terms (its opening, its tactic, its level), never "subscribe for more" or
-  "like and subscribe".${promoLine(reel)}
+- The call to action asks the viewer to subscribe (the channel is new, subscribers are
+  the goal) and says what they get, in this course's own terms (its opening, its
+  tactic, its level): "Subscribe for a new trap every day". Never the bare
+  "subscribe for more" or "like and subscribe".${promoLine(reel)}
 - The last line flows back into the first, so the reel loops.
 Every beat nodeId is one of: ${promoBeats(reel, path).join(', ')}.${usedOpenersLine(request.usedOpeners)}`,
     howWeGotHere(context, reel.startNodeId),

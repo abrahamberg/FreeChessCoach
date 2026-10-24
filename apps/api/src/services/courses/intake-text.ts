@@ -1,3 +1,4 @@
+import type { CourseResponse } from '@freechesscoach/shared';
 const MAX_TITLE = 120;
 const MAX_SLUG_WORDS = 60;
 
@@ -44,9 +45,21 @@ export function resultHeader(pgn: string): string | null {
 /** The first game's players, event and year for the master-game playbook;
  * null where a tag is missing or unknown ("?", "????.??.??"). */
 export function courseHeaders(pgn: string): { white: string | null; black: string | null; event: string | null; year: string | null } {
-  const tag = (name: string): string | null => {
-    const value = new RegExp(`\\[${name}\\s+"([^"]*)"\\]`).exec(pgn)?.[1]?.trim();
-    return value && !/^[?.\s]*$/.test(value) ? value : null;
-  };
+  const tag = (name: string): string | null => headerTag(pgn, name);
   return { white: tag('White'), black: tag('Black'), event: tag('Event'), year: /^\d{4}/.exec(tag('Date') ?? '')?.[0] ?? null };
+}
+
+/** The PGN's players with their ratings, for the reel's labels; null for a side it does not name. */
+export function coursePlayers(pgn: string): CourseResponse['players'] {
+  const player = (side: 'White' | 'Black') => {
+    const name = headerTag(pgn, side);
+    const rating = /^\d{3,4}$/.exec(headerTag(pgn, `${side}Elo`) ?? '')?.[0];
+    return name ? { name, rating: rating ? Number(rating) : null } : null;
+  };
+  return { white: player('White'), black: player('Black') };
+}
+
+function headerTag(pgn: string, name: string): string | null {
+  const value = new RegExp(`\\[${name}\\s+"([^"]*)"\\]`).exec(pgn)?.[1]?.trim();
+  return value && !/^[?.\s]*$/.test(value) ? value : null;
 }

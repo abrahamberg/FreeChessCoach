@@ -11,8 +11,8 @@ export const BANNED_GENERIC_PHRASES = [
   'as an AI'
 ] as const;
 
-/** docs/courses.md §13.3: a reel's call to action must say what the viewer
- * gets ("Follow for a daily mate-in-3"), never these. */
+/** docs/courses.md §13.3: a reel's call to action asks to subscribe and
+ * says what the viewer gets ("Subscribe for a daily mate-in-3"), never these. */
 export const GENERIC_CTAS = ['subscribe for more', 'like and subscribe', 'follow for more', 'hit the bell', 'smash that like'] as const;
 
 /** §13.3–13.4: a video or reel starts on the idea, never on these. */
