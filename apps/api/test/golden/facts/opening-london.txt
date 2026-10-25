@@ -103,7 +103,7 @@ n19 5.Nd2 (White, Early c5) | good | before: The position is roughly equal → a
     alternatives: Nf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after Qb6 Qc2 g6 Be2; a4: The position is roughly equal, after Qb6 Bb5 e6 Nd2
 n20 5…Qb6 (Black, Early c5) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from d8 to b6
-    ideas: threatens to win the pawn on b2 with Qxb2 | defends the pawn on c5, which was attacked | prevents Bb5, a pin | brings the queen out early to b6, with 2 pieces still at home
+    ideas: threatens to win the pawn on b2 with Qxb2 | defends the pawn on c5, which was attacked | prevents Bb5, which would pin the knight on c6 | brings the queen out early to b6, with 2 pieces still at home
     alternatives: Bf5 (develops the bishop to f5; controls e4): The position is roughly equal, after Ngf3 e6 Bb5 Be7; e6 (controls d5 and f5; supports the centre pawn on d5; opens the bishop on f8 (from 0 squares to 2)): The position is roughly equal, after Ngf3 Bd6 Bg3 c4
 n21 6.Qb3 (White, Early c5) | best | before: The position is roughly equal → after: The position is roughly equal
     board: moves the queen from d1 to b3 | attacks the queen on b6
@@ -143,5 +143,5 @@ REVIEW NOTES
     n17 4.c3: Missed dxc5, winning material on c5; Takes c3 from the knight, whose natural square it is; Controls d4; Supports the centre pawn on d4
     n18 4…Nc6: Develops the knight to c6, its most useful square; Puts pressure on the pawn on d4 and controls e5; Prevents b4, a pawn break
     n19 5.Nd2: Develops the knight to d2; Controls e4; Prepares the pawn's advance to c4, which it now supports
-    n20 5…Qb6: Threatens to win the pawn on b2 with Qxb2; Defends the pawn on c5, which was attacked; Prevents Bb5, a pin
+    n20 5…Qb6: Threatens to win the pawn on b2 with Qxb2; Defends the pawn on c5, which was attacked; Prevents Bb5, which would pin the knight on c6
     n21 6.Qb3: Defends the pawn on b2, which was attacked; Brings the queen out early to b3, with 2 pieces still at home; Puts pressure on the pawn on d5

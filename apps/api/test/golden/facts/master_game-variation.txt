@@ -100,7 +100,7 @@ n15 5.Ng5 (White, A quieter defence) | blunder | before: White is slightly bette
     best instead: h3; after h3 Be6 Bxe6 fxe6 d4, material is level
     why h3 is better: moves the pawn from h2 to h3 | attacks the bishop on g4
     board: moves the knight from f3 to g5
-    ideas: threatens to win the pawn on f7 with Nxf7 | prevents Be6, an attack on a bigger piece | defends the pawn on e4, attacked once and now defended twice
+    ideas: threatens to win the pawn on f7 with Nxf7 | prevents Be6, which would attack the undefended bishop on c4 | defends the pawn on e4, attacked once and now defended twice
     notes: Won a pawn and a pawn, but it cost the queen.
     tactics: You let them win a queen through a free piece with Bxd1 — captures the queen on d1.
     alternatives: h3 (attacks the bishop on g4, which pins the knight on f3): White is slightly better, after Be6 Bxe6 fxe6 d4; d4 (attacks the pawn on e5 twice, while it is defended once; puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5): The position is roughly equal, after Nc6 Bb5 exd4 Qxd4; d3 (controls e4; supports the centre pawn on e4; opens the bishop on c1 (from 0 squares to 5)): The position is roughly equal, after Nc6 Be3 Na5 h3

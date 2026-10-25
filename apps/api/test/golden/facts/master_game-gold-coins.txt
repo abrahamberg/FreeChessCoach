@@ -178,13 +178,13 @@ REVIEW NOTES
     n29 15.Bxf6: Trades the bishop for the knight on f6; Removes the knight on f6, a defender of the king; Aims at the pawn on g7, which only the king defends; Defends the knight on c3, attacked once and now defended 3 times
     n30 15…Rxf6: Recaptures the bishop on f6; Defends the pawn on e6, attacked once and now defended 3 times
     n31 16.Rad1: a3 was better: it attacks the bishop on b4
-    n32 16…Qc5: Prevents Nb5, an attack on a bigger piece; Controls d4; Aims at the king on g1, through the pawn on f2
+    n32 16…Qc5: Prevents Nb5, which would attack the queen on d6; Controls d4; Aims at the king on g1, through the pawn on f2
     n33 17.Qe2: Breaks the pin on the knight on c3; Controls e4 and e5; Prevents Ne5, a knight on a strong square
     n34 17…Bxc3: After bxc3 the opponent's pawns are doubled on the c-file; Prepares the pawn's advance to e5, which it now supports
     n35 18.bxc3: Recaptures the bishop on c3; Controls d4; Opens the b-file for the rooks (half-open); Leaves White with doubled pawns on the c-file
     n36 18…Qxc3: Recaptures the pawn on c3
     n37 19.Rxd5: Controls e5; Opens the rook on f1 (from 1 squares to 5); Leaves Black with an isolated pawn on e6
-    n38 19…Nd4: Concedes the centre; Threatens to win the queen on e2 with Nxe2+; Prevents Qb5, a pin; Attacks the pawn on c2 twice, while it is defended once
+    n38 19…Nd4: Concedes the centre; Threatens to win the queen on e2 with Nxe2+; Prevents Qb5, which would pin the knight on c6; Attacks the pawn on c2 twice, while it is defended once
     n39 20.Qh5: Leaves the pawn on c2 undefended; Takes the queen on e2 away from the defence of its own king
     n40 20…Ref8: Takes the attacked rook to safety on f8; Puts a rook on the half-open f-file; Doubles the rooks on the f-file; You moved the target out of reach — moves the rook off e8, out of reach.; Won the rook, giving back a knight.
     n41 21.Re5: Rxd4 was better: it takes the knight on d4

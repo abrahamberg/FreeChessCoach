@@ -51,7 +51,7 @@ n8 4…Nf6 (Black, Line A) | blunder | before: White is slightly better → afte
     best instead: Qe7; after Qe7 Qxe4 d6 d4 f5 Qe3, White is a knight up
     why Qe7 is better: moves the queen from d8 to e7 | attacks the knight on e5 | leaves the black knight on e4 hanging
     board: moves the knight from e4 to f6 | allows Nc6+, where the knight on c6 forks the knight on b8 and the queen on d8
-    ideas: takes the attacked knight to safety on f6 | prevents Qg4, an attack on a bigger piece | puts the knight on f6, the best defender of a king castled short | defends the pawn on d7, attacked once and now defended 5 times
+    ideas: takes the attacked knight to safety on f6 | puts the knight on f6, the best defender of a king castled short | defends the pawn on d7, attacked once and now defended 5 times
     notes: Won a knight, but it cost the queen.
     tactics: They let you win a queen through a fork two moves away with Nc6+ — knight on c6 forks the knight on b8 and the queen on d8.
     alternatives: Qe7 (threatens to win the knight on e5 with Qxe5; brings the queen out to e7; controls e5): White is slightly better, after Qxe4 d6 d4 f5; d5 (puts a pawn in the centre on d5; controls c4; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after d3 Qe7 dxe4 Qxe5; d6 (attacks the knight on e5; controls c5 and e5; opens the bishop on c8 (from 0 squares to 5)): White is slightly better, after Nxf7 Kxf7 Qxe4 c6

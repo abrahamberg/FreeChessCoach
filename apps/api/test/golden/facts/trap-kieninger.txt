@@ -49,7 +49,7 @@ n7 4.Nf3 (White, Line A) | book
     alternatives: e4 (threatens to win the knight on g4 with Qxg4; puts a pawn in the centre on e4; controls d5 and f5): White is slightly better, after Nxe5 a3 d6 Be2; e3 (threatens to win the knight on g4 with Qxg4; controls d4 and f4; opens the queen on d1 (from 9 squares to 12)): White is slightly better, after Nxe5 f4 Nec6 Nc3; Bf4 (develops the bishop to f4; controls e5; supports the centre pawn on e5): White is slightly better, after Nc6 Nf3 Bb4+ Nbd2
 n8 4…Nc6 (Black, Line A) | good | before: The position is roughly equal → after: White is slightly better
     board: moves the knight from b8 to c6
-    ideas: threatens to win the pawn on e5 with Ncxe5 | prevents Qd4, an attack on a bigger piece | develops the knight to c6, its most useful square | puts pressure on the pawn on e5 and controls d4
+    ideas: threatens to win the pawn on e5 with Ncxe5 | prevents Qd4, which would attack the undefended knight on g4 | develops the knight to c6, its most useful square | puts pressure on the pawn on e5 and controls d4
     alternatives: Bc5 (threatens to win the pawn on f2 with Bxf2+; develops the bishop to c5; controls d4): The position is roughly equal, after e3 Nc6 Be2 O-O; d6 (attacks the pawn on e5 twice, while it is defended once; strikes at the centre: attacks the pawn on e5; puts pressure on the pawn on e5 and controls c5): White is slightly better, after Bg5 Qd7 exd6 Bxd6
 n9 5.Bf4 (White, Line A) | best | before: White is slightly better → after: White is slightly better
     piece: the dark-squared bishop
@@ -114,7 +114,7 @@ REVIEW NOTES
     n5 3.dxe5: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Threatens to win the knight on f6 for a pawn with exf6; Puts a pawn in the centre on e5; Controls d6 and f6
     n6 3…Ng4: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Threatens to win the pawn on e5 with Nxe5; Takes the attacked knight to safety on g4; Puts pressure on the pawn on e5
     n7 4.Nf3: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Defends the pawn on e5, which was attacked; Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square
-    n8 4…Nc6: Threatens to win the pawn on e5 with Ncxe5; Prevents Qd4, an attack on a bigger piece; Develops the knight to c6, its most useful square
+    n8 4…Nc6: Threatens to win the pawn on e5 with Ncxe5; Prevents Qd4, which would attack the undefended knight on g4; Develops the knight to c6, its most useful square
     n9 5.Bf4: Defends the pawn on e5, which was attacked; Develops the bishop to f4; Controls e5
     n10 5…Bb4+: Develops the bishop to b4; Clears the way to castle kingside
     n11 6.Nbd2: Leaves the knight on d2 pinned to the king; Develops the knight to d2; Controls e4

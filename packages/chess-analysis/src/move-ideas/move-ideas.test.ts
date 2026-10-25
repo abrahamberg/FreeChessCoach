@@ -38,7 +38,7 @@ describe('moveIdeas on a short master game', () => {
 
   it('names 9.h3 as preventing the pin …Bg4 and loosening the king', () => {
     const ideas = ideasAt(17);
-    expect(ideas).toContainEqual({ kind: 'prevents', san: 'Bg4', because: 'pin' });
+    expect(ideas).toContainEqual({ kind: 'prevents', san: 'Bg4', because: 'pin', target: { piece: 'n', square: 'f3' } });
     expect(kinds(ideas)).toContain('weakensShield');
   });
 

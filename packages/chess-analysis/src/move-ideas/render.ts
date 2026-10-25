@@ -12,7 +12,7 @@ const pieces = (count: number): string => `${count} piece${count === 1 ? '' : 's
 const PREVENTED: Record<PreventedBecause, string> = {
   check: 'a check',
   pin: 'a pin',
-  attack: 'an attack on a bigger piece',
+  attack: 'an attack on a piece',
   break: 'a pawn break',
   invade: 'an invasion',
   advance: 'a pawn advance',
@@ -111,7 +111,7 @@ function renderDefence(idea: MoveIdea): string {
     case 'saves':
       return renderSaves(idea);
     case 'prevents':
-      return `prevents ${idea.san}, ${PREVENTED[idea.because]}`;
+      return `prevents ${idea.san}, ${preventedText(idea)}`;
     case 'defends':
       return `defends ${the(idea.piece)}, attacked ${times(idea.attackers)} and now defended ${times(idea.defenders)}`;
     case 'unpins':
@@ -188,6 +188,13 @@ function renderStructure(idea: MoveIdea): string {
     default:
       return '';
   }
+}
+
+function preventedText(idea: Extract<MoveIdea, { kind: 'prevents' }>): string {
+  if (!idea.target) return PREVENTED[idea.because];
+  if (idea.because === 'pin') return `which would pin ${the(idea.target)}`;
+  if (idea.because === 'attack') return `which would attack ${idea.loose ? `the undefended ${PIECE_NAMES[idea.target.piece]} on ${idea.target.square}` : the(idea.target)}`;
+  return PREVENTED[idea.because];
 }
 
 function ordinal(count: number): string {

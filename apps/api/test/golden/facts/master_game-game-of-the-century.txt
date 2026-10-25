@@ -245,7 +245,7 @@ REVIEW NOTES
     n12 6…dxc4: c5 was better: it attacks the pawn on d4
     n13 7.Qxc4: Recaptures the pawn on c4; Threatens to win the pawn on c7 with Bxc7; Controls d4 and d5; Supports the centre pawn on d4
     n14 7…c6: Takes the attacked pawn to safety on c6; Takes c6 from the knight, whose natural square it is; Controls d5
-    n15 8.e4: Prevents Nd5, an attack on a bigger piece; Puts a pawn in the centre on e4; Controls d5 and f5
+    n15 8.e4: Prevents Nd5, which would attack the undefended bishop on f4; Puts a pawn in the centre on e4; Controls d5 and f5
     n16 8…Nbd7: Develops the knight to d7; Controls e5; Shuts in the bishop on c8 (from 5 squares to 0)
     n17 9.Rd1: Controls d4; Supports the centre pawn on d4; Brings the rook to the d-file, in the centre where files open first
     n18 9…Nb6: Threatens to win the queen on c4 for a knight with Nxc4; Moves the knight for the second time while 1 piece still wait at home; Controls d5

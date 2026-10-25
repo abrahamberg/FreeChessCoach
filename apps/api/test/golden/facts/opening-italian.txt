@@ -93,7 +93,7 @@ n14 7…a6 (Black, Line A) | book
 n15 8.a4 (White, Line A) | good | before: The position is roughly equal → after: The position is roughly equal
     the book also has: Bb3 (Italian Game: Classical Variation, Giuoco Pianissimo, Main Line)
     board: moves the pawn from a2 to a4
-    ideas: prevents b5, an attack on a bigger piece
+    ideas: prevents b5, which would attack the bishop on c4
     alternatives: Bb3 (moves the bishop for the second time while 2 pieces still wait at home; Black now has 4 pieces developed to 2 pieces; aims at the king on g8, through the pawn on f7): The position is roughly equal, after Be6 Nbd2 Bxb3 Qxb3; h3: The position is roughly equal, after h6 d4 Ba7 Bb3; b4 (attacks the bishop on c5; controls c5; opens the bishop on c1 (from 5 squares to 7)): The position is roughly equal, after Ba7 h3 Be6 Nbd2
 n16 3…Nf6 (Black, Line B) | book
     book: in book (Italian Game: Two Knights Defense)
@@ -161,7 +161,7 @@ REVIEW NOTES
     n12 6…O-O: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54); Castles kingside: the king goes to safety and the rook comes to f8
     n13 7.Re1: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54); Controls e4; Supports the centre pawn on e4; Brings the rook to the e-file, in the centre where files open first
     n14 7…a6: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
-    n15 8.a4: Prevents b5, an attack on a bigger piece
+    n15 8.a4: Prevents b5, which would attack the bishop on c4
   l2
     n1 1.e4: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
     n2 1…e5: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55); Puts a pawn in the centre on e5; Controls d4 and f4; Opens the bishop on f8 (from 0 squares to 5)

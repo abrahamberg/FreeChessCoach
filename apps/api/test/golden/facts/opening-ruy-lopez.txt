@@ -113,7 +113,7 @@ n17 9.h3 (White, Closed) | book
     book: in book (Ruy Lopez: Closed)
     the book also has: Bc2 (Ruy Lopez: Closed, Lutikov Variation); a3 (Ruy Lopez: Closed, Suetin Variation); d4 (Ruy Lopez: Closed, Bogoljubow Variation)
     board: moves the pawn from h2 to h3
-    ideas: prevents Bg4, a pin | loosens the pawns in front of the king, and the pawn on h3 can become a target
+    ideas: prevents Bg4, which would pin the knight on f3 | loosens the pawns in front of the king, and the pawn on h3 can become a target
     alternatives: d4 (puts a pawn in the centre on d4; strikes at the centre: attacks the pawn on e5; puts pressure on the pawn on e5 and controls c5): The position is roughly equal, after Bg4 Be3 exd4 cxd4; a4: The position is roughly equal, after b4 a5 Rb8 h3
 n18 4…b5 (Black, Early b5) | book
     book: in book (Ruy Lopez: Morphy Defense, Caro Variation)
@@ -192,7 +192,7 @@ n30 7…Nf5 (Black, Berlin) | book
     book: in book (Ruy Lopez: Berlin Defense, l'Hermet Variation)
     the book also has: Ne4 (Ruy Lopez: Berlin Defense, l'Hermet Variation, Westerinen Line)
     board: moves the knight from d6 to f5
-    ideas: takes the attacked knight to safety on f5 | prevents Qd4, a pin | controls d4 | opens the queen on d8 (from 5 squares to 11) | shuts in the bishop on c8 (from 5 squares to 2)
+    ideas: takes the attacked knight to safety on f5 | prevents Qd4, which would pin the knight on d6 | controls d4 | opens the queen on d8 (from 5 squares to 11) | shuts in the bishop on c8 (from 5 squares to 2)
     opens: the queen on d8, from 5 squares to 11; the dark-squared bishop on f8, from 1 squares to 5
     alternatives: Ne4 (centralises the knight on e4, which reaches 8 squares; opens the queen on d8 (from 5 squares to 11)): White is slightly better, after Qe2 Bf5 Rd1 Qc8; Nc4 (puts pressure on the pawn on e5; opens the queen on d8 (from 5 squares to 11)): White is slightly better, after Qe2 Nb6 Nc3 Qe7
 n31 8.Qxd8+ (White, Berlin) | book
@@ -258,7 +258,7 @@ REVIEW NOTES
     n14 7…d6: Theory — Ruy Lopez: Closed (C92); Controls c5 and e5; Supports the centre pawn on e5; Opens the bishop on c8 (from 1 squares to 6)
     n15 8.c3: Theory — Ruy Lopez: Closed (C92); Takes c3 from the knight, whose natural square it is; Controls d4; Prevents Nd4, a knight on a strong square
     n16 8…O-O: Theory — Ruy Lopez: Closed (C92); Castles kingside: the king goes to safety and the rook comes to f8; Black now has 4 pieces developed to 2 pieces
-    n17 9.h3: Theory — Ruy Lopez: Closed (C92); Prevents Bg4, a pin; Loosens the pawns in front of the king, and the pawn on h3 can become a target
+    n17 9.h3: Theory — Ruy Lopez: Closed (C92); Prevents Bg4, which would pin the knight on f3; Loosens the pawns in front of the king, and the pawn on h3 can become a target
   l2
     n1 1.e4: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)
     n2 1…e5: Theory — Ruy Lopez: Morphy Defense, Norwegian Variation (C70); Puts a pawn in the centre on e5; Controls d4 and f4; Opens the bishop on f8 (from 0 squares to 5)
@@ -285,7 +285,7 @@ REVIEW NOTES
     n27 6.Bxc6: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); White now has 3 pieces developed to 1 piece; Aims at the king on e8, through the pawn on d7; After dxc6 the opponent's pawns are doubled on the c-file
     n28 6…dxc6: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Controls d5; Gives up the centre: the pawn leaves d7; Opens the d-file for the rooks (half-open)
     n29 7.dxe5: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Threatens to win the knight on d6 for a pawn with exd6; Pins the knight on d6 to the queen; Puts a pawn in the centre on e5
-    n30 7…Nf5: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Takes the attacked knight to safety on f5; Prevents Qd4, a pin; Controls d4
+    n30 7…Nf5: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Takes the attacked knight to safety on f5; Prevents Qd4, which would pin the knight on d6; Controls d4
     n31 8.Qxd8+: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Pins the bishop on c8 to the rook; Brings the queen out to d8
     n32 8…Kxd8: Theory — Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense (C67); Breaks the pin on the bishop on c8; Gives up castling for good; After the exchange White has a knight for a bishop
   l4

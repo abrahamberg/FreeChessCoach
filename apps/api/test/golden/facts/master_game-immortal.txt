@@ -44,7 +44,7 @@ n15 8.Nh4 (White, Line A) | mistake | before: White is slightly better → after
 n16 8…Qg5 (Black, Line A) | best
 n17 9.Nf5 (White, Line A) | great | before: The position is roughly equal → after: Black is slightly better
     board: moves the knight from h4 to f5
-    ideas: blocks the attack on the bishop on b5 | prevents Qe7, an attack on a bigger piece | controls d4 | posts the knight on f5 on a strong square, supported by the pawn on e4
+    ideas: blocks the attack on the bishop on b5 | controls d4 | posts the knight on f5 on a strong square, supported by the pawn on e4
     alternatives: g3 (strikes at the centre: attacks the pawn on f4; puts pressure on the pawn on f4): Black is better; Qe1 (brings the queen out to e1; controls e4; supports the centre pawn on e4): Black is better
     flags: critical
 n18 9…c6 (Black, Line A) | good
@@ -227,13 +227,13 @@ REVIEW NOTES
     n8 4…b5: Theory — King's Gambit Accepted: Bishop's Gambit, Bryan Countergambit (C33); Offers the pawn on b5: it can be taken, and the engine still approves; Controls c4; Opens the bishop on c8 (from 0 squares to 2)
     n9 5.Bxb5: Takes the attacked bishop to safety on b5; Aims at the king on e8, through the pawn on d7; Leaves Black with an isolated pawn on a7
     n10 5…Nf6: Threatens to win the pawn on e4 with Nxe4; Puts the knight on f6, the best defender of a king castled short; Develops the knight to f6, its most useful square
-    n11 6.Nf3: Threatens to win the queen on h4 with Nxh4; Prevents Qg5, an attack on a bigger piece; Puts the knight on f3, the best defender of a king castled short
+    n11 6.Nf3: Threatens to win the queen on h4 with Nxh4; Prevents Qg5, which would attack the undefended bishop on b5; Puts the knight on f3, the best defender of a king castled short
     n12 6…Qh6: Takes the attacked queen to safety on h6; Brings the queen out early to h6, with 3 pieces still at home
     n13 7.d3: Nc3 was better: it develops the knight
     n14 7…Nh5: c6 was better: it attacks the bishop on b5
     n15 8.Nh4: Allows Qg5, forking the bishop on b5 and the knight on h4; Moves the knight for the second time while 2 pieces still wait at home
     n16 8…Qg5: Forks the bishop on b5 and the knight on h4; Threatens to win the bishop on b5 with Qxb5; Moves the queen for the third time while 3 pieces still wait at home; Brings the queen out early to g5, with 3 pieces still at home
-    n17 9.Nf5: Blocks the attack on the bishop on b5; Prevents Qe7, an attack on a bigger piece; Controls d4
+    n17 9.Nf5: Blocks the attack on the bishop on b5; Controls d4; Posts the knight on f5 on a strong square, supported by the pawn on e4
     n18 9…c6: Attacks the bishop on b5; Takes c6 from the knight, whose natural square it is; Controls d5
     n19 10.g4: Loosens the pawns in front of the king: no pawn can cover f3, f4, h3 and h4 any more
     n20 10…Nf6: g6 was better: it supports the knight on h5 with the pawn
@@ -242,7 +242,7 @@ REVIEW NOTES
     n23 12.h4: Attacks the queen on g5; Loosens the pawns in front of the king: no pawn can cover g3 and g4 any more
     n24 12…Qg6: The only move that holds; Takes the attacked queen to safety on g6
     n25 13.h5: Attacks the queen on g6
-    n26 13…Qg5: Takes the attacked queen to safety on g5; Prevents Nh4, an attack on a bigger piece; Defends the pawn on f4, attacked once and now defended once
+    n26 13…Qg5: Takes the attacked queen to safety on g5; Prevents Nh4, which would attack the queen on g6; Defends the pawn on f4, attacked once and now defended once
     n27 14.Qf3: Threatens to win the pawn on f4 with Bxf4; Controls e4; Supports the centre pawn on e4; You set up an X-ray — lines up behind the pawn on e4 at the rook on a8.
     n28 14…Ng8: Allows Bxf4, forking the knight on b8 and the queen on g5
     n29 15.Bxf4: Forks the knight on b8 and the queen on g5; Threatens to win the queen on g5 with Bxg5; White now has 2 pieces developed to 0 pieces; Controls e5

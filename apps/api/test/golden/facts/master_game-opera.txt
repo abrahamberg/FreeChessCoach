@@ -183,7 +183,7 @@ n27 14.Rd1 (White, Line A) | best | before: White is much better → after: Whit
     flags: quiz-eligible
 n28 14…Qe6 (Black, Line A) | good | before: White is much better → after: White is much better
     board: moves the queen from e7 to e6 | attacks the queen on b3
-    ideas: prevents Bc6, a pin | breaks the pin on the knight on f6 | controls d5 | opens the bishop on f8 (from 0 squares to 5) | prepares Bd6 by opening the line
+    ideas: prevents Bc6, which would pin the rook on d7 | breaks the pin on the knight on f6 | controls d5 | opens the bishop on f8 (from 0 squares to 5) | prepares Bd6 by opening the line
     opens: the dark-squared bishop on f8, from 0 squares to 5
     alternatives: Qc5 (threatens to win the pawn on f2 with Qxf2; controls d5 and d4): White is much better, after Bxf6 Bd6 Bxd7+ Kxd7; g6 (controls f5): White is much better, after Qc3 Qc5 Qxc5 Bxc5; Qd6 (threatens mate with Qxd1#; controls d5 and d4; lines up queen and rook on the d-file): White is much better, after Rxd6 Bxd6 Bxf6 O-O
 n29 15.Bxd7+ (White, Line A) | miss | before: White is much better → after: White is better
@@ -270,7 +270,7 @@ REVIEW NOTES
     n25 13.Rxd7: Sacrifices the rook on d7: it can be taken, and the engine still approves
     n26 13…Rxd7: Recaptures the rook on d7; Leaves the rook on d7 pinned to the king; Removes the rook on d7, a defender of the king; Brings the rook into the attack: it bears on 2 squares around the king
     n27 14.Rd1: The rook on d7 cannot take it: it is pinned by the bishop on b5; Controls d4 and d5; Puts a rook on the open d-file; You hit back instead of retreating — answers the threat by hitting the rook on d7.
-    n28 14…Qe6: Prevents Bc6, a pin; Breaks the pin on the knight on f6; Controls d5
+    n28 14…Qe6: Prevents Bc6, which would pin the rook on d7; Breaks the pin on the knight on f6; Controls d5
     n30 15…Nxd7: Recaptures the bishop on d7; Controls e5; Supports the centre pawn on e5; After the exchange White has two pawns for a knight; They let you force mate in 2 with Qb8+.; Won a bishop and a queen, but it allowed mate.
     n31 16.Qb8+: Sacrifices the queen on b8: it can be taken, and the engine still approves; You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
     n32 16…Nxb8: Wins the queen on b8; Breaks the pin on the king on e8; White now has 2 pieces developed to 0 pieces; After the exchange White has two pawns for a queen and a knight

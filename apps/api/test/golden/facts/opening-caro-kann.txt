@@ -67,7 +67,7 @@ n10 5…Bg6 (Black, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation)
     piece: the light-squared bishop
     board: moves the bishop from f5 to g6
-    ideas: takes the attacked bishop to safety on g6 | prevents Qh5, an attack on a bigger piece | prepares the pawn's advance to f5, which it now supports
+    ideas: takes the attacked bishop to safety on g6 | prevents Qh5, which would attack the undefended bishop on f5 | prepares the pawn's advance to f5, which it now supports
     alternatives: Be6 (the bishop on e6 blocks the pawn on e7; controls d5): White is slightly better, after Be2 g6 c3 Nf6; Bd7 (shuts in the queen on d8 (from 8 squares to 4)): White is slightly better, after Bd3 Nf6 Qe2 Qb6
 n11 6.h4 (White, Classical) | book
     book: in book (Caro-Kann Defense: Classical Variation, Main Line)
@@ -186,7 +186,7 @@ REVIEW NOTES
     n7 4.Nxe4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Centralises the knight on e4, which reaches 8 squares
     n8 4…Bf5: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Threatens to win the knight on e4 with Bxe4; Develops the bishop to f5; Controls e4
     n9 5.Ng3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Threatens to win the bishop on f5 with Nxf5; Takes the attacked knight to safety on g3; Controls e4
-    n10 5…Bg6: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Takes the attacked bishop to safety on g6; Prevents Qh5, an attack on a bigger piece; Prepares the pawn's advance to f5, which it now supports
+    n10 5…Bg6: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Takes the attacked bishop to safety on g6; Prevents Qh5, which would attack the undefended bishop on f5; Prepares the pawn's advance to f5, which it now supports
     n11 6.h4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Loosens the pawns in front of the king, and the pawn on h4 can become a target
     n12 6…h6: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Loosens the pawns in front of the king, and the pawn on h6 can become a target
     n13 7.Nf3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square; Controls d4 and e5

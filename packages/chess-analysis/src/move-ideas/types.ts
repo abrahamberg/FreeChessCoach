@@ -54,7 +54,7 @@ export type MoveIdea =
   // Defence
   | { kind: 'stopsMate'; line: string[] }
   | { kind: 'saves'; piece: PieceAt; how: 'moves' | 'takes' | 'defends' | 'blocks' | 'counters' }
-  | { kind: 'prevents'; san: string; because: PreventedBecause }
+  | { kind: 'prevents'; san: string; because: PreventedBecause; target?: PieceAt; loose?: boolean }
   | { kind: 'unpins'; piece: PieceAt }
   | { kind: 'defends'; piece: PieceAt; attackers: number; defenders: number }
   // King

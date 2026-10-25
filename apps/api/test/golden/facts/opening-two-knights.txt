@@ -92,7 +92,7 @@ n15 8.Be2 (White, Main line) | book
     the book also has: Qf3 (Italian Game: Two Knights Defense, Blackburne Variation)
     piece: the light-squared bishop
     board: moves the bishop from b5 to e2
-    ideas: takes the attacked bishop to safety on e2 | prevents Bg4, an attack on a bigger piece
+    ideas: takes the attacked bishop to safety on e2 | prevents Bg4, which would attack the queen on d1
     alternatives: Bd3 (the bishop on d3 blocks the pawn on d2; controls e4; aims at the pawn on h7): The position is roughly equal, after Nd5 Nf3 Nf4 Bf1; Qf3 (attacks the pawn on c6 twice, while it is defended once; brings the queen out early to f3, with 2 pieces still at home; controls e4 and d5): The position is roughly equal, after cxb5 Qxa8 Qc7 Ne4
 n16 8…h6 (Black, Main line) | book
     book: in book (Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense)
@@ -182,7 +182,7 @@ REVIEW NOTES
     n12 6…c6: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Attacks the bishop on b5; Attacks the pawn on d5 3 times, while nothing defends it; Strikes at the centre: attacks the pawn on d5
     n13 7.dxc6: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Takes the piece that attacked the bishop on b5; Gives up the centre: the pawn leaves d5; Opens a line for the opponent's queen on d8 (from 6 squares to 9)
     n14 7…bxc6: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Threatens to win the bishop on b5 with cxb5; Takes the attacked pawn to safety on c6; Controls d5
-    n15 8.Be2: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Takes the attacked bishop to safety on e2; Prevents Bg4, an attack on a bigger piece
+    n15 8.Be2: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Takes the attacked bishop to safety on e2; Prevents Bg4, which would attack the queen on d1
     n16 8…h6: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Attacks the knight on g5; Loosens the pawns in front of the king, and the pawn on h6 can become a target
     n17 9.Nf3: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Threatens to win the pawn on e5 with Nxe5; Takes the attacked knight to safety on f3; Puts the knight on f3, the best defender of a king castled short
     n18 9…e4: Theory — Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense (C59); Takes the attacked pawn to safety on e4; Attacks the knight on f3; Puts a pawn in the centre on e4

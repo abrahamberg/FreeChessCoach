@@ -101,7 +101,7 @@ n16 8…Ng4 (Black, Line A) | inaccuracy | before: The position is roughly equal
     best instead: d6; after d6 Rd1 a6 Bf4 Be7 Rac1, Black is a pawn up
     why d6 is better: moves the pawn from d7 to d6
     board: moves the knight from f6 to g4
-    ideas: prevents e5, an attack on a bigger piece | brings the knight into the attack: it bears on 2 squares around the king | moves the knight for the second time while 2 pieces still wait at home | White now has 4 pieces developed to 2 pieces | controls e5 | prepares the pawn's advance to e5, which it now supports
+    ideas: prevents e5, which would attack the knight on f6 | brings the knight into the attack: it bears on 2 squares around the king | moves the knight for the second time while 2 pieces still wait at home | White now has 4 pieces developed to 2 pieces | controls e5 | prepares the pawn's advance to e5, which it now supports
     alternatives: d6 (controls c5 and e5; shuts in the bishop on f8 (from 5 squares to 1)): The position is roughly equal, after Rd1 a6 Bf4 Be7; Ne5 (threatens to win the bishop on c4 with Nxc4; moves the knight for the second time while 2 pieces still wait at home; White now has 4 pieces developed to 2 pieces): White is slightly better, after Nxe5 Qxe5 Be3 Nxe4
     tempting threat: d5? Black's d5 moves the pawn from d7 to d5 | attacks the bishop on c4. White answers exd5: moves the pawn from e4 to d5 | captures the pawn on d5 | attacks the knight on c6. Then Nd8 Nb5 Qb8. Over the line White takes a pawn; at the end material is level (White is better).
     flags: critical

@@ -206,7 +206,7 @@ REVIEW NOTES
     n4 2…Nc6: Theory — Italian Game: Evans Gambit, Dufresne Defense (C52); Defends the pawn on e5, which was attacked; Develops the knight to c6, its most useful square; Controls e5 and d4
     n5 3.Bc4: Theory — Italian Game: Evans Gambit, Dufresne Defense (C52); Develops the bishop to c4; Controls d5; Prevents d5, a pawn break
     n6 3…Bc5: Theory — Italian Game: Evans Gambit, Dufresne Defense (C52); Develops the bishop to c5; Controls d4; Prevents d4, a pawn break
-    n7 4.b4: Theory — Italian Game: Evans Gambit, Dufresne Defense (C52); Offers the pawn on b4: it can be taken, and the engine still approves; Prevents Na5, an attack on a bigger piece; Controls c5
+    n7 4.b4: Theory — Italian Game: Evans Gambit, Dufresne Defense (C52); Offers the pawn on b4: it can be taken, and the engine still approves; Prevents Na5, which would attack the undefended bishop on c4; Controls c5
     n8 4…Bxb4: Theory — Italian Game: Evans Gambit, Dufresne Defense (C52); Takes the attacked bishop to safety on b4; Aims at the king on e1, through the pawn on d2; Leaves White with an isolated pawn on a2
     n9 5.c3: Theory — Italian Game: Evans Gambit, Dufresne Defense (C52); Attacks the bishop on b4; Takes c3 from the knight, whose natural square it is; Controls d4
     n10 5…Ba5: Theory — Italian Game: Evans Gambit, Dufresne Defense (C52); Takes the attacked bishop to safety on a5
@@ -228,11 +228,11 @@ REVIEW NOTES
     n29 15.Ne4: Threatens to win the pawn on d3 with Bxd3; Centralises the knight on e4, which reaches 8 squares; Prevents d6, a pawn break
     n30 15…Qf5: d2 was better: it attacks the rook on e1
     n31 16.Bxd3: Defends the knight on e4, attacked once and now defended 3 times
-    n32 16…Qh5: Prevents Nh4, an attack on a bigger piece
+    n32 16…Qh5: Prevents Nh4, which would attack the queen on f5
     n33 17.Nf6+: Leaves the knight on f6 where it can be won
     n34 17…gxf6: Attacks the pawn on e5 3 times, while it is defended twice; Loosens the pawns in front of the king: no pawn can cover f6, f5, h6 and h5 any more; Puts pressure on the pawn on e5; They saved a hanging piece — saves the queen on h5.
     n35 18.exf6: Recaptures the pawn on f6; Threatens to win the knight on e7 with fxe7; Pins the knight on e7 to the king; Leaves the knight on e7 without a move
-    n36 18…Rg8: Prevents g4, an attack on a bigger piece; Puts a rook on the half-open g-file
+    n36 18…Rg8: Prevents g4, which would attack the queen on h5; Puts a rook on the half-open g-file
     n37 19.Rad1: Leaves the knight on f3 where it can be won; Kf1 defends it; Allows Qxf3, forking the bishop on d3 and the rook on d1
     n38 19…Qxf3: Forks the bishop on d3 and the rook on d1; Threatens mate with Qxg2#; Threatens to win the pawn on f6 with Qxf6; The pawn on g2 cannot take it: it is pinned by the rook on g8; They won a knight through a free piece — captures the knight on f3.
     n39 20.Rxe7+: Stops the mate threat Qxg2#; Settles the rook on e7 on a square by the king that no pawn can cover any more; Puts the rook on the seventh rank
