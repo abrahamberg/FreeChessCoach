@@ -11,7 +11,9 @@ const NUMBERED_LINE = String.raw`${MOVE_NUMBER}${SAN}(?:\s+(?:${ASIDE}\s+)?(?:\d
 const SQUARE = /(?<![A-Za-z0-9])[a-h][1-8](?![A-Za-z0-9])/;
 const RANK = /\b([Ff]irst|[Ss]econd|[Tt]hird|[Ff]ourth|[Ff]ifth|[Ss]ixth|[Ss]eventh|[Ee]ighth|[1-8](?:st|nd|rd|th)) rank\b/;
 const FILE = /\b([a-h])-file\b/;
-const MENTION = new RegExp(`(?<![\\w.])${NUMBERED_LINE}|${RANK.source}|${FILE.source}|${SQUARE.source}`, 'g');
+// The course's own mark for a line off the game: "@(14.Nxg4 Bxg4 15.Qc2 Bf3)".
+const ALTERNATIVE = String.raw`@\(([^()\n]+)\)`;
+const MENTION = new RegExp(`${ALTERNATIVE}|(?<![\\w.])${NUMBERED_LINE}|${RANK.source}|${FILE.source}|${SQUARE.source}`, 'g');
 // One move of a line: its number (if written), its dots and its SAN; or an aside, skipped.
 const LINE_MOVE = new RegExp(String.raw`${ASIDE}|(?:(\d+)(${DOTS})?\s*)?(${SAN})`, 'g');
 const RANK_NUMBERS: Record<string, number> = { first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6, seventh: 7, eighth: 8 };
@@ -31,6 +33,13 @@ export interface NoteSegment {
   marks?: CourseArrow[];
   /** Two or more moves in a row ("14...Bxg4 15 Qc2 Bf3"): opened on a board to play through. */
   line?: NoteLine;
+  /** The course marked it as a line off the game: "@(...)", shown without the mark. */
+  alternative?: true;
+}
+
+/** What is shown of a note's piece: an alternative without its "@(" and ")". */
+export function shownText(part: Pick<NoteSegment, 'text' | 'alternative'>): string {
+  return part.alternative ? part.text.replace(/^@\(/, '').replace(/\)$/, '') : part.text;
 }
 
 /** A note split at what it names: a numbered move ("2...f6", "3.Nf3") is an
@@ -48,7 +57,13 @@ export function noteSegments(text: string, fensBefore: readonly string[]): NoteS
     // A line ends at its last legal move; what follows is read again.
     mention.lastIndex = match.index + found.length;
     if (match.index > at) segments.push({ text: text.slice(at, match.index), start: at });
-    segments.push({ text: match[0].slice(0, found.length), start: match.index, marks: found.marks, ...(found.line && { line: found.line }) });
+    segments.push({
+      text: match[0].slice(0, found.length),
+      start: match.index,
+      marks: found.marks,
+      ...(found.line && { line: found.line }),
+      ...(found.alternative && { alternative: true as const })
+    });
     at = match.index + found.length;
   }
   if (at < text.length) segments.push({ text: text.slice(at), start: at });
@@ -60,22 +75,31 @@ interface Mention {
   /** How much of the match it covers. */
   length: number;
   line?: NoteLine;
+  alternative?: boolean;
 }
 
 const lit = (square: string): CourseArrow => ({ from: square, to: square, kind: 'idea' });
 
 function mentionOf(match: RegExpExecArray, fensBefore: readonly string[]): Mention | null {
-  if (match[1]) return lineMention(match[0], fensBefore);
+  if (match[1]) return alternativeMention(match[0], match[1], fensBefore);
+  if (match[2]) return lineMention(match[0], fensBefore);
   return { marks: areaMarks(match), length: match[0].length };
 }
 
+/** A marked alternative is always taken whole, so its mark never shows; it
+ * opens as a line when its first number finds its place in the game. */
+function alternativeMention(text: string, moves: string, fensBefore: readonly string[]): Mention {
+  const line = lineMention(moves, fensBefore);
+  return { marks: line?.marks ?? [], length: text.length, alternative: true, ...(line?.line && { line: line.line }) };
+}
+
 function areaMarks(match: RegExpExecArray): CourseArrow[] {
-  if (match[3]) {
-    const word = match[3].toLowerCase();
+  if (match[4]) {
+    const word = match[4].toLowerCase();
     const rank = RANK_NUMBERS[word] ?? Number.parseInt(word, 10);
     return 'abcdefgh'.split('').map((file) => lit(`${file}${rank}`));
   }
-  if (match[4]) return [1, 2, 3, 4, 5, 6, 7, 8].map((rank) => lit(`${match[4]}${rank}`));
+  if (match[5]) return [1, 2, 3, 4, 5, 6, 7, 8].map((rank) => lit(`${match[5]}${rank}`));
   return [lit(match[0])];
 }
 

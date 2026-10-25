@@ -53,6 +53,7 @@ export function ReadingView({ document, audio, isDesktop, start, onPage, onFinis
       start: from,
       marks: part.marks,
       line: part.line,
+      alternative: part.alternative,
       reading: from >= range.start && from < range.end
     }));
   });

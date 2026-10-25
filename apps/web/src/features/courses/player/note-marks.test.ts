@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { noteSegments, readingSentence, sentenceRanges, sentenceStart } from './note-marks.js';
+import { noteSegments, readingSentence, shownText, sentenceRanges, sentenceStart } from './note-marks.js';
 
 const AFTER_E4_E5_NF3 = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2';
 
@@ -30,6 +30,13 @@ describe('noteSegments', () => {
       { text: '2...d6 3.d4', sans: ['d6', 'd4'] }
     ]);
     expect(lines[0]!.marks).toEqual([{ from: 'b8', to: 'c6', kind: 'idea' }]);
+  });
+
+  it('opens a marked alternative as a line, shown without its mark', () => {
+    const [before, alternative, after] = noteSegments('If @(2...Nc6 3.Bb5 a6) Black is fine.', [AFTER_E4_E5_NF3]);
+    expect([before?.text, after?.text]).toEqual(['If ', ' Black is fine.']);
+    expect(alternative).toMatchObject({ alternative: true, line: { sans: ['Nc6', 'Bb5', 'a6'] } });
+    expect(shownText(alternative!)).toBe('2...Nc6 3.Bb5 a6');
   });
 
   it('leaves a move that is not legal there as plain text', () => {

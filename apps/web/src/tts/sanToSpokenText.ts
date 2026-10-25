@@ -86,7 +86,9 @@ function translateBareSanIn(segment: string): string {
  * uses for rendering — a numbered move's SAN is never re-processed by the
  * bare-SAN pass afterward, so a destination square like "h5" left over in
  * "Queen h5 check" can't accidentally get "translated" a second time. */
-export function translateChessNotationForSpeech(text: string): string {
+export function translateChessNotationForSpeech(marked: string): string {
+  // A course's alternative line, "@(14.Nxg4 Bxg4)", is read as its moves.
+  const text = marked.replace(/@\(([^()\n]+)\)/g, '$1');
   let result = '';
   let lastIndex = 0;
 

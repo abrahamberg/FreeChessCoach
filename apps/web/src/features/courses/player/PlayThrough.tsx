@@ -226,6 +226,7 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
       start: from,
       marks: part.marks,
       line: part.line,
+      alternative: part.alternative,
       reading: from >= readRange.start && from < readRange.end
     }));
   });

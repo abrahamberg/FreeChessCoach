@@ -1127,6 +1127,16 @@
   color: var(--color-primary);
 }
 
+/* A line the course marked as an alternative to the game ("@(...)"). */
+.course-pane__mention--alternative {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--color-primary-soft);
+  text-decoration: none;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
 /* The sentence the voice is reading. */
 .course-pane__reading {
   background: color-mix(in srgb, #ffc400 38%, transparent);
