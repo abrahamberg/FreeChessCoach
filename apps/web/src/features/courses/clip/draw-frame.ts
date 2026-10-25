@@ -1,7 +1,6 @@
 import { expectedPoints } from '@freechesscoach/chess-analysis';
 import { COACH_PERSONAS, MOVE_QUALITY_SYMBOLS, type CoachPersona, type CourseArrow, type CourseResponse, type MoveQuality } from '@freechesscoach/shared';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { defaultPieces } from 'react-chessboard';
+import { CANVAS_FONT as FONT, drawCoordinates, drawPieces, drawSquares, loadImage, loadPieceImages, squareOrigin } from '../../board/board-canvas.js';
 import { formatEval } from '../../board/EvalBar.js';
 import { markAlpha } from './speech-marks.js';
 import { CLIP_SIZES, type ClipSegment, type ClipTimeline } from './timeline.js';
@@ -14,12 +13,6 @@ const COLORS = {
   text: '#f7f8f5',
   muted: '#b9c2b5',
   accent: '#5b9c6a',
-  /** The app's board: react-chessboard's own squares, which CoachBoard leaves
-   * as they are. Not `--board-light`/`--board-dark`: those colour the
-   * evaluation bar and the logo tile, and on the board they read as another
-   * site's green. */
-  light: '#f0d9b5',
-  dark: '#b58863',
   /** `--board-light`, `--board-dark`: the evaluation bar's two sides, the logo's tile. */
   barLight: '#ede2c8',
   barDark: '#8ba173',
@@ -57,7 +50,6 @@ const WHITE_GLYPH: readonly MoveQuality[] = ['brilliant', 'miss', 'blunder'];
 const MOVE_ARROW_MS = 750;
 /** The arrow fades out over its last this long. */
 const MOVE_ARROW_FADE_MS = 150;
-const FONT = "'Inter Tight', Inter, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
 /** One portrait per coach (public/brand/coaches/<persona>.png), transparent,
  * 2:3 (width:height). The avatar is a square cut from the top, around the
@@ -75,26 +67,10 @@ export interface ClipAssets {
   logo: HTMLImageElement | null;
 }
 
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error(`Could not load ${src.slice(0, 40)}`));
-    image.src = src;
-  });
-}
-
 /** The board's own piece set (react-chessboard's SVGs) as images, and the
  * coach portrait sheet. */
 export async function loadClipAssets(): Promise<ClipAssets> {
-  const pieces = new Map<string, HTMLImageElement>();
-  await Promise.all(
-    Object.entries(defaultPieces).map(async ([code, render]) => {
-      const markup = renderToStaticMarkup(render({ svgStyle: { width: 256, height: 256 } }));
-      const svg = markup.includes('xmlns=') ? markup : markup.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
-      pieces.set(code, await loadImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`));
-    })
-  );
+  const pieces = await loadPieceImages();
   const avatars = new Map<string, HTMLImageElement>();
   const [logo] = await Promise.all([
     loadImage('/brand/logo.png').catch(() => null),
@@ -278,9 +254,8 @@ function drawBrandRow(ctx: CanvasRenderingContext2D, assets: ClipAssets, right: 
 
 /** A square's centre on a board drawn at (x, y). */
 function squareCentre(name: string, x: number, y: number, square: number, flipped: boolean): [number, number] {
-  const file = name.charCodeAt(0) - 97;
-  const rank = Number(name[1]) - 1;
-  return [x + ((flipped ? 7 - file : file) + 0.5) * square, y + ((flipped ? rank : 7 - rank) + 0.5) * square];
+  const [sx, sy] = squareOrigin(x, y, square, flipped ? 'black' : 'white')(name);
+  return [sx + square / 2, sy + square / 2];
 }
 
 /** 0–1: the climax's zoom, in over 300 ms and out over its last 400. */
@@ -501,18 +476,8 @@ function drawCountdownOf(ctx: CanvasRenderingContext2D, input: FrameInput, x: nu
 function drawBoard(ctx: CanvasRenderingContext2D, input: FrameInput, x: number, y: number, size: number): void {
   const square = size / 8;
   const flipped = input.orientation === 'black';
-  const at = (name: string): [number, number] => {
-    const file = name.charCodeAt(0) - 97;
-    const rank = Number(name[1]) - 1;
-    return [x + (flipped ? 7 - file : file) * square, y + (flipped ? rank : 7 - rank) * square];
-  };
-  for (let rank = 0; rank < 8; rank++) {
-    for (let file = 0; file < 8; file++) {
-      ctx.fillStyle = (rank + file) % 2 === 0 ? COLORS.dark : COLORS.light;
-      const [sx, sy] = at(`${String.fromCharCode(97 + file)}${rank + 1}`);
-      ctx.fillRect(sx, sy, square, square);
-    }
-  }
+  const at = squareOrigin(x, y, square, input.orientation);
+  drawSquares(ctx, at, square);
   const { lastMove, arrows } = input.segment;
   for (const name of lastMove ? [lastMove.from, lastMove.to] : []) {
     const [sx, sy] = at(name);
@@ -527,11 +492,7 @@ function drawBoard(ctx: CanvasRenderingContext2D, input: FrameInput, x: number, 
   if (input.segment.king) drawCheckedKing(ctx, input, at(input.segment.king.square), square);
   for (const name of input.segment.king?.shut ?? []) drawShutSquare(ctx, at(name), square);
   drawCoordinates(ctx, at, square, flipped);
-  for (const [name, code] of piecesOf(input.segment.fen)) {
-    const image = input.assets.pieces.get(code);
-    const [sx, sy] = at(name);
-    if (image) ctx.drawImage(image, sx, sy, square, square);
-  }
+  drawPieces(ctx, at, square, input.segment.fen, input.assets.pieces);
   const playedMs = input.ms - input.segment.start;
   if (input.segment.played && lastMove && playedMs < MOVE_ARROW_MS) {
     const [fx, fy] = at(lastMove.from);
@@ -565,32 +526,6 @@ function drawBoard(ctx: CanvasRenderingContext2D, input: FrameInput, x: number, 
       drawArrow(ctx, fx + square / 2, fy + square / 2, tx + square / 2, ty + square / 2, square, COLORS.arrows.idea, alpha * 0.85);
     }
   }
-}
-
-/** Square names as the app's board shows them: the ranks down the left-hand
- * file, the files along the bottom rank, each in the other square colour. */
-function drawCoordinates(ctx: CanvasRenderingContext2D, at: (name: string) => [number, number], square: number, flipped: boolean): void {
-  const pad = square * 0.06;
-  ctx.save();
-  ctx.font = `700 ${Math.round(square * 0.2)}px ${FONT}`;
-  for (let index = 0; index < 8; index++) {
-    const file = flipped ? 7 - index : index;
-    const rank = flipped ? index : 7 - index;
-    const left = String.fromCharCode(97 + (flipped ? 7 : 0));
-    const bottomRank = flipped ? 8 : 1;
-    const colorOf = (f: number, r: number): string => ((r + f) % 2 === 0 ? COLORS.light : COLORS.dark);
-    const [rx, ry] = at(`${left}${rank + 1}`);
-    ctx.fillStyle = colorOf(left.charCodeAt(0) - 97, rank);
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText(String(rank + 1), rx + pad, ry + pad);
-    const [fx, fy] = at(`${String.fromCharCode(97 + file)}${bottomRank}`);
-    ctx.fillStyle = colorOf(file, bottomRank - 1);
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'alphabetic';
-    ctx.fillText(String.fromCharCode(97 + file), fx + square - pad, fy + square - pad);
-  }
-  ctx.restore();
 }
 
 /** The move's quality on the corner of the square it landed on, as the
@@ -709,25 +644,6 @@ function drawShutSquare(ctx: CanvasRenderingContext2D, [sx, sy]: [number, number
   ctx.lineTo(sx + inset, sy + square - inset);
   ctx.stroke();
   ctx.restore();
-}
-
-/** Square name → react-chessboard piece code ("wK", "bP"), from a FEN. */
-export function piecesOf(fen: string): [string, string][] {
-  const placement = fen.split(' ')[0] ?? '';
-  const pieces: [string, string][] = [];
-  placement.split('/').forEach((row, index) => {
-    let file = 0;
-    for (const char of row) {
-      if (/\d/.test(char)) {
-        file += Number(char);
-        continue;
-      }
-      const color = char === char.toUpperCase() ? 'w' : 'b';
-      pieces.push([`${String.fromCharCode(97 + file)}${8 - index}`, `${color}${char.toUpperCase()}`]);
-      file += 1;
-    }
-  });
-  return pieces;
 }
 
 /** An arrow from square centre to square centre; `dotted`: a row of dots

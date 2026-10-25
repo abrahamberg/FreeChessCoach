@@ -10,6 +10,7 @@ import {
   type PieceHandlerArgs,
   type SquareHandlerArgs
 } from 'react-chessboard';
+import { BoardTools } from './BoardTools.js';
 import { checkedKing } from './checked-king.js';
 import { MoveQualityBadgeOverlay } from './MoveQualityBadgeOverlay.js';
 import { PromotionPicker, type PromotionPiece } from './PromotionPicker.js';
@@ -207,6 +208,9 @@ export function CoachBoard({
   tapToDrawArrows = false
 }: CoachBoardProps): ReactNode {
   const justDroppedRef = useRef(false);
+  // The student's own flip (BoardTools), on top of the side the page picks.
+  const [flipped, setFlipped] = useState(false);
+  const shownOrientation = flipped ? (orientation === 'white' ? 'black' : 'white') : orientation;
   const tapArrows = useTapArrows(fen);
   const [drawnArrows, setDrawnArrows] = useState<BoardArrow[]>([]);
   // Reported together — right-click-drawn and tapped arrows are the same
@@ -363,7 +367,7 @@ export function CoachBoard({
 
   const options: ChessboardOptions = {
     position: pendingPromotion ? previewPromotionFen(fen, pendingPromotion) : fen,
-    boardOrientation: orientation,
+    boardOrientation: shownOrientation,
     onPieceDrop: handlePieceDrop,
     onSquareClick: handleSquareClickOption,
     onPieceClick: handlePieceClickOption,
@@ -395,7 +399,8 @@ export function CoachBoard({
     'coach-board-frame',
     mode === 'peek' && 'coach-board-frame--peek',
     isExploring && 'coach-board-frame--exploring',
-    disabled && 'coach-board-frame--pending'
+    disabled && 'coach-board-frame--pending',
+    flipped && 'coach-board-frame--flipped'
   ]
     .filter(Boolean)
     .join(' ');
@@ -403,14 +408,15 @@ export function CoachBoard({
   return (
     <div className={frameClassName}>
       <Chessboard options={options} />
+      <BoardTools fen={fen} orientation={shownOrientation} onFlip={() => setFlipped((was) => !was)} />
       {moveQualityBadge && (
-        <MoveQualityBadgeOverlay square={moveQualityBadge.square} quality={moveQualityBadge.quality} orientation={orientation} />
+        <MoveQualityBadgeOverlay square={moveQualityBadge.square} quality={moveQualityBadge.quality} orientation={shownOrientation} />
       )}
       {pendingPromotion && (
         <PromotionPicker
           square={pendingPromotion.to}
           color={pendingPromotion.color}
-          orientation={orientation}
+          orientation={shownOrientation}
           onSelect={handlePromotionSelect}
           onCancel={handlePromotionCancel}
         />

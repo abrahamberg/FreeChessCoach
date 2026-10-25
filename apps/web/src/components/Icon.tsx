@@ -256,6 +256,18 @@ export function UndoIcon(props: IconProps): ReactNode {
   );
 }
 
+/** Two arrows passing each other: the board turns to the other side. */
+export function FlipIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <polyline points="7 20 7 4" />
+      <polyline points="3.5 7.5 7 4 10.5 7.5" />
+      <polyline points="17 4 17 20" />
+      <polyline points="13.5 16.5 17 20 20.5 16.5" />
+    </svg>
+  );
+}
+
 export function EyeIcon(props: IconProps): ReactNode {
   return (
     <svg {...iconProps(props)}>

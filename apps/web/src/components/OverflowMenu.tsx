@@ -17,6 +17,8 @@ export interface OverflowMenuProps {
    * menu); `close` dismisses the dropdown. */
   renderPanel?: (close: () => void) => ReactNode;
   panelClassName?: string;
+  /** Added to the root, for a menu placed somewhere of its own (BoardTools' corner of the board). */
+  className?: string;
 }
 
 /** design-improvements.md §6: destructive actions belong behind an overflow
@@ -34,7 +36,7 @@ export interface OverflowMenuProps {
  * happens. Escaping to document.body sidesteps the whole class of "which
  * ancestor happens to establish a stacking context today" bugs, matching
  * Modal.tsx's own precedent for exactly this problem. */
-export function OverflowMenu({ label, items = [], renderPanel, panelClassName }: OverflowMenuProps): ReactNode {
+export function OverflowMenu({ label, items = [], renderPanel, panelClassName, className }: OverflowMenuProps): ReactNode {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; right: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -70,7 +72,7 @@ export function OverflowMenu({ label, items = [], renderPanel, panelClassName }:
   }
 
   return (
-    <div className="overflow-menu">
+    <div className={className ? `overflow-menu ${className}` : 'overflow-menu'}>
       <button
         ref={triggerRef}
         type="button"
