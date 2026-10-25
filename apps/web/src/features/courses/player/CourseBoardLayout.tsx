@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { BoardToolbar } from '../../board/BoardToolbar.js';
 import { StackedSessionBody } from '../../session/StackedSessionBody.js';
 import '../../../styles/board-bottom-bar.css';
 import '../../review/GameReviewPage.css';
@@ -34,7 +35,10 @@ export function CourseBoardLayout({ isDesktop, episodes, explorer, board, coach,
           {explorer}
         </div>
         <div className="session-board-column">{board}</div>
-        <div className="game-review-notes-column course-layout__coach">{coach}</div>
+        <div className="game-review-notes-column course-layout__coach">
+          {coach}
+          <BoardToolbar />
+        </div>
       </div>
     );
   }

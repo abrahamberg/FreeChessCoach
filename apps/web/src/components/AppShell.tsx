@@ -10,6 +10,7 @@ import { FullscreenPrompt } from './FullscreenPrompt.js';
 import { RateLimitNotice } from './RateLimitNotice.js';
 import { BarChartIcon, BoardIcon, BookIcon, EyeIcon, TrendingUpIcon } from './Icon.js';
 import { PageMenuProvider } from './PageMenu.js';
+import { BoardToolsProvider } from '../features/board/board-tools-context.js';
 import { UserMenu } from './UserMenu.js';
 import './AppShell.css';
 
@@ -61,19 +62,21 @@ export function AppShell({ children, guest = false }: AppShellProps): ReactNode 
 
   return (
     <PageMenuProvider>
-      <div className="app-shell" data-layout={isDesktop ? 'desktop' : 'mobile'} data-bottom-bar={showBottomTabBar}>
-        {/* Fixed overlay, not gated by showGlobalNav — a board route (session/
-         * bot-session/review) hides the top bar but still wants the nudge
-         * toward full screen, arguably more than any other page. */}
-        {/* An install nudge for an app the demo visitor has not signed into would only cover the demo notice. */}
-        {!getDemoRuntime() && !guest && <FullscreenPrompt />}
-        <DemoBanner />
-        {showGlobalNav && (guest ? <GuestTopBar /> : <TopBar isDesktop={isDesktop} />)}
-        {!guest && <ChessApiPauseNotice />}
-        {!guest && <RateLimitNotice />}
-        <main className="app-shell__content">{children}</main>
-        {showBottomTabBar && <BottomTabBar />}
-      </div>
+      <BoardToolsProvider>
+        <div className="app-shell" data-layout={isDesktop ? 'desktop' : 'mobile'} data-bottom-bar={showBottomTabBar}>
+          {/* Fixed overlay, not gated by showGlobalNav — a board route (session/
+           * bot-session/review) hides the top bar but still wants the nudge
+           * toward full screen, arguably more than any other page. */}
+          {/* An install nudge for an app the demo visitor has not signed into would only cover the demo notice. */}
+          {!getDemoRuntime() && !guest && <FullscreenPrompt />}
+          <DemoBanner />
+          {showGlobalNav && (guest ? <GuestTopBar /> : <TopBar isDesktop={isDesktop} />)}
+          {!guest && <ChessApiPauseNotice />}
+          {!guest && <RateLimitNotice />}
+          <main className="app-shell__content">{children}</main>
+          {showBottomTabBar && <BottomTabBar />}
+        </div>
+      </BoardToolsProvider>
     </PageMenuProvider>
   );
 }

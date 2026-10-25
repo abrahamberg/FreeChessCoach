@@ -4,6 +4,7 @@ import { getDemoRuntime } from '../demo/demoRuntime.js';
 import { AccountMenuSections } from './AccountMenuSections.js';
 import { MenuUnlockModal } from './MenuUnlockModal.js';
 import { OverflowMenu, type OverflowMenuItem } from './OverflowMenu.js';
+import { useBoardMenuItems } from '../features/board/BoardToolbar.js';
 import type { EngineActivityIndicatorState } from '../hooks/useEngineActivityIndicator.js';
 
 export interface BoardMenuProps {
@@ -21,6 +22,9 @@ export function BoardMenu({ label, items, engineActivity }: BoardMenuProps): Rea
   const [isUnlocking, setIsUnlocking] = useState(false);
   // The demo has no engine, and a red "Engine" dot would only look like a fault.
   const showEngineStatus = getDemoRuntime() === null;
+  // Flip, Copy FEN, Download PNG: on a phone the only way to them (BoardToolbar sits in the desktop side column).
+  const boardItems = useBoardMenuItems();
+  const allItems = [...items, ...boardItems];
 
   return (
     <>
@@ -34,7 +38,7 @@ export function BoardMenu({ label, items, engineActivity }: BoardMenuProps): Rea
             onReportBug={() => setIsReporting(true)}
             onUnlock={() => setIsUnlocking(true)}
           >
-            {items.length > 0 && items.map((item) => <BoardMenuItem key={item.label} item={item} onClose={close} />)}
+            {allItems.map((item) => <BoardMenuItem key={item.label} item={item} onClose={close} />)}
           </AccountMenuSections>
         )}
       />

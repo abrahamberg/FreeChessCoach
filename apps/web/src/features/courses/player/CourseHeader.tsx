@@ -1,6 +1,7 @@
 import { COURSE_STAGES, type CourseStage } from '@freechesscoach/chess-analysis';
 import type { ReactNode } from 'react';
 import { BoardMenu } from '../../../components/BoardMenu.js';
+import { useBoardMenuItems } from '../../board/BoardToolbar.js';
 import { ArrowLeftIcon } from '../../../components/Icon.js';
 import { OverflowMenu, type OverflowMenuItem } from '../../../components/OverflowMenu.js';
 import { CourseStageBar, STAGE_LABELS } from './CourseStageBar.js';
@@ -25,6 +26,8 @@ export interface CourseHeaderProps {
  * the title, the four stages (the stage bar on a desktop, a compact picker
  * on a phone) and the "⋮" menu. */
 export function CourseHeader({ title, stage, done, onStage, back, menuItems, inApp, isDesktop, showStages = true }: CourseHeaderProps): ReactNode {
+  // BoardMenu adds the board's own actions in the app; the public page's plain menu needs them here.
+  const guestItems = [...menuItems, ...useBoardMenuItems()];
   return (
     <header className="session-header course-header">
       {back && (
@@ -48,7 +51,7 @@ export function CourseHeader({ title, stage, done, onStage, back, menuItems, inA
             </select>
           </label>
         )}
-        {inApp ? <BoardMenu label="Course options" items={menuItems} /> : menuItems.length > 0 && <OverflowMenu label="Course options" items={menuItems} />}
+        {inApp ? <BoardMenu label="Course options" items={menuItems} /> : guestItems.length > 0 && <OverflowMenu label="Course options" items={guestItems} />}
       </span>
     </header>
   );

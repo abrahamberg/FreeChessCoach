@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { BotAvatar } from '../../components/BotAvatar.js';
+import { BoardToolbar } from '../board/BoardToolbar.js';
 import { CoachCard } from '../../components/CoachCard.js';
 import { FlagIcon } from '../../components/Icon.js';
 import { useLiteEngineHint } from '../../hooks/useLiteEngineHint.js';
@@ -172,5 +173,10 @@ export function BotStatusPanel({
     );
   }
 
-  return <div className="bot-status-panel bot-status-panel--panel">{body}</div>;
+  return (
+    <div className="bot-status-panel bot-status-panel--panel">
+      <div className="bot-status-panel__main">{body}</div>
+      <BoardToolbar />
+    </div>
+  );
 }

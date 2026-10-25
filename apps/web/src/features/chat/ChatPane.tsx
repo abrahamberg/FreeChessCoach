@@ -5,6 +5,7 @@ import type { ArrowRef } from './arrowToken.js';
 import type { CoachMessage } from '../../hooks/useCoachChat.js';
 import { CoachAvatar } from '../../components/CoachAvatar.js';
 import { VolumeOffIcon, VolumeOnIcon } from '../../components/Icon.js';
+import { BoardToolbar } from '../board/BoardToolbar.js';
 import { ChatComposer } from './ChatComposer.js';
 import { CoachActivityFeed } from './CoachActivityFeed.js';
 import { MessageList, type HoverMove } from './MessageList.js';
@@ -136,6 +137,7 @@ export function ChatPane({
       <ThinkingIndicator visible={isThinking} label={thinkingLabel} />
       <ToolActivity toolName={activeToolName} />
       <ChatComposer onSend={onSend} boardArrows={boardArrows} hasPendingLine={hasPendingLine} />
+      <BoardToolbar />
     </div>
   );
 }

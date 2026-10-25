@@ -5,6 +5,7 @@ import { useState, type ReactNode } from 'react';
 import { apiGet } from '../../api/client.js';
 import { useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
 import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
+import { BoardToolbar } from '../board/BoardToolbar.js';
 import { CoachBoard } from '../board/CoachBoard.js';
 import { EvalBar } from '../board/EvalBar.js';
 import { GameEvalChart } from '../board/GameEvalChart.js';
@@ -98,7 +99,10 @@ export function LiveReviewView({ base, openAt = null, orientation, isDesktop, on
             <MoveExplorer tree={tree} currentNodeId={currentId} onSelect={moveTree.select} qualities={review.scored} showNotes={false} wholeMainLine onRemoveBranch={moveTree.remove} onPromoteBranch={moveTree.promote} />
           </div>
           {board}
-          <div className="game-review-notes-column">{noteCard}</div>
+          <div className="game-review-notes-column">
+            {noteCard}
+            <BoardToolbar />
+          </div>
         </div>
       ) : (
         <div className="game-review-body mobile">

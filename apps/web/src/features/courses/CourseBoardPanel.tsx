@@ -1,5 +1,6 @@
 import type { CourseArrow, CourseDocument, CoursePly } from '@freechesscoach/shared';
 import { useEffect, useMemo, type ReactNode } from 'react';
+import { BoardToolbar } from '../board/BoardToolbar.js';
 import { CoachBoard, type BoardArrow } from '../board/CoachBoard.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
 import { toBoardMarks } from './courseArrows.js';
@@ -66,6 +67,7 @@ export function CourseBoardPanel({ document, nodeIds, selectedNodeId, onSelectNo
       <StepButtons className="course-board__nav" noun="move" index={index} count={nodeIds.length} onStep={step} arrowKeys>
         <span className="meta course-board__count">{nodeIds.length ? `Move ${index + 1} of ${nodeIds.length}` : 'No moves'}</span>
       </StepButtons>
+      <BoardToolbar />
       <div className="course-board__moves" role="list" aria-label="Moves">
         {nodeIds.map((nodeId) => {
           const node = byId.get(nodeId);

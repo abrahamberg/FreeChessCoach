@@ -34,9 +34,3 @@
   color: var(--color-text-secondary);
   white-space: nowrap;
 }
-
-/* The student flipped the board (BoardTools): the bar beside it turns with
- * it, so White's side of the bar stays next to White's pieces. */
-.session-board-row:has(.coach-board-frame--flipped) .eval-bar {
-  transform: scaleY(-1);
-}

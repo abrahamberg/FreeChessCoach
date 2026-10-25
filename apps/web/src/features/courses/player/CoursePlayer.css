@@ -95,7 +95,7 @@
 
 /* Desktop: the coach fills the notes column, which gives the chrome. */
 .game-review-notes-column.course-layout__coach .course-pane {
-  height: 100%;
+  flex: 1 1 auto;
   border: 0;
   border-radius: 0;
   box-shadow: none;

@@ -268,6 +268,16 @@ export function FlipIcon(props: IconProps): ReactNode {
   );
 }
 
+export function DownloadIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M12 4v11" />
+      <polyline points="7.5 10.5 12 15 16.5 10.5" />
+      <path d="M4.5 16.5v2a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-2" />
+    </svg>
+  );
+}
+
 export function EyeIcon(props: IconProps): ReactNode {
   return (
     <svg {...iconProps(props)}>

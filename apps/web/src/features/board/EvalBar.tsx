@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { expectedPoints } from '@freechesscoach/chess-analysis';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
+import { useFlippedSide } from './board-tools-context.js';
 import './EvalBar.css';
 
 export interface EvalBarProps {
@@ -25,7 +26,9 @@ export interface EvalBarProps {
  * no fetch of its own: ply 0 has no classified move yet and defaults to an
  * even 0cp start. Presentational only (AGENTS.md rule 7) — the parent owns
  * which ply/classifiedMoves (or cpOverride) to pass in. */
-export function EvalBar({ ply, classifiedMoves, orientation, cpOverride }: EvalBarProps): ReactNode {
+export function EvalBar({ ply, classifiedMoves, orientation: pageOrientation, cpOverride }: EvalBarProps): ReactNode {
+  // Turns with the board when the student flips it (BoardToolbar).
+  const orientation = useFlippedSide(pageOrientation);
   const cp = cpOverride ?? classifiedMoves.find((move) => move.ply === ply)?.evalAfterCp ?? 0;
   const whitePercent = expectedPoints(cp) * 100;
   // White's pieces sit at the bottom when orientation is 'white' (unflipped),

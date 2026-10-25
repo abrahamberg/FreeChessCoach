@@ -5,6 +5,7 @@ import { useEscapeKey } from '../../hooks/useEscapeKey.js';
 import { useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { useMoveStepSounds } from '../../sounds/useMoveStepSounds.js';
+import { BoardToolbar } from '../board/BoardToolbar.js';
 import { ExploreNoteCard } from '../board/ExploreNoteCard.js';
 import { GameReportSummary } from '../board/GameReportSummary.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
@@ -178,7 +179,10 @@ export function GameReviewPage(): ReactNode {
             {game.gameReport && <GameReportSummary report={game.gameReport} userColor={orientation} tacticBaseline={game.tacticBaseline} />}
           </div>
           {board}
-          <div className="game-review-notes-column">{noteCard}</div>
+          <div className="game-review-notes-column">
+            {noteCard}
+            <BoardToolbar />
+          </div>
         </div>
       ) : (
         <>

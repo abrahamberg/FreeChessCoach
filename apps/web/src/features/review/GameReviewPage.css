@@ -92,6 +92,8 @@
  * already provides that chrome, and should fill the full column height
  * instead of capping at a fraction of it. */
 .game-review-notes-column {
+  display: flex;
+  flex-direction: column;
   width: 400px;
   flex: 0 0 400px;
   height: 100%;
@@ -104,7 +106,8 @@
 }
 
 .game-review-notes-column .move-note-card {
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   max-height: none;
   padding: var(--space-4);
   border-radius: 0;
