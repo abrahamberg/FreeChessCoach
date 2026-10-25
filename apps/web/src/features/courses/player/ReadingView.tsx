@@ -1,4 +1,4 @@
-import { sectionFen } from '@freechesscoach/chess-analysis';
+import { lineTree, sectionFen, type EditableTree } from '@freechesscoach/chess-analysis';
 import type { CourseDocument } from '@freechesscoach/shared';
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { CourseArrow } from '@freechesscoach/shared';
@@ -7,6 +7,8 @@ import { CoachBoard } from '../../board/CoachBoard.js';
 import { toBoardMarks } from '../courseArrows.js';
 import { CourseBoardLayout } from './CourseBoardLayout.js';
 import { CoursePane } from './CoursePane.js';
+import { LiveReviewView } from '../../live-review/LiveReviewView.js';
+import { NoteMention } from './NoteMention.js';
 import { noteSegments, readingSentence, sentenceRanges } from './note-marks.js';
 import type { useNoteAudio } from './useNoteAudio.js';
 
@@ -35,6 +37,8 @@ export function ReadingView({ document, audio, isDesktop, start, onPage, onFinis
   const first = useRef(true);
   // What the page names is drawn only while the reader points at it or the voice reaches it.
   const [pointed, setPointed] = useState<CourseArrow[]>([]);
+  /** A line the page writes out, opened on a board the engine reviews; saved nowhere. */
+  const [tryOut, setTryOut] = useState<EditableTree | null>(null);
   const parts = useMemo(() => (section ? noteSegments(section.text, [fen]) : []), [section, fen]);
   const text = section?.text ?? '';
   const sentence = audio.voiceSentence !== null ? audio.voiceSentence : audio.progress !== null ? readingSentence(text, audio.progress) : null;
@@ -48,6 +52,7 @@ export function ReadingView({ document, audio, isDesktop, start, onPage, onFinis
       text: part.text.slice(from - part.start, edges[index + 1]! - part.start),
       start: from,
       marks: part.marks,
+      line: part.line,
       reading: from >= range.start && from < range.end
     }));
   });
@@ -66,6 +71,10 @@ export function ReadingView({ document, audio, isDesktop, start, onPage, onFinis
     setPage(next);
   };
   const atEnd = page >= sections.length - 1;
+
+  if (tryOut) {
+    return <LiveReviewView base={tryOut} openAt="x1" orientation="white" isDesktop={isDesktop} onBack={() => setTryOut(null)} />;
+  }
 
   const nav = (
     <div className="course-player__nav">
@@ -115,16 +124,15 @@ export function ReadingView({ document, audio, isDesktop, start, onPage, onFinis
               <p className="course-pane__note">
                 {shown.map((part, index) => {
                   const inner = part.marks ? (
-                    <span
-                      className="course-pane__mention"
-                      tabIndex={0}
-                      onMouseEnter={() => setPointed(part.marks!)}
-                      onMouseLeave={() => setPointed([])}
-                      onFocus={() => setPointed(part.marks!)}
-                      onBlur={() => setPointed([])}
-                    >
-                      {part.text}
-                    </span>
+                    <NoteMention
+                      part={part}
+                      onPoint={setPointed}
+                      onOpenLine={(line) => {
+                        audio.stop();
+                        setPointed([]);
+                        setTryOut(lineTree(line.fen, line.sans));
+                      }}
+                    />
                   ) : (
                     part.text
                   );

@@ -19,6 +19,7 @@ import { STAGE_LABELS } from './CourseStageBar.js';
 import { boardSoundLengthMs, playBoardSound } from '../../../sounds/board-sounds.js';
 import { readMoveSoundsEnabled } from '../../../sounds/move-sounds-setting.js';
 import { courseMoveList, courseMoveSound, type CourseEvals } from './course-move-list.js';
+import { NoteMention } from './NoteMention.js';
 import { noteSegments, readingSentence, sentenceRanges, sentenceStart } from './note-marks.js';
 import { drillLine } from './drill-line.js';
 import { climaxNode } from '../courseEdits.js';
@@ -224,6 +225,7 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
       text: part.text.slice(from - part.start, edges[index + 1]! - part.start),
       start: from,
       marks: part.marks,
+      line: part.line,
       reading: from >= readRange.start && from < readRange.end
     }));
   });
@@ -393,16 +395,15 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
         <p className="course-pane__note">
           {shown.map((part, index) => {
             const inner = part.marks ? (
-              <span
-                className="course-pane__mention"
-                tabIndex={0}
-                onMouseEnter={() => setPointed(part.marks!)}
-                onMouseLeave={() => setPointed([])}
-                onFocus={() => setPointed(part.marks!)}
-                onBlur={() => setPointed([])}
-              >
-                {part.text}
-              </span>
+              <NoteMention
+                part={part}
+                onPoint={setPointed}
+                onOpenLine={(line) => {
+                  audio.stop();
+                  setPointed([]);
+                  setTryOut(lineTree(line.fen, line.sans));
+                }}
+              />
             ) : (
               part.text
             );

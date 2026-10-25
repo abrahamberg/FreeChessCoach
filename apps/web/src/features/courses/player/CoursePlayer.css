@@ -1116,6 +1116,17 @@
   cursor: help;
 }
 
+/* A line of moves the note writes out: opens on its own board. */
+.course-pane__mention--line {
+  text-decoration-style: solid;
+  text-decoration-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.course-pane__mention--line:hover {
+  color: var(--color-primary);
+}
+
 /* The sentence the voice is reading. */
 .course-pane__reading {
   background: color-mix(in srgb, #ffc400 38%, transparent);

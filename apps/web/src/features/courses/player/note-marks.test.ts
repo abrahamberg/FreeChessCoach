@@ -22,6 +22,16 @@ describe('noteSegments', () => {
     expect(marked[4]!.marks).toHaveLength(8);
   });
 
+  it('makes moves written in a row a line, ending at the first that does not follow on', () => {
+    const note = 'Not 2...Nc6 (developing) 3 Bb5 a6!, but 2...d6 3.d4 or 5...O-O 3.d4.';
+    const lines = noteSegments(note, [AFTER_E4_E5_NF3]).filter((each) => each.marks);
+    expect(lines.map(({ text, line }) => ({ text, sans: line?.sans }))).toEqual([
+      { text: '2...Nc6 (developing) 3 Bb5 a6!', sans: ['Nc6', 'Bb5', 'a6'] },
+      { text: '2...d6 3.d4', sans: ['d6', 'd4'] }
+    ]);
+    expect(lines[0]!.marks).toEqual([{ from: 'b8', to: 'c6', kind: 'idea' }]);
+  });
+
   it('leaves a move that is not legal there as plain text', () => {
     expect(noteSegments('2...Qd4', [AFTER_E4_E5_NF3])).toEqual([{ text: '2...Qd4', start: 0 }]);
   });
