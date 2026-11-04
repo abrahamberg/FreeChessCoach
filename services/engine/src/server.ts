@@ -20,6 +20,10 @@ export function buildServer(options: BuildServerOptions = {}): FastifyInstance {
 
   const app = Fastify();
 
+  // Closing the server stops its engines, so a process that runs it (the
+  // studio, a test) can exit.
+  app.addHook('onClose', async () => pool.quitAll());
+
   app.get('/health', async () => ({ status: 'ok', poolSize: pool.size, busy: pool.busy }));
 
   app.post('/analyze-game', async (request, reply) => {
