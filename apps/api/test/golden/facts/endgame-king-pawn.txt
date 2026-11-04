@@ -69,18 +69,6 @@ n15 4.e7 (White, Line B) | excellent | before: White is winning → after: White
     ideas: pushes the passed pawn to e7, 1 square from queening
     alternatives: Ke8: White is winning, after Kb7 Kd7 Kb6 Kd8; Ke7: White is winning, after Kc8 Kf7 Kb7 e7
 
-REEL CANDIDATES
-  r1 puzzle n1–n9, climax n7 [highlight, puzzle, promo]
-  r2 brilliant n1–n7, climax n5 [highlight, puzzle, promo]
-
-PLAN
-  e1 goal n1–n1
-  e2 technique n1–n6 answer=n5
-  e3 technique n7–n8 answer=n7
-  e4 technique n9–n9
-  e5 defence n10–n15
-  e6 recap n9–n9
-
 REVIEW NOTES
   l1
     n1 1.Kf6: Prepares e6 by clearing the way

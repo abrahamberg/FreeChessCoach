@@ -53,17 +53,6 @@ n7 4.Qxf7# (White, Line A) | great | before: White has a forced mate in 1 → af
     tactics: You delivered checkmate.
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 mate n1–n7, climax n7 [highlight, puzzle, promo]
-  r2 swing n1–n7, climax n6 [highlight, promo]
-
-PLAN
-  e1 hook n1–n1
-  e2 setup n1–n5
-  e3 bait n6–n6
-  e4 quiz n7–n7 answer=n7
-  e5 safety n6–n6
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — Bishop's Opening (C23); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

@@ -40,7 +40,7 @@ describe('a PGN of several games', () => {
     const episode = (id: string, node: string): CourseEpisode => ({ id, role: 'example', focus: '', startNodeId: node, endNodeId: node, plies: [], drillNodeIds: [node] });
     const document: CourseDocument = {
       version: 1, kind: 'lesson', title: 'T', promise: '', learnerSide: 'white', levelBand: 'novice', coachPersona: 'general', startFen: tree.startFen,
-      nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], episodes: [episode('e1', 'n1'), episode('e2', 'n3'), episode('e3', 'n5')], takeaways: [], hookOptions: [], clipLinks: {}
+      nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], episodes: [episode('e1', 'n1'), episode('e2', 'n3'), episode('e3', 'n5')], takeaways: [], clipLinks: {}
     };
     const asked = buildCourseDrill(document).episodes.map((each) => each.steps.find((step) => step.asked)?.key);
     expect(asked).toEqual([courseDrillKey(ROOK, 'a1a8'), courseDrillKey(KNIGHT, 'd1c3'), courseDrillKey(PAWN, 'e7e5')]);

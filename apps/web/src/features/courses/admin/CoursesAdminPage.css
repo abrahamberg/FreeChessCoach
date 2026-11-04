@@ -1,0 +1,100 @@
+/* The Courses admin page (/manage/courses): the Courses page's cards and
+ * pills (learn/LearnHomePage.css), with a header, each card's actions and
+ * the API tokens. */
+.course-admin__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.course-admin__header h1 {
+  margin: 0 0 4px;
+}
+
+.course-admin__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  text-decoration: none;
+}
+
+.course-admin__card {
+  gap: var(--space-2);
+}
+
+.course-admin__card .rail-card__actions {
+  padding-top: var(--space-2);
+}
+
+.course-admin__title {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.course-admin__title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.course-admin__title a:hover {
+  color: var(--color-primary);
+}
+
+.course-admin__warning {
+  color: var(--color-warning);
+}
+
+.course-admin__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+}
+
+.course-admin__section h2 {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.course-admin__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.course-admin__tokens {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.course-admin__tokens li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.course-admin__secret {
+  overflow-wrap: anywhere;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+  font-family: ui-monospace, monospace;
+}
+
+@media (max-width: 639px) {
+  .course-admin__action {
+    min-height: 44px;
+  }
+}

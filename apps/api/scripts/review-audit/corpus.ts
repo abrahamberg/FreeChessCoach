@@ -184,5 +184,5 @@ function seedGames(): CorpusGame[] {
 
 /** The golden courses: their dossiers are what course prompts get. */
 function goldenGames(): CorpusGame[] {
-  return loadGoldenSet().map((course) => ({ id: `golden:${course.name}`, source: 'golden', band: course.kind, split: splitOf(course.name), readerSide: course.intake.learnerSide ?? 'white', pgn: course.intake.pgn, focusPly: null, evalsFile: null }));
+  return loadGoldenSet().map((course) => ({ id: `golden:${course.name}`, source: 'golden', band: course.kind, split: splitOf(course.name), readerSide: course.learnerSide, pgn: course.pgn, focusPly: null, evalsFile: null }));
 }

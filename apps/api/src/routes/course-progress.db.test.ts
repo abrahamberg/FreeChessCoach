@@ -30,10 +30,10 @@ async function publishCourse(slug: string, title: string): Promise<string> {
   const owner = await usersRepo.insert(db, { email: `${slug}@example.com`, displayName: 'Creator', engineMode: 'chess_api' });
   const document: CourseDocument = {
     version: 1, kind: 'trap', title, promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'commander',
-    startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], hookOptions: [], clipLinks: {}, takeaways: ['A.', 'B.', 'C.'], episodes: []
+    startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], clipLinks: {}, takeaways: ['A.', 'B.', 'C.'], episodes: []
   };
-  const row = await coursesRepo.insert(db, { ownerId: owner.id, slug, kind: 'trap', title, sourcePgn: ENGLUND, direction: '', document });
-  await coursesRepo.publish(db, row.id, owner.id, document, 'unlisted', 0);
+  const row = await coursesRepo.insert(db, { createdBy: owner.id, slug, sourcePgn: ENGLUND, direction: '', document, dossier: null });
+  await coursesRepo.publish(db, row.id, document, 'unlisted', 0);
   return row.id;
 }
 
@@ -130,7 +130,7 @@ describe('course progress routes', () => {
     expect((await list()).find((each) => each.slug === 'englund-enrol-aaaaaaaaaaaa')!.completedAt).toBe(completed.completedAt);
 
     // A taken-down course drops out; removing one takes it off the list.
-    await coursesRepo.setStatus(db, courseId, 'removed');
+    await coursesRepo.setVisibility(db, courseId, { status: 'removed' });
     expect((await list()).map((each) => each.slug)).toEqual(['englund-enrol-aaaaaaaaaaaa']);
     expect((await app.inject({ method: 'DELETE', url: '/api/course-enrollments/englund-enrol-aaaaaaaaaaaa', headers })).statusCode).toBe(204);
     expect(await list()).toEqual([]);

@@ -49,20 +49,6 @@ n9 5.f8=Q (White, Line A) | best | before: White is winning → after: White is 
     tempting check: f8=N+? White's f8=N+ moves the pawn from f7 to f8 | promotes to a knight | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke7, Kf7, Kf6, Kf5, Ke5, Kd5, Kd6. Black answers Kd6: moves the king from e6 to d6. Then Kg2 Kc5 Ne6+. Over the line nothing is taken; at the end White is a knight up (The position is roughly equal).
     flags: quiz-eligible
 
-REEL CANDIDATES
-  r1 puzzle n1–n9, climax n9 [highlight, puzzle, promo]
-  r2 brilliant n1–n7, climax n5 [highlight, puzzle, promo]
-  r3 brilliant n1–n9, climax n7 [highlight, puzzle, promo]
-  r4 idea n1–n5, climax n3 [highlight, puzzle, promo]
-
-PLAN
-  e1 goal n1–n1
-  e2 technique n1–n4 answer=n3
-  e3 technique n5–n6 answer=n5
-  e4 technique n7–n8 answer=n7
-  e5 technique n9–n9 answer=n9
-  e6 recap n9–n9
-
 REVIEW NOTES
   l1
     n1 1.f4: Pushes the passed pawn to f4, 4 squares from queening

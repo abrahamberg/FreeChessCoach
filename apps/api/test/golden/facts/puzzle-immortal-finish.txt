@@ -29,16 +29,6 @@ n3 23.Be7# (White, Line A) | great | before: White has a forced mate in 1 → af
     tempting threat: Nc7? White's Nc7 moves the knight from d5 to c7 | attacks the rook on a8 | attacks the knight on a6 | leaves the white pawn on g4 hanging | leaves the white pawn on a2 hanging. Black answers Qc1: moves the queen from a1 to c1 | leaves the black rook on a8 hanging | leaves the black knight on f6 hanging | leaves the black pawn on b5 hanging. Then exf6 Qxc2+ Ke1. Over the line White takes a knight; Black takes a pawn; at the end White has a knight for a queen, two rooks and a bishop (Black is winning).
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 puzzle n1–n3, climax n3 [highlight, puzzle, promo]
-  r2 idea n1–n3, climax n1 [highlight, puzzle, promo]
-
-PLAN
-  e1 question n1–n1
-  e2 solve n1–n2 answer=n1
-  e3 solve n3–n3 answer=n3
-  e4 recap n3–n3
-
 REVIEW NOTES
   l1
     n1 22.Qf6+: Sacrifices the queen on f6: it can be taken, and the engine still approves; Defends the pawn on e5, attacked once and now defended twice

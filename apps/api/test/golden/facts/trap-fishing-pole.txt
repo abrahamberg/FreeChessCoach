@@ -105,19 +105,6 @@ n16 8…g3 (Black, Line A) | best | before: Black has a forced mate in 2 → aft
     tempting capture: gxf3? Black's gxf3 moves the pawn from g4 to f3 | captures the pawn on f3. White answers Nxf3: moves the knight from e1 to f3 | captures the pawn on f3 | attacks the queen on h4 | leaves the white pawn on e4 hanging. Then Bc5+ d4. Over the line Black takes a pawn; White takes a pawn; at the end White has a knight for a pawn (Black is slightly better).
     flags: quiz-eligible
 
-REEL CANDIDATES
-  r1 trap n4–n14, climax n12 [highlight, puzzle, promo]
-  r2 brilliant n6–n16, climax n14 [highlight, puzzle, promo]
-  r3 swing n3–n13, climax n11 [highlight, promo]
-
-PLAN
-  e1 hook n1–n1
-  e2 setup n1–n10
-  e3 bait n11–n11
-  e4 quiz n12–n12 answer=n12
-  e5 punish n13–n16
-  e6 safety n11–n13
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — Ruy Lopez: Berlin Defense, Fishing Pole Variation (C65); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

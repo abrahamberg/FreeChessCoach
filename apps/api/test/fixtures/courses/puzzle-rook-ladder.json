@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "white",
   "levelBand": "novice",
   "coachPersona": "commander",
   "direction": "Two rooks mate in two: cut the king off, then check.",

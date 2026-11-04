@@ -158,13 +158,6 @@ n26 8…Qc7 (Black, Bg5) | book
     ideas: prevents e5, which would attack the knight on f6 | brings the queen out to c7
     alternatives: Nbd7 (develops the knight to d7; controls e5): The position is roughly equal, after Bh4 Qc7 g4 h6; Bd7 (develops the bishop to d7): White is slightly better, after Bc4 Nc6 O-O-O O-O
 
-REEL CANDIDATES
-
-PLAN
-  e1 line n1–n20
-  e2 deviation n21–n26
-  e3 recap n20–n20
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

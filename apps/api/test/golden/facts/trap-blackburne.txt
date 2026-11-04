@@ -93,19 +93,6 @@ n14 7…Nf3# (Black, Line A) | best | before: Black has a forced mate in 1 → a
     tactics: You delivered checkmate — mates the king on e1, smothered by its own pieces.
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 mate n6–n14, climax n14 [highlight, puzzle, promo]
-  r2 trap n2–n14, climax n10 [highlight, puzzle, promo]
-  r3 swing n1–n11, climax n9 [highlight, promo]
-
-PLAN
-  e1 hook n1–n1
-  e2 setup n1–n8
-  e3 bait n9–n9
-  e4 quiz n10–n10 answer=n10
-  e5 punish n11–n14
-  e6 safety n9–n11
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — Italian Game: Blackburne-Kostić Gambit (C50); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

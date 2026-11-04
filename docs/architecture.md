@@ -466,37 +466,42 @@ and stats follow in Phases 115-117.
 
 ## Courses
 
-A course is a chess lesson built from a PGN (spec: `docs/courses.md`),
-with a YouTube video, a reel, or both made from the same moves (§13): the
-course is the product, the videos bring people to it. Kinds: trap, opening,
-tactics, puzzle, master game.
+A course is a chess lesson built from a PGN (spec: `docs/courses.md`).
+Kinds: trap, opening, tactics, puzzle, master game, endgame, lesson,
+reading. Courses belong to the platform, not to a user. They are **made
+outside the app**, by the studio (a separate local tool beside this repo
+that also makes and posts the videos). The app keeps, checks, serves and
+teaches them; it has no AI writer and no video code.
 
-- **Creating** (creators only, `users.can_create_courses`, set by a
-  moderator): `/studio` lists them, `/studio/new` takes the PGN, `/studio/:id/edit`
-  is the editor. `courses` holds the draft `document` and the frozen
-  `published_document` (jsonb, `CourseDocumentSchema`), `status`
-  (draft/unlisted/public/removed) and the `dossier`: the engine pass over
-  every tree position (the review pipeline, `services/courses/dossier.ts`),
-  plus a second small batch for the tempting moves (checks, captures and
-  threats that fail, with the engine's refutation), kept for generation,
-  the verifier and the player's evaluations. AI generation is a
-  graphile-worker job (`jobs/course-generate.ts`: the outline, which budgets
-  the video and picks the reel from code's candidates; one call per episode,
-  each checked by the verifier in `chess-analysis`; then the reel call);
-  `POST /api/courses/:id/reel` writes the reel alone. `course_ai_calls` logs
-  the calls. `apps/api/scripts/course-dossier-refresh.ts` rebuilds dossiers with
-  the engine alone.
-- **Voice and videos**: Kokoro only, in the creator's browser; note audio is
-  uploaded at publish (`course_audio`, named by its bytes' hash, optionally
-  mirrored to R2). The YouTube video (16:9) and the reel (9:16) are
-  recorded from a canvas in the browser (`features/courses/clip/`) and
-  posted elsewhere; the course links them (`clipLinks`).
+- **Editors** (`users.can_edit_courses`, set by a moderator with
+  `scripts/course-editor.ts`): every editor sees and edits every course.
+  `/manage/courses` lists them; `/manage/courses/:id` shows the checks, the
+  notes without audio, the learner preview, publishing, visibility and the
+  posted video links. There is no text editor: the studio changes a course
+  and imports it again.
+- **The course API** (`routes/courses.ts`): the same handlers under
+  `/api/courses/*` (the browser session) and `/api/token/courses/*` (an
+  editor's bearer token, `course_api_tokens`, made on the admin page;
+  skip-auth at the proxy, token-only at the api). `PUT …/import` takes
+  `{ slug, pgn, direction, document }`, new or in place: the app parses the
+  PGN itself (`course-source.ts`), refuses a document whose moves differ,
+  and **builds the dossier with its own engine pipeline**
+  (`services/courses/dossier.ts`, the review's), so it never takes engine
+  facts from a client. `courses` holds the draft `document`, the frozen
+  `published_document` (jsonb, `CourseDocumentSchema`: learner content
+  only), `status` (draft/unlisted/public/removed), `created_by` (the record
+  only) and the `dossier`. `apps/api/scripts/course-dossier-refresh.ts`
+  rebuilds dossiers with the engine alone.
+- **Note audio**: the studio voices each note and uploads it through a
+  signed URL (`course_audio`, by the note text's hash, in R2). The videos
+  are the studio's; the course keeps only where they were posted
+  (`clipLinks`), which the course page embeds.
 - **Public**: `/learn/:slug` (outside the shell, no login) and
   `/api/public/courses/*` (skip-auth at the proxy): the published course with
   note audio URLs and per-move evaluations, the audio files, and the
   catalogue of `public` courses.
-- **Members-only**: a course with an access level above 0 is for its owner
-  and users at that level or above (`users.course_access_level`, set by
+- **Members-only**: a course with an access level above 0 is for course
+  editors and users at that level or above (`users.course_access_level`, set by
   `scripts/course-access.ts`). It is never on `/api/public/*`; signed-in
   learners read courses through `/api/learn/courses*`, which add the ones
   they may open (docs/courses.md §9).
@@ -511,8 +516,7 @@ tactics, puzzle, master game.
   variations are in it too when its main line is the analysed game); the
   coach and practice sessions do the same through `useDivergedLine`, which
   also records the coach's `hypothetical_line`. Explored variations live as
-  long as the page; they are not saved. The studio's intake form and editor
-  show the course's tree with the same explorer.
+  long as the page; they are not saved.
 - **Learning**: the player (`features/courses/player/`) is a board view on
   Game Review's layout (explorer, board with eval bar and graph, coach
   pane; a phone stack with a bottom bar) through four stages: play through,

@@ -1,18 +1,17 @@
 import type { CourseArrow, CourseDocument, CourseNode } from '@freechesscoach/shared';
 
 /**
- * What a saved draft may not change or break (docs/courses.md §4): the move
- * tree is fixed once parsed — node ids never change, so audio and learner
- * progress stay attached — and every id an episode or chapter names must
- * exist. Returns the first problem, or null.
+ * What an imported document may not get wrong (docs/courses.md §4): its
+ * move tree is exactly the one the app parsed from its PGN (`parsed`), and
+ * every id an episode or chapter names exists. Returns the first problem, or null.
  */
-export function draftProblem(stored: CourseDocument, next: CourseDocument): string | null {
-  if (next.kind !== stored.kind) return 'The course kind cannot change';
-  if (next.startFen !== stored.startFen || !sameList(next.nodes, stored.nodes, nodeKey)) {
-    return 'The move tree cannot change after the course is created';
+export function draftProblem(parsed: CourseDocument, next: CourseDocument): string | null {
+  if (next.kind !== parsed.kind) return 'The course kind cannot change';
+  if (next.startFen !== parsed.startFen || !sameList(next.nodes, parsed.nodes, nodeKey)) {
+    return 'The document’s moves differ from its PGN';
   }
-  if (!sameList(next.lines, stored.lines, (line) => `${line.id}>${line.leafNodeId}>${line.note ?? ''}`)) {
-    return 'Lines can be renamed but not added, removed or moved, and their notes are fixed';
+  if (!sameList(next.lines, parsed.lines, (line) => `${line.id}>${line.leafNodeId}>${line.note ?? ''}`)) {
+    return 'The document’s lines differ from its PGN (only their names may change)';
   }
   const nodeIds = new Set(next.nodes.map((node) => node.id));
   const lineIds = new Set(next.lines.map((line) => line.id));

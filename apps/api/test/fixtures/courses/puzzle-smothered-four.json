@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "white",
   "levelBand": "club",
   "coachPersona": "shark",
   "direction": "Philidor's Legacy: the full smothered mate, knight checks, then the queen sacrifice.",

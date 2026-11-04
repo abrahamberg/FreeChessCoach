@@ -24,15 +24,6 @@ n3 2.Qxa8 (White, Line A) | best | before: White is winning → after: White is 
     tempting check: Qg4+ White's Qg4+ moves the queen from e4 to g4 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8, Ke8, Ke7, Kd6, Kc6, Kc7. Black answers Kc7: moves the king from d7 to c7. Then Kd2 Rc8 Qh3. Over the line nothing is taken; at the end White has a queen for a rook (White is better). Works, but not the answer: White is still better, but the answer is stronger: White is winning.
     tempting check: Qd3+ White's Qd3+ moves the queen from e4 to d3 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc8, Ke8, Ke7, Ke6, Kc6, Kc7. Black answers Kc7: moves the king from d7 to c7. Then Qg3+ Kb6 Qd6+. Over the line nothing is taken; at the end White has a queen for a rook (White is better). Works, but not the answer: White is still better, but the answer is stronger: White is winning.
 
-REEL CANDIDATES
-  r1 puzzle n1–n3, climax n3 [highlight, puzzle, promo]
-
-PLAN
-  e1 question n1–n1
-  e2 solve n1–n2 answer=n1
-  e3 solve n3–n3 answer=n3
-  e4 recap n3–n3
-
 REVIEW NOTES
   l1
     n1 1.Qe4+: Forks the king on e8 and the rook on a8

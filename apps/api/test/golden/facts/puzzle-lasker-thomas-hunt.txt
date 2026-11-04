@@ -102,25 +102,6 @@ n15 18.Kd2# (White, Line A) | excellent | before: White has a forced mate in 1 �
     tempting threat: Nh7? White's Nh7 moves the knight from f6 to h7 | attacks the rook on f8. Black answers Qb4+: moves the queen from e7 to b4 | gives check | the check can be answered: block with c3; the checking piece cannot be taken; move the king with Kd1. Then c3 Qxb2 Rd1. Over the line Black takes a pawn; at the end White has a knight for a queen (Black is better).
     flags: critical
 
-REEL CANDIDATES
-  r1 puzzle n1–n15, climax n15 [highlight, puzzle, promo]
-  r2 brilliant n1–n3, climax n1 [highlight, puzzle, promo]
-  r3 brilliant n1–n5, climax n3 [highlight, puzzle, promo]
-  r4 brilliant n1–n7, climax n5 [highlight, puzzle, promo]
-  r5 idea n1–n11, climax n9 [highlight, puzzle, promo]
-
-PLAN
-  e1 question n1–n1
-  e2 solve n1–n2 answer=n1
-  e3 solve n3–n4 answer=n3
-  e4 solve n5–n6 answer=n5
-  e5 solve n7–n8 answer=n7
-  e6 solve n9–n10 answer=n9
-  e7 solve n11–n12 answer=n11
-  e8 solve n13–n14 answer=n13
-  e9 solve n15–n15 answer=n15
-  e10 recap n15–n15
-
 REVIEW NOTES
   l1
     n1 11.Qxh7+: Sacrifices the queen on h7: it can be taken, and the engine still approves; Breaks into the pawns in front of the king (the pawn on h7); Defends the knight on e4, attacked once and now defended twice; You forced mate.; Won the bishop, giving back a queen.

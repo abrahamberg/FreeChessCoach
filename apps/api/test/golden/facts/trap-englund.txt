@@ -117,20 +117,6 @@ n16 8…Qc1# (Black, Line A) | great | before: Black has a forced mate in 1 → 
     tactics: You delivered checkmate.
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 mate n8–n16, climax n16 [highlight, puzzle, promo]
-  r2 trap n4–n16, climax n12 [highlight, puzzle, promo]
-  r3 swing n3–n13, climax n11 [highlight, promo]
-  r4 idea n6–n16, climax n14 [highlight, puzzle, promo]
-
-PLAN
-  e1 hook n1–n1
-  e2 setup n1–n10
-  e3 bait n11–n11
-  e4 quiz n12–n12 answer=n12
-  e5 punish n13–n16
-  e6 safety n11–n13
-
 REVIEW NOTES
   l1
     n1 1.d4: Theory — Englund Gambit: Main Line (A40); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance

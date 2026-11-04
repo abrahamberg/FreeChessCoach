@@ -179,6 +179,7 @@ services:
       - --cookie-samesite=lax
       - --skip-auth-route=^/healthz$
       - --skip-auth-route=^/readyz$
+      - --skip-auth-route=^/api/token/
     # OAUTH2_PROXY_CLIENT_ID/_SECRET/_COOKIE_SECRET must be set in a .env file
     # (see docs/dev-setup.md) before `docker compose --profile auth up` will
     # actually authenticate anyone — these placeholders just let the file

@@ -117,20 +117,6 @@ n18 9…Kxd8 (Black, Line A) | great | before: Black is better → after: Black 
     tempting threat: c5? Black's c5 moves the pawn from c7 to c5. White answers Bh4: moves the bishop from d8 to h4 | leaves the white pawn on d4 hanging. Then N7f6 Bxf6 Nxf6. Over the line Black takes a bishop; White takes a knight; at the end White is a pawn up (White is slightly better).
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 trap n4–n14, climax n12 [highlight, puzzle, promo]
-  r2 brilliant n6–n16, climax n14 [highlight, puzzle, promo]
-  r3 brilliant n10–n18, climax n18 [highlight, puzzle, promo]
-  r4 swing n3–n13, climax n11 [highlight, promo]
-
-PLAN
-  e1 hook n1–n1
-  e2 setup n1–n10
-  e3 bait n11–n11
-  e4 quiz n12–n12 answer=n12
-  e5 punish n13–n18
-  e6 safety n11–n11
-
 REVIEW NOTES
   l1
     n1 1.d4: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance

@@ -9,13 +9,5 @@ n1 1.Nf7# (White, Line A) | best | before: White has a forced mate in 1 → afte
     tempting capture: Nxh7 White's Nxh7 moves the knight from g5 to h7 | captures the pawn on h7 | leaves the white knight on h7 hanging. Black answers Kxh7: moves the king from h8 to h7 | captures the knight on h7. Then Qc2+ Kh6 Qf5. Over the line White takes a pawn; Black takes a knight; at the end White has a queen for a rook and a pawn (White is slightly better). Works, but not the answer: White is still slightly better, but there is no mate; the answer mates in 1.
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 puzzle n1–n1, climax n1 [highlight, puzzle, promo]
-
-PLAN
-  e1 question n1–n1
-  e2 solve n1–n1 answer=n1
-  e3 recap n1–n1
-
 REVIEW NOTES
   l1

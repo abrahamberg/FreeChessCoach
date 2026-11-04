@@ -10,14 +10,6 @@ n1 1.fxg6# (White, Line A) | great | before: White has a forced mate in 1 → af
     tempting threat: Ra8? White's Ra8 moves the rook from a5 to a8 | attacks the rook on h8 | leaves the white rook on a8 hanging. Black answers Qg1+: moves the queen from h1 to g1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh3. Then Kh3 Rxa8 Bc4. Over the line Black takes a rook; at the end White has a bishop for a queen and a rook (Black is winning).
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 puzzle n1–n1, climax n1 [highlight, puzzle, promo]
-
-PLAN
-  e1 question n1–n1
-  e2 solve n1–n1 answer=n1
-  e3 recap n1–n1
-
 REVIEW NOTES
   l1
     n1 1.fxg6#: You delivered checkmate.

@@ -30,10 +30,10 @@ const tree = parseCourseTree(ENGLUND);
 const id = (n: number): string => tree.nodes[n - 1]!.id;
 const document: CourseDocument = {
   version: 1, kind: 'trap', title: 'Englund trap', promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'commander',
-  startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], hookOptions: [], clipLinks: {}, takeaways: ['A.', 'B.', 'C.'],
+  startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], clipLinks: {}, takeaways: ['A.', 'B.', 'C.'],
   episodes: [{
     id: 'e1', role: 'setup', focus: '', startNodeId: id(1), endNodeId: id(6), drillNodeIds: [],
-    plies: [{ nodeId: id(2), text: 'The Englund Gambit.', arrows: [], course: true, video: false }, { nodeId: id(6), text: 'The queen eyes b2.', arrows: [], course: true, video: false }]
+    plies: [{ nodeId: id(2), text: 'The Englund Gambit.', arrows: [], course: true }, { nodeId: id(6), text: 'The queen eyes b2.', arrows: [], course: true }]
   }]
 };
 
@@ -54,7 +54,7 @@ function textModel(text: string) {
 function baseDeps(model: MockLanguageModelV4): CoachAgentBaseDependencies {
   return {
     db,
-    jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn(), enqueueRebuildDiagnosticProfile: vi.fn(), enqueueCourseGenerate: vi.fn() },
+    jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn(), enqueueRebuildDiagnosticProfile: vi.fn() },
     gatewayConfig: { unlockStore: createMemoryLlmUnlockStore({ pepper: 'course-questions-test', ttlSeconds: 60 }) },
     resolveModel: () => Promise.resolve(mockResolution(model))
   };
@@ -65,8 +65,8 @@ const headers = { 'x-forwarded-email': 'learner@example.com', 'x-forwarded-user'
 describe('course questions', () => {
   test('the learner’s own coach answers with the course position, notes and rules in its prompt', async () => {
     const owner = await usersRepo.insert(db, { email: 'creator@example.com', displayName: 'Creator', engineMode: 'chess_api' });
-    const row = await coursesRepo.insert(db, { ownerId: owner.id, slug: 'englund-ask-aaaaaaaaaaaa', kind: 'trap', title: document.title, sourcePgn: ENGLUND, direction: '', document });
-    await coursesRepo.publish(db, row.id, owner.id, document, 'unlisted', 0);
+    const row = await coursesRepo.insert(db, { createdBy: owner.id, slug: 'englund-ask-aaaaaaaaaaaa', sourcePgn: ENGLUND, direction: '', document, dossier: null });
+    await coursesRepo.publish(db, row.id, document, 'unlisted', 0);
     await usersRepo.insert(db, { email: 'learner@example.com', displayName: 'Learner', engineMode: 'chess_api' });
 
     const { model, doStream } = textModel('Nc6 attacks e5 again.');

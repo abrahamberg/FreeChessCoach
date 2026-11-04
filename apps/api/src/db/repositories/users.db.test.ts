@@ -82,13 +82,13 @@ describe('users repository', () => {
     expect((await userProfileService.toUserProfile(db, again)).onboarded).toBe(false);
   });
 
-  test('canCreateCourses defaults to false and only setCanCreateCourses changes it', async () => {
+  test('canEditCourses defaults to false and only setCanEditCourses changes it', async () => {
     const email = `${crypto.randomUUID()}@example.com`;
     const user = await usersRepo.insert(db, { email, displayName: 'Ines' });
-    expect((await userProfileService.toUserProfile(db, user)).canCreateCourses).toBe(false);
+    expect((await userProfileService.toUserProfile(db, user)).canEditCourses).toBe(false);
 
-    const granted = await usersRepo.setCanCreateCourses(db, email, true);
-    expect(granted?.canCreateCourses).toBe(true);
-    expect(await usersRepo.setCanCreateCourses(db, `${crypto.randomUUID()}@example.com`, true)).toBeUndefined();
+    const granted = await usersRepo.setCanEditCourses(db, email, true);
+    expect(granted?.canEditCourses).toBe(true);
+    expect(await usersRepo.setCanEditCourses(db, `${crypto.randomUUID()}@example.com`, true)).toBeUndefined();
   });
 });

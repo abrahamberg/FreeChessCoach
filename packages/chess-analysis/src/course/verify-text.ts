@@ -18,8 +18,6 @@ export function episodeTexts(episode: CourseEpisode): EpisodeText[] {
   const texts: EpisodeText[] = [];
   for (const ply of episode.plies) {
     texts.push({ where: `the line on ${ply.nodeId}`, nodeId: ply.nodeId, text: ply.text });
-    if (ply.say) texts.push({ where: `the video line on ${ply.nodeId}`, nodeId: ply.nodeId, text: ply.say });
-    if (ply.caption) texts.push({ where: `the caption on ${ply.nodeId}`, nodeId: ply.nodeId, text: ply.caption });
     for (const tempting of ply.tempting ?? []) texts.push({ where: `why ${tempting.san} fails on ${ply.nodeId}`, nodeId: ply.nodeId, text: tempting.why });
   }
   const quiz = episode.quiz;

@@ -168,13 +168,6 @@ n28 6…Nc6 (Black, Line B) | excellent | before: The position is roughly equal 
     ideas: develops the knight to c6, its most useful square | puts pressure on the pawns on e5 and d4
     alternatives: Ne7 (develops the knight to e7; controls d5; supports the centre pawn on d5): The position is roughly equal, after dxc5 Nec6 Bg5 Be7; a6: White is slightly better, after Be3 cxd4 Nxd4 Ne7
 
-REEL CANDIDATES
-
-PLAN
-  e1 line n1–n20
-  e2 deviation n21–n28
-  e3 recap n20–n20
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

@@ -1,6 +1,6 @@
 import type { ColumnType, Generated } from 'kysely';
 import type { CourseDossier, GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
-import type { BotConfig, CoachPersona, CourseDebugCall, CourseDocument, CourseEnrollmentPlace, CourseNodeEvals, CourseGeneration, CourseKind, CourseStage, CourseStatus, CoachPhase, DiagnosisCodeId, Direction, EngineMode, GameReviewTier, Mechanism, MistakeCategory, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
+import type { BotConfig, CoachPersona, CourseDocument, CourseEnrollmentPlace, CourseKind, CourseStage, CourseStatus, CoachPhase, DiagnosisCodeId, Direction, EngineMode, GameReviewTier, Mechanism, MistakeCategory, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
 
 /** jsonb columns: pg parses them to JS values on select; inserts/updates must pass a JSON string. */
 type Jsonb<T> = ColumnType<T, string, string>;
@@ -24,8 +24,8 @@ export interface UsersTable {
   onboardedAt: Date | null;
   /** 0011_chess_api_rate_limit.ts — when chess-api.com last answered HIGH_USAGE. */
   chessApiRateLimitedAt: Date | null;
-  /** 0012_course_creators.ts — set only by scripts/course-creator.ts. */
-  canCreateCourses: Generated<boolean>;
+  /** 0032_course_editors.ts (was 0012) — set only by scripts/course-editor.ts. */
+  canEditCourses: Generated<boolean>;
   /** 0028_course_access_levels.ts — set only by scripts/course-access.ts. */
   courseAccessLevel: Generated<number>;
   createdAt: Generated<Date>;
@@ -331,7 +331,9 @@ export interface BugReportsTable {
 /** 0013_courses.ts — docs/courses.md §4, §9. */
 export interface CoursesTable {
   id: Generated<string>;
-  ownerId: string;
+  /** 0032_course_editors.ts — the editor who first imported it; null once
+   * that account is gone. For the record only: every editor edits every course. */
+  createdBy: string | null;
   slug: string;
   kind: CourseKind;
   status: Generated<CourseStatus>;
@@ -343,21 +345,10 @@ export interface CoursesTable {
   document: Jsonb<CourseDocument> | null;
   publishedDocument: Jsonb<CourseDocument> | null;
   publishedAt: Date | null;
-  generation: Jsonb<CourseGeneration> | null;
-  /** 0014_course_dossier.ts: the engine pass, kept for resume and regeneration. */
+  /** 0014_course_dossier.ts: the engine pass the import builds; null for a reading course. */
   dossier: Jsonb<CourseDossier> | null;
-  /** 0031_course_evals.ts: the moves' evaluations and qualities, with no dossier. */
-  evals: Jsonb<CourseNodeEvals> | null;
   createdAt: Generated<Date>;
   updatedAt: Generated<Date>;
-}
-
-/** 0015_course_ai_calls.ts — one AI call of a course run (Task 80.6). */
-export interface CourseAiCallsTable {
-  id: Generated<string>;
-  courseId: string;
-  entry: Jsonb<CourseDebugCall>;
-  createdAt: Generated<Date>;
 }
 
 /** 0025_course_audio_in_bucket.ts: where a course note's audio file is in the
@@ -413,6 +404,18 @@ export interface StatsArchiveWeeksTable {
   updatedAt: Generated<Date>;
 }
 
+/** 0032_course_editors.ts — an editor's token for the course API (the
+ * studio); only the SHA-256 of the token is kept. */
+export interface CourseApiTokensTable {
+  id: Generated<string>;
+  userId: string;
+  name: string;
+  tokenHash: string;
+  createdAt: Generated<Date>;
+  lastUsedAt: Date | null;
+  revokedAt: Date | null;
+}
+
 export interface Database {
   users: UsersTable;
   userLlmSetups: UserLlmSetupsTable;
@@ -420,9 +423,9 @@ export interface Database {
   gameImportEvents: GameImportEventsTable;
   bugReports: BugReportsTable;
   courses: CoursesTable;
-  courseAiCalls: CourseAiCallsTable;
   debugTurns: DebugTurnsTable;
   courseAudio: CourseAudioTable;
+  courseApiTokens: CourseApiTokensTable;
   courseProgress: CourseProgressTable;
   courseEnrollments: CourseEnrollmentsTable;
   statsArchiveWeeks: StatsArchiveWeeksTable;

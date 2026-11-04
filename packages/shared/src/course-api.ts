@@ -2,40 +2,43 @@ import { z } from 'zod';
 import { MoveQualitySchema } from './analysis.js';
 import { COACH_PERSONAS, RATING_BANDS } from './constants.js';
 import { DiagnosisCodeIdSchema } from './diagnosis/catalog-types.js';
-import { COURSE_MAX_RATING, COURSE_MIN_RATING, CourseAccessLevelSchema, CourseDocumentSchema, CourseGenerationSchema, CourseKindSchema, CourseLevelSchema, CourseSeriesSchema, CourseStatusSchema, CourseTagsSchema, CourseVideosSchema } from './course.js';
+import { CourseAccessLevelSchema, CourseClipLinksSchema, CourseDocumentSchema, CourseKindSchema, CourseLevelSchema, CourseSeriesSchema, CourseStatusSchema, CourseTagsSchema } from './course.js';
 
-/** Each rated move of a hand-made course: the move (so an edited tree never
- * reads a stale figure), White's evaluation after it and its quality. Kept
- * on the course without a dossier; the player's eval bar and move icons read
- * it. */
-export const CourseNodeEvalsSchema = z.record(z.string(), z.object({ san: z.string(), cp: z.number(), quality: MoveQualitySchema }));
-export type CourseNodeEvals = z.infer<typeof CourseNodeEvalsSchema>;
-
-/** The intake form (docs/courses.md §5.3). `learnerSide` null lets code
- * infer it (§3); the route refuses when it can't. */
-export const CreateCourseRequestSchema = z.object({
+/** docs/courses.md §2: a course from the studio, stored under `slug` (made
+ * when new, replaced in place when it exists; its id, status and published
+ * copy stay). The app parses the PGN itself, refuses a document whose moves
+ * differ from it, and builds the dossier with its own engine: it never
+ * takes engine facts from the caller. */
+export const ImportCourseRequestSchema = z.object({
+  slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'A slug is lowercase words joined by hyphens').max(120),
   pgn: z.string().trim().min(1, 'Paste a PGN').max(1_000_000),
-  kind: CourseKindSchema,
   direction: z.string().trim().max(20_000).default(''),
-  levelBand: z.enum(RATING_BANDS).default('improving'),
-  learnerSide: z.enum(['white', 'black']).nullable().default(null),
-  coachPersona: z.enum(COACH_PERSONAS),
-  /** Phase 90: the learner's target rating; it sets the band the prompts
-   * write for, and the course takes the next place at that level ("1200-02"). */
-  rating: z.number().int().min(COURSE_MIN_RATING).max(COURSE_MAX_RATING).optional(),
-  /** The series the course belongs to and its place in it. */
-  series: CourseSeriesSchema.optional(),
-  /** Diagnostic tags: the weaknesses the course fixes. */
-  tags: CourseTagsSchema.optional(),
-  /** §13.1: which videos to make besides the course; the kind's default
-   * when absent. */
-  videos: CourseVideosSchema.optional()
+  document: CourseDocumentSchema
 });
-export type CreateCourseRequest = z.input<typeof CreateCourseRequestSchema>;
+export type ImportCourseRequest = z.input<typeof ImportCourseRequestSchema>;
 
-/** A side's player from the source PGN's headers, for the reel's labels. */
-export const CoursePlayerSchema = z.object({ name: z.string(), rating: z.number().int().nullable() });
-export type CoursePlayer = z.infer<typeof CoursePlayerSchema>;
+/** docs/courses.md §9: what an editor changes on a course besides its
+ * content. `draft` takes a published course off the site (its published copy
+ * stays until the next publish); `unlisted` and `public` need one. `clipLinks`
+ * are set on the draft and the published copy alike. */
+export const UpdateCourseRequestSchema = z
+  .object({
+    status: z.enum(['draft', 'unlisted', 'public']).optional(),
+    accessLevel: CourseAccessLevelSchema.optional(),
+    clipLinks: CourseClipLinksSchema.optional()
+  })
+  .refine((update) => Object.values(update).some((value) => value !== undefined), 'Nothing to change');
+export type UpdateCourseRequest = z.infer<typeof UpdateCourseRequestSchema>;
+
+/** docs/courses.md §2: an editor's token for `/api/token/courses/*`. The
+ * token itself is returned once, at creation. */
+export const CourseApiTokenSchema = z.object({ id: z.string(), name: z.string(), createdAt: z.string(), lastUsedAt: z.string().nullable() });
+export type CourseApiToken = z.infer<typeof CourseApiTokenSchema>;
+export const CourseApiTokenListResponseSchema = z.object({ tokens: z.array(CourseApiTokenSchema) });
+export type CourseApiTokenListResponse = z.infer<typeof CourseApiTokenListResponseSchema>;
+export const CreateCourseApiTokenRequestSchema = z.object({ name: z.string().trim().min(1, 'Name the token').max(80) });
+export const CreateCourseApiTokenResponseSchema = CourseApiTokenSchema.extend({ token: z.string() });
+export type CreateCourseApiTokenResponse = z.infer<typeof CreateCourseApiTokenResponseSchema>;
 
 export const CourseResponseSchema = z.object({
   id: z.string(),
@@ -46,18 +49,16 @@ export const CourseResponseSchema = z.object({
   title: z.string(),
   direction: z.string(),
   document: CourseDocumentSchema,
-  /** Null until AI generation is first started. */
-  generation: CourseGenerationSchema.nullable(),
   updatedAt: z.string(),
   /** When the frozen copy was last published; null for a draft. */
   publishedAt: z.string().nullable(),
+  /** `<episodeId>:<nodeId>` → the uploaded audio of the draft's note, as on the public page. */
+  noteAudio: z.record(z.string(), z.string()),
   /** Notes of the draft whose current text has no uploaded audio yet (§8). */
   missingNoteAudio: z.array(z.object({ episodeId: z.string(), nodeId: z.string() })),
-  /** Each move's evaluation and quality from the engine pass (`{}` before
-   * it ran): the clip's board sounds. */
-  evals: z.record(z.string(), z.object({ cp: z.number(), quality: MoveQualitySchema })),
-  /** The players the source PGN names (`[White]`, `[WhiteElo]`); null for a side it does not. */
-  players: z.object({ white: CoursePlayerSchema.nullable(), black: CoursePlayerSchema.nullable() })
+  /** Each move's evaluation and quality from the engine pass (`{}` for a
+   * reading course): the learner preview's eval bar. */
+  evals: z.record(z.string(), z.object({ cp: z.number(), quality: MoveQualitySchema }))
 });
 export type CourseResponse = z.infer<typeof CourseResponseSchema>;
 
@@ -74,48 +75,18 @@ export const CourseSummarySchema = z.object({
   status: CourseStatusSchema,
   title: z.string(),
   updatedAt: z.string(),
-  /** The Course studio's card (Phase 89): the draft's promise and size, and
-   * the AI's writing, if it ran. */
+  /** The Courses page's row: the draft's promise and size. */
   promise: z.string(),
   episodes: z.number().int(),
   moves: z.number().int(),
   level: CourseLevelSchema.nullable(),
-  generation: z.object({ status: CourseGenerationSchema.shape.status, done: z.number(), total: z.number() }).nullable()
+  accessLevel: CourseAccessLevelSchema,
+  publishedAt: z.string().nullable()
 });
 export type CourseSummary = z.infer<typeof CourseSummarySchema>;
 
 export const CourseListResponseSchema = z.object({ courses: z.array(CourseSummarySchema) });
 export type CourseListResponse = z.infer<typeof CourseListResponseSchema>;
-
-export const SaveCourseDraftRequestSchema = z.object({ document: CourseDocumentSchema });
-export type SaveCourseDraftRequest = z.infer<typeof SaveCourseDraftRequestSchema>;
-
-/** A finished course from the content studio, which does its own checks:
- * the draft, its tree and its dossier are replaced in place, under the same
- * id and address. The dossier is the engine pass (`CourseDossier`); only
- * the fields the app reads by id are checked here. */
-export const ReplaceCourseRequestSchema = CreateCourseRequestSchema.pick({ pgn: true, direction: true }).extend({
-  document: CourseDocumentSchema,
-  dossier: z
-    .object({
-      learnerSide: z.enum(['white', 'black']),
-      nodes: z.array(z.object({ nodeId: z.string(), san: z.string() }).passthrough()),
-      lines: z.array(z.object({}).passthrough())
-    })
-    .passthrough(),
-  /** Moves the creator rated already; absent, the course keeps none and
-   * `POST /api/courses/:id/analyze` rates them. */
-  evals: CourseNodeEvalsSchema.optional()
-});
-export type ReplaceCourseRequest = z.input<typeof ReplaceCourseRequestSchema>;
-
-/** docs/courses.md §6.5: regenerate one episode with the creator's words. */
-export const RegenerateEpisodeRequestSchema = z.object({ instruction: z.string().trim().max(300).default('') });
-export type RegenerateEpisodeRequest = z.input<typeof RegenerateEpisodeRequestSchema>;
-
-/** Start (or resume) AI generation; `restart` drops a stuck or finished run. */
-export const StartCourseGenerationRequestSchema = z.object({ restart: z.boolean().default(false) });
-export type StartCourseGenerationRequest = z.input<typeof StartCourseGenerationRequestSchema>;
 
 /** docs/courses.md §9: publish the draft. `warningsChecked` is the creator's
  * "I checked these" when the checks still report problems. */
@@ -141,8 +112,9 @@ export const CourseCheckProblemSchema = z.object({
 export const PublishCheckResponseSchema = z.object({ problems: z.array(CourseCheckProblemSchema) });
 export type CourseCheckProblem = z.infer<typeof CourseCheckProblemSchema>;
 export type PublishCheckResponse = z.infer<typeof PublishCheckResponseSchema>;
-/** The course as GET returns it, with the publish check over the new draft. */
-export type ReplaceCourseResponse = CourseResponse & PublishCheckResponse;
+/** The imported course as GET returns it, with the publish check over it. */
+export const ImportCourseResponseSchema = CourseResponseSchema.merge(PublishCheckResponseSchema).extend({ created: z.boolean() });
+export type ImportCourseResponse = z.infer<typeof ImportCourseResponseSchema>;
 
 /** §8: ask for a URL to upload one note's MP3 to (its size in bytes), then say
  * where it went. The browser sends the file to the bucket, not to the api. */

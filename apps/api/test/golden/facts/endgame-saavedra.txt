@@ -102,22 +102,6 @@ n16 7.Qxc4 (White, Line B) | great | before: The position is roughly equal → a
     alternatives: Kd2: Black is much better, after Rxc8 Kd3 Kb2 Ke4; Kb3 (attacks the rook on c4 twice, while nothing defends it): Black is much better, after Rxc8 Kb4 Ra8 Kc5
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 puzzle n5–n13, climax n13 [highlight, puzzle, promo]
-  r2 brilliant n1–n3, climax n1 [highlight, puzzle, promo]
-  r3 brilliant n1–n5, climax n3 [highlight, puzzle, promo]
-  r4 brilliant n1–n11, climax n9 [highlight, puzzle, promo]
-  r5 brilliant n4–n16, climax n15 [highlight, puzzle, promo]
-
-PLAN
-  e1 goal n1–n1
-  e2 technique n1–n2 answer=n1
-  e3 technique n3–n4 answer=n3
-  e4 technique n5–n10 answer=n9
-  e5 technique n11–n13 answer=n13
-  e6 defence n14–n16
-  e7 recap n13–n13
-
 REVIEW NOTES
   l1
     n1 1.c7: The only good move; Pushes the passed pawn to c7, 1 square from queening

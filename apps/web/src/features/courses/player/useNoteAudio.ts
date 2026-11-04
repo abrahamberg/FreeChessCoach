@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { PARAGRAPH_PAUSE_S } from '../clip/prepare-audio.js';
+import { NOTE_PARAGRAPH_PAUSE_S } from '@freechesscoach/shared';
 import { sentenceRanges } from './note-marks.js';
 import { translateChessNotationForSpeech } from '../../../tts/sanToSpokenText.js';
 import { setVoiceSpeaking } from '../../../sounds/voice-activity.js';
@@ -90,7 +90,7 @@ export function useNoteAudio(
       // One id per stretch: the voice keeps each id's audio, so a shared one would replay the first.
       voice.play(`course:${nodeId}:${paragraph.start}`, translateChessNotationForSpeech(paragraph.text), () => {
         if (chain !== chainRef.current || at + 1 >= paragraphs.length) return;
-        timerRef.current = window.setTimeout(() => speak(at + 1), PARAGRAPH_PAUSE_S * 1000);
+        timerRef.current = window.setTimeout(() => speak(at + 1), NOTE_PARAGRAPH_PAUSE_S * 1000);
       });
     };
     speak(0);

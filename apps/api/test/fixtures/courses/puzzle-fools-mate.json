@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "black",
   "levelBand": "novice",
   "coachPersona": "gambler",
   "direction": "The fastest mate in chess: Black to play after two weak pawn moves.",

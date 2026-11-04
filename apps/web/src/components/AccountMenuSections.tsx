@@ -6,7 +6,7 @@ import { apiGet } from '../api/client.js';
 import { getDemoRuntime } from '../demo/demoRuntime.js';
 import { AiLockMenuRow } from './AiLockMenuRow.js';
 import { describeEngineActivity } from './EngineActivityIndicator.js';
-import { BugIcon, LogOutIcon, PlusIcon, SettingsIcon } from './Icon.js';
+import { BookIcon, BugIcon, LogOutIcon, SettingsIcon } from './Icon.js';
 import { TunnelStatusDots } from './TunnelStatusDots.js';
 import type { EngineActivityIndicatorState } from '../hooks/useEngineActivityIndicator.js';
 import './UserMenu.css';
@@ -70,11 +70,11 @@ export function AccountMenuSections({ engineActivity, onClose, onReportBug, onUn
           onUnlock();
         }}
       />
-      {/* docs/courses.md §2: only accounts a moderator switched on. */}
-      {profileQuery.data?.canCreateCourses && !getDemoRuntime() && (
-        <NavLink to="/studio" role="menuitem" className="user-menu__item" onClick={onClose}>
-          <PlusIcon width={17} height={17} />
-          Course studio
+      {/* docs/courses.md §2: only course editors, switched on by a moderator. */}
+      {profileQuery.data?.canEditCourses && !getDemoRuntime() && (
+        <NavLink to="/manage/courses" role="menuitem" className="user-menu__item" onClick={onClose}>
+          <BookIcon width={17} height={17} />
+          Manage courses
         </NavLink>
       )}
       <NavLink to="/settings" role="menuitem" className="user-menu__item" onClick={onClose}>

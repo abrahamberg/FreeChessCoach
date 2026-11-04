@@ -65,18 +65,6 @@ n13 7…Na6+ (Black, Line A) | great | before: The position is roughly equal →
     alternatives: Nc6: White is winning, after Kxc6 Ke2 Kd6 Kf2; Ke2: White is winning, after Kxb8 Kf1 Kc7 Kf2
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 puzzle n5–n13, climax n13 [highlight, puzzle, promo]
-  r2 brilliant n1–n11, climax n9 [highlight, puzzle, promo]
-  r3 brilliant n3–n13, climax n11 [highlight, puzzle, promo]
-
-PLAN
-  e1 goal n1–n1
-  e2 technique n1–n10 answer=n9
-  e3 technique n11–n12 answer=n11
-  e4 technique n13–n13 answer=n13
-  e5 recap n13–n13
-
 REVIEW NOTES
   l1
     n1 1…Nd7: Threatens to win the pawn on b6 with Nxb6; Takes the attacked knight to safety on d7

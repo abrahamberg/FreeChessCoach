@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "black",
   "levelBand": "improving",
   "coachPersona": "sunzi",
   "direction": "Black to play and draw: the king has no moves, so give the rook away.",

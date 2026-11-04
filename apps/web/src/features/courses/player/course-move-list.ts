@@ -1,7 +1,7 @@
 import type { ClassifiedMoveDto, CourseDocument, CourseNode, PublicCourseResponse } from '@freechesscoach/shared';
 import { moveListStart, type MoveListStart } from '../../board/moveListStart.js';
 import { moveSound, type BoardSound } from '../../../sounds/move-sounds.js';
-import { fenBefore } from '../courseEdits.js';
+import { fenBefore } from './course-nodes.js';
 
 export type CourseEvals = PublicCourseResponse['evals'];
 

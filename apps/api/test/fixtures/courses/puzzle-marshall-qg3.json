@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "black",
   "levelBand": "advanced",
   "coachPersona": "sunzi",
   "direction": "Marshall's famous move: Black to play, and the queen goes where every pawn can take it.",

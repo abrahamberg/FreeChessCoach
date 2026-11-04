@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "white",
   "levelBand": "improving",
   "coachPersona": "huntress",
   "direction": "Smothered mate in one: the queen is not the piece that mates.",

@@ -31,7 +31,7 @@ steps done by hand, once, when courses first go to production.
       (`^/learn(/[a-z0-9-]+)?$`, `^/api/public/`, `^/sounds/`) and asserted by `test.sh`. If
       you override `extraArgs` (e.g. for Lichess login), copy them too.
 - [ ] **Course creators**: grant the flag per user,
-      `npx tsx apps/api/scripts/course-creator.ts grant <email>`.
+      `npx tsx apps/api/scripts/course-editor.ts grant <email>`.
 - [ ] **R2 bucket for course note audio** (required for course creators:
       without it the studio cannot save note audio):
   1. In Cloudflare, create an R2 bucket (e.g. `freechesscoach-course-audio`).

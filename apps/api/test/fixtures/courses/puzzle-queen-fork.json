@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "white",
   "levelBand": "novice",
   "coachPersona": "shark",
   "direction": "A queen fork: check the king and win the rook in the corner.",

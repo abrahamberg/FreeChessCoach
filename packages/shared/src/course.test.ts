@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { z } from 'zod';
-import { bandForRating, videoCaption, videoLine, CourseDocumentSchema, CourseOutlineCallSchema, CourseOutlineSchema, EpisodeScriptSchema, levelCode, ReelScriptSchema, type CourseDocument } from './course.js';
-import { AskCourseCoachRequestSchema, CreateCourseRequestSchema } from './course-api.js';
+import { bandForRating, CourseDocumentSchema, levelCode, type CourseDocument } from './course.js';
+import { AskCourseCoachRequestSchema } from './course-api.js';
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -38,13 +37,12 @@ function minimalDocument(): CourseDocument {
         focus: 'White grabs the centre.',
         startNodeId: 'n1',
         endNodeId: 'n1',
-        plies: [{ nodeId: 'n1', text: 'The main move.', arrows: [], course: true, video: false }],
+        plies: [{ nodeId: 'n1', text: 'The main move.', arrows: [], course: true }],
         drillNodeIds: []
       }
     ],
     takeaways: [],
     diagnosisCodes: [],
-    hookOptions: [],
     clipLinks: {}
   };
 }
@@ -86,46 +84,10 @@ describe('CourseDocumentSchema', () => {
   });
 });
 
-describe('the video line, caption and level', () => {
-  const ply = { nodeId: 'n1', text: 'The knight lands on f7. It forks queen and rook, and White is lost.', arrows: [], course: true, video: true };
-
-  test('the video says its own line when it has one, else the course text', () => {
-    expect(videoLine(ply)).toBe(ply.text);
-    expect(videoLine({ ...ply, say: 'Fork!' })).toBe('Fork!');
-    expect(videoLine({ ...ply, say: '  ' })).toBe(ply.text);
-  });
-
-  test('the caption is set, or the line’s first sentence cut at a word', () => {
-    expect(videoCaption(ply)).toBe('The knight lands on f7.');
-    expect(videoCaption({ ...ply, caption: 'Nf7!' })).toBe('Nf7!');
-    expect(videoCaption({ ...ply, text: 'A very long first sentence that keeps going well past what fits on the screen at once' }, 30)).toBe('A very long first sentence…');
-  });
-
-  test('a level reads 1200-01 and gives the prompts their band', () => {
+describe('levels', () => {
+  test('a level reads 1200-01 and gives its band', () => {
     expect(levelCode({ rating: 1200, order: 1 })).toBe('1200-01');
     expect([800, 1200, 1600, 2000].map(bandForRating)).toEqual(['novice', 'improving', 'club', 'advanced']);
-  });
-});
-
-describe('model-facing schemas are strict (every key required)', () => {
-  /** Every object's keys, as a strict provider reads the schema: each must
-   * be required. The first OpenAI run refused the outline for keyNodeIds. */
-  function optionalKeys(node: unknown, path = ''): string[] {
-    if (!node || typeof node !== 'object') return [];
-    const schema = node as { properties?: Record<string, unknown>; required?: string[] };
-    const own = schema.properties ? Object.keys(schema.properties).filter((key) => !schema.required?.includes(key)).map((key) => `${path}.${key}`) : [];
-    return [...own, ...Object.entries(node).flatMap(([key, child]) => optionalKeys(child, `${path}/${key}`))];
-  }
-  // As the request is sent: a defaulted key is optional there too (the
-  // second OpenAI run refused the outline's defaulted "video").
-  const strict = (schema: z.ZodType): string[] => optionalKeys(z.toJSONSchema(schema, { io: 'input' }));
-
-  test('the outline, episode and reel calls', () => {
-    expect(strict(CourseOutlineCallSchema)).toEqual([]);
-    expect(strict(EpisodeScriptSchema)).toEqual([]);
-    expect(strict(ReelScriptSchema)).toEqual([]);
-    // The stored outline keeps code's key moves, so it is not sent to a model.
-    expect(strict(CourseOutlineSchema).some((key) => key.endsWith('.keyNodeIds'))).toBe(true);
   });
 });
 
@@ -140,11 +102,7 @@ describe('AskCourseCoachRequestSchema', () => {
 });
 
 describe('a course for beginners', () => {
-  test('takes a rating from 100 in the intake and the document, a series and tags', () => {
-    const intake = { pgn: '1. e4 *', kind: 'lesson', coachPersona: 'general' };
-    expect(CreateCourseRequestSchema.safeParse({ ...intake, rating: 99 }).success).toBe(false);
-    expect(CreateCourseRequestSchema.safeParse({ ...intake, rating: 100, series: { name: 'Chess From Zero', position: 7, total: 14, module: 'Tactics' }, tags: ['hangs-piece'] }).success).toBe(true);
-
+  test('takes a rating from 100 in the document, a series and tags', () => {
     const document = { ...minimalDocument(), level: { rating: 100, order: 1 }, series: { name: 'Chess From Zero', position: 7, total: 14 }, tags: ['hangs-piece', 'no-scan-before-move'] };
     expect(CourseDocumentSchema.safeParse(document).success).toBe(true);
     expect(CourseDocumentSchema.safeParse({ ...document, level: { rating: 99, order: 1 } }).success).toBe(false);

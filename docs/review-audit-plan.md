@@ -74,7 +74,7 @@ after every pass.
 - One dev game has nine "The only move that holds" in a row. Say it once
   per run of only moves?
 - The `dev@local.test` course-creation grant (revoke with `npx tsx
-  apps/api/scripts/course-creator.ts revoke dev@local.test`); the
+  apps/api/scripts/course-editor.ts revoke dev@local.test`); the
   queen-against-pawn course rule; `seeds/d9716668.evals.json` is 56.7 KB,
   over the 50 KB rule in AGENTS.md.
 - Standing decisions (2026-10-02): no engine search deeper than depth 12

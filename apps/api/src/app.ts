@@ -10,6 +10,7 @@ import { registerPublicCoursesRoutes } from './routes/public-courses.js';
 import { registerLearnCoursesRoutes } from './routes/learn-courses.js';
 import type { AudioStore } from './services/courses/audio-store.js';
 import { registerCoursesRoutes } from './routes/courses.js';
+import { registerCourseTokensRoutes } from './routes/course-tokens.js';
 import { registerCourseProgressRoutes } from './routes/course-progress.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerDiagnosticsRoutes } from './routes/diagnostics.js';
@@ -41,8 +42,7 @@ import { createChesscomClient, type ChesscomClient } from './services/chesscom.j
 import { createLichessClient, type LichessClient } from './services/lichess.js';
 import type { CoachAgentBaseDependencies } from './bootstrap.js';
 import type { BrowserTunnel } from './services/engine/browser-tunnel.js';
-import { getModelForUser, type GatewayConfig, type ModelResolution } from './llm/gateway.js';
-import { courseEvalsBuilderFor, type CourseEvalsBuilder } from './services/courses/course-evals.js';
+import { editorForToken } from './services/courses/course-tokens.js';
 import { courseDossierBuilderFor, type CourseDossierBuilder } from './services/courses/dossier.js';
 import type { ResolveEngineBackendOptions } from './services/engine/resolve-engine-backend.js';
 import type { TtsConfig } from './services/tts.js';
@@ -61,13 +61,9 @@ export interface BuildAppOptions {
   /** Required to register /api/sessions/* routes. */
   coachAgentBaseDeps?: CoachAgentBaseDependencies;
   engineBackendOptions?: ResolveEngineBackendOptions;
-  /** The course skeleton's engine pass; defaults to one built from
+  /** The course import's engine pass; defaults to one built from
    * `engineBackendOptions` (tests inject a fake). */
   courseDossierBuilder?: CourseDossierBuilder;
-  courseEvalsBuilder?: CourseEvalsBuilder;
-  /** The creator's model for course writing; defaults to the gateway's
-   * standard tier (tests inject a mock). */
-  courseModelResolver?: (userId: string) => Promise<ModelResolution>;
   /** Shared (Redis) store for the light-engine evals that rate a student's live bot-game moves — must be shared across API pods. */
   botRatingEvals?: RatingEvalStore;
   /** Live Thinking log of bot moves, mirrored across API pods — see bot-thinking-registry.ts. */
@@ -104,7 +100,8 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   const app = Fastify({ logger: options.logger ?? false, logController: new LogController({ disableRequestLogging: true }) });
 
   app.register(errorMapperPlugin);
-  app.register(authHeadersPlugin, { authMode });
+  const { db } = options;
+  app.register(authHeadersPlugin, { authMode, tokenUser: db ? (token) => editorForToken(db, token) : async () => null });
   app.register(crossSiteGuardPlugin);
   app.register(apiRateLimitPlugin, { limit: options.apiRateLimit });
   // ws defaults to 100 MiB frames; the largest real tunnel message (a whole
@@ -133,11 +130,9 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     registerCourseProgressRoutes(app, options.db);
     registerCoursesRoutes(app, options.db, {
       buildDossier: options.courseDossierBuilder ?? (options.engineBackendOptions ? courseDossierBuilderFor(options.engineBackendOptions) : undefined),
-      buildEvals: options.courseEvalsBuilder ?? (options.engineBackendOptions ? courseEvalsBuilderFor(options.engineBackendOptions) : undefined),
-      jobQueue: options.jobQueue ?? noopJobQueue,
-      resolveModel: options.courseModelResolver ?? courseModelResolver(options.db, options.coachAgentBaseDeps?.gatewayConfig),
       audioStore: options.audioStore
     });
+    registerCourseTokensRoutes(app, options.db);
     registerDashboardRoutes(app, options.db);
     registerDiagnosticsRoutes(app, options.db);
     registerPuzzleAssignmentsRoutes(app, options.db);
@@ -215,6 +210,3 @@ function defaultCheckReady(db: Kysely<Database> | undefined): () => Promise<bool
 }
 
 /** The creator's standard-tier model, when the app has an AI gateway. */
-function courseModelResolver(db: Kysely<Database>, gatewayConfig: GatewayConfig | undefined): ((userId: string) => Promise<ModelResolution>) | undefined {
-  return gatewayConfig ? (userId) => getModelForUser(db, gatewayConfig, userId, 'standard') : undefined;
-}

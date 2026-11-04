@@ -110,13 +110,6 @@ n21 6.Qb3 (White, Early c5) | best | before: The position is roughly equal → a
     ideas: defends the pawn on b2, which was attacked | brings the queen out early to b3, with 2 pieces still at home | puts pressure on the pawn on d5 | clears the way to castle queenside | prepares the pawn's advance to c4, which it now supports
     alternatives: Ngf3 (develops the knight to f3, its most useful square; controls d4 and e5; supports the centre pawn on d4): The position is roughly equal, after cxd4 cxd4 Nh5 Bg3; Qc2 (brings the queen out to c2; controls e4; clears the way to castle queenside): The position is roughly equal, after Nh5 Be5 cxd4 Bxd4
 
-REEL CANDIDATES
-
-PLAN
-  e1 line n1–n15
-  e2 deviation n16–n21
-  e3 recap n15–n15
-
 REVIEW NOTES
   l1
     n1 1.d4: Theory — Queen's Pawn Game: Accelerated London System (D00); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance

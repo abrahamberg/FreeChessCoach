@@ -1,5 +1,5 @@
 import type { CourseArrow, CourseDocument, CourseEpisode, CourseNode } from '@freechesscoach/shared';
-import { episodeNodeIds, fenBefore } from '../courseEdits.js';
+import { episodeNodeIds, fenBefore } from './course-nodes.js';
 
 /** One episode as the learner walks it: the position before its first move,
  * then one step per move. Step `k` shows the board after `moves[k - 1]`. */

@@ -25,7 +25,7 @@ async function main(): Promise<void> {
       process.exitCode = 1;
       return;
     }
-    await coursesRepo.setStatus(db, course.id, 'removed');
+    await coursesRepo.setVisibility(db, course.id, { status: 'removed' });
     console.log(`${slug}: removed`);
     if (config) {
       const store = createAudioStore(config);

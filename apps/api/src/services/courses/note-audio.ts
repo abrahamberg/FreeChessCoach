@@ -7,9 +7,8 @@ import type { Database } from '../../db/schema.js';
 import { NotFoundError, ValidationError } from '../../lib/errors.js';
 import { audioKeyPrefix, newAudioKey, type AudioStore } from './audio-store.js';
 
-/** Course notes are voiced by Kokoro only (docs/courses.md §8), encoded in the
- * creator's browser and uploaded as MP3 straight to the bucket: visitors fetch
- * these, so they stay small. */
+/** Course notes are voiced by the studio (docs/courses.md §8) and uploaded
+ * as MP3 straight to the bucket: visitors fetch these, so they stay small. */
 export const NOTE_AUDIO_TYPE = 'audio/mpeg';
 
 /** A note's audio is found by its exact text: edit the note, and it needs new audio. */
@@ -17,20 +16,31 @@ export function noteTextHash(text: string): string {
   return createHash('sha256').update(text).digest('hex').slice(0, 32);
 }
 
-/** Every move that speaks in the course (the long version), and its
- * text's hash. The clip's lines are voiced in the creator's browser when it
- * records, never uploaded. */
+/** Every move that speaks in the course, and its text's hash. */
 export function noteHashes(document: CourseDocument): { episodeId: string; nodeId: string; hash: string }[] {
   return document.episodes.flatMap((episode) =>
     episode.plies.flatMap((ply) => (ply.course && ply.text.trim() ? [{ episodeId: episode.id, nodeId: ply.nodeId, hash: noteTextHash(ply.text) }] : []))
   );
 }
 
-export async function missingNoteAudio(db: Kysely<Database>, courseId: string, document: CourseDocument): Promise<CourseResponse['missingNoteAudio']> {
-  const stored = new Set((await courseAudioRepo.files(db, courseId)).map((file) => file.textHash));
-  return noteHashes(document)
-    .filter((note) => !stored.has(note.hash))
-    .map(({ episodeId, nodeId }) => ({ episodeId, nodeId }));
+/** The document's notes: where each one's audio file is (`<episodeId>:<nodeId>`
+ * → its URL under `baseUrl`, the bucket's public address; none without one),
+ * and the notes that have none yet. */
+export async function noteAudio(
+  db: Kysely<Database>,
+  courseId: string,
+  document: CourseDocument,
+  baseUrl: string | null
+): Promise<{ urls: Record<string, string>; missing: CourseResponse['missingNoteAudio'] }> {
+  const files = new Map((await courseAudioRepo.files(db, courseId)).map((file) => [file.textHash, file]));
+  const urls: Record<string, string> = {};
+  const missing: CourseResponse['missingNoteAudio'] = [];
+  for (const { episodeId, nodeId, hash } of noteHashes(document)) {
+    const file = files.get(hash);
+    if (!file) missing.push({ episodeId, nodeId });
+    else if (baseUrl) urls[`${episodeId}:${nodeId}`] = `${baseUrl}/${file.objectKey}`;
+  }
+  return { urls, missing };
 }
 
 function noteOf(document: CourseDocument, target: { episodeId: string; nodeId: string }): { hash: string } {

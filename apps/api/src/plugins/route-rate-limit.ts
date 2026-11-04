@@ -25,6 +25,9 @@ export const ROUTE_RATE_LIMITS = {
   enginePing: { max: 15, windowMs: 60_000 },
   // One request per page of a player's game history.
   remoteGameList: { max: 60, windowMs: 60_000 },
+  // Each import runs the engine over every position of the course (the
+  // dossier); the studio sends one per course it finishes.
+  courseImport: { max: 20, windowMs: 60 * 60_000 },
   // A course page is one document plus one audio file per note (about 20);
   // every anonymous visitor shares one key (the proxy's address).
   publicCourse: { max: 300, windowMs: 60_000 }

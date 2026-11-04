@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "white",
   "levelBand": "improving",
   "coachPersona": "commander",
   "direction": "White is a queen and a rook down and Black threatens mate: save the game with perpetual check.",

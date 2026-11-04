@@ -28,12 +28,12 @@ function trapDocument(): CourseDocument {
   const [first, second] = tree.nodes;
   return {
     version: 1, kind: 'trap', title: 'Englund trap', promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'commander',
-    startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], hookOptions: [], clipLinks: {},
+    startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], clipLinks: {},
     diagnosisCodes: [],
     takeaways: ['One.', 'Two.', 'Three.'],
     episodes: [{
       id: 'e1', role: 'setup', focus: '', startNodeId: first!.id, endNodeId: second!.id, drillNodeIds: [],
-      plies: [{ nodeId: first!.id, text: 'The centre pawn.', arrows: [], course: true, video: false }, { nodeId: second!.id, text: 'Not voiced.', arrows: [], course: true, video: false }]
+      plies: [{ nodeId: first!.id, text: 'The centre pawn.', arrows: [], course: true }, { nodeId: second!.id, text: 'Not voiced.', arrows: [], course: true }]
     }]
   };
 }
@@ -43,13 +43,13 @@ async function insertCourse(
   status: 'draft' | 'unlisted' | 'public' | 'removed',
   level?: CourseDocument['level'],
   diagnosisCodes: CourseDocument['diagnosisCodes'] = [],
-  extra: { series?: CourseDocument['series']; tags?: string[]; ownerId?: string; accessLevel?: number } = {}
+  extra: { series?: CourseDocument['series']; tags?: string[]; accessLevel?: number } = {}
 ): Promise<string> {
-  const owner = extra.ownerId ? { id: extra.ownerId } : await usersRepo.insert(db, { email: `${slug}@example.com`, displayName: 'Creator', engineMode: 'chess_api' });
+  const owner = await usersRepo.insert(db, { email: `${slug}@example.com`, displayName: 'Editor', engineMode: 'chess_api' });
   const document = { ...trapDocument(), diagnosisCodes, ...(level ? { level } : {}), ...(extra.series ? { series: extra.series } : {}), ...(extra.tags ? { tags: extra.tags } : {}), ...(extra.series ? { title: slug } : {}) };
-  const row = await coursesRepo.insert(db, { ownerId: owner.id, slug, kind: 'trap', title: document.title, sourcePgn: ENGLUND, direction: '', document });
-  if (status !== 'draft') await coursesRepo.publish(db, row.id, owner.id, document, 'unlisted', extra.accessLevel ?? 0);
-  if (status === 'public' || status === 'removed') await coursesRepo.setStatus(db, row.id, status);
+  const row = await coursesRepo.insert(db, { createdBy: owner.id, slug, sourcePgn: ENGLUND, direction: '', document, dossier: null });
+  if (status !== 'draft') await coursesRepo.publish(db, row.id, document, 'unlisted', extra.accessLevel ?? 0);
+  if (status === 'public' || status === 'removed') await coursesRepo.setVisibility(db, row.id, { status });
   await courseAudioRepo.upsert(db, row.id, noteTextHash('The centre pawn.'), 'courses/' + slug + '/audio/0b9b8d1e-aaaa-4bbb-8ccc-000000000001.mp3', 10);
   return row.id;
 }
@@ -92,14 +92,15 @@ describe('public course routes', () => {
     await app.close();
   });
 
-  test('a members-only course opens for its owner and users at its level, and nowhere without the login', async () => {
+  test('a members-only course opens for course editors and users at its level, and nowhere without the login', async () => {
     const app = buildTestApp({ db, authMode: 'proxy', audioStore: fakeAudioStore() });
     await app.ready();
-    const owner = await usersRepo.insert(db, { email: 'members-owner@example.com', displayName: 'Creator', engineMode: 'chess_api' });
+    await usersRepo.insert(db, { email: 'members-editor@example.com', displayName: 'Editor', engineMode: 'chess_api' });
+    await usersRepo.setCanEditCourses(db, 'members-editor@example.com', true);
     await usersRepo.insert(db, { email: 'members-none@example.com', displayName: 'Learner', engineMode: 'chess_api' });
     await usersRepo.insert(db, { email: 'members-one@example.com', displayName: 'Member', engineMode: 'chess_api' });
     await usersRepo.setCourseAccessLevel(db, 'members-one@example.com', 1);
-    await insertCourse('englund-members-aaaaaaaaaaaa', 'public', undefined, [], { ownerId: owner.id, accessLevel: 1 });
+    await insertCourse('englund-members-aaaaaaaaaaaa', 'public', undefined, [], { accessLevel: 1 });
     const as = (email: string, url: string) => app.inject({ method: 'GET', url, headers: { 'x-forwarded-email': email } });
     const listed = async (email: string | null) => {
       const url = email ? '/api/learn/courses' : '/api/public/courses';
@@ -112,7 +113,7 @@ describe('public course routes', () => {
     expect((await app.inject({ method: 'GET', url: '/api/learn/courses/englund-members-aaaaaaaaaaaa' })).statusCode).toBe(401);
     expect((await as('members-none@example.com', '/api/learn/courses/englund-members-aaaaaaaaaaaa')).statusCode).toBe(404);
     expect(await listed('members-none@example.com')).not.toContain('englund-members-aaaaaaaaaaaa');
-    for (const email of ['members-one@example.com', 'members-owner@example.com']) {
+    for (const email of ['members-one@example.com', 'members-editor@example.com']) {
       const course = await as(email, '/api/learn/courses/englund-members-aaaaaaaaaaaa');
       expect(course.statusCode, email).toBe(200);
       expect(course.headers['cache-control']).toBe('private, no-store');
@@ -145,14 +146,11 @@ describe('public course routes', () => {
   test('a lesson in a series links the public lessons before and after it, and the catalogue carries the series and tags', async () => {
     const app = buildTestApp({ db, authMode: 'proxy', audioStore: fakeAudioStore() });
     await app.ready();
-    const owner = await usersRepo.insert(db, { email: 'series-owner@example.com', displayName: 'Creator', engineMode: 'chess_api' });
     const lesson = (position: number): CourseDocument['series'] => ({ name: 'Chess From Zero', position, total: 14, module: position < 4 ? 'The pieces' : 'Tactics' });
-    await insertCourse('zero-lesson-1', 'public', undefined, [], { ownerId: owner.id, series: lesson(1), tags: ['cannot-read-square'] });
-    await insertCourse('zero-lesson-2', 'public', undefined, [], { ownerId: owner.id, series: lesson(2) });
-    await insertCourse('zero-lesson-3', 'unlisted', undefined, [], { ownerId: owner.id, series: lesson(3) });
-    await insertCourse('zero-lesson-4', 'public', undefined, [], { ownerId: owner.id, series: lesson(4) });
-    // Another creator's series of the same name is not this one.
-    await insertCourse('other-lesson-5', 'public', undefined, [], { series: lesson(5) });
+    await insertCourse('zero-lesson-1', 'public', undefined, [], { series: lesson(1), tags: ['cannot-read-square'] });
+    await insertCourse('zero-lesson-2', 'public', undefined, [], { series: lesson(2) });
+    await insertCourse('zero-lesson-3', 'unlisted', undefined, [], { series: lesson(3) });
+    await insertCourse('zero-lesson-4', 'public', undefined, [], { series: lesson(4) });
 
     const page = async (slug: string) => (await app.inject({ method: 'GET', url: `/api/public/courses/${slug}` })).json<PublicCourseResponse>();
     expect((await page('zero-lesson-2')).seriesNeighbours).toEqual({ previous: { slug: 'zero-lesson-1', title: 'zero-lesson-1', position: 1 }, next: { slug: 'zero-lesson-4', title: 'zero-lesson-4', position: 4 } });

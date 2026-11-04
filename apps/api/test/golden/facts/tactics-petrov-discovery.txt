@@ -71,15 +71,6 @@ n9 5.Nc6+ (White, Line A) | best | before: White is much better → after: White
     tempting check: Nf3+? White's Nf3+ moves the knight from e5 to f3 | gives check | a discovered check from the queen on e2 | the check can be answered: block with Qe7, Be7, Ne4; the checking piece cannot be taken; the king cannot move. Black answers Be7: moves the bishop from f8 to e7 | blocks the check from the queen on e2. Then d4 O-O Qd1. Over the line nothing is taken; at the end material is level (The position is roughly equal).
     flags: quiz-eligible
 
-REEL CANDIDATES
-  r1 swing n1–n9, climax n8 [highlight, promo]
-  r2 idea n1–n9, climax n9 [highlight, puzzle, promo]
-
-PLAN
-  e1 concept n9–n9
-  e2 example n7–n9 answer=n9
-  e3 scan n9–n9
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — Petrov's Defense: Damiano Variation (C42); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

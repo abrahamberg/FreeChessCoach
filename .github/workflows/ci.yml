@@ -93,7 +93,7 @@ jobs:
         run: npm test
 
       # The opt-in tiers: the tactic corpus (no engine) and the golden course
-      # facts (fixture engine), both pure replays. On a manual
+      # facts (the dossier and review notes, fixture engine), both pure replays. On a manual
       # full run only; a PR reaches them by running them itself.
       - name: Run corpus and golden tiers
         if: github.event_name == 'schedule' || github.event.inputs.full == 'true'

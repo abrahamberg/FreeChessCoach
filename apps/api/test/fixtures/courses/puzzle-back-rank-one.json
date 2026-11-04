@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "white",
   "levelBand": "novice",
   "coachPersona": "general_female",
   "direction": "Mate in one on the back rank.",

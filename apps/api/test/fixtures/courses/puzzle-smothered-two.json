@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "white",
   "levelBand": "improving",
   "coachPersona": "commander",
   "direction": "Smothered mate in two. Show how to find it: checks first, even a queen sacrifice.",

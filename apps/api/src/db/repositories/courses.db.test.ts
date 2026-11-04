@@ -25,7 +25,6 @@ function draft(title: string): CourseDocument {
     episodes: [],
     takeaways: [],
     diagnosisCodes: [],
-    hookOptions: [],
     clipLinks: {}
   };
 }
@@ -43,96 +42,57 @@ describe('courses repository', () => {
     await testDb.cleanup();
   });
 
-  async function newOwner(): Promise<string> {
-    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Creator' });
+  async function newEditor(): Promise<string> {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Editor' });
     return user.id;
   }
 
-  async function newCourse(ownerId: string, title = 'Englund trap') {
-    return coursesRepo.insert(db, {
-      ownerId,
-      slug: `englund-${crypto.randomUUID()}`,
-      kind: 'trap',
-      title,
-      sourcePgn: '1. d4 e5 *',
-      direction: 'A 60-second reel for beginners',
-      document: null
-    });
+  async function newCourse(createdBy: string, title = 'Englund trap') {
+    return coursesRepo.insert(db, { createdBy, slug: `englund-${crypto.randomUUID()}`, sourcePgn: '1. d4 e5 *', direction: '', document: draft(title), dossier: null });
   }
 
-  test('insert() starts a draft with no document', async () => {
-    const course = await newCourse(await newOwner());
+  test('insert() keeps the title from the document; slugs are unique', async () => {
+    const course = await newCourse(await newEditor());
 
-    expect(course.status).toBe('draft');
-    expect(course.document).toBeNull();
-    expect(course.publishedDocument).toBeNull();
+    expect(course).toMatchObject({ status: 'draft', title: 'Englund trap', publishedDocument: null });
+    await expect(coursesRepo.insert(db, { createdBy: await newEditor(), slug: course.slug, sourcePgn: '', direction: '', document: draft('Copy'), dossier: null })).rejects.toThrow();
   });
 
-  test('findByIdForOwner() hides another owner’s course', async () => {
-    const course = await newCourse(await newOwner());
-
-    expect(await coursesRepo.findByIdForOwner(db, course.id, await newOwner())).toBeUndefined();
-    expect((await coursesRepo.findByIdForOwner(db, course.id, course.ownerId))?.id).toBe(course.id);
-  });
-
-  test('updateDraft() stores the document and follows its title', async () => {
-    const course = await newCourse(await newOwner());
-
-    const updated = await coursesRepo.updateDraft(db, course.id, course.ownerId, draft('The new title'));
-
-    expect(updated?.title).toBe('The new title');
-    expect(updated?.document).toEqual(draft('The new title'));
-  });
-
-  test('updateDraft() rejects a document that fails the schema, and writes nothing', async () => {
-    const course = await newCourse(await newOwner());
+  test('replaceContent() rejects a document that fails the schema, and writes nothing', async () => {
+    const course = await newCourse(await newEditor());
     const bad = { ...draft('Bad'), takeaways: ['a', 'b', 'c', 'd'] };
 
-    await expect(coursesRepo.updateDraft(db, course.id, course.ownerId, bad)).rejects.toThrow();
-    expect((await coursesRepo.findByIdForOwner(db, course.id, course.ownerId))?.title).toBe('Englund trap');
+    await expect(coursesRepo.replaceContent(db, course.id, { sourcePgn: '', direction: '', document: bad, dossier: null })).rejects.toThrow();
+    expect((await coursesRepo.findById(db, course.id))?.title).toBe('Englund trap');
   });
 
-  test('updateDraft() does not touch another owner’s course', async () => {
-    const course = await newCourse(await newOwner());
+  test('every editor’s courses are listed, newest edit first', async () => {
+    const first = await newCourse(await newEditor(), 'First');
+    const second = await newCourse(await newEditor(), 'Second');
+    await coursesRepo.replaceContent(db, first.id, { sourcePgn: '', direction: '', document: draft('First, edited'), dossier: null });
 
-    expect(await coursesRepo.updateDraft(db, course.id, await newOwner(), draft('Hijack'))).toBeUndefined();
+    const ids = (await coursesRepo.listAll(db)).map((course) => course.id);
+
+    expect(ids.indexOf(first.id)).toBeLessThan(ids.indexOf(second.id));
   });
 
-  test('listByOwner() lists only the owner’s courses, newest edit first', async () => {
-    const ownerId = await newOwner();
-    const first = await newCourse(ownerId, 'First');
-    const second = await newCourse(ownerId, 'Second');
-    await newCourse(await newOwner(), 'Someone else');
-    await coursesRepo.updateDraft(db, first.id, ownerId, draft('First, edited'));
+  test('clip links go on the draft and the published copy alike', async () => {
+    const course = await newCourse(await newEditor());
+    await coursesRepo.publish(db, course.id, draft('Englund trap'), 'unlisted', 0);
 
-    const list = await coursesRepo.listByOwner(db, ownerId);
+    await coursesRepo.setClipLinks(db, course.id, { youtube: 'https://www.youtube.com/watch?v=abc' });
 
-    expect(list.map((course) => course.id)).toEqual([first.id, second.id]);
+    const row = await coursesRepo.findById(db, course.id);
+    expect(row?.document?.clipLinks).toEqual({ youtube: 'https://www.youtube.com/watch?v=abc' });
+    expect(row?.publishedDocument?.clipLinks).toEqual({ youtube: 'https://www.youtube.com/watch?v=abc' });
   });
 
-  test('setStatus() changes the status; slugs are unique', async () => {
-    const course = await newCourse(await newOwner());
+  test('deleting the account that made a course keeps the course', async () => {
+    const editorId = await newEditor();
+    const course = await newCourse(editorId);
 
-    expect(await coursesRepo.setStatus(db, course.id, 'unlisted')).toBe(true);
-    expect((await coursesRepo.findByIdForOwner(db, course.id, course.ownerId))?.status).toBe('unlisted');
-    const duplicate = {
-      ownerId: course.ownerId,
-      slug: course.slug,
-      kind: course.kind,
-      title: 'Copy',
-      sourcePgn: course.sourcePgn,
-      direction: '',
-      document: null
-    };
-    await expect(coursesRepo.insert(db, duplicate)).rejects.toThrow();
-  });
+    await deleteAccount(db, editorId);
 
-  test('deleting the account deletes its courses', async () => {
-    const ownerId = await newOwner();
-    await newCourse(ownerId);
-
-    await deleteAccount(db, ownerId);
-
-    expect(await coursesRepo.listByOwner(db, ownerId)).toEqual([]);
+    expect((await coursesRepo.findById(db, course.id))?.createdBy).toBeNull();
   });
 });

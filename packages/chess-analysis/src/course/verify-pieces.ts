@@ -46,7 +46,7 @@ function episodeFens(episode: CourseEpisode, scope: EpisodeScope): string[] {
   for (const ply of episode.plies) {
     const before = scope.fenBefore(ply.nodeId);
     const best = scope.facts.get(ply.nodeId)?.bestInstead?.line ?? [];
-    for (const line of [best, ply.playOut ?? [], ...(ply.tempting ?? []).map((each) => [each.san, ...(each.refutation ?? [])])]) fens.push(...positionsAlong(before, line));
+    for (const line of [best, ...(ply.tempting ?? []).map((each) => [each.san, ...(each.refutation ?? [])])]) fens.push(...positionsAlong(before, line));
   }
   return fens.filter(Boolean);
 }

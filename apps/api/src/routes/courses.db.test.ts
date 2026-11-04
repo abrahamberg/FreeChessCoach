@@ -1,22 +1,16 @@
 import { parseCourseTree } from '@freechesscoach/chess-analysis';
-import { CourseListResponseSchema, type CourseDebugResponse, type CourseResponse, type ReplaceCourseResponse } from '@freechesscoach/shared';
+import { CourseListResponseSchema, type CourseDocument, type CourseResponse, type CreateCourseApiTokenResponse, type ImportCourseResponse } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
-import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build-app.js';
-import type { CourseDossierBuilder } from '../services/courses/dossier.js';
-import { ENGLUND, ENGLUND_INTAKE, englundDossier } from '../../test/helpers/course-fixtures.js';
+import { ENGLUND, englundDossier } from '../../test/helpers/course-fixtures.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
-import { mockResolution, multiStepGenerateModel } from '../../test/helpers/mock-model.js';
 import { fakeAudioStore } from '../../test/helpers/fake-audio-store.js';
-import { noopJobQueue } from '../jobs/queue.js';
-import * as courseAudioRepo from '../db/repositories/course-audio.js';
 import * as coursesRepo from '../db/repositories/courses.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 
 const DEV_EMAIL = 'dev@local.test';
-const INTAKE = ENGLUND_INTAKE;
-const REGENERATED = { episodeId: 'e1', plies: [{ nodeId: 'n11', text: 'It hits the queen.', say: null, caption: null, arrows: [], tempting: [], course: true, video: false }], quiz: null };
 
 let testDb: TestDb;
 let db: Kysely<Database>;
@@ -31,311 +25,134 @@ afterAll(async () => {
 
 const audioStore = fakeAudioStore();
 
-async function creatorApp(courseDossierBuilder: CourseDossierBuilder = englundDossier) {
-  const app = buildTestApp({ db, courseDossierBuilder, audioStore });
+async function editorApp() {
+  const app = buildTestApp({ db, courseDossierBuilder: englundDossier, audioStore });
   await app.ready();
   await app.inject({ method: 'GET', url: '/api/users/me' });
-  await usersRepo.setCanCreateCourses(db, DEV_EMAIL, true);
+  await usersRepo.setCanEditCourses(db, DEV_EMAIL, true);
   return app;
 }
 
-describe('course routes', () => {
-  test('refuse an account without the creator flag', async () => {
+/** The Englund trap as the studio sends it: the app's own tree of the PGN,
+ * one episode on the bait, three takeaways. */
+function englundDocument(title = 'The Englund Gambit trap'): CourseDocument {
+  const tree = parseCourseTree(ENGLUND);
+  return {
+    version: 1, kind: 'trap', title, promise: 'After this you can spring it.', learnerSide: 'black', levelBand: 'improving', coachPersona: 'commander',
+    startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines,
+    chapters: [{ id: 'c1', title: 'The trap', lineId: 'l1', episodeIds: ['e1'] }],
+    episodes: [{ id: 'e1', role: 'bait', focus: '', startNodeId: 'n11', endNodeId: 'n11', plies: [{ nodeId: 'n11', text: 'The bishop hits the queen.', arrows: [], course: true }], drillNodeIds: [] }],
+    takeaways: ['Watch b2.', 'Mind the pin.', 'Guard c1.'], diagnosisCodes: [], clipLinks: {}
+  };
+}
+
+const importBody = (slug: string, document = englundDocument()) => ({ slug, pgn: ENGLUND, direction: '', document });
+
+describe('course editor routes', () => {
+  test('refuse an account that may not edit courses', async () => {
     const app = buildTestApp({ db });
     await app.ready();
     await app.inject({ method: 'GET', url: '/api/users/me' });
-    await usersRepo.setCanCreateCourses(db, DEV_EMAIL, false);
+    await usersRepo.setCanEditCourses(db, DEV_EMAIL, false);
 
-    expect((await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE })).statusCode).toBe(403);
     expect((await app.inject({ method: 'GET', url: '/api/courses' })).statusCode).toBe(403);
+    expect((await app.inject({ method: 'PUT', url: '/api/courses/import', payload: importBody('refused') })).statusCode).toBe(403);
     await app.close();
   });
 
-  test('create from intake: the tree is parsed, the learner side inferred, the title taken from the direction', async () => {
-    const app = await creatorApp();
+  test('import: the app builds the dossier, refuses moves that differ from the PGN, and replaces in place', async () => {
+    const app = await editorApp();
 
-    const created = await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE });
-    expect(created.statusCode).toBe(201);
-    const course = created.json<CourseResponse>();
-    expect(course.title).toBe('Englund Gambit trap for beginners');
-    expect(course.slug).toBe('englund-gambit-trap-for-beginners');
-    expect(course.document.learnerSide).toBe('black');
-    expect(course.document.nodes).toHaveLength(16);
-    expect(course.document.episodes).toEqual([]);
+    const first = await app.inject({ method: 'PUT', url: '/api/courses/import', payload: importBody('englund-import') });
+    expect(first.statusCode).toBe(200);
+    const course = first.json<ImportCourseResponse>();
+    expect(course).toMatchObject({ created: true, slug: 'englund-import', status: 'draft', problems: expect.any(Array) });
+    expect((await coursesRepo.findById(db, course.id))?.dossier?.nodes.length).toBe(16);
+    expect(Object.keys(course.evals).length).toBeGreaterThan(0);
 
-    const illegal = await app.inject({ method: 'POST', url: '/api/courses', payload: { ...INTAKE, pgn: '1. e4 e5 2. Ke3 *' } });
-    expect(illegal.statusCode).toBe(400);
-    expect(illegal.body).toContain('Illegal move 2. Ke3');
-    const noSide = await app.inject({ method: 'POST', url: '/api/courses', payload: { ...INTAKE, kind: 'opening' } });
-    expect(noSide.statusCode).toBe(400);
-    const notAPuzzle = await app.inject({ method: 'POST', url: '/api/courses', payload: { ...INTAKE, kind: 'puzzle' } });
-    expect(notAPuzzle.statusCode).toBe(400);
-    expect(notAPuzzle.body).toContain('A puzzle starts from a position');
+    const again = (await app.inject({ method: 'PUT', url: '/api/courses/import', payload: importBody('englund-import', englundDocument('Renamed')) })).json<ImportCourseResponse>();
+    expect(again).toMatchObject({ id: course.id, created: false, title: 'Renamed' });
 
-    // A target rating sets the band and the next place at that level.
-    const first = (await app.inject({ method: 'POST', url: '/api/courses', payload: { ...INTAKE, rating: 1200 } })).json<CourseResponse>();
-    const second = (await app.inject({ method: 'POST', url: '/api/courses', payload: { ...INTAKE, rating: 1200, levelBand: 'advanced' } })).json<CourseResponse>();
-    expect(first.document).toMatchObject({ level: { rating: 1200, order: 1 }, levelBand: 'improving' });
-    expect(second.document).toMatchObject({ level: { rating: 1200, order: 2 }, levelBand: 'improving' });
-    expect(course.document.level).toBeUndefined();
+    const cut = { ...englundDocument(), nodes: englundDocument().nodes.slice(0, 15) };
+    const differs = await app.inject({ method: 'PUT', url: '/api/courses/import', payload: importBody('englund-import', cut) });
+    expect(differs.statusCode).toBe(400);
+    expect(differs.body).toContain('differ from its PGN');
+    const otherKind = await app.inject({ method: 'PUT', url: '/api/courses/import', payload: importBody('englund-import', { ...englundDocument(), kind: 'opening' }) });
+    expect(otherKind.statusCode).toBe(400);
+    await app.close();
+  });
+
+  test('every editor sees and edits every course', async () => {
+    const app = await editorApp();
+    const other = await usersRepo.insert(db, { email: 'other-editor@example.com', displayName: 'Other', engineMode: 'chess_api' });
+    const theirs = await coursesRepo.insert(db, { createdBy: other.id, slug: 'theirs-abc', sourcePgn: ENGLUND, direction: '', document: englundDocument('Theirs'), dossier: null });
 
     const list = CourseListResponseSchema.parse((await app.inject({ method: 'GET', url: '/api/courses' })).json());
-    // The studio's card: the size and the writing state, not just the title.
-    expect(list.courses.find((row) => row.id === course.id)).toMatchObject({ promise: '', episodes: 0, moves: 16, generation: null });
-    expect((await app.inject({ method: 'GET', url: `/api/courses/${course.id}` })).json<CourseResponse>().id).toBe(course.id);
-    await app.close();
-  });
-
-  test('another owner’s course and a malformed id are both not found', async () => {
-    const app = await creatorApp();
-    const other = await usersRepo.insert(db, { email: 'other-course@example.com', displayName: 'Other', engineMode: 'chess_api' });
-    const tree = parseCourseTree(ENGLUND);
-    const document = {
-      version: 1 as const, kind: 'trap' as const, title: 'Theirs', promise: '', learnerSide: 'black' as const, levelBand: 'improving' as const,
-      coachPersona: 'commander' as const, startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], episodes: [],
-      takeaways: [], hookOptions: [], clipLinks: {}
-    };
-    const theirs = await coursesRepo.insert(db, { ownerId: other.id, slug: 'theirs-abc', kind: 'trap', title: 'Theirs', sourcePgn: ENGLUND, direction: '', document });
-
-    expect((await app.inject({ method: 'GET', url: `/api/courses/${theirs.id}` })).statusCode).toBe(404);
+    expect(list.courses.map((row) => row.id)).toContain(theirs.id);
+    expect((await app.inject({ method: 'GET', url: `/api/courses/${theirs.id}` })).statusCode).toBe(200);
     expect((await app.inject({ method: 'GET', url: '/api/courses/not-a-uuid' })).statusCode).toBe(404);
-    expect((await app.inject({ method: 'GET', url: `/api/courses/${theirs.id}/debug` })).statusCode).toBe(404);
     await app.close();
   });
 
-  test('save draft keeps the move tree fixed and every named node real', async () => {
-    const app = await creatorApp();
-    const course = (await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE })).json<CourseResponse>();
-    const url = `/api/courses/${course.id}/draft`;
-    const episode = { id: 'e1', role: 'bait', focus: '', startNodeId: 'n11', endNodeId: 'n11', plies: [{ nodeId: 'n11', text: 'Looks natural.', arrows: [], course: true, video: false }], drillNodeIds: [] };
-
-    const saved = await app.inject({ method: 'PUT', url, payload: { document: { ...course.document, title: 'Renamed', episodes: [episode] } } });
-    expect(saved.statusCode).toBe(204);
-    const reloaded = (await app.inject({ method: 'GET', url: `/api/courses/${course.id}` })).json<CourseResponse>();
-    expect(reloaded.title).toBe('Renamed');
-    expect(reloaded.document.episodes[0]?.plies[0]?.text).toBe('Looks natural.');
-
-    const movedTree = { ...course.document, nodes: course.document.nodes.slice(0, 15) };
-    expect((await app.inject({ method: 'PUT', url, payload: { document: movedTree } })).statusCode).toBe(400);
-    const ghost = { ...course.document, episodes: [{ ...episode, endNodeId: 'n99' }] };
-    const refused = await app.inject({ method: 'PUT', url, payload: { document: ghost } });
-    expect(refused.statusCode).toBe(400);
-    expect(refused.body).toContain('n99');
-    await app.close();
-  });
-
-  test('build without AI: the trap skeleton becomes the §6.3 episodes with fact-filled lines', async () => {
-    const buildDossier = vi.fn(englundDossier);
-    const app = await creatorApp(buildDossier);
-    const course = (await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE })).json<CourseResponse>();
-
-    const built = await app.inject({ method: 'POST', url: `/api/courses/${course.id}/skeleton` });
-    expect(built.statusCode).toBe(200);
-    const { episodes, chapters } = built.json<CourseResponse>().document;
-    expect(episodes.map((episode) => episode.role)).toEqual(['hook', 'setup', 'bait', 'quiz', 'punish', 'safety']);
-    expect(chapters).toEqual([{ id: 'c1', title: 'The trap', lineId: 'l1', episodeIds: ['e1', 'e2', 'e3', 'e4', 'e5', 'e6'] }]);
-    // Kept: a course written by hand is checked against the engine's facts, and its reel and frame too.
-    expect((await coursesRepo.findById(db, course.id))?.dossier?.nodes.length).toBeGreaterThan(0);
-    const bait = episodes.find((episode) => episode.role === 'bait');
-    expect(bait?.startNodeId).toBe('n11');
-    expect(bait?.focus).toBe('bait: why does this move look natural?');
-    expect(bait?.plies[0]).toMatchObject({ course: true, text: expect.stringContaining('Bc3 attacks the queen on b2') });
-    expect(episodes.find((episode) => episode.role === 'quiz')?.quiz?.answerNodeId).toBe('n12');
-    // The template picks a clip move or two where there is a tactic or a critical moment.
-    expect(episodes.every((episode) => episode.plies.filter((ply) => ply.video).length <= 2)).toBe(true);
-    // Built again, it reads the kept dossier: no second engine pass.
-    expect((await app.inject({ method: 'POST', url: `/api/courses/${course.id}/skeleton` })).statusCode).toBe(200);
-    expect(buildDossier).toHaveBeenCalledTimes(1);
-    await app.close();
-  });
-
-  test('a lesson of three games, each from its own [FEN], takes a rating of 100, a series and tags on create and on update', async () => {
-    const app = await creatorApp();
-    const game = (fen: string, moves: string): string => `[FEN "${fen}"]\n\n${moves} *`;
-    const pgn = [game('4k3/8/8/8/8/8/8/R3K3 w - - 0 1', '1. Ra8+ Kd7'), game('7k/8/8/8/8/8/8/K2N4 w - - 0 1', '1. Nc3 Kg7'), game('4k3/4p3/8/8/8/8/8/4K3 b - - 0 1', '1... e5')].join('\n\n');
-    const series = { name: 'Chess From Zero', position: 1, total: 14, module: 'The pieces' };
-    const intake = { pgn, kind: 'lesson', learnerSide: 'white', coachPersona: 'general', direction: 'The board and how to win', rating: 100, series, tags: ['cannot-read-square'] };
-
-    expect((await app.inject({ method: 'POST', url: '/api/courses', payload: { ...intake, rating: 99 } })).statusCode).toBe(400);
-    const created = await app.inject({ method: 'POST', url: '/api/courses', payload: intake });
-    expect(created.statusCode).toBe(201);
-    const course = created.json<CourseResponse>();
-    expect(course.document).toMatchObject({ level: { rating: 100, order: 1 }, levelBand: 'novice', series, tags: ['cannot-read-square'] });
-    expect(course.document.nodes.filter((node) => node.parentId === null).map((node) => node.startFen)).toEqual(['4k3/8/8/8/8/8/8/R3K3 w - - 0 1', '7k/8/8/8/8/8/8/K2N4 w - - 0 1', '4k3/4p3/8/8/8/8/8/4K3 b - - 0 1']);
-    expect(course.document.lines).toHaveLength(3);
-
-    // Update: the series and tags are the document's.
-    const update = { ...course.document, series: { ...series, position: 2 }, tags: ['hangs-piece', 'no-scan-before-move'] };
-    expect((await app.inject({ method: 'PUT', url: `/api/courses/${course.id}/draft`, payload: { document: update } })).statusCode).toBe(204);
-    expect((await app.inject({ method: 'GET', url: `/api/courses/${course.id}` })).json<CourseResponse>().document).toMatchObject({ series: { position: 2 }, tags: ['hangs-piece', 'no-scan-before-move'] });
-    // A tree edit is still refused, now that the start of an example is part of it.
-    const moved = course.document.nodes.map((node, index) => (index === 2 ? { ...node, startFen: '4k3/8/8/8/8/8/8/R3K3 w - - 0 1' } : node));
-    expect((await app.inject({ method: 'PUT', url: `/api/courses/${course.id}/draft`, payload: { document: { ...course.document, nodes: moved } } })).statusCode).toBe(400);
-
-    // A document sent straight to the replace route is held to the same floor.
-    const dossier = { learnerSide: 'white', lines: [], nodes: [] };
-    const replace = (rating: number) => app.inject({ method: 'PUT', url: `/api/courses/${course.id}/document`, payload: { pgn, direction: '', dossier, document: { ...update, level: { rating, order: 1 } } } });
-    expect((await replace(99)).statusCode).toBe(400);
-    expect((await replace(100)).statusCode).toBe(200);
-    await app.close();
-  });
-
-  test('replace: the studio’s finished course is stored as given, a new tree included, under the same id and address', async () => {
-    const app = await creatorApp();
-    const course = (await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE })).json<CourseResponse>();
-    await coursesRepo.setGeneration(db, course.id, { status: 'succeeded', step: null, done: 1, total: 1, error: null, outline: null, finishedEpisodeIds: ['e1'], warnings: [] });
-    const url = `/api/courses/${course.id}/document`;
-    // The same trap with a sideline at move 6.
-    const pgn = '1. d4 e5 2. dxe5 Nc6 3. Nf3 Qe7 4. Bf4 Qb4+ 5. Bd2 Qxb2 6. Bc3 (6. Nc3 Bb4) 6... Bb4 7. Qd2 Bxc3 8. Qxc3 Qc1# *';
-    const tree = parseCourseTree(pgn);
-    const episode = { id: 'e1', role: 'bait', focus: '', startNodeId: 'n11', endNodeId: 'n11', plies: [{ nodeId: 'n11', text: 'Looks natural.', arrows: [], course: true, video: false }], drillNodeIds: [] };
-    const document = { ...course.document, title: 'Englund, with Nc3', level: { rating: 1200, order: 3 }, startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, episodes: [episode] };
-    const dossier = { learnerSide: 'black', lines: [], nodes: [{ nodeId: 'n1', san: 'd4', evalAfterCp: 20, quality: 'best' }] };
-
-    const replaced = await app.inject({ method: 'PUT', url, payload: { pgn, direction: 'Both replies', document, dossier } });
-    expect(replaced.statusCode).toBe(200);
-    const body = replaced.json<ReplaceCourseResponse>();
-    expect(body).toMatchObject({ id: course.id, slug: course.slug, status: 'draft', title: 'Englund, with Nc3', direction: 'Both replies', generation: null });
-    expect(body.document).toMatchObject({ level: { rating: 1200, order: 3 }, nodes: tree.nodes });
-    expect(body.problems).toBeInstanceOf(Array);
-    const row = await coursesRepo.findById(db, course.id);
-    expect(row).toMatchObject({ sourcePgn: pgn, dossier });
-
-    // Refused only what would break the app.
-    const ghost = await app.inject({ method: 'PUT', url, payload: { pgn, direction: '', dossier, document: { ...document, episodes: [{ ...episode, endNodeId: 'n99' }] } } });
-    expect(ghost.statusCode).toBe(400);
-    expect(ghost.body).toContain('n99');
-    expect((await app.inject({ method: 'PUT', url, payload: { pgn, direction: '', dossier, document: { ...document, kind: 'opening' } } })).statusCode).toBe(400);
-    await app.close();
-  });
-
-  test('delete: refused while the AI writes; then the course, its audio and its link are gone', async () => {
-    const app = await creatorApp();
-    const course = (await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE })).json<CourseResponse>();
+  test('publish: note audio, checks ticked, the frozen copy; then video links, unpublish and delete', async () => {
+    const app = await editorApp();
+    const course = (await app.inject({ method: 'PUT', url: '/api/courses/import', payload: importBody('englund-publish') })).json<ImportCourseResponse>();
     const url = `/api/courses/${course.id}`;
-    const run = { step: null, done: 0, total: 1, error: null, outline: null, finishedEpisodeIds: [], warnings: [], heartbeatAt: new Date().toISOString() };
-    await coursesRepo.setGeneration(db, course.id, { status: 'running', ...run });
-    expect((await app.inject({ method: 'DELETE', url })).statusCode).toBe(409);
-    await coursesRepo.setGeneration(db, course.id, { status: 'failed', ...run });
-    const key = `courses/${course.id}/audio/note.mp3`;
-    audioStore.put(key, 100);
-    await courseAudioRepo.upsert(db, course.id, 'hash', key, 100);
+
+    const note = course.missingNoteAudio[0];
+    expect(note).toEqual({ episodeId: 'e1', nodeId: 'n11' });
+    const noteUrl = `${url}/notes/e1/n11/audio`;
+    expect((await app.inject({ method: 'POST', url: `${noteUrl}-url`, payload: { size: 400_000 } })).statusCode).toBe(400);
+    const slot = (await app.inject({ method: 'POST', url: `${noteUrl}-url`, payload: { size: 100 } })).json<{ url: string; key: string }>();
+    expect((await app.inject({ method: 'PUT', url: noteUrl, payload: { key: slot.key } })).statusCode).toBe(400);
+    audioStore.put(slot.key, 100);
+    expect((await app.inject({ method: 'PUT', url: noteUrl, payload: { key: slot.key } })).statusCode).toBe(204);
+    expect((await app.inject({ method: 'GET', url })).json<CourseResponse>().missingNoteAudio).toEqual([]);
+
+    expect((await app.inject({ method: 'PATCH', url, payload: { status: 'public' } })).statusCode).toBe(409);
+    const published = await app.inject({ method: 'POST', url: `${url}/publish`, payload: { warningsChecked: true } });
+    expect(published.json<CourseResponse>()).toMatchObject({ status: 'unlisted', publishedAt: expect.any(String) });
+
+    expect((await app.inject({ method: 'PATCH', url, payload: { clipLinks: { youtube: 'https://evil.example/watch' } } })).statusCode).toBe(400);
+    const linked = await app.inject({ method: 'PATCH', url, payload: { status: 'public', clipLinks: { youtube: 'https://www.youtube.com/watch?v=abc' } } });
+    expect(linked.json<CourseResponse>()).toMatchObject({ status: 'public', document: { clipLinks: { youtube: 'https://www.youtube.com/watch?v=abc' } } });
+    expect((await app.inject({ method: 'PATCH', url, payload: { status: 'draft' } })).json<CourseResponse>().status).toBe('draft');
 
     expect((await app.inject({ method: 'DELETE', url })).statusCode).toBe(204);
-    expect((await app.inject({ method: 'GET', url })).statusCode).toBe(404);
-    expect(audioStore.objects.has(key)).toBe(false);
-    expect(await db.selectFrom('courseAudio').select('textHash').where('courseId', '=', course.id).execute()).toEqual([]);
-    expect((await app.inject({ method: 'DELETE', url })).statusCode).toBe(404);
-    await app.close();
-  });
-
-  test('generate: 202 and queued; a second start while running is 409; regenerate rewrites one episode with the instruction', async () => {
-    const jobQueue = { ...noopJobQueue, enqueueCourseGenerate: vi.fn().mockResolvedValue(undefined) };
-    const model = multiStepGenerateModel([{ text: JSON.stringify(REGENERATED), finishReason: 'stop' }]);
-    const app = buildTestApp({ db, courseDossierBuilder: englundDossier, jobQueue, courseModelResolver: () => Promise.resolve(mockResolution(model)) });
-    await app.ready();
-    await app.inject({ method: 'GET', url: '/api/users/me' });
-    await usersRepo.setCanCreateCourses(db, DEV_EMAIL, true);
-    const course = (await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE })).json<CourseResponse>();
-
-    const started = await app.inject({ method: 'POST', url: `/api/courses/${course.id}/generate` });
-    expect(started.statusCode).toBe(202);
-    expect(started.json<CourseResponse>().generation?.status).toBe('queued');
-    expect(jobQueue.enqueueCourseGenerate).toHaveBeenCalledWith(course.id);
-    expect((await app.inject({ method: 'POST', url: `/api/courses/${course.id}/generate` })).statusCode).toBe(409);
-
-    const regenerateUrl = `/api/courses/${course.id}/episodes/e1/regenerate`;
-    expect((await app.inject({ method: 'POST', url: regenerateUrl, payload: { instruction: 'punchier' } })).statusCode).toBe(409);
-    const outline = {
-      title: 'Englund', promise: '', hookOptions: ['a', 'b', 'c'], takeaways: ['a', 'b', 'c'], video: null, reel: null,
-      chapters: [{ title: 'The trap', lineId: 'l1', episodes: [{ id: 'e1', role: 'bait', focus: 'Bc3 looks natural.', startNodeId: 'n11', endNodeId: 'n11', narratedNodeIds: [], answerNodeId: null, budgetCourse: 1, budgetVideo: 1 }] }]
-    };
-    await coursesRepo.setGeneration(db, course.id, { status: 'succeeded', step: null, done: 1, total: 1, error: null, outline, finishedEpisodeIds: ['e1'], warnings: [] });
-
-    const regenerated = await app.inject({ method: 'POST', url: regenerateUrl, payload: { instruction: 'punchier' } });
-    expect(regenerated.statusCode).toBe(200);
-    expect(regenerated.json<CourseResponse>().document.episodes).toEqual([
-      {
-        id: 'e1',
-        role: 'bait',
-        focus: 'Bc3 looks natural.',
-        startNodeId: 'n11',
-        endNodeId: 'n11',
-        plies: [{ nodeId: 'n11', text: 'It hits the queen.', arrows: [], course: true, video: false }],
-        budget: { course: 1, video: 1 },
-        drillNodeIds: []
-      }
-    ]);
-    expect(JSON.stringify(model.doGenerateCalls[0]?.prompt)).toContain("CREATOR'S REQUEST FOR THIS EPISODE");
-    const debug = (await app.inject({ method: 'GET', url: `/api/courses/${course.id}/debug` })).json<CourseDebugResponse>();
-    expect(debug.calls.map(({ step, episodeId, repair }) => [step, episodeId, repair])).toEqual([['episode', 'e1', false]]);
-    expect(JSON.stringify(debug.calls[0]?.snapshot)).toContain("CREATOR'S REQUEST FOR THIS EPISODE");
-    expect((await app.inject({ method: 'POST', url: `/api/courses/${course.id}/episodes/e9/regenerate`, payload: {} })).statusCode).toBe(404);
-    await app.close();
-  });
-
-  test('publish: note audio first, checks ticked, then the frozen copy; stale audio is dropped', async () => {
-    const app = await creatorApp();
-    const course = (await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE })).json<CourseResponse>();
-    const built = (await app.inject({ method: 'POST', url: `/api/courses/${course.id}/skeleton` })).json<CourseResponse>();
-    const url = `/api/courses/${course.id}`;
-
-    const untitled = await app.inject({ method: 'POST', url: `${url}/publish`, payload: {} });
-    expect(untitled.statusCode).toBe(400);
-    expect(untitled.body).toContain('Write the three takeaways');
-
-    const document = { ...built.document, takeaways: ['Watch b2.', 'Mind the pin.', 'Guard c1.'] };
-    await app.inject({ method: 'PUT', url: `${url}/draft`, payload: { document } });
-    const missing = (await app.inject({ method: 'GET', url })).json<CourseResponse>().missingNoteAudio;
-    expect(missing.length).toBeGreaterThan(0);
-    const first = missing[0]!;
-    const noteUrl = `${url}/notes/${first.episodeId}/${first.nodeId}/audio`;
-
-    // The browser asks for a signed URL (capped, and only for a note of the draft), uploads to the bucket, then confirms.
-    const ask = (size: number, at = noteUrl) => app.inject({ method: 'POST', url: `${at}-url`, payload: { size } });
-    expect((await ask(400_000)).statusCode).toBe(400);
-    expect((await ask(0)).statusCode).toBe(400);
-    expect((await ask(100, `${url}/notes/e1/n99/audio`)).statusCode).toBe(404);
-    const slot = (await ask(100)).json<{ url: string; key: string }>();
-    expect(audioStore.presigned.at(-1)).toEqual({ key: slot.key, contentType: 'audio/mpeg', size: 100 });
-    const confirm = (key: string) => app.inject({ method: 'PUT', url: noteUrl, payload: { key } });
-    expect((await confirm(slot.key)).statusCode).toBe(400);
-    audioStore.put(slot.key, 100);
-    expect((await confirm('courses/other-course/audio/0b9b8d1e-aaaa-4bbb-8ccc-000000000001.mp3')).statusCode).toBe(400);
-    expect((await confirm(slot.key)).statusCode).toBe(204);
-    const after = (await app.inject({ method: 'GET', url })).json<CourseResponse>();
-    expect(after.missingNoteAudio).toHaveLength(missing.length - after.document.episodes.flatMap((episode) => episode.plies).filter((ply) => ply.course && ply.text === noteText(after, first)).length);
-
-    const check = (await app.inject({ method: 'GET', url: `${url}/publish-check` })).json<{ problems: { episodeId: string; episode: string; move: string | null; message: string }[] }>();
-    const refused = await app.inject({ method: 'POST', url: `${url}/publish`, payload: {} });
-    if (refused.statusCode === 409) {
-      expect(check.problems.length).toBeGreaterThan(0);
-      expect(refused.body).toContain(`found ${check.problems.length} `);
-      expect(check.problems[0]).toMatchObject({ episodeId: expect.any(String), episode: expect.any(String), message: expect.any(String) });
-    } else expect(check.problems).toEqual([]);
-    const published = refused.statusCode === 409 ? await app.inject({ method: 'POST', url: `${url}/publish`, payload: { warningsChecked: true } }) : refused;
-    expect(published.statusCode).toBe(200);
-    const body = published.json<CourseResponse>();
-    expect(body).toMatchObject({ status: 'unlisted', publishedAt: expect.any(String) });
-    const row = await coursesRepo.findById(db, course.id);
-    expect(row?.publishedDocument?.takeaways).toEqual(document.takeaways);
-
-    // Edit the voiced note and republish as public: its old audio goes.
-    const edited = { ...document, episodes: document.episodes.map((episode) => (episode.id === first.episodeId ? { ...episode, plies: episode.plies.map((ply) => (ply.nodeId === first.nodeId ? { ...ply, text: `${ply.text} Again.` } : ply)) } : episode)) };
-    await app.inject({ method: 'PUT', url: `${url}/draft`, payload: { document: edited } });
-    const republished = await app.inject({ method: 'POST', url: `${url}/publish`, payload: { visibility: 'public', warningsChecked: true } });
-    expect(republished.json<CourseResponse>().status).toBe('public');
-    expect(await db.selectFrom('courseAudio').select('textHash').where('courseId', '=', course.id).execute()).toEqual([]);
     expect(audioStore.objects.has(slot.key)).toBe(false);
-
-    const badLink = await app.inject({ method: 'PUT', url: `${url}/draft`, payload: { document: { ...edited, clipLinks: { youtube: 'https://evil.example/watch' } } } });
-    expect(badLink.statusCode).toBe(400);
-    const goodLink = await app.inject({ method: 'PUT', url: `${url}/draft`, payload: { document: { ...edited, clipLinks: { youtube: 'https://www.youtube.com/watch?v=abc', tiktok: 'https://www.tiktok.com/@me/video/1' } } } });
-    expect(goodLink.statusCode).toBe(204);
+    expect((await app.inject({ method: 'GET', url })).statusCode).toBe(404);
     await app.close();
   });
 });
 
-function noteText(course: CourseResponse, target: { episodeId: string; nodeId: string }): string | undefined {
-  return course.document.episodes.find((episode) => episode.id === target.episodeId)?.plies.find((ply) => ply.nodeId === target.nodeId)?.text;
-}
+describe('course API tokens', () => {
+  test('a token reaches only /api/token/courses, as its editor, until revoked or the editor loses the right', async () => {
+    const session = await editorApp();
+    const created = await session.inject({ method: 'POST', url: '/api/course-tokens', payload: { name: 'studio' } });
+    expect(created.statusCode).toBe(201);
+    const { id, token } = created.json<CreateCourseApiTokenResponse>();
+    expect(token.startsWith('fcc_')).toBe(true);
+    expect(JSON.stringify((await session.inject({ method: 'GET', url: '/api/course-tokens' })).json())).not.toContain(token);
+    await session.close();
+
+    const proxied = buildTestApp({ db, authMode: 'proxy', courseDossierBuilder: englundDossier });
+    await proxied.ready();
+    const bearer = (value: string) => ({ authorization: `Bearer ${value}` });
+    expect((await proxied.inject({ method: 'GET', url: '/api/token/courses', headers: bearer(token) })).statusCode).toBe(200);
+    expect((await proxied.inject({ method: 'GET', url: '/api/token/courses', headers: bearer('fcc_wrong') })).statusCode).toBe(401);
+    expect((await proxied.inject({ method: 'GET', url: '/api/token/courses' })).statusCode).toBe(401);
+    // A token is not a session: the browser routes ignore it.
+    expect((await proxied.inject({ method: 'GET', url: '/api/courses', headers: bearer(token) })).statusCode).toBe(401);
+    expect((await proxied.inject({ method: 'GET', url: '/api/users/me', headers: bearer(token) })).statusCode).toBe(401);
+
+    await usersRepo.setCanEditCourses(db, DEV_EMAIL, false);
+    expect((await proxied.inject({ method: 'GET', url: '/api/token/courses', headers: bearer(token) })).statusCode).toBe(401);
+    await usersRepo.setCanEditCourses(db, DEV_EMAIL, true);
+
+    const again = await editorApp();
+    expect((await again.inject({ method: 'DELETE', url: `/api/course-tokens/${id}` })).statusCode).toBe(204);
+    expect((await proxied.inject({ method: 'GET', url: '/api/token/courses', headers: bearer(token) })).statusCode).toBe(401);
+    await again.close();
+    await proxied.close();
+  });
+});

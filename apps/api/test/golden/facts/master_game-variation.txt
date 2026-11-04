@@ -128,23 +128,6 @@ n17 6.exd5 (White, A quieter defence) | blunder | before: The position is roughl
     alternatives: Bb5+: The position is roughly equal, after Nc6 f3 Bh5 exd5; Be2: Black is slightly better, after Bxe2 Qxe2 d4 Nd1; f3 (attacks the bishop on g4; controls e4; supports the centre pawn on e4): Black is slightly better, after dxc4 fxg4 Nc6 h3
     flags: critical
 
-REEL CANDIDATES
-  r1 mate n5–n13, climax n13 [highlight, puzzle, promo]
-  r2 brilliant n1–n13, climax n9 [highlight, promo]
-  r3 brilliant n3–n13, climax n11 [highlight, puzzle, promo]
-  r4 swing n1–n17, climax n15 [highlight, promo]
-  r5 swing n2–n13, climax n10 [highlight, promo]
-
-PLAN
-  e1 intro n1–n1
-  e2 moves n1–n13
-  e3 moment n7–n7
-  e4 moment n9–n9
-  e5 moment n10–n10
-  e6 moment n11–n11 answer=n11
-  e7 moment n13–n13 answer=n13
-  e8 variation n14–n17
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — Philidor Defense (C41); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

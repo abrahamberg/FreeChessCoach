@@ -122,13 +122,6 @@ n20 6.dxc6 (White, Modern) | book
     ideas: takes the piece that attacked the bishop on b5 | gives up the centre: the pawn leaves d5 | opens a line for the opponent's queen on d8 (from 7 squares to 10)
     alternatives: Ba4 (aims at the king on e8, through the pawn on c6): Black is slightly better, after Nxd5 O-O Bd6 c4; Qe2+ (brings the queen out to e2; controls e4 and e5): Black is slightly better, after Be7 dxc6 Nxc6 O-O
 
-REEL CANDIDATES
-
-PLAN
-  e1 line n1–n14
-  e2 deviation n15–n20
-  e3 recap n14–n14
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

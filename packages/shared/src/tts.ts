@@ -12,3 +12,8 @@ export const TtsSpeakRequestSchema = z.object({
   preview: z.boolean().optional()
 });
 export type TtsSpeakRequest = z.infer<typeof TtsSpeakRequestSchema>;
+
+/** docs/courses.md §8: the silence between two paragraphs of a course note's
+ * audio, in seconds. The studio leaves it when it voices a note; the course
+ * player counts on it to follow the spoken sentence. */
+export const NOTE_PARAGRAPH_PAUSE_S = 0.8;

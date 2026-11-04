@@ -25,16 +25,6 @@ n3 2.Nxc8 (White, Line A) | great | before: White is much better → after: Whit
     tempting check: Ng6+? White's Ng6+ moves the knight from e7 to g6 | gives check | the check can be answered: no block; take the checking piece with fxg6, hxg6; move the king with Kg8, Ke8 | leaves the white knight on g6 hanging. Black answers hxg6: moves the pawn from h7 to g6 | captures the knight on g6. Then f4 Qc4 Kf2. Over the line Black takes a knight; at the end Black is a queen up (Black is much better).
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 puzzle n1–n3, climax n3 [highlight, puzzle, promo]
-  r2 brilliant n1–n3, climax n1 [highlight, puzzle, promo]
-
-PLAN
-  e1 question n1–n1
-  e2 solve n1–n2 answer=n1
-  e3 solve n3–n3 answer=n3
-  e4 recap n3–n3
-
 REVIEW NOTES
   l1
     n1 1.Ne7+: Stops the mate threat Qc1#; Settles the knight on e7 on a square by the king that no pawn can cover any more; Controls d5; You won a queen through a fork two moves away — knight on e7 forks the queen on c8 and the king on g8.

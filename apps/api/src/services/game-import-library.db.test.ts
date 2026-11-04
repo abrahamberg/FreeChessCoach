@@ -27,8 +27,7 @@ describe('importGame — library cap and auto-delete', () => {
     enqueueAnalyzeGame: vi.fn().mockResolvedValue(undefined),
     enqueueSummarizeSession: vi.fn().mockResolvedValue(undefined),
     enqueueBackfillGameMetadata: vi.fn().mockResolvedValue(undefined),
-    enqueueRebuildDiagnosticProfile: vi.fn().mockResolvedValue(undefined),
-    enqueueCourseGenerate: vi.fn().mockResolvedValue(undefined)
+    enqueueRebuildDiagnosticProfile: vi.fn().mockResolvedValue(undefined)
   };
 
   beforeAll(async () => {

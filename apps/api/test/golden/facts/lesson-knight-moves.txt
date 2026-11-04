@@ -21,13 +21,6 @@ n4 2…Ke7 (Black, Line A) | excellent | before: The position is roughly equal �
     board: moves the king from d7 to e7
     alternatives: Ke6 (threatens to win the knight on e5 with Kxe5): The position is roughly equal, after Ke2 Kd6 Kd3 Kc5; Kd6 (threatens to win the knight on e5 with Kxe5): The position is roughly equal, after Ke2 Kd5 Kd3 Kc5
 
-REEL CANDIDATES
-
-PLAN
-  e1 concept n1–n1
-  e2 example n1–n4
-  e3 recap n1–n1
-
 REVIEW NOTES
   l1
     n1 1.Nc6: Heads for e5, a square no enemy pawn can attack

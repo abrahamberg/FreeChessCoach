@@ -14,14 +14,6 @@ n1 23…Qg3 (Black, Line A) | best | before: Black is much better → after: Bla
     tempting capture: Nxc2? Black's Nxc2 moves the knight from d4 to c2 | captures the pawn on c2. White answers gxh3: moves the pawn from g2 to h3 | captures the rook on h3. Then Qd3 Rc7 Rf7. Over the line Black takes a pawn; White takes a rook; at the end White has a rook for a knight and a pawn (White is better).
     tempting capture: Qxc2? Black's Qxc2 moves the queen from c3 to c2 | captures the pawn on c2 | attacks the rook on c5 | leaves the black rook on h3 hanging. White answers Rxc2: moves the rook from c5 to c2 | captures the queen on c2. Then Kh8 Rc7 Ne2+. Over the line Black takes a pawn; White takes the queen; at the end White has a queen for a knight and a pawn (White is better).
 
-REEL CANDIDATES
-  r1 puzzle n1–n1, climax n1 [highlight, puzzle, promo]
-
-PLAN
-  e1 question n1–n1
-  e2 solve n1–n1 answer=n1
-  e3 recap n1–n1
-
 REVIEW NOTES
   l1
     n1 23…Qg3: Threatens mate with Qxh2#; Sacrifices the queen on g3: it can be taken, and the engine still approves; Threatens to win the pawn on h2 with Rxh2

@@ -191,30 +191,6 @@ n45 23.Be7# (White, Line A) | great | before: White has a forced mate in 1 → a
     tactics: You delivered checkmate.
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 mate n37–n45, climax n45 [highlight, puzzle, promo]
-  r2 brilliant n9–n19, climax n17 [highlight, promo]
-  r3 brilliant n30–n40, climax n38 [highlight, puzzle, promo]
-  r4 brilliant n33–n45, climax n41 [highlight, puzzle, promo]
-  r5 swing n32–n42, climax n40 [highlight, promo]
-
-PLAN
-  e1 intro n1–n1
-  e2 moves n1–n45
-  e3 moment n13–n13
-  e4 moment n15–n15
-  e5 moment n17–n17
-  e6 moment n19–n19
-  e7 moment n28–n28
-  e8 moment n33–n33
-  e9 moment n35–n35
-  e10 moment n36–n36
-  e11 moment n37–n37
-  e12 moment n38–n38
-  e13 moment n40–n40
-  e14 moment n41–n41 answer=n41
-  e15 moment n45–n45 answer=n45
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — King's Gambit Accepted: Bishop's Gambit, Bryan Countergambit (C33); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

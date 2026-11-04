@@ -15,6 +15,8 @@ declare module 'fastify' {
 
 export interface AuthHeadersOptions {
   authMode: 'proxy' | 'dev-stub';
+  /** The course editor a bearer token stands for, or null (docs/courses.md §2). */
+  tokenUser: (token: string) => Promise<AuthUser | null>;
 }
 
 // UserProfileSchema requires a real-shaped email (z.string().email()) — 'dev@local'
@@ -35,8 +37,13 @@ const DEV_STUB_USER: AuthUser = { email: 'dev@local.test', displayName: 'dev@loc
 //   the proxy; its routes never read request.user. Judged by the route that
 //   matched, not the raw URL, so no path trick ("/api/public/../courses")
 //   reaches another route without identity.
+// /api/token/* — the course API for course editors' tools (the studio):
+//   skip-auth at the proxy, so it carries no identity headers; a bearer token
+//   (services/courses/course-tokens.ts) is the only identity it takes, and no
+//   other route reads one. Judged by the matched route, like /api/public/*.
 const AUTH_EXEMPT_PATHS = new Set(['/healthz', '/readyz']);
 export const PUBLIC_API_PREFIX = '/api/public/';
+export const TOKEN_API_PREFIX = '/api/token/';
 
 /** Decorates `request.user` from oauth2-proxy identity headers.
  *
@@ -50,6 +57,10 @@ export const authHeadersPlugin: FastifyPluginAsync<AuthHeadersOptions> = fp(
   (app: FastifyInstance, opts: AuthHeadersOptions) => {
     app.addHook('onRequest', async (request: FastifyRequest, reply: FastifyReply) => {
       if (AUTH_EXEMPT_PATHS.has(request.url) || request.url.startsWith('/internal/') || isPublicRoute(request)) return;
+      if (isTokenRoute(request)) {
+        await authenticateToken(request, reply, opts);
+        return;
+      }
 
       const user = userFromHeaders(request);
       if (user) {
@@ -70,6 +81,28 @@ export const authHeadersPlugin: FastifyPluginAsync<AuthHeadersOptions> = fp(
     return Promise.resolve();
   }
 );
+
+/** A token route: the bearer token's editor, or 401. Without a token the
+ * dev stub stands in, as it does for every other route. */
+async function authenticateToken(request: FastifyRequest, reply: FastifyReply, opts: AuthHeadersOptions): Promise<void> {
+  const token = bearerToken(request);
+  const user = token ? await opts.tokenUser(token) : null;
+  if (user) {
+    request.user = user;
+    return;
+  }
+  if (!token && opts.authMode === 'dev-stub') {
+    request.user = DEV_STUB_USER;
+    return;
+  }
+  await reply.code(401).type('application/problem+json').send({ type: 'about:blank', title: 'Missing or invalid course API token', status: 401 });
+}
+
+function bearerToken(request: FastifyRequest): string | null {
+  const header = firstHeaderValue(request.headers.authorization);
+  const match = header?.match(/^Bearer\s+(\S+)$/i);
+  return match?.[1] ?? null;
+}
 
 function userFromHeaders(request: FastifyRequest): AuthUser | null {
   const email = firstHeaderValue(request.headers['x-forwarded-email']);
@@ -93,4 +126,8 @@ function firstHeaderValue(value: string | string[] | undefined): string | null {
 
 function isPublicRoute(request: FastifyRequest): boolean {
   return request.routeOptions.url?.startsWith(PUBLIC_API_PREFIX) ?? false;
+}
+
+function isTokenRoute(request: FastifyRequest): boolean {
+  return request.routeOptions.url?.startsWith(TOKEN_API_PREFIX) ?? false;
 }

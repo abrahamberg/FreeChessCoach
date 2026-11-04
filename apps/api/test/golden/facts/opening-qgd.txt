@@ -156,13 +156,6 @@ n24 7.Bd3 (White, Exchange) | best | before: The position is roughly equal → a
     ideas: prevents Ne4, which would attack the undefended bishop on g5 | develops the bishop to d3 | controls e4 | aims at the pawn on h7 | prepares the pawn's advance to e4, which it now supports
     alternatives: Qc2 (brings the queen out to c2; controls e4; clears the way to castle queenside): The position is roughly equal, after h6 Bh4 Ne4 Bxe7; Qb3 (brings the queen out early to b3, with 2 pieces still at home; puts pressure on the pawn on d5; clears the way to castle queenside): The position is roughly equal, after O-O Nf3 h6 Bh4
 
-REEL CANDIDATES
-
-PLAN
-  e1 line n1–n17
-  e2 deviation n18–n24
-  e3 recap n17–n17
-
 REVIEW NOTES
   l1
     n1 1.d4: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance

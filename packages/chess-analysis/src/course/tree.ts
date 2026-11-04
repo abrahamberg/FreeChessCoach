@@ -1,4 +1,4 @@
-import { allowsSeveralStarts, type CourseKind } from '@freechesscoach/shared';
+import { allowsSeveralStarts, type CourseDocument, type CourseKind } from '@freechesscoach/shared';
 import { parsePgnTree, type PgnArrow, type PgnGlyph, type PgnMark, type PgnTreeError, type PgnTreeNode, type PgnTreeOptions } from '../pgn-tree/parse.js';
 
 export type { PgnArrow as CourseTreeArrow, PgnTreeError as CourseTreeError } from '../pgn-tree/parse.js';
@@ -52,6 +52,11 @@ export function parseCourseTree(pgn: string, options: PgnTreeOptions = {}): Cour
  * (each example starts from its own `[FEN]`), the other kinds the first. */
 export function parseCourseTreeOfKind(pgn: string, kind: CourseKind): CourseTree {
   return parseCourseTree(pgn, { allGames: allowsSeveralStarts(kind) });
+}
+
+/** A stored course's fixed tree, as the course code reads it. */
+export function courseTreeOf(document: Pick<CourseDocument, 'startFen' | 'nodes' | 'lines'>): CourseTree {
+  return { startFen: document.startFen, nodes: document.nodes, lines: document.lines, errors: [] };
 }
 
 function withLines(treeNodes: PgnTreeNode[]): { nodes: CourseTreeNode[]; lines: CourseTreeLine[] } {

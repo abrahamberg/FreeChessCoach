@@ -545,29 +545,13 @@ export const CONFIG = {
     /** §13.5: an answer that captures at once and leaves the mover this many
      * points down makes the move obvious, not tempting. */
     obviousLoss: 2,
-    /** §7 verifier limits: arrows per clip beat, words per caption, and
-     * sentences per course note (more at a critical node). */
+    /** §7 verifier limits: arrows per move, and sentences per course note
+     * (more at a critical node). */
     maxArrowsPerBeat: 2,
-    maxCaptionWords: 6,
-    /** A trap's bait is the heart of the film: its video line makes the
-     * viewer want the move, which three words cannot. */
-    minBaitVideoWords: 30,
-    /** A side road at the bait is heard while its moves play: whole
-     * sentences, not "Knight advances; bishops trade." */
-    minSideRoadWords: 25,
     maxNoteSentences: 2,
     maxCriticalNoteSentences: 4,
     /** A puzzle's solve line: the checks, captures and threats, then the move. */
     maxSolveNoteSentences: 5,
-    /** docs/courses.md §13.3: at most this many moves before the reel's climax, and after it. */
-    reelMovesBefore: 8,
-    reelMovesAfter: 2,
-    /** A mate this close after the climax is the payoff: the reel runs to it
-     * (the first real run ended a trap's reel two moves before its mate). */
-    reelMateReach: 4,
-    maxReelCandidates: 5,
-    /** A node that drops the mover this much win% is a swing worth a reel. */
-    swingWinDrop: 25,
     /** Plies of the engine's best line shown in a node's facts. */
     bestLinePlies: 6,
     /** The opening book's other moves printed at a book move, from the same
@@ -587,35 +571,9 @@ export const CONFIG = {
     decidedCp: 500,
     /** A reveal says why the answer works, not just the move (gemma wrote "6... Bb4"). */
     minRevealWords: 6,
-    /** §13.4 the YouTube video's budgets. Spoken words per second at Kokoro
-     * speed 1, with room left for moves, tempting moves played out and the
-     * cards; scaled by the coach's `PERSONA_SPEECH_SPEED`. */
-    wordsPerSecond: 2,
-    /** A guide, not a target: a puzzle with little to say runs short, and
-     * the words cap is the top of the range. The tops are 35% above the
-     * first ones (the owner, 2026-10-18: moves play slower, and good
-     * content is not cut to fit). */
-    videoSeconds: {
-      trap: { min: 180, max: 567 },
-      opening: { min: 480, max: 1215 },
-      tactics: { min: 300, max: 810 },
-      puzzle: { min: 90, max: 324 },
-      master_game: { min: 480, max: 1215 },
-      endgame: { min: 180, max: 648 },
-      lesson: { min: 180, max: 648 },
-      reading: { min: 180, max: 648 }
-    },
-    /** Lengths (video words, the hook, the reel's seconds) may run over by
-     * this share before they count as a problem: a 41-word hook against 40
-     * is not worth a repair call that may bend the wording. */
+    /** Lengths may run over by this share before they count as a problem
+     * (`overLength`): a 41-word line against 40 is not worth a rewrite. */
     lengthSlack: 0.1,
-    /** §13.3 the reel's length (the owner, 2026-10-25: short reels are watched to the end). */
-    reelSeconds: { min: 25, max: 40 },
-    hookWords: 12,
-    maxWordsPerBeat: 45,
-    quizPauseSeconds: 3,
-    /** The video narrates at most one move per this many seconds. */
-    secondsPerNarratedMove: 12,
     /** §8 note audio uploads: an MP3 at 64 kbps is ~8 KB a second, so
      * one note is at most ~30 s and a course's notes ~10 minutes. */
     maxNoteAudioBytes: 300_000,

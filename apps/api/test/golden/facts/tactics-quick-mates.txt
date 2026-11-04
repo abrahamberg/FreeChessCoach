@@ -139,19 +139,6 @@ n18 4.Qxf7# (White, Scholar's Mate) | great | before: White has a forced mate in
     tempting capture: Qxh7? White's Qxh7 moves the queen from h5 to h7 | captures the pawn on h7 | attacks the rook on h8 | leaves the white queen on h7 hanging. Black answers Rxh7: moves the rook from h8 to h7 | captures the queen on h7. Then Nf3 Ng4. Over the line White takes a pawn; Black takes the queen; at the end White has a pawn for a queen (Black is much better).
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 mate n5–n13, climax n13 [highlight, puzzle, promo]
-  r2 mate n1–n18, climax n18 [highlight, puzzle, promo]
-  r3 brilliant n3–n13, climax n11 [highlight, puzzle, promo]
-  r4 swing n1–n18, climax n17 [highlight, promo]
-  r5 swing n2–n13, climax n10 [highlight, promo]
-
-PLAN
-  e1 concept n18–n18
-  e2 example n16–n18 answer=n18
-  e3 example n9–n13 answer=n11
-  e4 scan n11–n11
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — Philidor Defense (C41); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

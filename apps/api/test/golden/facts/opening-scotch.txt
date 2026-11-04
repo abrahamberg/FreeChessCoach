@@ -128,13 +128,6 @@ n21 7.Bc4 (White, Classical) | excellent | before: The position is roughly equal
     ideas: develops the bishop to c4 | controls d5 | prevents d5, a pawn break | aims at the pawn on f7 | clears the way to castle kingside
     alternatives: Bb5 (develops the bishop to b5; clears the way to castle kingside): The position is roughly equal, after O-O O-O d6 f4; Qd2 (brings the queen out to d2): The position is roughly equal, after d6 Nb5 Bxe3 Qxe3
 
-REEL CANDIDATES
-
-PLAN
-  e1 line n1–n15
-  e2 deviation n16–n21
-  e3 recap n15–n15
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — Scotch Game: Mieses Variation (C45); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

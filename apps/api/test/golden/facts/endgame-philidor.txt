@@ -48,15 +48,6 @@ n10 5…Re1+ (Black, Line A) | best | before: The position is roughly equal → 
     ideas: puts a rook on the half-open e-file
     alternatives: Rd2 (puts the rook on the seventh rank): The position is roughly equal, after Kf4 Rd5 e7 Rb5; Rg1 (puts a rook on the open g-file): The position is roughly equal, after e7 Rf1 Kd4 Re1
 
-REEL CANDIDATES
-  r1 puzzle n1–n10, climax n8 [highlight, puzzle, promo]
-
-PLAN
-  e1 goal n1–n1
-  e2 technique n1–n9 answer=n8
-  e3 technique n10–n10
-  e4 recap n10–n10
-
 REVIEW NOTES
   l1
     n1 1.e6: Pushes the passed pawn to e6, 2 squares from queening

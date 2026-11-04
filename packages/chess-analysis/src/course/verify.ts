@@ -1,4 +1,4 @@
-import { videoCaption, videoLine, type CourseEpisode } from '@freechesscoach/shared';
+import type { CourseEpisode } from '@freechesscoach/shared';
 import { CONFIG } from '../config.js';
 import type { CourseDossier } from './dossier.js';
 import { Chess } from 'chess.js';
@@ -6,28 +6,18 @@ import { arrowProblems, nodeProblems } from './verify-board.js';
 import { pieceProblems, takenPieceProblems } from './verify-pieces.js';
 import { moveLabel } from './moves.js';
 import { episodeScope, type CourseVerifyNode, type EpisodeScope } from './verify-scope.js';
-import { episodeTexts, moveProblems, nodeIdProblems, numberProblems, overLength, phraseProblems, sameMove, sanTokens, spokenNotationProblems, tacticWordProblems } from './verify-text.js';
+import { episodeTexts, moveProblems, nodeIdProblems, numberProblems, phraseProblems, sameMove, sanTokens, tacticWordProblems } from './verify-text.js';
 
 export type { CourseVerifyNode } from './verify-scope.js';
 
 /** docs/courses.md §7, one code per check. */
-export type CourseVerifyCode = 'nodes' | 'moves' | 'pieces' | 'tactic-words' | 'numbers' | 'arrows' | 'lengths' | 'key-moves' | 'tempting' | 'quiz' | 'phrases' | 'reel' | 'video' | 'voice';
+export type CourseVerifyCode = 'nodes' | 'moves' | 'pieces' | 'tactic-words' | 'numbers' | 'arrows' | 'lengths' | 'tempting' | 'quiz' | 'phrases' | 'voice';
 
 export interface CourseVerifyProblem {
   code: CourseVerifyCode;
   nodeId: string | null;
-  /** For the creator: "Nd5 in the note on n14 is not in the analysis". */
+  /** For the editor: "Nd5 in the note on n14 is not in the analysis". */
   message: string;
-  /** A length over its guide (the video's words, the reel's seconds): shown
-   * to the creator, never sent to a repair call, so good content is not cut
-   * to fit (the owner, 2026-10-18). */
-  advisory?: true;
-}
-
-/** Spoken words per video move and per episode in the video (docs/courses.md §6.5). */
-export interface CourseVerifyBudget {
-  wordsPerBeat: number;
-  wordsPerEpisode: number;
 }
 
 export interface CourseVerifyInput {
@@ -40,11 +30,11 @@ export interface CourseVerifyInput {
   dossier: CourseDossier | null;
   /** The creator's direction; a percentage it gives may be repeated. */
   direction?: string;
-  budget?: CourseVerifyBudget | null;
 }
 
-/** Every problem in one episode's script, in check order. Pure: the AI
- * pipeline runs it after every episode call, the editor on every edit. */
+/** Every problem in one episode's course text, in check order. Pure: the
+ * import and the publish check run it; the studio runs the same checks
+ * (exported from verify-text.ts) on its videos' lines. */
 export function verifyCourseEpisode(input: CourseVerifyInput): CourseVerifyProblem[] {
   const { episode, dossier } = input;
   const scope = episodeScope(episode, input.startFen, input.nodes, dossier);
@@ -60,60 +50,28 @@ export function verifyCourseEpisode(input: CourseVerifyInput): CourseVerifyProbl
     ...takenPieceProblems(texts, scope),
     ...numberProblems(texts, input.direction ?? ''),
     ...arrowProblems(episode, scope),
-    ...lengthProblems(episode, scope, input.budget ?? null),
-    ...keyMoveProblems(episode, scope),
+    ...lengthProblems(episode, scope),
     ...(dossier ? temptingProblems(episode, scope) : []),
     ...quizProblems(episode, scope, dossier !== null),
     ...baitProblems(episode, scope),
     ...nodeIdProblems(texts),
-    ...phraseProblems(texts),
-    ...spokenNotationProblems(texts.filter((each) => each.where.startsWith('the video line on')))
+    ...phraseProblems(texts)
   ];
 }
 
-function lengthProblems(episode: CourseEpisode, scope: EpisodeScope, budget: CourseVerifyBudget | null): CourseVerifyProblem[] {
+function lengthProblems(episode: CourseEpisode, scope: EpisodeScope): CourseVerifyProblem[] {
   const problems: CourseVerifyProblem[] = [];
-  const { maxCaptionWords, maxNoteSentences, maxCriticalNoteSentences, maxSolveNoteSentences } = CONFIG.courses;
-  const course = episode.plies.filter((ply) => ply.course);
-  const video = episode.plies.filter((ply) => ply.video);
-  for (const ply of episode.plies.filter((each) => each.course || each.video)) {
-    if (!ply.text.trim() && !(ply.video && ply.say?.trim())) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `${ply.nodeId} speaks but has no words; write them or untick it` });
-  }
-  for (const ply of course) {
+  const { maxNoteSentences, maxCriticalNoteSentences, maxSolveNoteSentences } = CONFIG.courses;
+  for (const ply of episode.plies.filter((each) => each.course)) {
+    if (!ply.text.trim()) {
+      problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `${ply.nodeId} speaks but has no words; write them or untick it` });
+      continue;
+    }
     // A solve line walks the checks, captures and threats before the move;
     // an endgame's technique line says what the move keeps and what spoils it.
     const limit = episode.role === 'solve' || episode.role === 'technique' ? maxSolveNoteSentences : scope.facts.get(ply.nodeId)?.critical ? maxCriticalNoteSentences : maxNoteSentences;
     const sentences = sentenceCount(ply.text);
     if (sentences > limit) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The line on ${ply.nodeId} has ${sentences} sentences (at most ${limit})` });
-  }
-  for (const ply of video) {
-    // With no caption the video shows the line's first sentence: asked about
-    // "the caption" it never wrote, the model moved its words there and left
-    // the hook silent.
-    const captionWords = wordCount(videoCaption(ply));
-    if (captionWords > maxCaptionWords) {
-      const message = ply.caption?.trim()
-        ? `The caption on ${ply.nodeId} has ${captionWords} words (at most ${maxCaptionWords})`
-        : `${ply.nodeId} has no caption, so the video shows its first sentence (${captionWords} words): add a caption of at most ${maxCaptionWords} words and keep the line`;
-      problems.push({ code: 'lengths', nodeId: ply.nodeId, message });
-    }
-    const sayWords = wordCount(videoLine(ply));
-    if (budget && overLength(sayWords, budget.wordsPerBeat)) {
-      problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The video line on ${ply.nodeId} has ${sayWords} words (at most ${budget.wordsPerBeat}); give it a shorter video line` });
-    }
-  }
-  const total = video.reduce((sum, ply) => sum + wordCount(videoLine(ply)), 0);
-  if (budget && overLength(total, budget.wordsPerEpisode)) {
-    problems.push({ code: 'lengths', nodeId: null, message: `The video has ${total} words here (the guide is about ${budget.wordsPerEpisode})`, advisory: true });
-  }
-  // The planning call's budget: how many moves may speak in each version.
-  // A video the plan gave 0 was not planned: the creator may add it by hand,
-  // with no budget to keep.
-  if (episode.budget?.course && course.length > episode.budget.course) {
-    problems.push({ code: 'lengths', nodeId: null, message: `${course.length} moves speak in the course (the plan allows ${episode.budget.course})` });
-  }
-  if (episode.budget?.video && video.length > episode.budget.video) {
-    problems.push({ code: 'lengths', nodeId: null, message: `${video.length} moves speak in the video (the plan allows ${episode.budget.video})` });
   }
   return problems;
 }
@@ -147,28 +105,13 @@ function temptingProblems(episode: CourseEpisode, scope: EpisodeScope): CourseVe
   })];
 }
 
-/** Code's key moves (CourseBudget.keyNodeIds) speak in every planned version. */
-function keyMoveProblems(episode: CourseEpisode, scope: EpisodeScope): CourseVerifyProblem[] {
-  const budget = episode.budget;
-  if (!budget) return [];
-  return (budget.keyNodeIds ?? []).flatMap((nodeId) => {
-    const ply = episode.plies.find((each) => each.nodeId === nodeId);
-    const node = scope.byId.get(nodeId);
-    const label = node ? moveLabel(scope.fenBefore(nodeId), node.san) : nodeId;
-    const missing = [budget.course > 0 && !ply?.course && 'the course', budget.video > 0 && !ply?.video && 'the video'].filter(Boolean);
-    if (!missing.length) return [];
-    return [{ code: 'key-moves' as const, nodeId, message: `${label} is a key move of this episode; let it speak in ${missing.join(' and ')}` }];
-  });
-}
-
 const PIECE_NAMES: Record<string, string> = { k: 'king', q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn' };
 
 /**
  * A trap's bait line is the victim's side of the story and stops there: the
  * next move is the quiz, so the line never plays it for the learner. A run's
  * bait said "White pins your knight to your queen. Take the pawn; count king
- * threats before folding", one move before "What does Black play here?". And
- * in the video it is long enough to make the viewer want the bait.
+ * threats before folding", one move before "What does Black play here?".
  */
 function baitProblems(episode: CourseEpisode, scope: EpisodeScope): CourseVerifyProblem[] {
   if (episode.role !== 'bait') return [];
@@ -179,24 +122,14 @@ function baitProblems(episode: CourseEpisode, scope: EpisodeScope): CourseVerify
   const problems: CourseVerifyProblem[] = [];
   const label = moveLabel(bait.fenAfter, answer.san);
   const gives = givesAway(bait.fenAfter, answer.san);
-  for (const [where, text] of [['the line', ply.text], ['the video line', ply.say ?? ''], ['the caption', ply.caption ?? '']] as const) {
-    const found = gives(text);
-    if (found) problems.push({ code: 'quiz', nodeId: ply.nodeId, message: `${where} on ${ply.nodeId} gives away the answer ${label} ("${found}"): the bait line is the victim's side (what the move wants, why anyone would play it) and stops there; the learner finds the answer on the next move` });
-  }
-  const words = wordCount(videoLine(ply));
-  const least = CONFIG.courses.minBaitVideoWords;
-  if (ply.video && words < least) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The video line on the bait ${ply.nodeId} has ${words} words (at least ${least}): it is the heart of the trap, so say what the victim sees, what they expect to win and why any player would play it` });
-  const leastWhy = CONFIG.courses.minSideRoadWords;
-  for (const each of ply.video ? (ply.tempting ?? []) : []) {
-    const whyWords = wordCount(each.why);
-    if (whyWords < leastWhy) problems.push({ code: 'tempting', nodeId: ply.nodeId, message: `why ${each.san} fails on ${ply.nodeId} has ${whyWords} words (at least ${leastWhy}): it is spoken while its moves play, so say it in two or three whole sentences: the viewer's question, what the pieces do in order, and how it leaves both sides` });
-  }
+  const found = gives(ply.text);
+  if (found) problems.push({ code: 'quiz', nodeId: ply.nodeId, message: `the line on ${ply.nodeId} gives away the answer ${label} ("${found}"): the bait line is the victim's side (what the move wants, why anyone would play it) and stops there; the learner finds the answer on the next move` });
   return problems;
 }
 
 /** Finds the words in a text that play `san` from `fen` for the learner: the
  * move itself, "the knight takes" or "take the pawn". */
-function givesAway(fen: string, san: string): (text: string) => string | null {
+export function givesAway(fen: string, san: string): (text: string) => string | null {
   const move = new Chess(fen).moves({ verbose: true }).find((each) => each.san === san);
   const mover = move ? PIECE_NAMES[move.piece] : null;
   const taken = move?.captured ? PIECE_NAMES[move.captured] : null;

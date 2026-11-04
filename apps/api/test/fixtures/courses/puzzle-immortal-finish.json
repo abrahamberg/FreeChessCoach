@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "white",
   "levelBand": "club",
   "coachPersona": "commander",
   "direction": "The Immortal Game's finish: the queen goes, three minor pieces mate.",

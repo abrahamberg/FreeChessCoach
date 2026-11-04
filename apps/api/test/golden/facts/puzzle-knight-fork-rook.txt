@@ -20,15 +20,6 @@ n3 2.Nxa8 (White, Line A) | excellent | before: The position is roughly equal �
     notes: Wins the rook on a8
     alternatives: Nb5: The position is roughly equal, after Ra2 Kf1 Re2 Kxe2; Nd5 (centralises the knight on d5, which reaches 8 squares): The position is roughly equal, after Ra2 Nf4 Re2+ Nxe2
 
-REEL CANDIDATES
-  r1 puzzle n1–n3, climax n3 [highlight, puzzle, promo]
-
-PLAN
-  e1 question n1–n1
-  e2 solve n1–n2 answer=n1
-  e3 solve n3–n3 answer=n3
-  e4 recap n3–n3
-
 REVIEW NOTES
   l1
     n1 1.Nc7+: Forks the king on e8 and the rook on a8; Heads for e6, a square no enemy pawn can attack

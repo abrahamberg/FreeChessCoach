@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "white",
   "levelBand": "club",
   "coachPersona": "shark",
   "direction": "The Evergreen finish: mate in four, starting with a queen sacrifice.",

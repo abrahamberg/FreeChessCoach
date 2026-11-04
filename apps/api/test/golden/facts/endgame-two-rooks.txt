@@ -20,14 +20,6 @@ n3 2.Rb8# (White, Line A) | best | before: White has a forced mate in 1 → afte
     tempting check: Rd1+ White's Rd1+ moves the rook from b1 to d1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke8, Kc8. Black answers Ke8: moves the king from d8 to e8. Then Rb1 Kf8 Rb8#. Over the line nothing is taken; at the end White is two rooks up (White has a forced mate in 2). Works, but not the answer: it mates too, but in 3 moves, not 1.
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 puzzle n1–n3, climax n3 [highlight, puzzle, promo]
-
-PLAN
-  e1 goal n1–n1
-  e2 technique n1–n3 answer=n3
-  e3 recap n3–n3
-
 REVIEW NOTES
   l1
     n1 1.Ra7: Threatens mate with Rb8#

@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "white",
   "levelBand": "novice",
   "coachPersona": "huntress",
   "direction": "A knight fork: check the king and win the queen.",

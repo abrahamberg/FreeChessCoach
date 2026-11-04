@@ -24,7 +24,7 @@ export const UserProfileSchema = z.object({
   /** False until the guided welcome flow is finished or skipped. */
   onboarded: z.boolean(),
   /** Read-only: set by a moderator script, never by a route (docs/courses.md §2). */
-  canCreateCourses: z.boolean().default(false)
+  canEditCourses: z.boolean().default(false)
 });
 export type UserProfile = z.infer<typeof UserProfileSchema>;
 

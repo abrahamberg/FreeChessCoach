@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "white",
   "levelBand": "improving",
   "coachPersona": "huntress",
   "direction": "Black just played ...g5. White to play and mate in one: the only capture that is also a discovered check.",

@@ -23,16 +23,6 @@ n3 2.Nf7# (White, Line A) | great | before: White has a forced mate in 1 → aft
     tempting capture: Nxg8? White's Nxg8 moves the knight from h6 to g8 | captures the rook on g8. Black answers Kxg8: moves the king from h8 to g8 | captures the knight on g8. Then Kf2 Kf7 Kf3. Over the line White takes a rook; Black takes a knight; at the end material is level (The position is roughly equal).
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 puzzle n1–n3, climax n3 [highlight, puzzle, promo]
-  r2 idea n1–n3, climax n1 [highlight, puzzle, promo]
-
-PLAN
-  e1 question n1–n1
-  e2 solve n1–n2 answer=n1
-  e3 solve n3–n3 answer=n3
-  e4 recap n3–n3
-
 REVIEW NOTES
   l1
     n1 1.Qg8+: Sacrifices the queen on g8: it can be taken, and the engine still approves

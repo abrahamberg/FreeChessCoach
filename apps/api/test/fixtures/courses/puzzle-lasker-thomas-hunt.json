@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "white",
   "levelBand": "advanced",
   "coachPersona": "huntress",
   "direction": "The king hunt: sacrifice the queen on h7 and chase the king to g1.",

@@ -210,25 +210,6 @@ n82 41…Rc2# (Black, Line A) | excellent | before: Black has a forced mate in 1
     notes: Missed mate in 1 starting with Ba3#
     flags: critical
 
-REEL CANDIDATES
-  r1 mate n74–n82, climax n82 [highlight, puzzle, promo]
-  r2 brilliant n14–n24, climax n22 [highlight, promo]
-  r3 brilliant n26–n36, climax n34 [highlight, puzzle, promo]
-  r4 brilliant n28–n38, climax n36 [highlight, puzzle, promo]
-  r5 brilliant n30–n40, climax n38 [highlight, puzzle, promo]
-
-PLAN
-  e1 intro n1–n1
-  e2 moves n1–n82
-  e3 moment n12–n12
-  e4 moment n22–n22
-  e5 moment n28–n28
-  e6 moment n34–n34 answer=n34
-  e7 moment n36–n36 answer=n36
-  e8 moment n38–n38 answer=n38
-  e9 moment n64–n64
-  e10 moment n82–n82
-
 REVIEW NOTES
   l1
     n1 1.Nf3: Theory — English Opening: Anglo-Indian Defense, King's Indian Formation (A15); Puts the knight on f3, the best defender of a king castled short; Develops the knight to f3, its most useful square; Controls d4 and e5

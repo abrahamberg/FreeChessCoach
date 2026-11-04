@@ -22,8 +22,8 @@ const tree = parseCourseTree('1. d4 e5 2. dxe5 Nc6 *');
 const [d4, e5, dxe5, nc6] = tree.nodes;
 const document: CourseDocument = {
   version: 1, kind: 'opening', title: 'Englund', promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'general',
-  startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], takeaways: [], hookOptions: [], clipLinks: {},
-  episodes: [{ id: 'e1', role: 'line', focus: '', startNodeId: d4!.id, endNodeId: nc6!.id, drillNodeIds: [e5!.id, nc6!.id], plies: [{ nodeId: e5!.id, text: 'The gambit.', arrows: [], course: true, video: false }] }]
+  startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], takeaways: [], clipLinks: {},
+  episodes: [{ id: 'e1', role: 'line', focus: '', startNodeId: d4!.id, endNodeId: nc6!.id, drillNodeIds: [e5!.id, nc6!.id], plies: [{ nodeId: e5!.id, text: 'The gambit.', arrows: [], course: true }] }]
 };
 
 function handlers() {
@@ -114,7 +114,7 @@ describe('CourseDrill', () => {
   });
 
   test('a move in the note is read as words, not as letters ("Bxf2+" as bishop takes f2, check)', async () => {
-    const withMove = { ...document.episodes[0]!, plies: [{ nodeId: e5!.id, text: 'Then Bxf2+ wins.', arrows: [], course: true, video: false }] };
+    const withMove = { ...document.episodes[0]!, plies: [{ nodeId: e5!.id, text: 'Then Bxf2+ wins.', arrows: [], course: true }] };
     voice.play.mockClear();
     render(<CourseDrill document={{ ...document, episodes: [withMove] }} stage="practice" {...handlers()} />);
     await findPrompt();
@@ -124,7 +124,7 @@ describe('CourseDrill', () => {
   });
 
   test("another move, however good, is not the course's: the course's own word on it is said when it has one; the preview saves nothing", async () => {
-    const episode = { ...document.episodes[0]!, drillNodeIds: [e5!.id], plies: [{ nodeId: e5!.id, text: 'The gambit.', arrows: [], course: true, video: false, tempting: [{ san: 'd5', why: 'That is another opening.' }] }] };
+    const episode = { ...document.episodes[0]!, drillNodeIds: [e5!.id], plies: [{ nodeId: e5!.id, text: 'The gambit.', arrows: [], course: true, tempting: [{ san: 'd5', why: 'That is another opening.' }] }] };
     render(<CourseDrill document={{ ...document, episodes: [episode] }} stage="drill" {...handlers()} />);
     expect(await findPrompt()).toBeTruthy();
     await act(async () => board.play('d5', 'irrelevant', 'd7d5'));

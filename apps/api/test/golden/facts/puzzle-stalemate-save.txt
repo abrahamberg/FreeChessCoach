@@ -19,14 +19,6 @@ n2 2.Kxg2 (White, Line A) | excellent | before: The position is roughly equal �
     notes: Stalemate: Black has no legal move, so the game is a draw
     alternatives: Kh4 (threatens mate in two: Qe5+ Kg8 Qe8#): The position is roughly equal, after Rh2+ Kg5 Rg2+ Kf6; Kf3 (threatens mate in two: Qe5+ Kg8 Qe8#): The position is roughly equal, after Rf2+ Kg3 Rg2+ Kh4; Kf4 (threatens mate in two: Qe5+ Kg8 Qe8#): The position is roughly equal, after Rf2+ Kg5 Rg2+ Kf6
 
-REEL CANDIDATES
-  r1 puzzle n1–n2, climax n1 [highlight, puzzle, promo]
-
-PLAN
-  e1 question n1–n1
-  e2 solve n1–n2 answer=n1
-  e3 recap n2–n2
-
 REVIEW NOTES
   l1
     n1 1…Rg2+: Stops the mate threat Qe8#; Sacrifices the rook on g2: it can be taken, and the engine still approves; Settles the rook on g2 on a square by the king that no pawn can cover any more; You found a brilliant sacrifice.

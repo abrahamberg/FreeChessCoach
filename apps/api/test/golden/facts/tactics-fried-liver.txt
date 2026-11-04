@@ -108,15 +108,6 @@ n15 8.Nc3 (White, Line A) | book
     tempting capture: Qxf8? White's Qxf8 moves the queen from f3 to f8 | captures the bishop on f8 | attacks the queen on d8 | attacks the rook on h8 | leaves the white queen on f8 hanging. Black answers Qxf8: moves the queen from d8 to f8 | captures the queen on f8. Then Nc3 Nd4 O-O. Over the line White takes a bishop; Black takes the queen; at the end White has a bishop and a pawn for a queen and a knight (Black is much better).
     flags: quiz-eligible
 
-REEL CANDIDATES
-  r1 idea n5–n15, climax n13 [highlight, puzzle, promo]
-  r2 idea n7–n15, climax n15 [highlight, puzzle, promo]
-
-PLAN
-  e1 concept n13–n13
-  e2 example n13–n15 answer=n13
-  e3 scan n13–n13
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

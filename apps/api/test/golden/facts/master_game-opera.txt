@@ -219,28 +219,6 @@ n33 17.Rd8# (White, Line A) | great | before: White has a forced mate in 1 → a
     tactics: You delivered checkmate.
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 mate n25–n33, climax n33 [highlight, puzzle, promo]
-  r2 brilliant n13–n23, climax n21 [highlight, puzzle, promo]
-  r3 brilliant n17–n27, climax n25 [highlight, promo]
-  r4 brilliant n23–n33, climax n31 [highlight, puzzle, promo]
-  r5 swing n22–n33, climax n30 [highlight, puzzle, promo]
-
-PLAN
-  e1 intro n1–n1
-  e2 moves n1–n33
-  e3 moment n8–n8
-  e4 moment n9–n9
-  e5 moment n10–n10
-  e6 moment n11–n11
-  e7 moment n12–n12
-  e8 moment n15–n15
-  e9 moment n21–n21 answer=n21
-  e10 moment n25–n25
-  e11 moment n29–n29
-  e12 moment n31–n31 answer=n31
-  e13 moment n33–n33 answer=n33
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — Philidor Defense (C41); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

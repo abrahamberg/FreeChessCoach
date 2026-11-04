@@ -18,7 +18,7 @@ export interface UserRow {
   ttsBackend: TtsBackend;
   onboardedAt: Date | null;
   chessApiRateLimitedAt: Date | null;
-  canCreateCourses: boolean;
+  canEditCourses: boolean;
   courseAccessLevel: number;
   createdAt: Date;
 }
@@ -89,18 +89,18 @@ export async function markChessApiRateLimited(db: Kysely<Database>, id: string, 
   await db.updateTable('users').set({ chessApiRateLimitedAt: at }).where('id', '=', id).execute();
 }
 
-/** scripts/course-creator.ts only — the flag is never in UserPatch, so no
+/** scripts/course-editor.ts only — the flag is never in UserPatch, so no
  * route can set it. Returns undefined when the email is unknown. */
-export function setCanCreateCourses(db: Kysely<Database>, email: string, value: boolean): Promise<UserRow | undefined> {
+export function setCanEditCourses(db: Kysely<Database>, email: string, value: boolean): Promise<UserRow | undefined> {
   return db
     .updateTable('users')
-    .set({ canCreateCourses: value })
+    .set({ canEditCourses: value })
     .where('email', '=', email)
     .returningAll()
     .executeTakeFirst();
 }
 
-/** scripts/course-access.ts only — like `canCreateCourses`, no route sets it.
+/** scripts/course-access.ts only — like `canEditCourses`, no route sets it.
  * Returns undefined when the email is unknown. */
 export function setCourseAccessLevel(db: Kysely<Database>, email: string, level: number): Promise<UserRow | undefined> {
   return db

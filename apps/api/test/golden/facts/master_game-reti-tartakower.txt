@@ -127,20 +127,6 @@ n21 11.Bd8# (White, Line A) | great | before: White has a forced mate in 1 → a
     tactics: You delivered checkmate.
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 mate n13–n21, climax n21 [highlight, puzzle, promo]
-  r2 brilliant n6–n16, climax n14 [highlight, puzzle, promo]
-  r3 brilliant n9–n21, climax n17 [highlight, promo]
-  r4 brilliant n11–n21, climax n19 [highlight, puzzle, promo]
-
-PLAN
-  e1 intro n1–n1
-  e2 moves n1–n21
-  e3 moment n11–n11
-  e4 moment n17–n17
-  e5 moment n19–n19 answer=n19
-  e6 moment n21–n21 answer=n21
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — Caro-Kann Defense: Main Line (B15); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

@@ -94,17 +94,6 @@ n16 8…Nd3# (Black, Line A) | great | before: Black has a forced mate in 1 → 
     tactics: You delivered checkmate.
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 mate n8–n16, climax n16 [highlight, puzzle, promo]
-  r2 swing n7–n16, climax n15 [highlight, promo]
-
-PLAN
-  e1 hook n1–n1
-  e2 setup n1–n14
-  e3 bait n15–n15
-  e4 quiz n16–n16 answer=n16
-  e5 safety n15–n15
-
 REVIEW NOTES
   l1
     n1 1.d4: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance

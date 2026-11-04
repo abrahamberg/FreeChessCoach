@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "black",
   "levelBand": "novice",
   "coachPersona": "huntress",
   "direction": "Black to play: the back rank.",

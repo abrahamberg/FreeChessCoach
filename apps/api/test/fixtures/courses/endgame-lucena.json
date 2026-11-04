@@ -1,5 +1,6 @@
 {
   "kind": "endgame",
+  "learnerSide": "white",
   "levelBand": "improving",
   "coachPersona": "commander",
   "direction": "The Lucena position: build a bridge. Show why only one move keeps the win.",

@@ -192,26 +192,6 @@ n35 18.Kd2# (White, Line A) | excellent | before: White has a forced mate in 1 �
     notes: Missed mate in 1 starting with O-O-O#
     flags: critical
 
-REEL CANDIDATES
-  r1 mate n27–n35, climax n35 [highlight, puzzle, promo]
-  r2 brilliant n5–n15, climax n13 [highlight, puzzle, promo]
-  r3 brilliant n13–n23, climax n21 [highlight, puzzle, promo]
-  r4 brilliant n15–n25, climax n23 [highlight, puzzle, promo]
-  r5 brilliant n17–n27, climax n25 [highlight, puzzle, promo]
-
-PLAN
-  e1 intro n1–n1
-  e2 moves n1–n35
-  e3 moment n13–n13 answer=n13
-  e4 moment n15–n15
-  e5 moment n17–n17
-  e6 moment n19–n19
-  e7 moment n20–n20
-  e8 moment n21–n21 answer=n21
-  e9 moment n23–n23 answer=n23
-  e10 moment n25–n25 answer=n25
-  e11 moment n35–n35
-
 REVIEW NOTES
   l1
     n1 1.d4: Theory — Horwitz Defense (A40); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance

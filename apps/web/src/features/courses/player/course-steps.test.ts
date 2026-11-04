@@ -9,13 +9,13 @@ const ids = tree.nodes.map((node) => node.id);
 function documentWith(episode: CourseEpisode): CourseDocument {
   return {
     version: 1, kind: 'trap', title: 'T', promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'commander',
-    startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], episodes: [episode], takeaways: [], hookOptions: [], clipLinks: {}
+    startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], episodes: [episode], takeaways: [], clipLinks: {}
   };
 }
 
 const episode: CourseEpisode = {
   id: 'e1', role: 'bait', focus: '', startNodeId: ids[1]!, endNodeId: ids[5]!, drillNodeIds: [],
-  plies: [{ nodeId: ids[2]!, text: 'Take the pawn.', arrows: [{ from: 'e5', to: 'e5', kind: 'idea' }], course: true, video: false }],
+  plies: [{ nodeId: ids[2]!, text: 'Take the pawn.', arrows: [{ from: 'e5', to: 'e5', kind: 'idea' }], course: true }],
   quiz: { answerNodeId: ids[5]!, scene: '', prompt: 'What now?', hint: 'The queen.', reveal: 'Qe7 sets the trap.' }
 };
 

@@ -231,15 +231,6 @@ n36 5.Nc3 (White, Steinitz) | book
     ideas: develops the knight to c3, its most useful square | controls d5 and e4 | supports the centre pawn on e4
     alternatives: Bxc6 (leaves the bishop on d7 with a single move; controls d5 and e4; supports the centre pawn on e4): White is slightly better, after Bxc6 Nc3 exd4 Nxd4; d5 (attacks the knight on c6; puts a pawn in the centre on d5; controls c6 and e6): White is slightly better, after Nb8 c4 Be7 Bxd7+
 
-REEL CANDIDATES
-
-PLAN
-  e1 line n1–n17
-  e2 deviation n18–n21
-  e3 deviation n22–n32
-  e4 deviation n33–n36
-  e5 recap n17–n17
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — Ruy Lopez: Closed (C92); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

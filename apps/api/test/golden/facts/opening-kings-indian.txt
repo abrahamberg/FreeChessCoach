@@ -141,13 +141,6 @@ n24 9…Na6 (Black, Petrosian) | best | before: The position is roughly equal �
     ideas: develops the knight to a6
     alternatives: g5 (attacks the bishop on h4; controls f4): The position is roughly equal, after Bg3 Nh5 h4 Nf4; Nbd7 (develops the knight to d7; controls e5; supports the centre pawn on e5): The position is roughly equal, after Nd2 Nc5 f3 Bd7
 
-REEL CANDIDATES
-
-PLAN
-  e1 line n1–n18
-  e2 deviation n19–n24
-  e3 recap n18–n18
-
 REVIEW NOTES
   l1
     n1 1.d4: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance

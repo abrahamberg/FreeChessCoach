@@ -22,7 +22,7 @@ import { courseMoveList, courseMoveSound, type CourseEvals } from './course-move
 import { NoteMention } from './NoteMention.js';
 import { noteSegments, readingSentence, sentenceRanges, sentenceStart } from './note-marks.js';
 import { drillLine } from './drill-line.js';
-import { climaxNode } from '../courseEdits.js';
+import { climaxNode } from './course-nodes.js';
 import { episodeWalk, stepView } from './course-steps.js';
 import type { useNoteAudio } from './useNoteAudio.js';
 import { YouTubeClip } from './YouTubeClip.js';

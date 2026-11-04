@@ -68,15 +68,6 @@ n15 8.Kf6 (White, Line A) | good | before: White is much better → after: White
     ideas: brings the king toward the centre, a strong piece in the ending
     alternatives: Kg6: White is much better, after Ke2 Qc2 Ke1 Qe4+; Kh6: White is much better, after Ke2 Qc4+ Kf2 Qd3
 
-REEL CANDIDATES
-  r1 technique n7–n15, climax n15 [highlight, promo]
-  r2 idea n6–n15, climax n14 [highlight, puzzle, promo]
-
-PLAN
-  e1 goal n1–n1
-  e2 technique n1–n15
-  e3 recap n15–n15
-
 REVIEW NOTES
   l1
     n4 2…Ke2: Defends the pawn on d2, attacked once and now defended once

@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "black",
   "levelBand": "novice",
   "coachPersona": "sunzi",
   "direction": "Black to play: check and win the rook.",

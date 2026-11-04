@@ -6,15 +6,16 @@ Instructions for AI coding agents. Follow these exactly; when a rule here confli
 
 A personal AI chess coach: users import their games, a Stockfish+LLM pipeline
 analyzes them, and a tool-calling coach agent walks the user through the game
-Socratically while tracking their progress over time. Creators also turn a PGN
-into a course (a lesson on the board, a YouTube video and a reel).
+Socratically while tracking their progress over time. Learners also take
+courses: lessons on the board, made outside this repo by the studio (a local
+tool beside it) and managed here by course editors.
 
 ## Docs — read only what your task names
 
-- `docs/plan.md` — the content studio plan, Phases 130–132, all built: the
-  `course:studio` tools on the app's own engine and dossier, a course filled
-  through the API with no AI call, export to production, the studio's
-  instructions. Only its "Left open" list remains.
+- `docs/plan.md` — the studio split (Phases 134–139): course making, videos
+  and the channel leave this repo for `../studio` and `../chess-content-generator`;
+  the app keeps courses as a platform (editors, tokens, the import guard).
+  Its "Where it stands" section says what is done.
 - `docs/review-audit-plan.md` — the review audit's plan (Phases 120–127) and
   the shipped coach progress memory (Phases 128–129). The audit checks Game
   Review's move notes and the course dossier sentence by sentence on real
@@ -24,9 +25,10 @@ into a course (a lesson on the board, a YouTube video and a reel).
   `review-fixer` in `.claude/agents/`). Open it only for audit work.
 - `docs/architecture.md` — how everything shipped fits together (layout, DB,
   agent, courses, K8s, the "Welcome flow" at `/welcome`). Always relevant.
-- `docs/courses.md` — the courses spec: the dossier (§5.4), prompts (§6),
-  verifier (§7), videos (§8), learning (§11), the course, video and reel
-  (§13). Only the section a task names.
+- `docs/courses.md` — the courses spec: editors and the course API (§2), the
+  document (§4), the dossier (§5.4), the verifier (§7), publishing (§9),
+  learning (§11), tempting moves (§13.5). Only the section a task names.
+  Making courses and videos is the studio's (`../studio/docs/`), never this repo's.
 - `docs/diagnose.md` — the spec behind the shipped coach diagnostics (code
   taxonomy, opportunity/episode counting, confidence, data-quality gates,
   focus selection). Long: never open it cold, only the section a task names.
@@ -64,10 +66,9 @@ into a course (a lesson on the board, a YouTube video and a reel).
 - `npm run verify:changed`: **Fast path** — lint/typecheck/test only what changed (run after every task).
 - `npm run test:changed` / `lint:changed` / `typecheck:changed`: the parts of `verify:changed`. `test:changed` runs the tests affected by files changed since `HEAD~1` (vitest `--changed`, through the root projects); `npm run test:changed -- --package api` runs one package's whole suite.
 - `npm run test:corpus`: tactic precision ceilings and recall floors (opt-in tier).
-- `npm run test:golden`: the course facts snapshot, no engine needed (opt-in tier; added in Phase 110). `GOLDEN_UPDATE=1` re-records it — only when a task allows it.
+- `npm run test:golden`: the course facts snapshot (the dossier text and Game Review's notes for each golden course in `apps/api/test/fixtures/courses/`), no engine needed (opt-in tier). `GOLDEN_UPDATE=1` re-records it — only when a task allows it; `npm run golden:record -w apps/api` re-records the engine answers it replays (needs the engine).
 - `npm run test:slow`: files named `*.slow.*` (several seconds each). Skipped by `npm test` and CI; run them when you touch what they cover. A new test that takes more than ~2s goes there or is not written. No test, slow tier included, starts the real Stockfish or calls a real LLM: engine results are mocked or recorded (`services/engine/test/helpers/fake-stockfish.ts`, `apps/api/test/golden/fixture-engine.ts`), models are mock models. Keep the default suite small: a few tests that catch a silent break, not one per behaviour; delete a development-driving test once its feature is done.
-- `npm run course:golden -w apps/api -- --facts [--only <kind|name>]`: print the facts the course prompts get (needs the engine).
-- `npm run course:studio -w apps/api -- <command>`: the content studio's tools (`apps/api/scripts/course-studio/cli.ts` lists them: `explore`, `dossier`, `create`, `pull`, `push`, `check`, `script`, `export`): research a position, print the app's facts and the gaps of a PGN, and fill a course through the api with no AI call. Needs the dev stack (engine, api). `../chess-content-studio/tools/course.sh` runs it from the studio's folder.
+- `npx tsx apps/api/scripts/course-editor.ts grant|revoke <email>`: course editing on or off for one account (docs/courses.md §2).
 - `npm run review:audit -w apps/api -- <command>`: the review audit (`apps/api/scripts/review-audit/cli.ts` lists the commands: `corpus`, `run`, `recheck`, `report`, `failures`, `batch`, `ingest`, `calibrate`, `probe`, `show`, `seed`). Needs the engine; its workspace `apps/api/.review-audit/` is not in git.
 - `npm run docs:prompts`: regenerate `docs/prompts.md` after any change in `packages/prompts/src/`.
 - `npm run dev`: Full local stack (Docker).
@@ -93,9 +94,10 @@ into a course (a lesson on the board, a YouTube video and a reel).
   - `diagnostics/` — the BV/MS/TA… diagnosis codes, opportunities and focus selection.
   - `move-verdict/` — move verdicts.
   - board facts — `packages/chess-analysis/src/board-facts/`: `BoardFact` data (`types.ts`) with one `renderBoardFact` (`render.ts`); what a move does, `loosePieces`, `forks`, checks, mates, material in words.
-  - course code — `packages/chess-analysis/src/course/` (dossier, verify, tempting, skeletons).
-  - PGN trees — `packages/chess-analysis/src/pgn-tree/` (tokens, sections, marks, `parsePgnTree`, `edit.ts`): the move tree behind the studio's text and the move explorer.
-- `packages/prompts`: LLM prompt templates (course prompts in `src/course/`). `docs/prompts.md` is auto-generated.
+  - course code — `packages/chess-analysis/src/course/` (tree, dossier, verify, tempting, review schedule): what the import guard and the player need. Course-making code (skeletons, reel picks, gaps) is the studio's.
+  - PGN trees — `packages/chess-analysis/src/pgn-tree/` (tokens, sections, marks, `parsePgnTree`, `edit.ts`): the move tree behind a course's PGN and the move explorer.
+- `packages/prompts`: LLM prompt templates (the coach; in `src/course/` only Ask my coach). `docs/prompts.md` is auto-generated.
+- Course API: `apps/api/src/routes/courses.ts` (`/api/courses/*` for the session, `/api/token/courses/*` for an editor's token), `services/courses/course-import.ts` (the guard). The studio (`../studio`) imports this repo's code by relative path; never import from it.
 - `services/engine`: Stockfish/UCI HTTP microservice.
 - `deploy/helm`: K8s Helm charts.
 

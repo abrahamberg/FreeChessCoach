@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "white",
   "levelBand": "novice",
   "coachPersona": "gambler",
   "direction": "Fork the king and the rook.",

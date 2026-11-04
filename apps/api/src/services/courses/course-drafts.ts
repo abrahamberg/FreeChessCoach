@@ -1,229 +1,65 @@
-import {
-  buildCourseSkeleton,
-  courseLineGames,
-  inferLearnerSide,
-  parseCourseTreeOfKind,
-  parseReadingSections,
-  endgameShapeProblems,
-  quizSideProblems,
-  puzzleShapeProblems,
-  type CourseDossier
-} from '@freechesscoach/chess-analysis';
-import {
-  bandForRating,
-  defaultCourseVideos,
-  CreateCourseRequestSchema,
-  type CourseDocument,
-  type CourseNodeEvals,
-  type CourseGeneration,
-  type CourseListResponse,
-  type CourseResponse
-} from '@freechesscoach/shared';
-import { Chess } from 'chess.js';
+import type { CourseDocument, CourseListResponse, CourseResponse, UpdateCourseRequest } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
-import type { z } from 'zod';
 import * as coursesRepo from '../../db/repositories/courses.js';
 import type { Database } from '../../db/schema.js';
-import { ConflictError, NotFoundError, ValidationError } from '../../lib/errors.js';
+import { ConflictError, NotFoundError } from '../../lib/errors.js';
 import type { AudioStore } from './audio-store.js';
-import type { CourseDossierBuilder } from './dossier.js';
-import { draftProblem } from './draft-checks.js';
-import { missingNoteAudio } from './note-audio.js';
+import { noteAudio } from './note-audio.js';
 import { courseEvals } from './public-course.js';
-import { buildManualEpisodes } from './manual-episodes.js';
-import { courseDossierFor, courseTreeOf } from './generation-inputs.js';
-import { coursePlayers, courseSlug, courseTitle, resultHeader } from './intake-text.js';
 
-/** Bounds the one engine batch the skeleton runs (a long master game with
- * a few sidelines fits; a whole repertoire does not). */
-export const MAX_COURSE_NODES = 800;
-
-export type CourseIntake = z.output<typeof CreateCourseRequestSchema>;
-
-/** The intake form's PGN becomes the fixed move tree of a new draft. */
-export async function createCourse(db: Kysely<Database>, ownerId: string, intake: CourseIntake): Promise<CourseResponse> {
-  // The next place in the creator's curriculum at that level.
-  const order = intake.rating === undefined ? 0 : (await coursesRepo.countAtLevel(db, ownerId, intake.rating)) + 1;
-  const document = draftFromIntake(intake, order);
-  const title = document.title;
-  const row = await coursesRepo.insert(db, {
-    ownerId,
-    slug: courseSlug(title, await coursesRepo.slugsStartingWith(db, courseSlug(title))),
-    kind: intake.kind,
-    title,
-    sourcePgn: intake.pgn,
-    direction: intake.direction,
-    document
-  });
-  return toCourseResponse(db, row);
-}
-
-/** The new draft for an intake: the tree, the learner side (inferred when
- * not given) and empty episodes. Throws a `ValidationError` the creator can read. */
-export function draftFromIntake(intake: CourseIntake, order = 1): CourseDocument {
-  if (intake.kind === 'reading') return readingDraft(intake, order);
-  const tree = parseCourseTreeOfKind(intake.pgn, intake.kind);
-  if (tree.errors.length) throw new ValidationError(tree.errors.map((error) => error.message).join('; '));
-  if (!tree.nodes.length) throw new ValidationError('The PGN has no moves');
-  if (tree.nodes.length > MAX_COURSE_NODES) throw new ValidationError(`A course can have at most ${MAX_COURSE_NODES} moves`);
-  const shape = intake.kind === 'puzzle' ? puzzleShapeProblems(tree) : intake.kind === 'endgame' ? endgameShapeProblems(tree) : [];
-  if (shape.length) throw new ValidationError(shape.join('; '));
-  const learnerSide = intake.learnerSide ?? inferLearnerSide(intake.kind, tree, resultHeader(intake.pgn));
-  if (!learnerSide) throw new ValidationError('Pick the learner side: it cannot be told from this PGN');
-  const quizSide = quizSideProblems(tree, learnerSide);
-  if (quizSide.length) throw new ValidationError(quizSide.join('; '));
+/** Every course, for the editors' Courses page: all editors share them (docs/courses.md §2). */
+export async function listCourses(db: Kysely<Database>): Promise<CourseListResponse> {
+  const rows = await coursesRepo.listAll(db);
   return {
-    version: 1,
-    kind: intake.kind,
-    title: courseTitle(intake.pgn, intake.direction),
-    promise: '',
-    learnerSide,
-    levelBand: intake.rating === undefined ? intake.levelBand : bandForRating(intake.rating),
-    coachPersona: intake.coachPersona,
-    ...(intake.rating === undefined ? {} : { level: { rating: intake.rating, order: Math.min(Math.max(order, 1), 99) } }),
-    ...(intake.series === undefined ? {} : { series: intake.series }),
-    ...(intake.tags === undefined ? {} : { tags: intake.tags }),
-    videos: intake.videos ?? defaultCourseVideos(intake.kind),
-    startFen: tree.startFen,
-    nodes: tree.nodes,
-    lines: tree.lines,
-    chapters: [],
-    episodes: [],
-    diagnosisCodes: [],
-    takeaways: [],
-    hookOptions: [],
-    clipLinks: {}
+    courses: rows.map((row) => ({
+      id: row.id,
+      slug: row.slug,
+      kind: row.kind,
+      status: row.status,
+      accessLevel: row.accessLevel,
+      title: row.title,
+      updatedAt: row.updatedAt.toISOString(),
+      publishedAt: row.publishedAt?.toISOString() ?? null,
+      promise: row.promise ?? '',
+      episodes: row.episodes ?? 0,
+      moves: row.moves ?? 0,
+      level: row.level ?? null
+    }))
   };
 }
 
-/** A reading course: the pasted text is the pages (no moves, nothing to drill);
- * the direction is its title. */
-function readingDraft(intake: CourseIntake, order: number): CourseDocument {
-  const { sections, errors } = parseReadingSections(intake.pgn);
-  if (errors.length) throw new ValidationError(errors.join('; '));
-  if (!sections.length) throw new ValidationError('The text has nothing to read');
-  return {
-    version: 1,
-    kind: 'reading',
-    title: courseTitle('', intake.direction),
-    promise: '',
-    learnerSide: intake.learnerSide ?? 'white',
-    levelBand: intake.rating === undefined ? intake.levelBand : bandForRating(intake.rating),
-    coachPersona: intake.coachPersona,
-    ...(intake.rating === undefined ? {} : { level: { rating: intake.rating, order: Math.min(Math.max(order, 1), 99) } }),
-    ...(intake.series === undefined ? {} : { series: intake.series }),
-    ...(intake.tags === undefined ? {} : { tags: intake.tags }),
-    startFen: new Chess().fen(),
-    nodes: [],
-    lines: [],
-    chapters: [],
-    episodes: [],
-    sections,
-    readAlong: true,
-    diagnosisCodes: [],
-    takeaways: [],
-    hookOptions: [],
-    clipLinks: {}
-  };
-}
-
-export async function listCourses(db: Kysely<Database>, ownerId: string): Promise<CourseListResponse> {
-  const rows = await coursesRepo.listByOwner(db, ownerId);
-  return {
-    courses: rows.map((row) => {
-      const generation = liveGeneration(row.generation);
-      return {
-        id: row.id,
-        slug: row.slug,
-        kind: row.kind,
-        status: row.status,
-        title: row.title,
-        updatedAt: row.updatedAt.toISOString(),
-        promise: row.promise ?? '',
-        episodes: row.episodes ?? 0,
-        moves: row.moves ?? 0,
-        level: row.level ?? null,
-        generation: generation && { status: generation.status, done: generation.done, total: generation.total }
-      };
-    })
-  };
-}
-
-export async function getCourse(db: Kysely<Database>, ownerId: string, id: string): Promise<CourseResponse> {
-  return toCourseResponse(db, await ownedCourse(db, ownerId, id));
-}
-
-export async function saveDraft(db: Kysely<Database>, ownerId: string, id: string, document: CourseDocument): Promise<void> {
-  const row = await ownedCourse(db, ownerId, id);
-  notBeingWritten(row);
-  const problem = draftProblem(storedDocument(row), document);
-  if (problem) throw new ValidationError(problem);
-  const saved = await coursesRepo.updateDraft(db, id, ownerId, document);
-  if (!saved) throw new NotFoundError('Course not found');
-}
-
-/** "Build without AI" (docs/courses.md §10): the skeleton's episodes with
- * template text replace the draft's chapters and episodes. The course's kept
- * dossier is used when it has one (`courseDossierFor`), so a course written by
- * hand is checked against the same engine facts as a generation. */
-export async function buildSkeletonDraft(db: Kysely<Database>, ownerId: string, id: string, buildDossier: CourseDossierBuilder): Promise<CourseResponse> {
-  const row = await ownedCourse(db, ownerId, id);
-  notBeingWritten(row);
-  const { dossier, document } = await courseDossierFor(db, row, storedDocument(row), buildDossier);
-  const tree = courseTreeOf(document);
-  const lineGames = courseLineGames(tree);
-  const skeleton = buildCourseSkeleton({ kind: document.kind, tree, lines: lineGames, dossier });
-  if (!skeleton) throw new ValidationError('No trap found: no move by the other side loses ground on this line');
-  const { chapters, episodes } = buildManualEpisodes({ document, skeleton, dossier, lines: lineGames });
-  const saved = await coursesRepo.updateDraft(db, id, ownerId, { ...document, chapters, episodes });
-  if (!saved) throw new NotFoundError('Course not found');
-  return toCourseResponse(db, saved);
+export async function getCourse(db: Kysely<Database>, id: string, audioBaseUrl: string | null): Promise<CourseResponse> {
+  return toCourseResponse(db, await courseById(db, id), audioBaseUrl);
 }
 
 /**
- * The content studio's finished course, stored as given (it runs the checks
- * itself): a new PGN, direction, document and dossier under the same id,
- * slug and status. Refused only what would break the app: another kind, or
- * an episode naming a move that is not in the tree. The published copy
- * stays until Publish.
+ * docs/courses.md §9: the editor's visibility and video links. `draft`
+ * takes a published course off the site; `unlisted` and `public` need a
+ * published copy (Publish makes one). A course a moderator removed stays removed.
  */
-export async function replaceCourse(
-  db: Kysely<Database>,
-  ownerId: string,
-  id: string,
-  request: { pgn: string; direction: string; document: CourseDocument; dossier: CourseDossier; evals?: CourseNodeEvals }
-): Promise<CourseResponse> {
-  const row = await ownedCourse(db, ownerId, id);
-  notBeingWritten(row);
-  const { document } = request;
-  const problem = draftProblem({ ...document, kind: row.kind }, document);
-  if (problem) throw new ValidationError(problem);
-  const saved = await coursesRepo.replaceTree(db, id, ownerId, { sourcePgn: request.pgn, direction: request.direction, document, dossier: request.dossier, evals: request.evals });
-  if (!saved) throw new NotFoundError('Course not found');
-  return toCourseResponse(db, saved);
+export async function updateCourse(db: Kysely<Database>, id: string, update: UpdateCourseRequest, audioBaseUrl: string | null): Promise<CourseResponse> {
+  const row = await courseById(db, id);
+  if (row.status === 'removed') throw new ConflictError('This course was removed by a moderator');
+  if ((update.status === 'unlisted' || update.status === 'public') && !row.publishedDocument) throw new ConflictError('Publish the course first');
+  if (update.status !== undefined || update.accessLevel !== undefined) await coursesRepo.setVisibility(db, id, { status: update.status, accessLevel: update.accessLevel });
+  if (update.clipLinks) await coursesRepo.setClipLinks(db, id, update.clipLinks);
+  return getCourse(db, id, audioBaseUrl);
 }
 
 /** Deletes the course, published or not: its link stops working and its
  * audio leaves the bucket (a failure there never fails the delete).
  * Learner progress is keyed by position, shared with other courses, so it stays. */
-export async function deleteCourse(db: Kysely<Database>, ownerId: string, id: string, audio?: { store: AudioStore; onError: (error: unknown) => void }): Promise<void> {
-  notBeingWritten(await ownedCourse(db, ownerId, id));
-  const keys = await coursesRepo.remove(db, id, ownerId);
+export async function deleteCourse(db: Kysely<Database>, id: string, audio?: { store: AudioStore; onError: (error: unknown) => void }): Promise<void> {
+  const keys = await coursesRepo.remove(db, id);
   if (!keys) throw new NotFoundError('Course not found');
   if (audio) await Promise.all(keys.map((key) => audio.store.delete(key).catch(audio.onError)));
 }
 
-export async function ownedCourse(db: Kysely<Database>, ownerId: string, id: string): Promise<coursesRepo.CourseRow> {
-  const row = await coursesRepo.findByIdForOwner(db, id, ownerId);
+/** Any course: every editor edits every course (docs/courses.md §2). */
+export async function courseById(db: Kysely<Database>, id: string): Promise<coursesRepo.CourseRow> {
+  const row = await coursesRepo.findById(db, id);
   if (!row) throw new NotFoundError('Course not found');
   return row;
-}
-
-/** A run holds its own copy of the document and saves it after each
- * episode, so nothing else writes the draft (or starts another run) meanwhile. */
-export function notBeingWritten(row: coursesRepo.CourseRow): void {
-  const status = liveGeneration(row.generation)?.status;
-  if (status === 'queued' || status === 'running') throw new ConflictError('The course is still being written');
 }
 
 export function storedDocument(row: coursesRepo.CourseRow): CourseDocument {
@@ -231,19 +67,10 @@ export function storedDocument(row: coursesRepo.CourseRow): CourseDocument {
   return row.document;
 }
 
-/** A run whose worker stopped beating this long ago was killed mid-job. */
-export const GENERATION_STALE_MS = 3 * 60_000;
-
-/** The generation as the creator should see it: a running job with no
- * recent heartbeat died with its worker, so it reads as failed (and resumes). */
-export function liveGeneration(generation: CourseGeneration | null, now = Date.now()): CourseGeneration | null {
-  if (generation?.status !== 'running') return generation;
-  const beat = generation.heartbeatAt ? Date.parse(generation.heartbeatAt) : 0;
-  if (now - beat < GENERATION_STALE_MS) return generation;
-  return { ...generation, status: 'failed', step: null, error: 'The writing stopped unexpectedly. Resume writing to carry on.' };
-}
-
-export async function toCourseResponse(db: Kysely<Database>, row: coursesRepo.CourseRow): Promise<CourseResponse> {
+/** `audioBaseUrl`: the bucket's public address, for the notes' audio URLs. */
+export async function toCourseResponse(db: Kysely<Database>, row: coursesRepo.CourseRow, audioBaseUrl: string | null): Promise<CourseResponse> {
+  const document = storedDocument(row);
+  const audio = await noteAudio(db, row.id, document, audioBaseUrl);
   return {
     id: row.id,
     slug: row.slug,
@@ -252,12 +79,11 @@ export async function toCourseResponse(db: Kysely<Database>, row: coursesRepo.Co
     accessLevel: row.accessLevel,
     title: row.title,
     direction: row.direction,
-    document: storedDocument(row),
-    generation: liveGeneration(row.generation),
+    document,
     updatedAt: row.updatedAt.toISOString(),
     publishedAt: row.publishedAt?.toISOString() ?? null,
-    missingNoteAudio: await missingNoteAudio(db, row.id, storedDocument(row)),
-    evals: courseEvals(storedDocument(row), row.dossier, row.evals),
-    players: coursePlayers(row.sourcePgn)
+    noteAudio: audio.urls,
+    missingNoteAudio: audio.missing,
+    evals: courseEvals(document, row.dossier)
   };
 }

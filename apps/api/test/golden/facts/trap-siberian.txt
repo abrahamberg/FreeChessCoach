@@ -135,19 +135,6 @@ n20 10…Qh2# (Black, Line A) | great | before: Black has a forced mate in 1 →
     tactics: You delivered checkmate.
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 mate n12–n20, climax n20 [highlight, puzzle, promo]
-  r2 trap n10–n20, climax n18 [highlight, puzzle, promo]
-  r3 swing n9–n20, climax n17 [highlight, promo]
-
-PLAN
-  e1 hook n1–n1
-  e2 setup n1–n16
-  e3 bait n17–n17
-  e4 quiz n18–n18 answer=n18
-  e5 punish n19–n20
-  e6 safety n17–n19
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

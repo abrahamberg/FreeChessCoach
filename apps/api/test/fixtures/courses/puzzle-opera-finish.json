@@ -1,5 +1,6 @@
 {
   "kind": "puzzle",
+  "learnerSide": "white",
   "levelBand": "improving",
   "coachPersona": "scholar",
   "direction": "Morphy's finish in the Opera Game: mate in two with a queen sacrifice.",

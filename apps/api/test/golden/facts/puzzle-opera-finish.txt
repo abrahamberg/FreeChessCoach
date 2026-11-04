@@ -23,16 +23,6 @@ n3 17.Rd8# (White, Line A) | great | before: White has a forced mate in 1 → af
     tempting threat: Be3? White's Be3 moves the bishop from g5 to e3 | leaves the white pawn on a2 hanging. Black answers Qxa2: moves the queen from e6 to a2 | captures the pawn on a2. Then Rd5 Qa1+ Kd2. Over the line Black takes a pawn; at the end White has a pawn for a queen and a knight (Black is much better).
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 puzzle n1–n3, climax n3 [highlight, puzzle, promo]
-  r2 brilliant n1–n3, climax n1 [highlight, puzzle, promo]
-
-PLAN
-  e1 question n1–n1
-  e2 solve n1–n2 answer=n1
-  e3 solve n3–n3 answer=n3
-  e4 recap n3–n3
-
 REVIEW NOTES
   l1
     n1 16.Qb8+: Sacrifices the queen on b8: it can be taken, and the engine still approves; You forced mate in 1 through a mating net — closes the net — every answer runs into mate.

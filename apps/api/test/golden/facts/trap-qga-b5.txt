@@ -75,16 +75,6 @@ n11 6.Qf3 (White, Line A) | best | before: White is better → after: White is b
     tactics: You broke the pin — the pawn on d4 is free to move again.
     alternatives: Bxc4 (controls d5; aims at the pawn on f7, which only the king defends): White is slightly better, after bxc4 Qf3 Nc6 Qxc6+; b3 (attacks the pawn on c4 twice, while it is defended once; strikes at the centre: attacks the pawn on c4; puts pressure on the pawn on c4): The position is roughly equal, after e6 bxc4 bxc4 Qf3
 
-REEL CANDIDATES
-  r1 trap n3–n11, climax n11 [highlight, promo]
-
-PLAN
-  e1 hook n1–n1
-  e2 setup n1–n9
-  e3 bait n10–n10
-  e4 quiz n11–n11
-  e5 safety n10–n10
-
 REVIEW NOTES
   l1
     n1 1.d4: Theory — Queen's Gambit Accepted: Old Variation (D20); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance

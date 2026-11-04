@@ -133,20 +133,6 @@ n46 23…Qg3 (Black, Line A) | best | before: Black is much better → after: Bl
     ideas: threatens mate with Qxh2# | sacrifices the queen on g3: it can be taken, and the engine still approves | threatens to win the pawn on h2 with Rxh2 | aims at the pawn on h2, which only the king defends | shuts in the rook on h3 (from 8 squares to 4) | prepares the pawn's advance to e5, which it now supports
     alternatives: Qb2 (threatens to win the pawn on a2 with Qxa2; opens the rook on h3 (from 8 squares to 11)): Black is much better, after Qd2 Ra3 Rc4; Qb4 (opens the rook on h3 (from 8 squares to 11)): Black is better, after Rc7 Ne2+ Kh1
 
-REEL CANDIDATES
-  r1 brilliant n14–n24, climax n22 [highlight, puzzle, promo]
-  r2 brilliant n27–n37, climax n35 [highlight, puzzle, promo]
-  r3 brilliant n32–n42, climax n40 [highlight, puzzle, promo]
-
-PLAN
-  e1 intro n1–n1
-  e2 moves n1–n46
-  e3 moment n22–n22 answer=n22
-  e4 moment n36–n36
-  e5 moment n39–n39
-  e6 moment n40–n40 answer=n40
-  e7 moment n44–n44
-
 REVIEW NOTES
   l1
     n1 1.d4: Theory — French Defense: Marshall Gambit (C10); Puts a pawn in the centre on d4; Controls c5 and e5; Prevents e5, a pawn advance

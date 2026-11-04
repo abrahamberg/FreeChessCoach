@@ -24,15 +24,6 @@ n3 2…Qxa1+ (Black, Line A) | best | before: Black is winning → after: Black 
     tempting threat: Qf6 Black's Qf6 moves the queen from e5 to f6 | attacks the rook on a1. White answers Rc1: moves the rook from a1 to c1. Then Kd7 Kc2 Kd6. Over the line nothing is taken; at the end White has a rook for a queen (Black is better). Works, but not the answer: Black is still better, but the answer is stronger: Black is winning.
     tempting threat: Qg7? Black's Qg7 moves the queen from e5 to g7 | attacks the rook on a1. White answers Ra8+: moves the rook from a1 to a8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf7, Ke7, Kd7. Then Ke7 Ra7+ Kf6. Over the line nothing is taken; at the end White has a rook for a queen (The position is roughly equal).
 
-REEL CANDIDATES
-  r1 puzzle n1–n3, climax n3 [highlight, puzzle, promo]
-
-PLAN
-  e1 question n1–n1
-  e2 solve n1–n2 answer=n1
-  e3 solve n3–n3 answer=n3
-  e4 recap n3–n3
-
 REVIEW NOTES
   l1
     n1 1…Qe5+: Forks the king on e1 and the rook on a1

@@ -148,19 +148,6 @@ n19 7.Nd5# (White, Legal's mate) | great | before: White has a forced mate in 1 
     tempting capture: Kxd1? White's Kxd1 moves the king from e1 to d1 | captures the bishop on d1 | leaves the white knight on e5 hanging. Black answers dxe5: moves the pawn from d6 to e5 | captures the knight on e5. Then Bb3 Kd7 d3. Over the line White takes a bishop; Black takes a knight; at the end White has a bishop and two pawns for a queen and a knight (Black is much better).
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 mate n11–n19, climax n19 [highlight, puzzle, promo]
-  r2 brilliant n3–n19, climax n17 [highlight, puzzle, promo]
-  r3 swing n1–n9, climax n8 [highlight, promo]
-  r4 swing n2–n19, climax n16 [highlight, promo]
-  r5 idea n1–n9, climax n9 [highlight, puzzle, promo]
-
-PLAN
-  e1 concept n9–n9
-  e2 example n7–n9 answer=n9
-  e3 example n15–n19 answer=n17
-  e4 scan n17–n17
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — Petrov's Defense: Damiano Variation (C42); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

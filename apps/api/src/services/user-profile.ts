@@ -151,6 +151,6 @@ export async function toUserProfile(
     ttsBackend: user.ttsBackend,
     chessApiPausedUntil: chessApiPausedUntil(user.chessApiRateLimitedAt)?.toISOString() ?? null,
     onboarded: user.onboardedAt !== null,
-    canCreateCourses: user.canCreateCourses
+    canEditCourses: user.canEditCourses
   };
 }

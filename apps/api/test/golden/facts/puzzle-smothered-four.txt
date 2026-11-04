@@ -47,20 +47,6 @@ n7 4.Nf7# (White, Line A) | great | before: White has a forced mate in 1 → aft
     tempting capture: Nxg8? White's Nxg8 moves the knight from h6 to g8 | captures the rook on g8. Black answers Kxg8: moves the king from h8 to g8 | captures the knight on g8. Then Kf2 Kf8 Kf3. Over the line White takes a rook; Black takes a knight; at the end material is level (The position is roughly equal).
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 puzzle n1–n7, climax n7 [highlight, puzzle, promo]
-  r2 brilliant n1–n3, climax n1 [highlight, puzzle, promo]
-  r3 idea n1–n7, climax n3 [highlight, puzzle, promo]
-  r4 idea n1–n7, climax n5 [highlight, puzzle, promo]
-
-PLAN
-  e1 question n1–n1
-  e2 solve n1–n2 answer=n1
-  e3 solve n3–n4 answer=n3
-  e4 solve n5–n6 answer=n5
-  e5 solve n7–n7 answer=n7
-  e6 recap n7–n7
-
 REVIEW NOTES
   l1
     n1 1.Nf7+: You forced mate.

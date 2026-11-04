@@ -74,17 +74,6 @@ n11 6.Nd6# (White, Line A) | great | before: White has a forced mate in 1 → af
     tactics: You delivered checkmate — mates the king on e8, smothered by its own pieces.
     flags: quiz-eligible, critical
 
-REEL CANDIDATES
-  r1 mate n3–n11, climax n11 [highlight, puzzle, promo]
-  r2 swing n2–n11, climax n10 [highlight, promo]
-
-PLAN
-  e1 hook n1–n1
-  e2 setup n1–n9
-  e3 bait n10–n10
-  e4 quiz n11–n11 answer=n11
-  e5 safety n10–n10
-
 REVIEW NOTES
   l1
     n1 1.e4: Theory — Caro-Kann Defense: Karpov Variation (B17); Puts a pawn in the centre on e4; Controls d5 and f5; Opens the bishop on f1 (from 0 squares to 5)

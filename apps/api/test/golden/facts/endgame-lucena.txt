@@ -81,15 +81,6 @@ n17 3.b8=Q (White, Line B) | best | before: White is winning → after: White is
     tempting threat: Rd2? White's Rd2 moves the rook from d1 to d2 | attacks the rook on h2 | leaves the white rook on d2 hanging. Black answers Rh8+: moves the rook from h2 to h8 | gives check | the check can be answered: block with Rd8; the checking piece cannot be taken; the king cannot move. Then Rd8 Rxd8+ Kxd8. Over the line White takes a rook; Black takes a rook; at the end White is a pawn up (The position is roughly equal).
     flags: quiz-eligible
 
-REEL CANDIDATES
-  r1 puzzle n5–n13, climax n13 [highlight, puzzle, promo]
-
-PLAN
-  e1 goal n1–n1
-  e2 technique n1–n13 answer=n13
-  e3 defence n14–n17
-  e4 recap n13–n13
-
 REVIEW NOTES
   l1
     n1 1.Rd1+: Puts a rook on the open d-file
