@@ -69,14 +69,19 @@ Status: done 2026-11-04 (this commit).
 
 ### Phase 135 — The studio repo, course side
 
-- [ ] `~/projects/studio`: `src/app.ts` (the only import of `../freechesscoach`),
+Status: done 2026-11-04 (studio `d58af2c`): `explore`, `facts`, `skeleton`,
+`check` (the app's checks offline; the Stafford course passes clean),
+`list`, `push`, `publish`, `update`, `pull`. Not yet run against a live api
+(push/publish need the deployed import and a token, Phase 138).
+
+- [x] `~/projects/studio`: `src/app.ts` (the only import of `../freechesscoach`),
       `src/cli.ts`, `src/platform/` (the token client), `src/course/`
       (explore, gaps, skeleton and template episodes, intake → document,
       check = the app's dossier + `draftCheckProblems`, push = import,
       publish, pull, `export-all`). Docs: the making sections that left
       `docs/courses.md` (`docs/course-making.md`).
-- [ ] Check: `export-all` writes every production course; `check` on each
-      gives production's publish-check problems.
+- [ ] Check: `pull --all` writes every production course; `check` on each
+      gives production's publish-check problems (after Phase 138).
 
 ### Phase 136 — The studio, media and channel
 
@@ -115,6 +120,6 @@ the studio repo. Check: a fresh clone builds and passes `npm run verify`.
 
 ## Where it stands
 
-Phase 134 done. Until Phase 137, `../chess-content-studio/tools/course.sh`
+Phases 134 and 135 done. Until Phase 137, `../chess-content-studio/tools/course.sh`
 is broken (it imported the app's writer, which is gone) and the channel
 runner cannot make a course; the live courses are untouched.
