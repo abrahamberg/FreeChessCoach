@@ -2,7 +2,10 @@ import type { CSSProperties, ReactNode } from 'react';
 import { expectedPoints } from '@freechesscoach/chess-analysis';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { useFlippedSide } from './board-tools-context.js';
+import { formatEval } from './eval-format.js';
 import './EvalBar.css';
+
+export { formatEval };
 
 export interface EvalBarProps {
   ply: number;
@@ -45,10 +48,4 @@ export function EvalBar({ ply, classifiedMoves, orientation: pageOrientation, cp
       <span className="eval-bar__label">{formatEval(cp)}</span>
     </div>
   );
-}
-
-/** "+1.3", "-0.4": the evaluation in pawns, White's side. */
-export function formatEval(cp: number): string {
-  const pawns = cp / 100;
-  return pawns > 0 ? `+${pawns.toFixed(1)}` : pawns.toFixed(1);
 }
