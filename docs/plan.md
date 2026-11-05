@@ -8,7 +8,7 @@ work is either kept below or moved out. Phase numbers continue from 133.
 
 Course making was spread over three places: the app's "Write with AI" writer,
 studio pages and in-browser video recorder; a studio CLI in the app's
-scripts; and the channel runner's folder (`../chess-content-studio`), which
+scripts; and the channel runner's folder (`../chess-content-generator`, was `chess-content-studio`), which
 mixed Claude's instructions and state with tools that imported the app's
 internals. Courses belonged to one user each. Production writes went through
 a snippet pasted into a signed-in tab, and the app took a dossier from the
@@ -23,7 +23,7 @@ Only the studio role leaves it.
 | Folder | Owns | Never |
 |---|---|---|
 | `freechesscoach` (this repo) | The course schema (learner content only), the import guard (PGN → tree, the dossier on the app's own engine, the verifier, publish blockers), course editors and tokens, publishing, the learner side, note audio storage, the coaches (personas, voices, avatars), all chess code the review or the guard uses | Course writing, prompts for it, video or reel code, posting, channel analytics |
-| `../studio` (new, private) | Every tool that makes content: research (explore, gaps), the skeleton, video and reel text and their checks, the renderer (headless, MP4 out), note audio (Kokoro in Node), thumbnails, compilations, YouTube upload, analytics, the channel state helpers. A CLI with JSON output | Copying app code: it imports the app's source by relative path, through one file (`src/app.ts`) |
+| `../chess-studio` (new, private) | Every tool that makes content: research (explore, gaps), the skeleton, video and reel text and their checks, the renderer (headless, MP4 out), note audio (Kokoro in Node), thumbnails, compilations, YouTube upload, analytics, the channel state helpers. A CLI with JSON output | Copying app code: it imports the app's source by relative path, through one file (`src/app.ts`) |
 | `../chess-content-generator` (was `chess-content-studio`) | Claude's instructions (`CLAUDE.md`, playbooks, agents) and the channel's state (briefs, courses, videos, logs, research) | Code |
 
 The three folders always sit side by side (owner, 2026-11-04): no npm
@@ -97,9 +97,9 @@ Status: done 2026-11-04 (studio `d58af2c`): `explore`, `facts`, `skeleton`,
 
 ### Phase 137 — chess-content-generator
 
-- [ ] Rename `../chess-content-studio`; remove `tools/`, the committed `.env`
+- [x] Rename `../chess-content-studio`; remove `tools/`, the committed `.env`
       and `node_modules`; rewrite `CLAUDE.md` and the playbooks around the
-      studio's commands; deny edits to `../studio` and `../freechesscoach`;
+      studio's commands; deny edits to `../chess-studio` and `../freechesscoach`;
       copy the Claude memory to the new folder's key.
 
 ### Phase 138 — Deploy and check production
@@ -120,6 +120,7 @@ the studio repo. Check: a fresh clone builds and passes `npm run verify`.
 
 ## Where it stands
 
-Phases 134 and 135 done. Until Phase 137, `../chess-content-studio/tools/course.sh`
-is broken (it imported the app's writer, which is gone) and the channel
-runner cannot make a course; the live courses are untouched.
+Phases 134, 135, 136 and 137 done (2026-11-05): the studio is `../chess-studio`
+(`abrahamberg/chess-studio`), the channel runner works from
+`../chess-content-generator`. Next: Phase 138 (deploy, with the owner); the
+live courses are untouched until then.

@@ -13,7 +13,7 @@ tool beside it) and managed here by course editors.
 ## Docs — read only what your task names
 
 - `docs/plan.md` — the studio split (Phases 134–139): course making, videos
-  and the channel leave this repo for `../studio` and `../chess-content-generator`;
+  and the channel leave this repo for `../chess-studio` and `../chess-content-generator`;
   the app keeps courses as a platform (editors, tokens, the import guard).
   Its "Where it stands" section says what is done.
 - `docs/review-audit-plan.md` — the review audit's plan (Phases 120–127) and
@@ -28,7 +28,7 @@ tool beside it) and managed here by course editors.
 - `docs/courses.md` — the courses spec: editors and the course API (§2), the
   document (§4), the dossier (§5.4), the verifier (§7), publishing (§9),
   learning (§11), tempting moves (§13.5). Only the section a task names.
-  Making courses and videos is the studio's (`../studio/docs/`), never this repo's.
+  Making courses and videos is the studio's (`../chess-studio/docs/`), never this repo's.
 - `docs/diagnose.md` — the spec behind the shipped coach diagnostics (code
   taxonomy, opportunity/episode counting, confidence, data-quality gates,
   focus selection). Long: never open it cold, only the section a task names.
@@ -97,7 +97,7 @@ tool beside it) and managed here by course editors.
   - course code — `packages/chess-analysis/src/course/` (tree, dossier, verify, tempting, review schedule): what the import guard and the player need. Course-making code (skeletons, reel picks, gaps) is the studio's.
   - PGN trees — `packages/chess-analysis/src/pgn-tree/` (tokens, sections, marks, `parsePgnTree`, `edit.ts`): the move tree behind a course's PGN and the move explorer.
 - `packages/prompts`: LLM prompt templates (the coach; in `src/course/` only Ask my coach). `docs/prompts.md` is auto-generated.
-- Course API: `apps/api/src/routes/courses.ts` (`/api/courses/*` for the session, `/api/token/courses/*` for an editor's token), `services/courses/course-import.ts` (the guard). The studio (`../studio`) imports this repo's code by relative path; never import from it.
+- Course API: `apps/api/src/routes/courses.ts` (`/api/courses/*` for the session, `/api/token/courses/*` for an editor's token), `services/courses/course-import.ts` (the guard). The studio (`../chess-studio`) imports this repo's code by relative path; never import from it.
 - `services/engine`: Stockfish/UCI HTTP microservice.
 - `deploy/helm`: K8s Helm charts.
 
