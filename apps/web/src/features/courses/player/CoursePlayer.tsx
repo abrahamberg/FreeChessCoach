@@ -15,7 +15,7 @@ import { SeriesNav } from './SeriesNav.js';
 import { useCourseEnrollment } from './useCourseEnrollment.js';
 import { useProfileCoachVoice } from '../../../hooks/useProfileCoachVoice.js';
 import { useNoteAudio, type NoteAudioSource } from './useNoteAudio.js';
-import '../CourseEditor.css';
+import './CourseLayout.css';
 import './CoursePlayer.css';
 
 export interface CoursePlayerProps {
