@@ -1,3 +1,4 @@
+import { useSignUpEvent } from '../../analytics/useSignUpEvent.js';
 import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { getDemoRuntime } from '../../demo/demoRuntime.js';
@@ -9,6 +10,7 @@ export function OnboardingRedirect({ children }: { children: ReactNode }): React
   const { pathname } = useLocation();
   const { data: profile } = useProfile();
   const needsOnboarding = !getDemoRuntime() && profile !== undefined && !profile.onboarded;
+  useSignUpEvent(needsOnboarding);
   if (needsOnboarding && pathname !== '/welcome') return <Navigate to="/welcome" replace />;
   return children;
 }

@@ -1,4 +1,5 @@
 import { ImportGameRequestSchema, ImportGameResponseSchema, ImportLimitKindSchema, type ImportLimitKind } from '@freechesscoach/shared';
+import { funnelSource, trackFunnelEvent } from '../../analytics/track.js';
 import { apiPost, ApiError } from '../../api/client.js';
 import type { BulkResult, RemoteTab } from './RemoteImportPanel.js';
 
@@ -57,6 +58,7 @@ export async function importBatch({ games, source, onGameSettled }: BulkImportAr
       const response = await apiPost('/api/games', body, ImportGameResponseSchema);
       imported.push({ gameId: response.gameId, analysisId: response.analysisId });
       ok = true;
+      trackFunnelEvent('game_imported', { source: funnelSource(source), signedIn: true });
     } catch (error) {
       limit = limitOf(error) ?? limit;
     }
