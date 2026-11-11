@@ -2,6 +2,7 @@ import { ImportGameRequestSchema, ImportGameResponseSchema, type ImportGameReque
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { funnelSource, trackFunnelEvent } from '../../analytics/track.js';
 import { ApiError, apiPost } from '../../api/client.js';
 import { useAnalysisStatus } from '../../hooks/useAnalysisStatus.js';
 import { IMPORT_QUOTA_QUERY_KEY } from '../../hooks/useImportQuota.js';
@@ -38,6 +39,7 @@ export function useSingleImport() {
       handedOff.current = false;
       setImported(data);
       markRemoteGameImported(queryClient, request.pgn);
+      trackFunnelEvent('game_imported', { source: funnelSource(request.source), signedIn: true });
       void queryClient.invalidateQueries({ queryKey: IMPORT_QUOTA_QUERY_KEY });
     }
   });
@@ -55,12 +57,13 @@ export function useSingleImport() {
     if (!isReady || !imported || handedOff.current) return;
     if (intent === 'review') {
       handedOff.current = true;
+      if (pending) trackFunnelEvent('review_completed', { source: funnelSource(pending.request.source), signedIn: true });
       void navigate(`/review/${imported.gameId}`);
     } else if (intent === 'coach' && coachGame.data) {
       handedOff.current = true;
       actions.handleCoach(imported.gameId);
     }
-  }, [isReady, imported, intent, coachGame.data, actions, navigate]);
+  }, [isReady, imported, intent, pending, coachGame.data, actions, navigate]);
 
   const missingColor =
     importMutation.error instanceof ApiError &&
@@ -69,6 +72,7 @@ export function useSingleImport() {
 
   function start(request: SingleImportRequest, chosenIntent: ImportIntent): void {
     setPending({ request, intent: chosenIntent });
+    if (chosenIntent === 'review') trackFunnelEvent('review_started', { source: funnelSource(request.source), signedIn: true });
     importMutation.mutate(request);
   }
 
