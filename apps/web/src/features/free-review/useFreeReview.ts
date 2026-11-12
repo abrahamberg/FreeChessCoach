@@ -3,13 +3,16 @@ import { parsePgn } from '@freechesscoach/chess-analysis';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { trackFunnelEvent } from '../../analytics/track.js';
 import type { ReviewedGame } from '../review/reviewed-game.js';
-import { reviewGameInBrowser, ReviewCancelledError } from './review-in-browser.js';
+import type { PendingSave } from './pending-save.js';
+import type { ReviewEngine } from './review-engine-choice.js';
+import type { ReviewEngineSwitch } from './review-engine-switch.js';
+import { reviewGameFree, ReviewCancelledError } from './review-in-browser.js';
 import type { ReviewOrigin } from './review-origin.js';
 
 export type FreeReviewState =
   | { kind: 'choosing' }
-  | { kind: 'reviewing'; done: number; total: number }
-  | { kind: 'ready'; game: ReviewedGame; origin: ReviewOrigin }
+  | { kind: 'reviewing'; done: number; total: number; save: PendingSave }
+  | { kind: 'ready'; game: ReviewedGame; origin: ReviewOrigin; usedEngines: ReviewEngine[] }
   | { kind: 'failed'; error: string };
 
 /** The game as Game Review shows it, from the review made in the browser. */
@@ -30,8 +33,9 @@ export function toReviewedGame(pgn: string, userColor: 'white' | 'black', review
 
 /** One review at a time: starting another, going back or leaving the page
  * stops the one in progress. Sends `review_started` and `review_completed`
- * with `signed_in: false`. */
-export function useFreeReview() {
+ * with `signed_in: false` (and, on completion, the engine that answered
+ * last). The positions are searched where `engines` sends them. */
+export function useFreeReview(engines: ReviewEngineSwitch) {
   const [state, setState] = useState<FreeReviewState>({ kind: 'choosing' });
   const running = useRef<AbortController | null>(null);
 
@@ -47,15 +51,17 @@ export function useFreeReview() {
       trackFunnelEvent('review_started', { source: origin.source, signedIn: false });
       const controller = new AbortController();
       running.current = controller;
-      setState({ kind: 'reviewing', done: 0, total: 0 });
+      const save: PendingSave = { pgn, userColor, origin };
+      setState({ kind: 'reviewing', done: 0, total: 0, save });
       const onProgress = (done: number, total: number): void => {
-        if (!controller.signal.aborted) setState({ kind: 'reviewing', done, total });
+        if (!controller.signal.aborted) setState({ kind: 'reviewing', done, total, save });
       };
-      reviewGameInBrowser({ pgn, userColor, signal: controller.signal, onProgress }).then(
+      engines.beginReview();
+      reviewGameFree({ pgn, userColor, signal: controller.signal, onProgress, analyze: engines.analyze }).then(
         (review) => {
           if (controller.signal.aborted) return;
-          trackFunnelEvent('review_completed', { source: origin.source, signedIn: false });
-          setState({ kind: 'ready', game: toReviewedGame(pgn, userColor, review), origin });
+          trackFunnelEvent('review_completed', { source: origin.source, signedIn: false, engine: engines.status.engine });
+          setState({ kind: 'ready', game: toReviewedGame(pgn, userColor, review), origin, usedEngines: engines.used });
         },
         (error: unknown) => {
           if (error instanceof ReviewCancelledError || controller.signal.aborted) return;
@@ -64,7 +70,7 @@ export function useFreeReview() {
         }
       );
     },
-    [stop]
+    [stop, engines]
   );
 
   const reset = useCallback(() => {

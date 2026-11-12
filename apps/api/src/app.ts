@@ -7,6 +7,7 @@ import { registerAnalysesRoutes } from './routes/analyses.js';
 import { registerBugReportsRoutes } from './routes/bug-reports.js';
 import { registerChesscomRoutes } from './routes/chesscom.js';
 import { registerPublicCoursesRoutes } from './routes/public-courses.js';
+import { registerPublicReviewEngineRoutes } from './routes/public-review-engine.js';
 import { registerReviewSharesRoutes } from './routes/review-shares.js';
 import { registerLearnCoursesRoutes } from './routes/learn-courses.js';
 import type { AudioStore } from './services/courses/audio-store.js';
@@ -44,6 +45,7 @@ import type { CoachAgentBaseDependencies } from './bootstrap.js';
 import type { BrowserTunnel } from './services/engine/browser-tunnel.js';
 import { editorForToken } from './services/courses/course-tokens.js';
 import { courseDossierBuilderFor, type CourseDossierBuilder } from './services/courses/dossier.js';
+import { publicReviewEngineFor, type PublicReviewEngine } from './services/engine/public-review-engine.js';
 import type { ResolveEngineBackendOptions } from './services/engine/resolve-engine-backend.js';
 import type { TtsConfig } from './services/tts.js';
 
@@ -61,6 +63,9 @@ export interface BuildAppOptions {
   /** Required to register /api/sessions/* routes. */
   coachAgentBaseDeps?: CoachAgentBaseDependencies;
   engineBackendOptions?: ResolveEngineBackendOptions;
+  /** The no-account review's server engine; defaults to one built from
+   * `engineBackendOptions` (tests inject a fake). */
+  publicReviewEngine?: PublicReviewEngine;
   /** The course import's engine pass; defaults to one built from
    * `engineBackendOptions` (tests inject a fake). */
   courseDossierBuilder?: CourseDossierBuilder;
@@ -139,6 +144,8 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     registerStatsRoutes(app, options.db);
     registerGamesRoutes(app, options.db, options.jobQueue ?? noopJobQueue);
     registerReviewSharesRoutes(app, options.db);
+    const publicReviewEngine = options.publicReviewEngine ?? publicReviewEngineFor(options.engineBackendOptions);
+    if (publicReviewEngine) registerPublicReviewEngineRoutes(app, publicReviewEngine);
     registerLichessRoutes(app, options.db, options.lichessClient ?? createLichessClient());
     registerChesscomRoutes(app, options.db, options.chesscomClient ?? createChesscomClient());
     registerAnalysesRoutes(

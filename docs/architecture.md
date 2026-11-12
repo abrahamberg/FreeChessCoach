@@ -38,8 +38,9 @@ landing page, `apps/web/public/landing.html`), the marketing pages (`/tour`,
 `/guide`, `/keys`, `/openai-key`, their `site.css`, `shots/` and
 `sitemap.xml`; see `docs/marketing-demo.md`), the live demo (`/demo/*` and the
 SPA bundle in `/assets/`; the demo runs on recorded data and makes no `/api` call), the
-no-account review (`/review` and `/engine-sw.js`; the engine runs in the browser and no
-`/api` call is made), a review its owner shared by link (`/s/<token>`, the
+no-account review (`/review` and `/engine-sw.js`; the engine runs in the browser, or
+for a slow device on the server through the capped `/api/public/review-engine`, see
+`docs/threat-model.md` T15), a review its owner shared by link (`/s/<token>`, the
 api's preview page with Open Graph tags that forwards to `/shared/<token>`, the
 SPA's read-only review, which reads `/api/public/shared-reviews/<token>`; see
 `docs/threat-model.md` T16), the privacy/terms pages and
