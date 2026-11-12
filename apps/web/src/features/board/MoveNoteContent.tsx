@@ -33,8 +33,11 @@ export const QUALITY_HEADLINES: Partial<Record<MoveQuality, string>> = {
  * fallback instead of an empty card for a plain good/excellent move. */
 export function hasMoveNoteText(move: ClassifiedMoveDto, excludeTacticText = false): boolean {
   if (move.quality === 'book') return Boolean(move.reasons?.[0]);
-  if (storyOf(move)) return storyNoteTexts(move, excludeTacticText).length > 0;
+  // Checked before the story: a mating move's only sentence is often its
+  // card ("You delivered checkmate."), and the story's note list leaves the
+  // cards out, which printed "Nothing to flag" under the mate.
   if (excludeTacticText && (move.tacticAllowed || move.tacticOpportunity || move.tacticPrevention)) return true;
+  if (storyOf(move)) return storyNoteTexts(move, excludeTacticText).length > 0;
   return plainReviewReasons(move, excludeTacticText).length > 0 || betterWasText(move, excludeTacticText) !== null;
 }
 
