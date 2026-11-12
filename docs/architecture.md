@@ -759,7 +759,8 @@ saved endpoint is the same provider).
 ### Welcome flow (`/welcome`)
 
 A new account is sent to `/welcome` (`features/onboarding/`, gated by
-`OnboardingRedirect` in `App.tsx`) until `users.onboarded_at` is set (migration
+`OnboardingRedirect` in `App.tsx`; only saving a free review at `/save-review` and the
+saved review it opens come first, `onboarding-can-wait.ts`) until `users.onboarded_at` is set (migration
 0008 stamped every existing user, so only new signups see it; the profile
 exposes it as `onboarded`, and `PATCH /api/users/me { onboarded }` sets or clears
 it). Steps, in order: name and level, coach, engine, linked accounts, tour, AI

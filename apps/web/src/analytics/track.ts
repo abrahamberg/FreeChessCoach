@@ -13,9 +13,14 @@ export type FunnelEvent =
 
 export type FunnelSource = 'pgn' | 'chesscom' | 'lichess';
 
+/** The two offers of the sign-in panel at the end of a free review. */
+export type SignInOffer = 'keep_game' | 'repeat_mistakes';
+
 export interface FunnelParams {
   source: FunnelSource;
   signedIn: boolean;
+  /** Only on the sign-in offer's events: which offer was clicked. */
+  offer?: SignInOffer;
 }
 
 type Gtag = (command: 'event', name: string, params: Record<string, string | boolean>) => void;
@@ -32,11 +37,11 @@ function getGtag(): Gtag | null {
 
 /** Sends one funnel event with `source`, `signed_in` and the visit's utm tags.
  * Does nothing when gtag is absent (local dev, blocked, the offline demo). */
-export function trackFunnelEvent(name: FunnelEvent, { source, signedIn }: FunnelParams): void {
+export function trackFunnelEvent(name: FunnelEvent, { source, signedIn, offer }: FunnelParams): void {
   const gtag = getGtag();
   if (!gtag) return;
   try {
-    gtag('event', name, { source, signed_in: signedIn, ...getVisitUtm() });
+    gtag('event', name, { source, signed_in: signedIn, ...(offer ? { offer } : {}), ...getVisitUtm() });
   } catch {
     // Analytics must never break the app.
   }

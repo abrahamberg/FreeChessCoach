@@ -11,6 +11,7 @@ import { useCourseProgressStore } from './features/courses/player/useCourseProgr
 import { LearnPage } from './features/courses/player/LearnPage.js';
 import { FindGamesPage } from './features/games/FindGamesPage.js';
 import { FreeReviewPage } from './features/free-review/FreeReviewPage.js';
+import { SaveReviewPage } from './features/free-review/SaveReviewPage.js';
 import { GamesPage } from './features/games/GamesPage.js';
 import { ImportPage } from './features/import/ImportPage.js';
 import { OnboardingPage } from './features/onboarding/OnboardingPage.js';
@@ -138,6 +139,8 @@ export function AppRoutes(): ReactNode {
             <Route path="/session/:id" element={<SessionRoute />} />
             <Route path="/bot-session/:id" element={<BotSessionRoute />} />
             <Route path="/review/:gameId" element={<GameReviewRoute />} />
+            {/* Sign-in from the end of a free review lands here and saves that game. */}
+            <Route path="/save-review" element={<SaveReviewPage />} />
             <Route path="/practice/:assignmentId" element={<PracticeRoute />} />
             <Route path="/progress" element={<ProgressPage />} />
             <Route path="/dashboard" element={<Navigate to="/progress" replace />} />

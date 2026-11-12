@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { readGameInput } from './game-input.js';
 import { RecentGamesPicker } from './RecentGamesPicker.js';
 import type { GameSite } from './recent-games.js';
+import { PASTED_ORIGIN, type ReviewOrigin } from './review-origin.js';
 
 type Source = 'pgn' | GameSite;
 
@@ -12,7 +13,7 @@ const SOURCES: { id: Source; label: string }[] = [
 ];
 
 export interface GameChooserProps {
-  onReview: (pgn: string, userColor: 'white' | 'black') => void;
+  onReview: (pgn: string, userColor: 'white' | 'black', origin: ReviewOrigin) => void;
 }
 
 /** Where the game comes from: a username on Chess.com or Lichess, or a pasted PGN. */
@@ -51,7 +52,7 @@ function PgnForm({ onReview }: GameChooserProps): ReactNode {
       return;
     }
     setError(null);
-    onReview(input.pgn, side);
+    onReview(input.pgn, side, PASTED_ORIGIN);
   };
 
   return (

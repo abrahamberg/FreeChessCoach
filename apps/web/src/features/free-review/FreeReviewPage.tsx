@@ -7,6 +7,8 @@ import { browserEngineLines } from './browser-lines.js';
 import { GameChooser } from './GameChooser.js';
 import { ReviewProgress } from './ReviewProgress.js';
 import { readGameInput } from './game-input.js';
+import { PASTED_ORIGIN } from './review-origin.js';
+import { SignInOfferPanel } from './SignInOfferPanel.js';
 import { useFreeReview } from './useFreeReview.js';
 import { useReviewLink } from './useReviewLink.js';
 import './FreeReviewPage.css';
@@ -24,6 +26,9 @@ import './FreeReviewPage.css';
  * root carries `data-review-state` (choosing, reviewing, ready, failed), and
  * the board and the note `data-testid="review-board"` / `"review-note"`: the
  * studio's recorder (`studio record review`) builds on these.
+ *
+ * On the last move the review offers sign-in (SignInOfferPanel), which saves
+ * this game to the new account on `/save-review`.
  */
 export function FreeReviewPage(): ReactNode {
   const { state, start, reset } = useFreeReview();
@@ -32,7 +37,7 @@ export function FreeReviewPage(): ReactNode {
   useEffect(() => getSharedEngineWorker().preload(), []);
   useEffect(() => {
     const input = link.pgn === null ? null : readGameInput(link.pgn);
-    if (input?.ok) start(input.pgn, link.side);
+    if (input?.ok) start(input.pgn, link.side, PASTED_ORIGIN);
   }, [link.pgn, link.side, start]);
 
   if (state.kind === 'ready') {
@@ -46,6 +51,7 @@ export function FreeReviewPage(): ReactNode {
               onBack={reset}
               showPly={link.ply}
               notice={<p className="free-review__notice">Reviewed on your device. Nothing was saved.</p>}
+              endPanel={<SignInOfferPanel save={{ pgn: state.game.pgn, userColor: state.game.userColor, origin: state.origin }} reviewKey={state.game} />}
             />
           </EngineLinesProvider>
         </div>
