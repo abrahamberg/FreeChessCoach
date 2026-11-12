@@ -39,7 +39,10 @@ landing page, `apps/web/public/landing.html`), the marketing pages (`/tour`,
 `sitemap.xml`; see `docs/marketing-demo.md`), the live demo (`/demo/*` and the
 SPA bundle in `/assets/`; the demo runs on recorded data and makes no `/api` call), the
 no-account review (`/review` and `/engine-sw.js`; the engine runs in the browser and no
-`/api` call is made), the privacy/terms pages and
+`/api` call is made), a review its owner shared by link (`/s/<token>`, the
+api's preview page with Open Graph tags that forwards to `/shared/<token>`, the
+SPA's read-only review, which reads `/api/public/shared-reviews/<token>`; see
+`docs/threat-model.md` T16), the privacy/terms pages and
 `/robots.txt`, so logged-out visitors and search-engine crawlers can look
 around the site before signing in.
 

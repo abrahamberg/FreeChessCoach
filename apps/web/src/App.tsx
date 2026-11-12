@@ -12,6 +12,7 @@ import { LearnPage } from './features/courses/player/LearnPage.js';
 import { FindGamesPage } from './features/games/FindGamesPage.js';
 import { FreeReviewPage } from './features/free-review/FreeReviewPage.js';
 import { SaveReviewPage } from './features/free-review/SaveReviewPage.js';
+import { SharedReviewPage } from './features/shared-review/SharedReviewPage.js';
 import { GamesPage } from './features/games/GamesPage.js';
 import { ImportPage } from './features/import/ImportPage.js';
 import { OnboardingPage } from './features/onboarding/OnboardingPage.js';
@@ -106,6 +107,8 @@ export function App(): ReactNode {
           {!getDemoRuntime() && <Route path="/learn/:slug" element={<LearnPage />} />}
           {/* The no-account review (docs/marketing-demo.md): the engine runs in the browser, nothing reaches the api. */}
           {!getDemoRuntime() && <Route path="/review" element={<FreeReviewPage />} />}
+          {/* A review its owner shared by link (growth plan A6): read-only, no login. */}
+          {!getDemoRuntime() && <Route path="/shared/:token" element={<SharedReviewPage />} />}
           <Route path="*" element={<AppEntry />} />
         </Routes>
       </BrowserRouter>

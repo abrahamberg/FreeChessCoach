@@ -106,6 +106,7 @@ have tests or rendered-config assertions; commit hashes are on `main`.
 | T12 | E | TB7 | CI workflow ran with the default (broad) `GITHUB_TOKEN` (CodeQL `actions/missing-workflow-permissions`). | P5 | Low | Fixed `cd5d988` |
 | T13 | I, D, E | TB1, TB2 | **Public course pages** (docs/courses.md §9): `/learn/<slug>` and `GET /api/public/courses/:slug` are the first `/api` routes reachable with no login. Risks: reaching other routes without identity, leaking the creator or drafts, guessing unlisted links, floods, a public engine. | P1 | Medium | Mitigated by design (Task 82.2) |
 | T15 | I, D | TB1, TB3 | **No-account review** (`/review`): the second SPA page reachable with no login. Risks: it reaching `/api` without identity, the server fetching third-party URLs or storing games for anonymous visitors, a public engine. | P1 | Low | Mitigated by design (growth plan A1) |
+| T16 | I, D, E | TB1, TB2 | **Shared review links** (`/s/<token>`, `/shared/<token>`, `/api/public/shared-reviews/<token>`): a signed-in player's stored game becomes readable by anyone with its link. Risks: leaking the account or other personal data, guessing links, a link that cannot be taken back, reaching owner routes without identity, injection through PGN names into the server-made page, a flood of image renders. | P1, P2 | Medium | Mitigated by design (growth plan A6) |
 
 ### What each fix does
 
@@ -121,63 +122,4 @@ have tests or rendered-config assertions; commit hashes are on `main`.
 - **T14** — Course API tokens (docs/courses.md §2). `oauth2-proxy` skips auth for `^/api/token/` (`deploy/helm/test.sh` asserts it), so those requests carry no session. `plugins/auth-headers.ts` decides by the *matched route*: a route under `/api/token/` takes only `Authorization: Bearer fcc_…`, and every other route ignores a bearer token, so a token is never a session and a session never reaches the token routes without one. A token is 32 random bytes, shown once; only its SHA-256 is stored (`course_api_tokens`). It resolves to its editor only while it is not revoked and the editor still has `can_edit_courses` (tested). Tokens are made and revoked only through the signed-in session (`/api/course-tokens`); a token cannot make tokens. Its reach is the course editor routes: import, publish, visibility, delete, note audio. Import runs the engine over the course, capped at 20 an hour per editor on top of the 600/min floor.
 - **T15** — The page makes no `/api` call at all (checked in a browser: zero requests to `/api/*` through a PGN review, a Chess.com list and Explore). Stockfish runs in the visitor's own engine worker from `/assets/`, and Explore's lines come from it too (`features/live-review/engine-lines-source.tsx`), so no engine is exposed publicly. The Chess.com and Lichess game lists are fetched by the visitor's browser straight from those sites (both answer with `Access-Control-Allow-Origin: *`, `credentials: 'omit'`), so the server never fetches a URL for an anonymous visitor and never sees the username. Nothing is stored or counted against the import quota; the review lives in the page's memory. The proxy's skip-auth entries are exact: `^/review$` and `^/engine-sw\.js$` (`deploy/helm/test.sh` asserts them); `/review/<id>`, the signed-in review of a stored game, still needs a session.
 
-## Reviewed and found sound (no change)
-
-- **Authorization / IDOR**: every `:id` route and the services behind them load
-  through `findByIdForUser` / `findSessionByIdForUser`; coach tools take
-  game/session/user IDs from the server-side turn context, never from model
-  output (no tool schema has an ID parameter).
-- **Tunnel binding**: `/api/tunnel` registers the socket under the authenticated
-  user only, never a client-supplied ID.
-- **Engine**: FEN is checked with `validateFen` before it reaches Stockfish's
-  stdin (a newline can't inject UCI commands); depth and multiPV for user-facing
-  routes are fixed server-side.
-- **Key custody**: AES-256-GCM with random 16-byte salt and 12-byte IV per
-  encryption, scrypt N=2^15/r=8; no server master key, so a database dump alone
-  can't decrypt. Redis entries are HMAC-named (no user-ID mapping) and encrypted
-  with a separate cache key.
-- **Proxy routing**: oauth2-proxy upstreams expose only `/api/` and web, so
-  `/internal/*` is unreachable from the internet; the api NetworkPolicy admits
-  only proxy and worker pods; skip-auth routes are anchored regexes; oauth2-proxy
-  7.15.3 is past the skip-auth query-string bypass (CVE-2025-54576).
-- **SPA**: no `dangerouslySetInnerHTML`/`innerHTML` sinks, model output is
-  rendered as text, and the demo's "back" link is a fixed allow-listed path.
-- **Logging**: request logging is off and the error mapper doesn't log bodies
-  or headers, so API keys and phrases don't reach logs.
-- **Containers**: non-root uid 1000, `allowPrivilegeEscalation: false`, all
-  capabilities dropped, `RuntimeDefault` seccomp, NetworkPolicies per
-  component.
-
-## Accepted risks and follow-ups
-
-| ID | Item | Why it is open / what to do |
-|---|---|---|
-| R1 | Enforce the script CSP | The landing page has an inline script, and transformers.js/onnxruntime may load WASM or modules from a CDN for browser TTS. Watch the Report-Only violations in a browser, add the needed hash/origin, then promote the header in `nginx.security-headers.conf`. |
-| R2 | Rate limits are per pod | In memory, so the effective cap is limit × replicas (2–6). Fine for abuse control; move to Redis if a hard cap is ever needed. |
-| R3 | Browser-mode engine results are client-supplied | A user can skew their *own* analyses and rated-bot results. No leaderboard or cross-user effect. Accepted. |
-| R4 | Prompt injection via PGN comments/headers or model output | Tools act only on the requesting user's data, with per-turn budgets. Self-impact only. Revisit if any sharing feature ships. |
-| R5 | Redis may be unauthenticated in-cluster | Values are encrypted and names HMAC'd, so a Redis read alone yields nothing usable. Still recommended: Redis auth and a NetworkPolicy admitting only api and worker. |
-| R6 | `database.sslMode: disable` default | Fine for the in-cluster subchart; use `require` or stricter for a managed database (already documented in values). |
-| R7 | Supply chain: actions, base images, auto-merged updates | **Mitigated.** Actions are pinned to commit SHAs and base images (Docker Hardened Images) to digests; Dependabot bumps both. Minor/patch updates auto-merge only after the full CI suite and the image smoke test pass, with a 3-day release cooldown; majors wait for a human. Images publish only after CI passes on `main`. |
-| R8 | TypeScript held at 6.0 | typescript-eslint doesn't yet support TS 7 (peer range `<6.1.0`); Dependabot ignores TS majors until it does. `@types/node` is held at 24.x to match the Node 24 LTS runtime. |
-| R10 | Edge protection (Cloudflare) | App limits key on the signed-in user and so can't stop unauthenticated floods, which only oauth2-proxy sees. Cloudflare (free) handles volumetric DDoS and can add one IP-based rule; it only helps if the origin accepts traffic from Cloudflare alone (Cloudflare Tunnel, or ingress restricted to Cloudflare's IP ranges). Course audio no longer touches the origin: it is served from the bucket's domain (docs/courses.md §9). |
-| R9 | Open sign-up | By design; it's why P2 is the primary attacker and why all per-user controls above are required. |
-
-## Operational notes for the next deploy
-
-1. **Internal token length.** api and worker now **refuse to start** if
-   `ENGINE_TUNNEL_INTERNAL_TOKEN` is under 32 characters (outside dev-stub).
-   Check the deployed value first; `openssl rand -hex 32` makes a good one.
-   Consider moving it to a Secret via `internalApi.existingSecret`.
-2. **Identity headers.** Any proxy other than this chart's oauth2-proxy must
-   send `X-Forwarded-Email`; `X-Auth-Request-*` is no longer read.
-3. **Private AI endpoints.** A self-hosted install that points the server at a
-   LAN/cluster model server must set `LLM_ALLOW_PRIVATE_ENDPOINTS=1`.
-4. **COOP/COEP are live in production for the first time** (they only ever
-   worked in the Vite dev server). The app has always run under them in dev,
-   but watch for cross-origin resource breakage after the first deploy.
-5. **Node 24 LTS** (`.nvmrc`; undici 8 and graphile-worker 0.18 need ≥ 22.19).
-   The images run `dhi.io/node:24`; update local toolchains.
-6. **Read-only root filesystem.** Every container now runs with
-   `readOnlyRootFilesystem: true` (web gets a `/tmp` emptyDir), and the images
-   have no shell — debug with `kubectl debug`, not `kubectl exec ... sh`.
+- **T16** — The link is a 128-bit random token (`randomBytes(16)`, base64url) on the game row (`games.share_token`, 0033); only the owner can make, read or clear it (`/api/games/:id/share`, behind the login, every query filtered by `user_id`; tested). Turning it off clears the token, so the review, its picture and the preview page all answer 404 at once (responses carry `max-age` of 60 s, the picture 300 s); sharing again makes a new token, so an old link never comes back. The public answer is built field by field (`services/review-share/review-share.ts`): the moves, the notes, the Game Report and the players' names. The PGN is rebuilt with only `White`, `Black`, `Result`, `SetUp` and `FEN` headers and no comments, so site, date, event, ratings, clocks and the game's URL on Chess.com or Lichess are dropped; nothing from `users` is read, and the per-player tactic baseline (which compares against the owner's other games) is left out. `/s/` is a new oauth2-proxy upstream to the api; `auth-headers.ts` exempts it, like `/api/public/`, by the matched route, so no other api route is reachable through it, and the proxy's skip-auth entries are exact (`^/s/[A-Za-z0-9_-]{22}$`, `^/shared/[A-Za-z0-9_-]{22}$`; `deploy/helm/test.sh` asserts them and the upstream). The preview page escapes every value it prints (player names come from the PGN), sends `Content-Security-Policy: default-src 'none'` and takes its absolute URLs from the `Host` header only when it is a plain host name. The picture is drawn in plain JS from fixed sprites (no native image library, no user-supplied image), about 40 ms; the public routes share a 300/min cap like T13 (R10 applies). Explore on the shared page runs on the visitor's own engine, as on `/review`.

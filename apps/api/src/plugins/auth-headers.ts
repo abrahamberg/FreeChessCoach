@@ -37,12 +37,15 @@ const DEV_STUB_USER: AuthUser = { email: 'dev@local.test', displayName: 'dev@loc
 //   the proxy; its routes never read request.user. Judged by the route that
 //   matched, not the raw URL, so no path trick ("/api/public/../courses")
 //   reaches another route without identity.
+// /s/* — a shared review's link page (routes/review-shares.ts, growth plan A6),
+//   skip-auth at the proxy like /api/public/*, judged by the matched route too.
 // /api/token/* — the course API for course editors' tools (the studio):
 //   skip-auth at the proxy, so it carries no identity headers; a bearer token
 //   (services/courses/course-tokens.ts) is the only identity it takes, and no
 //   other route reads one. Judged by the matched route, like /api/public/*.
 const AUTH_EXEMPT_PATHS = new Set(['/healthz', '/readyz']);
 export const PUBLIC_API_PREFIX = '/api/public/';
+export const SHARE_LINK_PREFIX = '/s/';
 export const TOKEN_API_PREFIX = '/api/token/';
 
 /** Decorates `request.user` from oauth2-proxy identity headers.
@@ -125,7 +128,8 @@ function firstHeaderValue(value: string | string[] | undefined): string | null {
 }
 
 function isPublicRoute(request: FastifyRequest): boolean {
-  return request.routeOptions.url?.startsWith(PUBLIC_API_PREFIX) ?? false;
+  const route = request.routeOptions.url;
+  return route !== undefined && (route.startsWith(PUBLIC_API_PREFIX) || route.startsWith(SHARE_LINK_PREFIX));
 }
 
 function isTokenRoute(request: FastifyRequest): boolean {

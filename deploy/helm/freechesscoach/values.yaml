@@ -362,6 +362,7 @@ oauth2-proxy:
       {{- end }}
       upstreams = [
         "http://{{ .Release.Name }}-api:3000/api/",
+        "http://{{ .Release.Name }}-api:3000/s/",
         "http://{{ .Release.Name }}-web/"
       ]
   # A list (not a map) so --skip-auth-route can repeat.
@@ -433,6 +434,12 @@ oauth2-proxy:
     # once.
     - --skip-auth-route=^/review$
     - --skip-auth-route=^/engine-sw\.js$
+    # A review its owner shared by link (growth plan A6, docs/threat-model.md
+    # T16): /s/<token> is the api's preview page (Open Graph tags, then a
+    # redirect), /shared/<token> the SPA's read-only review; the review and
+    # its picture come from /api/public/ above. Exact token shape only.
+    - --skip-auth-route=^/s/[A-Za-z0-9_-]{22}$
+    - --skip-auth-route=^/shared/[A-Za-z0-9_-]{22}$
   service:
     portNumber: 80
   # Our own templates/ingress.yaml owns the public route.
