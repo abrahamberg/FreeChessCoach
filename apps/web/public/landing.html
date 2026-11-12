@@ -3,25 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FreeChessCoach — a free chess coach that reads your games</title>
+    <title>FreeChessCoach — a free game review that explains every move in words</title>
     <meta
       name="description"
-      content="Free stats, game review, human-like bots and an AI coach that reads your Lichess and Chess.com games, plus free chess courses that need no sign-in. Everything from us is free."
+      content="Free chess game review with no account: paste a PGN or pick a recent Chess.com or Lichess game and every move is explained in words. Sign in, free, to keep your games, stats and a coach."
     />
     <link rel="canonical" href="https://freechesscoach.org/" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://freechesscoach.org/" />
-    <meta property="og:title" content="FreeChessCoach — a free chess coach that reads your games" />
+    <meta property="og:title" content="FreeChessCoach — a free game review that explains every move in words" />
     <meta
       property="og:description"
-      content="Free stats, game review, human-like bots and an AI coach. Everything from us is free; you plug in your own AI. No credit card, and you can look around before you sign in."
+      content="Review your own Chess.com or Lichess game for free, with no account: every move explained in words, and nothing saved."
     />
     <meta property="og:image" content="https://freechesscoach.org/shots/og.png" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="FreeChessCoach — a free chess coach that reads your games" />
+    <meta name="twitter:title" content="FreeChessCoach — a free game review that explains every move in words" />
     <meta
       name="twitter:description"
-      content="Free stats, game review, human-like bots and an AI coach. Everything from us is free; you plug in your own AI."
+      content="Review your own Chess.com or Lichess game for free, with no account: every move explained in words."
     />
     <meta name="twitter:image" content="https://freechesscoach.org/shots/og.png" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -37,7 +37,7 @@
         "@type": "WebApplication",
         "name": "FreeChessCoach",
         "url": "https://freechesscoach.org/",
-        "description": "A free chess coach that reads your Lichess and Chess.com games: stats, game review, human-like bots and an AI coach.",
+        "description": "A free chess game review with no account that explains every move in words, for Chess.com and Lichess games or a PGN. Signed in: saved games, stats, human-like bots and an AI coach.",
         "applicationCategory": "EducationalApplication",
         "operatingSystem": "Any (web browser)",
         "isAccessibleForFree": true,
@@ -50,6 +50,7 @@
       <div class="wrap">
         <a class="brand" href="/"><img src="/brand/logo.png" alt="" width="28" height="28" />FreeChessCoach</a>
         <nav class="site-nav" aria-label="Main">
+          <a href="/review">Free game review</a>
           <a href="/learn">Free courses</a>
           <a href="/demo/games">Live demo</a>
           <a href="/tour">Take the tour</a>
@@ -64,42 +65,33 @@
       <section class="hero">
         <div class="wrap hero-grid">
           <div>
-            <h1>A chess coach that actually reads your games. Free.</h1>
+            <h1>A free game review that explains every move in words. No account.</h1>
             <p class="sub">
-              Import your games from Lichess or Chess.com and get stats and move-by-move game
-              review that often cost a subscription, bots that make human mistakes, a coach
-              that looks for the reason you keep losing the same way, and free courses that
-              teach the moves.
+              Paste a PGN, or type your Chess.com or Lichess username and pick a recent game.
+              Every move gets a verdict and a note in plain words, and a mistake shows the move
+              that was better. The engine runs in your browser and nothing is saved.
             </p>
             <div class="cta-row">
-              <a class="btn btn-primary" href="/demo/games">Try the live demo</a>
-              <a class="google-btn" href="/oauth2/start?rd=/games">
-                <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
-                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.9-2.26 5.36-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
-                </svg>
-                <span>Sign in with Google</span>
-              </a>
+              <a class="btn btn-primary" href="/review">Review your game, free</a>
+              <a class="btn btn-secondary" href="/demo/games">Try the live demo</a>
             </div>
-            <p class="hero-courses">New here? <a href="/learn">Start with a free course</a>, no sign-in needed.</p>
+            <p class="hero-courses">Want to keep your games? <a href="/oauth2/start?rd=/games">Sign in with Google</a>, also free, for your history, stats and a coach.</p>
             <ul class="assurances">
+              <li>No account needed</li>
               <li>No credit card</li>
               <li>No ads, no data sales</li>
-              <li>Stats and review need no AI</li>
-              <li>Open source</li>
+              <li>The code is public</li>
             </ul>
           </div>
           <figure class="shot">
             <img
-              src="/shots/hero-stats.png"
-              alt="The Stats page with sample data: an estimated-rating chart over a year, with opening and tactics breakdowns below."
+              src="/shots/review.png"
+              alt="Game Review on move 37: the board, the move list and the verdict that 37…Ng5 missed 37…Rxd2+."
               width="1440"
               height="900"
               fetchpriority="high"
             />
-            <figcaption class="demo-note">Sample data: a made-up demo player's year of 3,420 games.</figcaption>
+            <figcaption class="demo-note">Sample data: a game from the live demo.</figcaption>
           </figure>
         </div>
       </section>
@@ -131,7 +123,7 @@
                   <p class="homework"><strong>Homework:</strong> after every capture, ask what it changed. Then look for the recapture first.</p>
                 </li>
               </ul>
-              <p class="try-demo"><a href="/demo/coach">Open this session in the live demo →</a></p>
+              <p class="try-demo"><a href="/demo/coach">Open this session in the live demo →</a> The coach comes with a free account.</p>
               <p class="hero-courses">Want to learn the pattern first? The <a href="/learn">free courses</a> teach traps, tactics and endgames move by move.</p>
             </div>
             <figure class="shot">
@@ -150,11 +142,12 @@
 
       <section class="section" id="features">
         <div class="wrap">
-          <p class="eyebrow">What you get</p>
-          <h2>Everything from us is free. Most of it needs no AI.</h2>
+          <p class="eyebrow">When you sign in</p>
+          <h2>Keep your games, and get a coach. Still free.</h2>
           <p class="lead">
-            Stats, game review and the bots work the moment your games are imported, with nothing
-            to set up. The coach is ours too; the AI it thinks with is yours to plug in.
+            The review above needs nothing. Sign in with Google and your games are saved, with
+            stats over time and bots that play like people, all with nothing to set up. The coach
+            is ours too; the AI it thinks with is yours to plug in.
           </p>
           <div class="two-col">
             <div class="card tinted">
@@ -285,7 +278,7 @@
               <li>From Google we get your email address and name, nothing else, and never your password. <a href="/privacy">Privacy policy</a>.</li>
               <li>No credit card, no paid tier, no ads, and we don't sell your data.</li>
               <li>Your AI key is encrypted with a phrase only you know. <a href="/keys">How we handle it</a>.</li>
-              <li>All of the code is open source on <a href="https://github.com/abrahamberg/FreeChessCoach">GitHub</a>.</li>
+              <li>All of the code is public on <a href="https://github.com/abrahamberg/FreeChessCoach">GitHub</a>.</li>
               <li>You can try the whole app on sample data in the <a href="/demo/games">live demo</a> first.</li>
             </ul>
           </div>
@@ -317,13 +310,14 @@
           </details>
           <details class="faq">
             <summary>Can I look around without signing in?</summary>
-            <p>Yes. The <a href="/learn">free courses</a> need no sign-in at all. The <a href="/demo/games">live demo</a> is the real app on sample data, coaching session included. The <a href="/tour">tour</a> shows every screen, and the <a href="/guide">guide</a> walks through a first session.</p>
+            <p>Yes. The <a href="/review">free game review</a> needs no account: pick a Chess.com or Lichess game, or paste a PGN. The <a href="/learn">free courses</a> need no sign-in at all. The <a href="/demo/games">live demo</a> is the real app on sample data, coaching session included. The <a href="/tour">tour</a> shows every screen, and the <a href="/guide">guide</a> walks through a first session.</p>
           </details>
           <details class="faq">
             <summary>Who is behind this, and what do they get?</summary>
-            <p>One person, not a company, and nothing in return: no ads, no data sales. The AI is bring-your-own so the project can stay free for everyone without a business model that needs you to keep paying. <a href="#mission">Here is why we do it</a>. The code is <a href="https://github.com/abrahamberg/FreeChessCoach">open source</a>.</p>
+            <p>One person, not a company, and nothing in return: no ads, no data sales. The AI is bring-your-own so the project can stay free for everyone without a business model that needs you to keep paying. <a href="#mission">Here is why we do it</a>. The code is <a href="https://github.com/abrahamberg/FreeChessCoach">public on GitHub</a>.</p>
           </details>
           <div class="cta-row">
+            <a class="btn btn-primary" href="/review">Review your game, free</a>
             <a class="google-btn" href="/oauth2/start?rd=/games">
               <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
                 <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
@@ -333,7 +327,6 @@
               </svg>
               <span>Sign in with Google</span>
             </a>
-            <a class="btn btn-secondary" href="/demo/games">Try the live demo</a>
           </div>
         </div>
       </section>
@@ -342,6 +335,7 @@
     <footer class="site-footer">
       <div class="wrap">
         <nav aria-label="Footer">
+          <a href="/review">Free game review</a>
           <a href="/learn">Free courses</a>
           <a href="/tour">Tour</a>
           <a href="/guide">User guide</a>

@@ -106,6 +106,11 @@ function GuestTopBar(): ReactNode {
           <span className="app-shell__wordmark">FreeChessCoach</span>
         </a>
         <div className="app-shell__topbar-end">
+          {pathname !== '/review' && (
+            <NavLink className="btn-secondary" to="/review">
+              Free review
+            </NavLink>
+          )}
           <a className="btn-primary" href={`/oauth2/start?rd=${returnTo}`}>
             Sign in
           </a>
