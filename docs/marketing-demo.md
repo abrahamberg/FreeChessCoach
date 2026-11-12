@@ -120,17 +120,31 @@ every move's classification and worded notes, the Game Report, and Explore.
   browser: the server's pass scans (no report step reads them yet), the optional deep
   check (`REVIEW_DEEP_CHECK`, off by default), the diagnostics and the coaching moments
   (they need the player's history), and the "unusual for you" tactic note.
-- **Nothing reaches the api.** The game lists are read by the browser straight from
+- **Where the engine runs** (`ReviewEngineSwitch`, `review-engine-choice.ts`): in the
+  browser by default. A phone, a data saver, fewer than 4 cores or under 4 GB
+  (`isSlowDevice`) starts on the server instead and skips the 95 MB download; a device
+  measured slow during a review (a batch after the first over 2.5 s a position, or a
+  first batch over 30 s) moves the rest there. The server is
+  `POST /api/public/review-engine` (`apps/api/src/routes/public-review-engine.ts`): the
+  Lichess eval index first, as for a signed-in review, then the native engine at depth
+  12, lowest priority, with only searched positions counted against 600 an hour per
+  visitor (Cloudflare's `CF-Connecting-IP`), 4000 an hour for all visitors per api pod,
+  and two batches at a time with six waiting. A refusal (429) or any failure finishes
+  the review on the device for the rest of the page. The visitor can switch either way
+  while it runs (kept in `localStorage`), and `&engine=device|server` in the link pins
+  it. Explore follows the review's engine. On a slow device or a refusal the page
+  offers sign-in (`ReviewEngineNote`, offer `faster_review`), which saves the game in
+  review like the end panel does. The root's engine note carries `data-review-engine`.
+- **Nothing is stored.** The game lists are read by the browser straight from
   Chess.com and Lichess (`packages/game-sources`, the same clients the api uses for a
-  signed-in player's list); Explore's lines come from the browser engine
-  (`EngineLinesProvider`); nothing is stored and no import quota applies. Leaving the
-  page drops the review.
+  signed-in player's list); the server engine gets bare positions and keeps nothing;
+  no import quota applies. Leaving the page drops the review.
 - **The page** is `GameReviewView`, the signed-in review's view, inside a guest
   `AppShell` with no Continue with Coach. The engine (the full-net single-thread
   build, about 95 MB) starts downloading when the page opens; `/engine-sw.js` caches it.
   Measured in headless Chromium with the engine already loaded: a 70-move Chess.com
   blitz game took about 21 s on a 4-core box.
-- **A link starts it**: `/review#pgn=<encodeURIComponent(pgn)>&side=white|black&ply=<n>`
+- **A link starts it**: `/review#pgn=<encodeURIComponent(pgn)>&side=white|black&ply=<n>[&engine=device|server]`
   reviews the game at once and shows ply `n`; changing only `ply` in the hash moves the
   board. The page root carries `data-review-state` (`choosing`, `reviewing`, `ready`,
   `failed`) and the board and note `data-testid="review-board"` / `"review-note"`. The
@@ -145,7 +159,8 @@ every move's classification and worded notes, the Game Report, and Explore.
   and that review before the welcome flow (`onboarding-can-wait.ts`).
 - **Funnel events** (`analytics/track.ts`): the page sends `review_started` and
   `review_completed` with `signed_in: false`, the panel `signin_offer_shown` (once per
-  review) and `signin_offer_clicked` (with `offer`: `keep_game` or `repeat_mistakes`).
+  review) and `signin_offer_clicked` (with `offer`: `keep_game`, `repeat_mistakes`, or
+  `faster_review` from the engine note); `review_completed` also carries `engine`.
   The import on `/save-review` sends `game_imported` but not a second
   `review_started`/`review_completed`.
 
