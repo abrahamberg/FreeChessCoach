@@ -18,6 +18,8 @@ through oauth2-proxy by `--skip-auth-route` entries in
 | `/guide` | `guide.html` |
 | `/keys` | `keys.html` (how BYOK keys are handled, what is not promised) |
 | `/openai-key` | `openai-key.html` (OpenAI account → project → data sharing → hard limit → key → Settings walkthrough; mirrored by the in-app welcome flow's AI step) |
+| `/free-chess-game-review` | `free-chess-game-review.html` (search page: what the free review gives, three steps, free vs signed in, FAQ structured data) |
+| `/chess-com-game-review-alternative` | `chess-com-game-review-alternative.html` (search page: reviewing Chess.com games here; quotes Chess.com's own free limit, read 2026-11-12) |
 | `/demo`, `/demo/*` | the live demo (see below); served by nginx's SPA fallback, so no nginx entry |
 | `/site.css`, `/shots/*`, `/sitemap.xml` | assets |
 | `/assets/*` | the SPA's hashed bundle, public because the demo runs from it |

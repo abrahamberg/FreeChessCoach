@@ -390,7 +390,8 @@ oauth2-proxy:
     # as the set grows — just drop new shared assets in that directory).
     - --skip-auth-route=^/favicon\.ico$
     - --skip-auth-route=^/brand/
-    # Public marketing pages (apps/web/public/{tour,guide,keys,openai-key}.html),
+    # Public marketing pages (apps/web/public/{tour,guide,keys,openai-key,
+    # free-chess-game-review,chess-com-game-review-alternative}.html),
     # their stylesheet, the screenshots they show (public/shots/) and the
     # sitemap — so people can look around, and search engines can index them,
     # before deciding to sign in. Screenshots are sample data only.
@@ -398,6 +399,8 @@ oauth2-proxy:
     - --skip-auth-route=^/guide$
     - --skip-auth-route=^/keys$
     - --skip-auth-route=^/openai-key$
+    - --skip-auth-route=^/free-chess-game-review$
+    - --skip-auth-route=^/chess-com-game-review-alternative$
     - --skip-auth-route=^/site\.css$
     - --skip-auth-route=^/shots/
     - --skip-auth-route=^/sitemap\.xml$

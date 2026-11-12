@@ -151,7 +151,7 @@ assert_contains "oauth2-proxy skips auth for /readyz" "--skip-auth-route=^/ready
 # published courses (/learn, /learn/<slug> and /api/public/) with the board sounds (/sounds/), so people can look around before signing in;
 # the no-account review (/review) with the engine's cache worker (/engine-sw.js);
 # and the token-only course API (/api/token/), which the api guards itself.
-for route in '^/tour$' '^/guide$' '^/keys$' '^/openai-key$' '^/site\.css$' '^/shots/' '^/sitemap\.xml$' '^/demo(/.*)?$' '^/assets/' '^/learn(/[a-z0-9-]+)?$' '^/api/public/' '^/sounds/' '^/review$' '^/engine-sw\.js$' '^/api/token/'; do
+for route in '^/tour$' '^/guide$' '^/keys$' '^/openai-key$' '^/free-chess-game-review$' '^/chess-com-game-review-alternative$' '^/site\.css$' '^/shots/' '^/sitemap\.xml$' '^/demo(/.*)?$' '^/assets/' '^/learn(/[a-z0-9-]+)?$' '^/api/public/' '^/sounds/' '^/review$' '^/engine-sw\.js$' '^/api/token/'; do
   assert_contains "oauth2-proxy skips auth for public page $route" "--skip-auth-route=$route" "$PROXY"
 done
 # Identity must reach the api only via X-Forwarded-*, the headers oauth2-proxy
