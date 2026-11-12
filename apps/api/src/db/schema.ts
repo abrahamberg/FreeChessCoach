@@ -99,6 +99,9 @@ export interface GamesTable {
    * second query). Null for a game that has never had a move committed
    * through the live-play path. */
   lastMoveAt: Date | null;
+  /** 0033_review_share_links.ts — the review's public link while the owner
+   * shares it (services/review-share.ts); null when not shared. */
+  shareToken: Generated<string | null>;
 }
 
 export interface AnalysesTable {

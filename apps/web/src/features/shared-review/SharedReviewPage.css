@@ -1,0 +1,27 @@
+.shared-review {
+  max-width: 640px;
+}
+.shared-review__notice {
+  margin: 0;
+  padding: 6px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+.shared-review__cta {
+  text-decoration: none;
+}
+.shared-review__cta {
+  min-height: 36px;
+}
+/* The board is the scarce thing on a phone: the button alone says it. */
+@media (max-width: 639px) {
+  .shared-review__lead {
+    display: none;
+  }
+}

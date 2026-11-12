@@ -7,6 +7,7 @@ import { registerAnalysesRoutes } from './routes/analyses.js';
 import { registerBugReportsRoutes } from './routes/bug-reports.js';
 import { registerChesscomRoutes } from './routes/chesscom.js';
 import { registerPublicCoursesRoutes } from './routes/public-courses.js';
+import { registerReviewSharesRoutes } from './routes/review-shares.js';
 import { registerLearnCoursesRoutes } from './routes/learn-courses.js';
 import type { AudioStore } from './services/courses/audio-store.js';
 import { registerCoursesRoutes } from './routes/courses.js';
@@ -137,6 +138,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     registerPuzzleAssignmentsRoutes(app, options.db);
     registerStatsRoutes(app, options.db);
     registerGamesRoutes(app, options.db, options.jobQueue ?? noopJobQueue);
+    registerReviewSharesRoutes(app, options.db);
     registerLichessRoutes(app, options.db, options.lichessClient ?? createLichessClient());
     registerChesscomRoutes(app, options.db, options.chesscomClient ?? createChesscomClient());
     registerAnalysesRoutes(

@@ -2,7 +2,9 @@ import { isTopReviewTier } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
+import { getDemoRuntime } from '../../demo/demoRuntime.js';
 import { GameReviewView } from './GameReviewView.js';
+import { ShareReviewControl } from './ShareReviewControl.js';
 import { toReviewedGame, useStoredGame } from './useStoredGame.js';
 
 /** `/review/:gameId`: Game Review of one of the account's stored games
@@ -22,6 +24,8 @@ export function GameReviewPage(): ReactNode {
 
   const game = gameQuery.data;
   const canContinueWithCoach = !isTopReviewTier(game.reviewTier) && game.analysisStatus === 'ready';
+  // A link needs a finished Game Report; the offline demo has no server to share from.
+  const canShare = game.gameReport !== null && !getDemoRuntime();
   return (
     <GameReviewView
       game={toReviewedGame(game)}
@@ -29,6 +33,7 @@ export function GameReviewPage(): ReactNode {
       onBack={() => navigate('/games')}
       engineActivity={engineActivity}
       continueWithCoach={canContinueWithCoach ? { start: continueWithCoach, isStarting: isContinuingWithCoach, failed: continueWithCoachError } : undefined}
+      notice={canShare ? <ShareReviewControl gameId={game.id} /> : undefined}
     />
   );
 }

@@ -30,7 +30,10 @@ export const ROUTE_RATE_LIMITS = {
   courseImport: { max: 20, windowMs: 60 * 60_000 },
   // A course page is one document plus one audio file per note (about 20);
   // every anonymous visitor shares one key (the proxy's address).
-  publicCourse: { max: 300, windowMs: 60_000 }
+  publicCourse: { max: 300, windowMs: 60_000 },
+  // A shared review link: its preview page, the review and its picture,
+  // fetched by people and by link-preview crawlers; shared key as above.
+  publicReview: { max: 300, windowMs: 60_000 }
 } as const satisfies Record<string, RouteRateLimit>;
 
 /** Route options adding a fixed-window limit keyed by the authenticated user.

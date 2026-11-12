@@ -9,3 +9,4 @@ export * from './report-for-game.js';
 export * from './review-steps.js';
 export * from './scan-passes.js';
 export * from './widen-brilliant-candidates.js';
+export * from './shared-review.js';

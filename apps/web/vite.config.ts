@@ -39,7 +39,9 @@ export default defineConfig({
       // cross-site guard compares a request's Origin with its Host, and
       // Chrome sends no Sec-Fetch-Site on WebSocket handshakes, so a
       // rewritten Host would get the tunnel refused as cross-site.
-      '/api': { target: apiProxyTarget, ws: true }
+      '/api': { target: apiProxyTarget, ws: true },
+      // A shared review's link page is made by the api (growth plan A6).
+      '/s/': { target: apiProxyTarget }
     }
   },
   test: {
