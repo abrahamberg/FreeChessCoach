@@ -66,9 +66,12 @@ export interface GameReviewViewProps {
   notice?: ReactNode;
   /** A ply to move the board to whenever it changes (a link's `ply`). */
   showPly?: number | null;
+  /** Shown beside the note only on the game's last move (the end of the
+   * review), never before it and never inside a variation. */
+  endPanel?: ReactNode;
 }
 
-export function GameReviewView({ game, coachPersona, onBack, engineActivity, continueWithCoach, notice, showPly }: GameReviewViewProps): ReactNode {
+export function GameReviewView({ game, coachPersona, onBack, engineActivity, continueWithCoach, notice, showPly, endPanel }: GameReviewViewProps): ReactNode {
   const isDesktop = useIsDesktop();
   const {
     sanMoves,
@@ -107,6 +110,8 @@ export function GameReviewView({ game, coachPersona, onBack, engineActivity, con
   };
   const allQualities = useMemo(() => ({ ...qualities, ...explore.scored }), [qualities, explore.scored]);
   const showFeedback = explore.isExploring || inVariation;
+  const atEnd = !showFeedback && sanMoves.length > 0 && ply === sanMoves.length;
+  const shownEndPanel = atEnd ? endPanel : null;
   useEscapeKey(showFeedback, explore.close);
   // Board sounds (docs/plan.md Phase 88): an analyzed game, so bad and great
   // for either side; stepping one move forward only.
@@ -195,6 +200,7 @@ export function GameReviewView({ game, coachPersona, onBack, engineActivity, con
           {board}
           <div className="game-review-notes-column">
             {noteCard}
+            {shownEndPanel}
             <BoardToolbar />
           </div>
         </div>
@@ -211,6 +217,7 @@ export function GameReviewView({ game, coachPersona, onBack, engineActivity, con
               variationFromIndex={strip.variationFromIndex}
               onSelect={(stripPly) => selectNode(strip.nodeIds[stripPly - 1] ?? null)}
             />
+            {shownEndPanel}
           </div>
           {game.gameReport && (
             <div className="board-bottom-bar board-bottom-bar--report">

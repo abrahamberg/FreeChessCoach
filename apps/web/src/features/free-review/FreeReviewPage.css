@@ -86,3 +86,28 @@
   color: var(--color-text-secondary);
   text-align: center;
 }
+.free-review__offer {
+  /* A flex child of the review's mobile stack: keeps its height and lets the
+   * stack scroll instead of being squeezed. */
+  flex: 0 0 auto;
+  /* Scrolled into view above the fixed Game Report ribbon on a phone. */
+  scroll-margin-bottom: calc(56px + env(safe-area-inset-bottom));
+  margin: 12px 0;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-subtle);
+}
+.free-review__offer-title {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+.free-review__offer-text {
+  margin: 0 0 12px;
+  color: var(--color-text-secondary);
+}
+.free-review__offer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

@@ -1,4 +1,3 @@
-import { parsePgn } from '@freechesscoach/chess-analysis';
 import { useState, type ComponentType, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ClipboardIcon, type IconProps, KnightIcon, PawnIcon, ImportIcon } from '../../components/Icon.js';
@@ -10,6 +9,7 @@ import { BatchImportView } from './BatchImportView.js';
 import { ColorConfirm } from './ColorConfirm.js';
 import { selectionLimit } from './import-limit-copy.js';
 import { ImportErrorNotice } from './ImportErrorNotice.js';
+import { fensOf, START_FEN } from './pgn-positions.js';
 import { PgnPasteForm } from './PgnPasteForm.js';
 import { PgnFileForm } from './PgnFileForm.js';
 import { RemoteImportPanel, type RemoteTab } from './RemoteImportPanel.js';
@@ -17,21 +17,6 @@ import { UsernamePromptModal } from './UsernamePromptModal.js';
 import { useRemoteImport } from './useRemoteImport.js';
 import { useSingleImport } from './useSingleImport.js';
 import './ImportPage.css';
-
-const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-
-/** Every position's FEN, index-aligned with ply — lets AnalysisProgress show
- * the position currently being analyzed instead of just the final one. Also
- * the denominator for the engine step's percentage: the API reports how many
- * positions it has analyzed, not how many there are, because the client
- * already holds the PGN. */
-function fensOf(pgn: string): string[] {
-  try {
-    return parsePgn(pgn).positions.map((position) => position.fen);
-  } catch {
-    return [];
-  }
-}
 
 type ImportTab = 'paste' | 'file' | RemoteTab;
 const IMPORT_TABS: {

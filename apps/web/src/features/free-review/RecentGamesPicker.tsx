@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { fetchRecentGames, playerSide, type GameSite, type RecentGame } from './recent-games.js';
+import type { ReviewOrigin } from './review-origin.js';
 
 const SITE_NAMES: Record<GameSite, string> = { chesscom: 'Chess.com', lichess: 'Lichess' };
 
 export interface RecentGamesPickerProps {
   site: GameSite;
-  onReview: (pgn: string, userColor: 'white' | 'black') => void;
+  onReview: (pgn: string, userColor: 'white' | 'black', origin: ReviewOrigin) => void;
 }
 
 /** A username, then that player's recent games: picking one reviews it from the player's side. */
@@ -51,7 +52,7 @@ export function RecentGamesPicker({ site, onReview }: RecentGamesPickerProps): R
         <ul className="free-review__games">
           {games.data.map((game) => (
             <li key={game.id}>
-              <GameRow game={game} username={username} onReview={onReview} />
+              <GameRow game={game} site={site} username={username} onReview={onReview} />
             </li>
           ))}
         </ul>
@@ -60,11 +61,11 @@ export function RecentGamesPicker({ site, onReview }: RecentGamesPickerProps): R
   );
 }
 
-function GameRow({ game, username, onReview }: { game: RecentGame; username: string; onReview: RecentGamesPickerProps['onReview'] }): ReactNode {
+function GameRow({ game, site, username, onReview }: { game: RecentGame; site: GameSite; username: string; onReview: RecentGamesPickerProps['onReview'] }): ReactNode {
   const side = playerSide(game, username) ?? 'white';
   const played = game.playedAt ? new Date(game.playedAt).toLocaleDateString() : null;
   return (
-    <button type="button" className="free-review__game" onClick={() => onReview(game.pgn, side)}>
+    <button type="button" className="free-review__game" onClick={() => onReview(game.pgn, side, { source: site, playedAt: game.playedAt })}>
       <span className="free-review__game-players">
         {game.whiteName ?? '?'} vs {game.blackName ?? '?'}
       </span>

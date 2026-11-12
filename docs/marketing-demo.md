@@ -126,6 +126,19 @@ every move's classification and worded notes, the Game Report, and Explore.
   board. The page root carries `data-review-state` (`choosing`, `reviewing`, `ready`,
   `failed`) and the board and note `data-testid="review-board"` / `"review-note"`. The
   studio's `studio record review` drives the page with these; keep them stable.
+- **The sign-in offer at the end** (`SignInOfferPanel`): only on the game's last move
+  (`GameReviewView`'s `endPanel`, never earlier, never in a variation), two offers, keep
+  this game and see if your mistakes repeat, both to Google sign-in
+  (`/oauth2/start?rd=/save-review`). The game waits in this tab's `sessionStorage`
+  (`pending-save.ts`) across the sign-in; `/save-review` (`SaveReviewPage`, behind the
+  proxy) imports it through the normal `POST /api/games` (the quota applies), waits for
+  the server's analysis and opens `/review/:gameId`. A brand-new account sees that save
+  and that review before the welcome flow (`onboarding-can-wait.ts`).
+- **Funnel events** (`analytics/track.ts`): the page sends `review_started` and
+  `review_completed` with `signed_in: false`, the panel `signin_offer_shown` (once per
+  review) and `signin_offer_clicked` (with `offer`: `keep_game` or `repeat_mistakes`).
+  The import on `/save-review` sends `game_imported` but not a second
+  `review_started`/`review_completed`.
 
 ## Demo data
 

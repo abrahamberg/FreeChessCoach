@@ -28,7 +28,7 @@ export interface SingleImportRequest {
 export function useSingleImport() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [pending, setPending] = useState<{ request: SingleImportRequest; intent: ImportIntent } | null>(null);
+  const [pending, setPending] = useState<{ request: SingleImportRequest; intent: ImportIntent; countsAsReview: boolean } | null>(null);
   const [imported, setImported] = useState<{ gameId: string; analysisId: string | null } | null>(null);
   const handedOff = useRef(false);
 
@@ -57,7 +57,7 @@ export function useSingleImport() {
     if (!isReady || !imported || handedOff.current) return;
     if (intent === 'review') {
       handedOff.current = true;
-      if (pending) trackFunnelEvent('review_completed', { source: funnelSource(pending.request.source), signedIn: true });
+      if (pending?.countsAsReview) trackFunnelEvent('review_completed', { source: funnelSource(pending.request.source), signedIn: true });
       void navigate(`/review/${imported.gameId}`);
     } else if (intent === 'coach' && coachGame.data) {
       handedOff.current = true;
@@ -70,9 +70,11 @@ export function useSingleImport() {
     importMutation.error.status === 422 &&
     (importMutation.error.body as { missing?: string } | undefined)?.missing === 'userColor';
 
-  function start(request: SingleImportRequest, chosenIntent: ImportIntent): void {
-    setPending({ request, intent: chosenIntent });
-    if (chosenIntent === 'review') trackFunnelEvent('review_started', { source: funnelSource(request.source), signedIn: true });
+  /** `countsAsReview: false` for a game already reviewed elsewhere (the free
+   * review saved after sign-in), so the funnel does not count it twice. */
+  function start(request: SingleImportRequest, chosenIntent: ImportIntent, { countsAsReview = true } = {}): void {
+    setPending({ request, intent: chosenIntent, countsAsReview });
+    if (chosenIntent === 'review' && countsAsReview) trackFunnelEvent('review_started', { source: funnelSource(request.source), signedIn: true });
     importMutation.mutate(request);
   }
 
