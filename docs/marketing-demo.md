@@ -22,6 +22,8 @@ through oauth2-proxy by `--skip-auth-route` entries in
 | `/site.css`, `/shots/*`, `/sitemap.xml` | assets |
 | `/assets/*` | the SPA's hashed bundle, public because the demo runs from it |
 | `/learn/<slug>`, `/api/public/*` | published courses (`docs/courses.md` §9, `docs/threat-model.md` T13); SPA fallback, no nginx entry |
+| `/review` | the no-account game review (below, `docs/threat-model.md` T15); SPA fallback, no nginx entry |
+| `/engine-sw.js` | the service worker that caches the engine binary, so a visitor downloads it once |
 
 The claims on `keys.html` are checked against code: encryption is
 `apps/api/src/llm/key-vault.ts` (AES-256-GCM, scrypt-derived from the user's
@@ -91,6 +93,39 @@ response schema, and commit `fixtures.json`.
 
 Limits, on purpose: only recorded games open, practice sets are not in the demo, and
 playing a bot or the coach (which needs an engine) is refused with the notice.
+
+## The no-account review (`/review`)
+
+Game Review for anyone, with no account: `apps/web/src/features/free-review/`.
+The visitor picks a recent game by Chess.com or Lichess username, or pastes a PGN
+(and says which side they played), and gets the review a signed-in player gets:
+every move's classification and worded notes, the Game Report, and Explore.
+
+- **The same steps as the server.** The verdicts, notes and report come from
+  `classifyGameMoves` and `buildGameReview` (`packages/chess-analysis/src/game-review/`),
+  the steps `apps/api`'s analysis job runs after its engine pass. Only where the engine
+  runs differs: `collectReviewEvals` gathers the evals in memory from the page's own
+  Stockfish worker (`engine/browser-analyze.ts`, the worker Browser mode and Explore
+  use), at `ENGINE_DEFAULT_DEPTH` (or the depth picked on this device in Settings),
+  `REVIEW_MULTI_PV` lines a position, Brilliant candidates widened. Not run in the
+  browser: the server's pass scans (no report step reads them yet), the optional deep
+  check (`REVIEW_DEEP_CHECK`, off by default), the diagnostics and the coaching moments
+  (they need the player's history), and the "unusual for you" tactic note.
+- **Nothing reaches the api.** The game lists are read by the browser straight from
+  Chess.com and Lichess (`packages/game-sources`, the same clients the api uses for a
+  signed-in player's list); Explore's lines come from the browser engine
+  (`EngineLinesProvider`); nothing is stored and no import quota applies. Leaving the
+  page drops the review.
+- **The page** is `GameReviewView`, the signed-in review's view, inside a guest
+  `AppShell` with no Continue with Coach. The engine (the full-net single-thread
+  build, about 95 MB) starts downloading when the page opens; `/engine-sw.js` caches it.
+  Measured in headless Chromium with the engine already loaded: a 70-move Chess.com
+  blitz game took about 21 s on a 4-core box.
+- **A link starts it**: `/review#pgn=<encodeURIComponent(pgn)>&side=white|black&ply=<n>`
+  reviews the game at once and shows ply `n`; changing only `ply` in the hash moves the
+  board. The page root carries `data-review-state` (`choosing`, `reviewing`, `ready`,
+  `failed`) and the board and note `data-testid="review-board"` / `"review-note"`. The
+  studio's `studio record review` drives the page with these; keep them stable.
 
 ## Demo data
 

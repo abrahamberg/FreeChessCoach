@@ -177,7 +177,7 @@ export function storeGameReport(
     .then(() => undefined);
 }
 
-/** Reads back the stored (moves-less) report — `services/game-report.ts`'s
+/** Reads back the stored (moves-less) report — `chess-analysis/src/game-review/annotated-report.ts`'s
  * `getFullGameReport` is what composes this with `games.annotatedPgn` into
  * a full `GameReport` for callers that need per-move detail. */
 export function findGameReportByGameId(

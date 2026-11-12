@@ -76,7 +76,7 @@ export function createLiteAnalyzer(transport: EngineTunnelTransport, userId: str
  *
  * The budget belongs to the *instance*, not to `analyzeGame`: a review job
  * also makes single-position calls (the gated tactic-prevention probes in
- * `tactic-prevention.ts`), and those go through the same tunnel. Counting
+ * `game-review/prevention-scans.ts`), and those go through the same tunnel. Counting
  * only the batch would leave the documented ceiling to be quietly overrun
  * one probe at a time. `analyzeGame` runs first and so has first call on it,
  * which is the right order — widening the plies the whole report is built

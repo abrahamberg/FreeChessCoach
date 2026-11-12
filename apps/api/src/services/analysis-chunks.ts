@@ -1,23 +1,14 @@
-import { positionKey, repairEvalSignConvention, type ParsedGame } from '@freechesscoach/chess-analysis';
+import { pendingPositions, repairEvalSignConvention, widenBrilliantCandidates, type ParsedGame } from '@freechesscoach/chess-analysis';
 import { ENGINE_MULTI_PV, REVIEW_MULTI_PV, type EngineEval } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import type { Database } from '../db/schema.js';
 import type { AnalysisJobDependencies } from './analysis-deps.js';
-import { widenBrilliantCandidates } from './analysis-widen.js';
 
 /** Positions per engine call. Small enough that the progress percentage moves
  * often, large enough not to pay per-request overhead on every ply — and it
  * keeps each browser-mode tunnel request comfortably inside its timeout. */
 const ENGINE_CHUNK_POSITIONS = 6;
-
-interface PendingPosition {
-  /** The fen sent to the engine: the first pending occurrence's. */
-  fen: string;
-  /** Every pending index holding this position (Task 77.2): a repetition is
-   * sent once and its eval fanned back out to each index. */
-  occurrences: { index: number; fen: string }[];
-}
 
 /** The game's evals as review reads them: every position in chunks
  * (`analyzeInChunks`), then the Brilliant candidates' positions widened
@@ -88,20 +79,6 @@ function reusableEvals(stored: EngineEval[], fens: string[]): Map<number, Engine
     if (fens[evalResult.ply] === evalResult.fen) reusable.set(evalResult.ply, evalResult);
   }
   return reusable;
-}
-
-/** Positions still missing an eval, one entry per distinct `positionKey`, in
- * order of first occurrence. */
-function pendingPositions(known: ReadonlyMap<number, EngineEval>, fens: string[]): PendingPosition[] {
-  const byKey = new Map<string, PendingPosition>();
-  fens.forEach((fen, index) => {
-    if (known.has(index)) return;
-    const key = positionKey(fen);
-    const existing = byKey.get(key);
-    if (existing) existing.occurrences.push({ index, fen });
-    else byKey.set(key, { fen, occurrences: [{ index, fen }] });
-  });
-  return [...byKey.values()];
 }
 
 function chunked<T>(items: T[], size: number): T[][] {

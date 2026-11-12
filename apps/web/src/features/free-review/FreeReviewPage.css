@@ -1,0 +1,88 @@
+.free-review {
+  max-width: 640px;
+}
+.free-review__lead {
+  color: var(--color-text-secondary);
+  margin: 0 0 20px;
+}
+.free-review__sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.free-review__label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.free-review__pgn {
+  width: 100%;
+  margin-bottom: 12px;
+  font-family: var(--font-mono, monospace);
+}
+.free-review__side {
+  display: flex;
+  gap: 16px;
+  margin: 0 0 16px;
+  border: none;
+  padding: 0;
+}
+.free-review__side legend {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.free-review__username-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.free-review__username-row input {
+  flex: 1;
+  min-width: 0;
+}
+.free-review__games {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.free-review__game {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  text-align: left;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text);
+  cursor: pointer;
+}
+.free-review__game:hover {
+  border-color: var(--color-primary);
+}
+.free-review__game-players {
+  font-weight: 600;
+}
+.free-review__progress {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+.free-review__progress progress {
+  width: 100%;
+}
+.free-review__error {
+  color: var(--quality-blunder);
+}
+.free-review__notice {
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}

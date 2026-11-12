@@ -1,3 +1,4 @@
+import { resultForColour } from '@freechesscoach/chess-analysis';
 /**
  * Dev-only: seeds the dev-stub user (dev@local.test, see
  * src/plugins/auth-headers.ts's DEV_STUB_USER) with a realistic spread of
@@ -33,7 +34,6 @@ import { createDb } from '../src/db/index.js';
 import * as analysesRepo from '../src/db/repositories/analyses.js';
 import * as gamesRepo from '../src/db/repositories/games.js';
 import * as usersRepo from '../src/db/repositories/users.js';
-import { resultForColour } from '../src/services/build-game-report.js';
 
 const DEV_USER_EMAIL = 'dev@local.test';
 

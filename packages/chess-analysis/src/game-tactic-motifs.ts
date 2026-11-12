@@ -18,7 +18,7 @@ import { checkmateFlag, isFalseMiss, isTacticImmaterial } from './tactic-opportu
 import type { PreviousMove } from './tactic-detectors/context.js';
 import type { VerifiedTacticClaim } from './verify-tactic-claims.js';
 
-/** Also reused by apps/api's tactic-prevention.ts: a still-reachable threat
+/** Also reused by game-review/prevention-scans.ts: a still-reachable threat
  * after a best-or-better reply isn't something the player should have
  * prevented — there was no better move, so it's never counted as
  * preventable there either. */

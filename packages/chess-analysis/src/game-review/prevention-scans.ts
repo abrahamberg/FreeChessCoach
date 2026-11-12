@@ -1,6 +1,6 @@
-import type { PreventionScans } from '@freechesscoach/chess-analysis';
+import type { PreventionScans } from '../move-verdict/types.js';
 import type { ClassifiedMoveDto, EngineEval } from '@freechesscoach/shared';
-import { cachedRealisticScan, type RealisticScanCache } from './tactic-prevention-scans.js';
+import { cachedRealisticScan, type RealisticScanCache } from './realistic-scan-cache.js';
 
 /** Called once per PV scan that actually runs (a cache miss) — how the
  * benchmark counts the scans the lazy path saved. */

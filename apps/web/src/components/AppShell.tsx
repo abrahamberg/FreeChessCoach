@@ -20,6 +20,9 @@ export interface AppShellProps {
    * bar and page frame, with "Sign in" where the account menu is, and none of
    * what needs an account (the engine status, the tab bar, the notices). */
   guest?: boolean;
+  /** A board page with its own header (the no-account review's board): no
+   * top bar or tab bar, as on a signed-in board route. */
+  bare?: boolean;
 }
 
 // Play (with the coach or a bot) starts from the Games page since
@@ -54,10 +57,10 @@ function isBoardRoute(pathname: string): boolean {
  * favor of its own page-level back button. Below the desktop breakpoint the
  * primary nav also appears as a bottom tab bar — that one also hides on a
  * board route. */
-export function AppShell({ children, guest = false }: AppShellProps): ReactNode {
+export function AppShell({ children, guest = false, bare = false }: AppShellProps): ReactNode {
   const isDesktop = useIsDesktop();
   const { pathname } = useLocation();
-  const showGlobalNav = guest || !isBoardRoute(pathname);
+  const showGlobalNav = !bare && (guest || !isBoardRoute(pathname));
   const showBottomTabBar = !guest && showGlobalNav && !isDesktop;
 
   return (
@@ -91,7 +94,10 @@ function Brand(): ReactNode {
 }
 
 /** The top bar for a visitor who is not signed in: the logo, and a way in. */
+/** Signing in from the courses list returns to it; from anywhere else, to the games. */
 function GuestTopBar(): ReactNode {
+  const { pathname } = useLocation();
+  const returnTo = pathname === '/learn' ? '/learn' : '/games';
   return (
     <header className="app-shell__topbar">
       <div className="app-shell__topbar-inner">
@@ -100,7 +106,7 @@ function GuestTopBar(): ReactNode {
           <span className="app-shell__wordmark">FreeChessCoach</span>
         </a>
         <div className="app-shell__topbar-end">
-          <a className="btn-primary" href="/oauth2/start?rd=/learn">
+          <a className="btn-primary" href={`/oauth2/start?rd=${returnTo}`}>
             Sign in
           </a>
         </div>

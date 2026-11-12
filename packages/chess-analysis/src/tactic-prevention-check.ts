@@ -8,7 +8,7 @@ import { scanAvailableMotifs, threatKey, type AvailableMotifScan, type PvMotifSi
  * Both FENs must already have `opponent` as the side to move.
  * `candidateLinesBefore`/`candidateLinesAfter` are each independently
  * anchored to their own real position — see the call sites' comments in
- * `apps/api/src/services/tactic-prevention.ts` for exactly which FEN/eval
+ * `game-review/prevention-scans.ts` for exactly which FEN/eval
  * pair each is built from.
  *
  * Compares **verified claims by the square they threaten**
@@ -76,7 +76,7 @@ export function scanThreatOutcome(
  * The before/after diff `scanThreatOutcome` runs, split out so a caller that
  * already has both `AvailableMotifScan`s (e.g. because it's memoizing them
  * across plies — `scanAvailableMotifs` is pure in its FEN+lines, and
- * `apps/api/src/services/tactic-prevention.ts`'s batch loop ends up asking
+ * `game-review/prevention-scans.ts`'s batch loop ends up asking
  * for the same position's scan twice, two plies apart) can reuse them
  * instead of re-running the PV walk.
  */

@@ -33,6 +33,7 @@
     "@ai-sdk/provider": "^4.0.35",
     "@fastify/websocket": "^11.3.6",
     "@freechesscoach/chess-analysis": "0.0.1",
+    "@freechesscoach/game-sources": "0.0.1",
     "@freechesscoach/prompts": "0.0.1",
     "@freechesscoach/shared": "0.0.1",
     "ai": "^7.0.159",

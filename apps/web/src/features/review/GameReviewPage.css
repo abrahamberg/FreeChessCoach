@@ -244,3 +244,6 @@
  * shared .board-bottom-bar--report look, not Review-specific — Play vs Bot's
  * mobile view renders the same bar once its own post-game report exists —
  * so those rules live once in board-bottom-bar.css rather than here. */
+.game-review-contents {
+  display: contents;
+}

@@ -10,6 +10,7 @@ import { LearnHomePage } from './features/courses/learn/LearnHomePage.js';
 import { useCourseProgressStore } from './features/courses/player/useCourseProgressStore.js';
 import { LearnPage } from './features/courses/player/LearnPage.js';
 import { FindGamesPage } from './features/games/FindGamesPage.js';
+import { FreeReviewPage } from './features/free-review/FreeReviewPage.js';
 import { GamesPage } from './features/games/GamesPage.js';
 import { ImportPage } from './features/import/ImportPage.js';
 import { OnboardingPage } from './features/onboarding/OnboardingPage.js';
@@ -67,7 +68,7 @@ function GameReviewRoute(): ReactNode {
   return <GameReviewPage key={gameId} />;
 }
 
-/** Every route but the public course page. `/learn`, the courses list, is
+/** Every route but the public course page and the no-account review. `/learn`, the courses list, is
  * the one the app and a visitor share: a signed-in learner gets it inside the
  * app (its top bar, tabs and account menu), a visitor in the same frame with
  * "Sign in". */
@@ -102,6 +103,8 @@ export function App(): ReactNode {
         <Routes>
           {/* Public, no login (docs/courses.md §9): outside the shell, which needs a user. */}
           {!getDemoRuntime() && <Route path="/learn/:slug" element={<LearnPage />} />}
+          {/* The no-account review (docs/marketing-demo.md): the engine runs in the browser, nothing reaches the api. */}
+          {!getDemoRuntime() && <Route path="/review" element={<FreeReviewPage />} />}
           <Route path="*" element={<AppEntry />} />
         </Routes>
       </BrowserRouter>

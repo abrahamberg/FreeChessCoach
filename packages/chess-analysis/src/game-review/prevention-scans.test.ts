@@ -1,7 +1,7 @@
 import type { ClassifiedMoveDto, EngineEval, PositionAnalysisLine } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { combineThreatOutcome } from '@freechesscoach/chess-analysis';
-import { createPreventionScans } from './tactic-prevention.js';
+import { combineThreatOutcome } from '../tactic-prevention-check.js';
+import { createPreventionScans } from './prevention-scans.js';
 
 const FORK_FEN = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
 const FORK_FEN_BLACK_TO_MOVE = '4k3/1r6/8/8/2N5/8/8/K7 b - - 0 1';

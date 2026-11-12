@@ -12,7 +12,7 @@ import { tacticAllowedReason, tacticOpportunityReason, tacticPreventionReason } 
 
 export interface TacticVerdictOptions {
   /** The opponent's realistic threats before and after `move`
-   * (apps/api's `tactic-prevention.ts`), asked for only when
+   * (`game-review/prevention-scans.ts`), asked for only when
    * `defusedThreat` is actually checked. Omitted: no move is ever credited
    * with a defused threat, and the report's prevention counts stay unset. */
   preventionScans?: (move: ClassifiedMoveDto) => PreventionScans | null;

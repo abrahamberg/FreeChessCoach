@@ -178,7 +178,7 @@ export type GameReport = z.infer<typeof GameReportSchema>;
  * same array). `GameReportSchema` — `.moves` included — stays the *served*
  * shape web/prompts/the coach agent consume; the service layer composes a
  * full `GameReport` by reading `StoredGameReport` back and attaching
- * `moves` from `parseAnnotatedPgn` (see `services/game-report.ts`'s
+ * `moves` from `parseAnnotatedPgn` (see `chess-analysis/src/game-review/annotated-report.ts`'s
  * `getFullGameReport`).
  */
 export const StoredGameReportSchema = GameReportSchema.omit({ moves: true });

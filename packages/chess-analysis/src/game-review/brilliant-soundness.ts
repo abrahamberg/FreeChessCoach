@@ -1,4 +1,4 @@
-import { toCpWhite, winPctFor, type PlayerColor } from '@freechesscoach/chess-analysis';
+import { toCpWhite, winPctFor, type PlayerColor } from '../win-probability.js';
 import type { EngineEval } from '@freechesscoach/shared';
 
 /** How far below `beforeWin` (win%) the best reply may leave the mover and the

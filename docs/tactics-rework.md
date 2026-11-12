@@ -629,7 +629,7 @@ written to end, one layer further down. Two counts were quietly dead for the
 same reason: `ta-offensive`'s diagnostic reads `ctx.tacticOpportunity`, and
 the observations were recorded from the same pre-report array.
 
-The write now goes through `services/game-report.ts`'s
+The write now goes through `chess-analysis/src/game-review/annotated-report.ts`'s
 `annotatedPgnForReport`, next to `composeGameReport` and taking a whole
 `GameReport` rather than a `ClassifiedMoveDto[]` — the two are one contract,
 and a caller can no longer hand the write side the moves it had before the
@@ -688,7 +688,7 @@ are unchanged, so §8's precision ceilings and recall floors did not move
   gap. The card is read off the next ply's *pre-gate* chance
   (`build-game-report.ts`). So 9…Qd7?? keeps its card even though 10.Bxf6
   held enough value not to count as a miss.
-- **Prevented** (`realistic-threats.ts`, `apps/api/.../tactic-prevention.ts`):
+- **Prevented** (`realistic-threats.ts`, `chess-analysis/src/game-review/prevention-scans.ts`):
   - A threat counts only when it wins material or mates, in a line the side
     to move would actually play (within a non-meaningful gap of its best
     line).

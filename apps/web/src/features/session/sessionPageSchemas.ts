@@ -84,6 +84,7 @@ export const GameDetailSchema = z.object({
   whiteRemainingMs: z.number().int().nullable().default(null),
   blackRemainingMs: z.number().int().nullable().default(null)
 });
+export type GameDetail = z.infer<typeof GameDetailSchema>;
 
 /** POST /api/sessions/:id/play-move's response (architecture §14). */
 export const CommitPlayMoveResponseSchema = z.object({

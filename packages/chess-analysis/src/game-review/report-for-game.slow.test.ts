@@ -1,7 +1,8 @@
-import { classifyMoves, parsePgn } from '@freechesscoach/chess-analysis';
+import { classifyMoves } from '../classify.js';
+import { parsePgn } from '../pgn.js';
 import type { BookReport, EngineEval } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { buildGameReportForAnalysis } from './build-game-report.js';
+import { buildGameReportForAnalysis } from './report-for-game.js';
 
 // Needs >= CONFIG.ratingEstimate.minMovesPlayed (12) moves per side for
 // estimatedRating to produce a value at all — a repeated knight shuffle is

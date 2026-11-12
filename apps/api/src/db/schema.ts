@@ -125,7 +125,7 @@ export interface AnalysesTable {
    * `moves`, packages/shared), not a full `GameReport`: `moves` was a
    * confirmed duplicate of this same column's own `.moves` (both held the
    * identical `ClassifiedMoveDto[]`), so it now lives solely in
-   * `games.annotatedPgn`. `services/game-report.ts`'s `getFullGameReport`
+   * `games.annotatedPgn`. `chess-analysis/src/game-review/annotated-report.ts`'s `getFullGameReport`
    * composes the two back into a full `GameReport` at read time. */
   gameReport: Jsonb<unknown> | null;
   createdAt: Generated<Date>;

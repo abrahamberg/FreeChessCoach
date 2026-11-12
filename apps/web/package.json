@@ -17,6 +17,7 @@
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",
     "@freechesscoach/chess-analysis": "0.0.1",
+    "@freechesscoach/game-sources": "0.0.1",
     "@freechesscoach/shared": "0.0.1",
     "@tanstack/react-query": "^5.105.1",
     "ai": "^7.0.159",

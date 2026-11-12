@@ -1,10 +1,9 @@
-import { classifyTimeControl, type PgnMoveComment, type StatsEntry } from '@freechesscoach/chess-analysis';
+import { classifyTimeControl, type PgnMoveComment, type StatsEntry, annotatedPgnForReport } from '@freechesscoach/chess-analysis';
 import type { GameReport } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../../src/db/repositories/analyses.js';
 import * as gamesRepo from '../../src/db/repositories/games.js';
 import type { Database } from '../../src/db/schema.js';
-import { annotatedPgnForReport } from '../../src/services/game-report.js';
 import type { PlannedGame } from './game-plan.js';
 import { buildDemoReport } from './report-builder.js';
 import { clamp, gaussian, mulberry32, type Rng } from './rng.js';

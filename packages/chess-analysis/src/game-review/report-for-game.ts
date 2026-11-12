@@ -1,11 +1,7 @@
-import {
-  buildGameReportWithVerdicts,
-  parseGameHeaders,
-  type BuildGameReportInput,
-  type GameReportWithVerdicts,
-  type GameResultForColour,
-  type ParsedGame
-} from '@freechesscoach/chess-analysis';
+import { buildGameReportWithVerdicts, type BuildGameReportInput, type GameReportWithVerdicts } from '../build-game-report.js';
+import { parseGameHeaders } from '../parse-game-headers.js';
+import type { GameResultForColour } from '../endgame-score.js';
+import type { ParsedGame } from '../pgn.js';
 import { ENGINE_DEFAULT_DEPTH, REVIEW_MULTI_PV } from '@freechesscoach/shared';
 import type { BookReport, ClassifiedMoveDto, EngineEval } from '@freechesscoach/shared';
 
@@ -19,7 +15,7 @@ export interface BuildGameReportForAnalysisInput {
   /** The PGN `Result` header — `'1-0'`, `'0-1'`, `'1/2-1/2'`, or an
    * unfinished-game marker like `'*'`. */
   pgnResult: string | null;
-  /** `createPreventionScans` (tactic-prevention.ts): scanned lazily, only
+  /** `createPreventionScans` (prevention-scans.ts): scanned lazily, only
    * where a verdict still needs `defusedThreat`. Omitted: no defused-threat
    * credits and no prevention counts. */
   preventionScans?: BuildGameReportInput['preventionScans'];
@@ -34,9 +30,9 @@ export interface BuildGameReportForAnalysisInput {
 }
 
 /**
- * Wraps the pure chess-analysis assembler with what's only knowable at the
- * API layer: the engine's identity, the depth actually achieved by this
- * analysis, and each colour's game outcome (from the PGN Result tag).
+ * Wraps the report assembler with what a review knows about its run: the
+ * engine's identity, the depth actually achieved by this analysis, and each
+ * colour's game outcome (from the PGN Result tag).
  *
  * `priorRating` feeds the student's own numeric rating (when known) into
  * §8.5's shrink; the opponent's side is only known from the PGN's Elo tags. Returns the report and each move's tactical verdict, which
