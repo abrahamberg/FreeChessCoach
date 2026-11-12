@@ -2,7 +2,7 @@ import type { Plugin } from 'vite';
 
 /** The static pages docker/nginx.web.conf serves at clean URLs (exact `location =`
  * matches). Keep this list in step with that file. */
-const PUBLIC_PAGES = new Set(['tour', 'guide', 'keys', 'openai-key', 'privacy', 'terms']);
+const PUBLIC_PAGES = new Set(['tour', 'guide', 'keys', 'openai-key', 'free-chess-game-review', 'chess-com-game-review-alternative', 'privacy', 'terms']);
 
 /** `/tour` -> `/tour.html`, or null when the URL is not one of the static pages.
  * `/?stay` is the landing page: in production nginx serves it at `/`, and `stay`
