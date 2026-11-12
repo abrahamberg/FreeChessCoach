@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ApiError, apiGet } from '../../../api/client.js';
 import { courseReadPath } from '../learn/course-read-path.js';
 import { CoursePlayer } from './CoursePlayer.js';
+import { FreeReviewStrip } from './FreeReviewStrip.js';
 import { useCourseProgressStore } from './useCourseProgressStore.js';
 
 export interface PublishedCourseProps {
@@ -55,6 +56,7 @@ export function PublishedCourse({ slug, startStage }: PublishedCourseProps): Rea
       document={course.data.document}
       noteAudio={source}
       progress={progress}
+      notice={signedIn ? undefined : <FreeReviewStrip />}
       courseSlug={course.data.slug}
       startStage={startStage}
       evals={course.data.evals}

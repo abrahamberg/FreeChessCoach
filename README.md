@@ -15,6 +15,11 @@ coaching compounds instead of resetting every game.
 No subscription. No paywalled tiers. **Bring your own AI API key and it's
 free, forever.**
 
+**Try it with no account:** [freechesscoach.org/review](https://freechesscoach.org/review)
+reviews one game in your browser. Paste a PGN, or pick a recent Chess.com or
+Lichess game by username, and every move gets a verdict and a note in words.
+Nothing is sent to our server or saved.
+
 ## The model: bring your own key
 
 Every LLM call costs someone money. Most "AI chess coach" products solve that
@@ -44,7 +49,7 @@ model that needs you to keep paying whether you use it or not.
 ## How it works
 
 1. **Sign in** with Google — no account form, no credit card.
-2. **Import your games** from Lichess, or paste or open a PGN file.
+2. **Import your games** from Chess.com or Lichess, or paste or open a PGN file.
 3. **Analysis runs automatically** — Stockfish evaluates every position, and
    an LLM pass classifies moves (blunders, misses, brilliancies, best moves)
    and builds a per-game report: accuracy, phase-by-phase accuracy,
@@ -70,7 +75,7 @@ text-to-speech.
   endgame scoring, move classification counts, estimated rating.
 - **Persistent progress tracking** — focus areas and trends carry across
   sessions instead of resetting every game.
-- **Lichess import or PGN file/paste** — bring games from wherever you play.
+- **Chess.com and Lichess import, or PGN file/paste** — bring games from wherever you play.
 - **Seven coach personas** — same method and honesty, different voice.
 - **Voice coaching** — optional spoken delivery via in-browser TTS.
 - **BYOK privacy** — use any compatible provider; the setup is encrypted with

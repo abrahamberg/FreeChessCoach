@@ -25,6 +25,13 @@ through oauth2-proxy by `--skip-auth-route` entries in
 | `/review` | the no-account game review (below, `docs/threat-model.md` T15); SPA fallback, no nginx entry |
 | `/engine-sw.js` | the service worker that caches the engine binary, so a visitor downloads it once |
 
+Every public page leads with the no-account review: `landing.html`'s headline and
+first button, a "Free game review" link first in each page's nav, the guest top bar
+(`AppShell`'s `GuestTopBar`, on `/learn`) and a strip under a public course's header
+for a visitor who is not signed in (`FreeReviewStrip`). Wording on these pages: "the
+code is public", never "open source" (the license is PolyForm Noncommercial), and no
+chess site is named except Chess.com and Lichess as the places games come from.
+
 The claims on `keys.html` are checked against code: encryption is
 `apps/api/src/llm/key-vault.ts` (AES-256-GCM, scrypt-derived from the user's
 phrase, no server master key), the unlock cache and its sliding TTL (default 900 s,
