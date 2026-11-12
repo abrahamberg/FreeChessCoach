@@ -70,7 +70,7 @@ export interface BuildGameReportInput {
   engine: { name: string; depth: number; multiPv: number };
   priorRating: Record<Colour, number | null>;
   result: Record<Colour, GameResultForColour>;
-  /** The lazy prevention scans (apps/api's tactic-prevention.ts) behind the
+  /** The lazy prevention scans (game-review/prevention-scans.ts) behind the
    * `defusedThreat` verdict. Omitted: no move is credited with a defused
    * threat, and every motif's `prevented`/`preventable` fields stay
    * `undefined`, not 0 (see TacticMotifCountSchema). */

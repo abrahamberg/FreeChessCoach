@@ -1,4 +1,7 @@
-import { gamePassScanFens, indexPassEvals, positionKey, type ParsedPosition, type PassEvals } from '@freechesscoach/chess-analysis';
+import { gamePassScanFens } from '../pass-scan-wants.js';
+import { indexPassEvals, type PassEvals } from '../pass-scan.js';
+import { positionKey } from '../opening-book-key.js';
+import type { ParsedPosition } from '../pgn.js';
 import type { EngineEval } from '@freechesscoach/shared';
 
 /** Same size as the game job's chunks: small enough for a browser-tunnel

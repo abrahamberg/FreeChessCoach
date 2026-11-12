@@ -82,7 +82,7 @@ tool beside it) and managed here by course editors.
 
 ## Per-package commands (use when working in a single package)
 - `npm run test -w <pkg>`, `npm run lint -w <pkg>`, `npm run typecheck -w <pkg>`.
-  - Package names: `@freechesscoach/chess-analysis`, `@freechesscoach/shared`, `@freechesscoach/prompts`, `@freechesscoach/api`, `@freechesscoach/web`, `@freechesscoach/engine`
+  - Package names: `@freechesscoach/chess-analysis`, `@freechesscoach/shared`, `@freechesscoach/prompts`, `@freechesscoach/api`, `@freechesscoach/web`, `@freechesscoach/engine`, `@freechesscoach/game-sources`
   - `@freechesscoach/api` `db` tests (`*.db.test.ts`) start Postgres through Testcontainers and need Docker; `npm run test:unit -w @freechesscoach/api` needs neither. Without Docker, point the db tests at a local Postgres 16 (the helpers use `TEST_DATABASE_URL` and skip Testcontainers): `initdb -D /tmp/fcc-pg/data -A trust` and `pg_ctl -D /tmp/fcc-pg/data -o '-p 5433 -k /tmp' start` as the `postgres` user (`apt-get install postgresql`), then `TEST_DATABASE_URL=postgres://postgres@localhost:5433/postgres npm test -w @freechesscoach/api`. If you can do neither, say the api tests did not run; never claim they passed.
 
 ## Directory Map
@@ -95,7 +95,9 @@ tool beside it) and managed here by course editors.
   - `move-verdict/` — move verdicts.
   - board facts — `packages/chess-analysis/src/board-facts/`: `BoardFact` data (`types.ts`) with one `renderBoardFact` (`render.ts`); what a move does, `loosePieces`, `forks`, checks, mates, material in words.
   - course code — `packages/chess-analysis/src/course/` (tree, dossier, verify, tempting, review schedule): what the import guard and the player need. Course-making code (skeletons, reel picks, gaps) is the studio's.
+  - game review — `packages/chess-analysis/src/game-review/`: the steps after the engine pass (`classifyGameMoves`, `buildGameReview`) and the in-memory engine pass (`collectReviewEvals`), shared by the api's analysis job and the no-account review in the browser.
   - PGN trees — `packages/chess-analysis/src/pgn-tree/` (tokens, sections, marks, `parsePgnTree`, `edit.ts`): the move tree behind a course's PGN and the move explorer.
+- `packages/game-sources`: the Chess.com and Lichess public game-list clients (fetch injected): the api uses them for a signed-in player's list, the no-account review (`/review`) from the browser.
 - `packages/prompts`: LLM prompt templates (the coach; in `src/course/` only Ask my coach). `docs/prompts.md` is auto-generated.
 - Course API: `apps/api/src/routes/courses.ts` (`/api/courses/*` for the session, `/api/token/courses/*` for an editor's token), `services/courses/course-import.ts` (the guard). The studio (`../chess-studio`) imports this repo's code by relative path; never import from it.
 - `services/engine`: Stockfish/UCI HTTP microservice.

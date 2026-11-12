@@ -1,4 +1,4 @@
-import { InvalidPgnError, parseAnnotatedPgn } from '@freechesscoach/chess-analysis';
+import { InvalidPgnError, parseAnnotatedPgn, composeGameReport } from '@freechesscoach/chess-analysis';
 import {
   CoachingCandidateQuerySchema,
   DeleteEarliestImportedRequestSchema,
@@ -15,7 +15,6 @@ import type { JobQueue } from '../jobs/queue.js';
 import { ImportLimitError, NotFoundError, ValidationError } from '../lib/errors.js';
 import { pgnFilename } from '../lib/pgn-filename.js';
 import { getCoachingCandidate } from '../services/coaching-candidate.js';
-import { composeGameReport } from '../services/game-report.js';
 import { importGame, MissingUserColorError, startAnalysis } from '../services/game-import.js';
 import { getImportQuota } from '../services/import-quota.js';
 import {

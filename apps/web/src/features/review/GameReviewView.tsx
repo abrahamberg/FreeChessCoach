@@ -1,0 +1,224 @@
+import type { CoachPersona } from '@freechesscoach/shared';
+import { useEffect, useMemo, type ReactNode } from 'react';
+import { useEscapeKey } from '../../hooks/useEscapeKey.js';
+import type { EngineActivityIndicatorState } from '../../hooks/useEngineActivityIndicator.js';
+import { useIsDesktop } from '../../hooks/useIsDesktop.js';
+import { useMoveStepSounds } from '../../sounds/useMoveStepSounds.js';
+import { BoardToolbar } from '../board/BoardToolbar.js';
+import { ExploreNoteCard } from '../board/ExploreNoteCard.js';
+import { GameReportSummary } from '../board/GameReportSummary.js';
+import { MoveExplorer } from '../board/MoveExplorer.js';
+import { MoveNavStrip } from '../board/MoveNavStrip.js';
+import { mainNodeAtPly } from '../board/move-tree-state.js';
+import { stripPath } from '../board/variation-path.js';
+import { SessionHeader } from '../session/SessionHeader.js';
+import { GameReviewBoardColumn } from './GameReviewBoardColumn.js';
+import { MoveNoteCard } from './MoveNoteCard.js';
+import { useBranchStepSounds } from './useBranchStepSounds.js';
+import { useGameReviewExplore } from './useGameReviewExplore.js';
+import type { ReviewedGame } from './reviewed-game.js';
+import { useGameReviewPageData } from './useGameReviewPageData.js';
+import '../../styles/board-bottom-bar.css';
+import './GameReviewPage.css';
+
+/** The static, move-by-move Game Report review — chess.com-style "Review",
+ * distinct from the Coach tab's live LLM conversation (architecture: Games
+ * page tabs/promotion). No chat, no coach turn, nothing that spends a
+ * credit: every note here is the same pre-baked, deterministic text
+ * (move-reasons.ts/describe-tactic-hit.ts) the analysis already holds,
+ * whether the server made it or the no-account review made it in the browser.
+ * "Continue with Coach" is the one bridge to the paid conversation — a
+ * small icon in MoveNoteCard's own header — and the only mutation this page
+ * makes. "Explore on your own" (useGameReviewExplore) is a separate,
+ * unlimited escape hatch from the read-only move list: a local sandbox that
+ * scores whatever the student actually drags on the board via the same free
+ * engine endpoint the live Coach session's Explore panel uses — never a
+ * chat turn, never touches the stored game.
+ *
+ * Below the desktop breakpoint: note card, then the board, then MoveNavStrip
+ * (step chevrons + the scrollable move-chip list, combined into one row —
+ * they used to be two stacked rows) below it — chess.com's own mobile
+ * ordering (note above, moves below), and that combined row sits under the
+ * board rather than above it: the board is the scarcest-space element on a
+ * phone (same call SessionPage.css makes for the live session), so
+ * everything that doesn't need to precede it stays out of its way,
+ * edge-to-edge and sized from its own width rather than from whatever its
+ * neighbors leave behind (see GameReviewPage.css's own mobile section for
+ * the reasoning). Game Report
+ * is a bottom sheet (GameReportSummary's own existing expand/collapse
+ * state, just given fixed/overlay positioning here) rather than another
+ * flex child, so opening it covers the board instead of pushing it around.
+ *
+ * At the desktop breakpoint, the note card takes the same MoveNoteCard the
+ * mobile layout uses, placed in the column a coaching session's chat pane
+ * would occupy — explorer/game-report keep their normal session-page
+ * position on the left rather than swapping sides, and pass
+ * showNotes={false} since the note column already shows the same text. */
+export interface GameReviewViewProps {
+  game: ReviewedGame;
+  coachPersona: CoachPersona;
+  onBack: () => void;
+  /** The board menu's engine row; omitted where no engine status applies. */
+  engineActivity?: EngineActivityIndicatorState;
+  /** "Continue with Coach"; omitted where the game cannot go to the coach. */
+  continueWithCoach?: { start: () => void; isStarting: boolean; failed: boolean };
+  /** Shown under the header: what this review is, and where it can lead. */
+  notice?: ReactNode;
+  /** A ply to move the board to whenever it changes (a link's `ply`). */
+  showPly?: number | null;
+}
+
+export function GameReviewView({ game, coachPersona, onBack, engineActivity, continueWithCoach, notice, showPly }: GameReviewViewProps): ReactNode {
+  const isDesktop = useIsDesktop();
+  const {
+    sanMoves,
+    classifiedMoves,
+    currentMove,
+    ply,
+    setPly,
+    fen,
+    moveTree,
+    currentNode,
+    inVariation,
+    qualities,
+    highlights,
+    arrows,
+    moveQualityBadge,
+    tacticSelection,
+    onToggleTacticSelection
+  } = useGameReviewPageData(game);
+
+  const { select, tree } = moveTree;
+  useEffect(() => {
+    if (showPly !== undefined && showPly !== null) select(mainNodeAtPly(tree, showPly));
+    // Only a new `showPly` moves the board; the student steps freely after it.
+  }, [showPly]);
+
+  const explore = useGameReviewExplore(moveTree, currentNode, inVariation);
+  // Stepping the game (or picking a variation move) ends an Explore the
+  // student had open; the variations they made stay in the move list.
+  const stepTo = (next: number): void => {
+    setPly(next);
+    explore.stop();
+  };
+  const selectNode = (nodeId: string | null): void => {
+    moveTree.select(nodeId);
+    explore.stop();
+  };
+  const allQualities = useMemo(() => ({ ...qualities, ...explore.scored }), [qualities, explore.scored]);
+  const showFeedback = explore.isExploring || inVariation;
+  useEscapeKey(showFeedback, explore.close);
+  // Board sounds (docs/plan.md Phase 88): an analyzed game, so bad and great
+  // for either side; stepping one move forward only.
+  useMoveStepSounds({ ply, sanMoves, learnerSide: game.userColor, classifiedMoves, disabled: showFeedback });
+  // The variation's own moves, and the main-line move after leaving one.
+  useBranchStepSounds(moveTree.tree, moveTree.currentId, game.userColor);
+
+  const orientation = game.userColor;
+  const strip = stripPath(moveTree.tree, moveTree.currentId);
+  // `display: contents` wrappers: the test ids add no box to the layout.
+  const board = (
+    <div data-testid="review-board" className="game-review-contents">
+      <GameReviewBoardColumn
+        fen={fen}
+        orientation={orientation}
+        highlights={highlights}
+        arrows={arrows}
+        moveQualityBadge={moveQualityBadge}
+        classifiedMoves={classifiedMoves}
+        ply={ply}
+        onSelect={stepTo}
+        isDesktop={isDesktop}
+        explore={{
+          isExploring: explore.isExploring,
+          inVariation,
+          exploreFeedback: explore.exploreFeedback,
+          onLocalMove: explore.handleLocalMove
+        }}
+      />
+    </div>
+  );
+
+  const noteCard = (
+    <div data-testid="review-note" className="game-review-contents">
+      {showFeedback ? (
+        <ExploreNoteCard status={explore.exploreFeedback.status} evaluation={explore.exploreFeedback.evaluation} note={explore.exploreFeedback.note} onExit={explore.close} />
+      ) : (
+        <MoveNoteCard
+          ply={ply}
+          san={sanMoves[ply - 1] ?? null}
+          move={currentMove}
+          coachPersona={coachPersona}
+          onContinueWithCoach={continueWithCoach?.start}
+          isContinuingWithCoach={continueWithCoach?.isStarting ?? false}
+          tacticSelection={tacticSelection}
+          onToggleTacticSelection={onToggleTacticSelection}
+          pgnComment={currentNode?.comment ?? null}
+        />
+      )}
+    </div>
+  );
+
+  return (
+    <div className="game-review-page">
+      <SessionHeader
+        whiteName={game.whiteName}
+        blackName={game.blackName}
+        result={game.result}
+        onBack={onBack}
+        engineActivity={engineActivity}
+      />
+      {notice}
+      {continueWithCoach?.failed && (
+        <p className="game-review-page__error" role="alert">
+          Could not start a coaching session — try again.
+        </p>
+      )}
+      {isDesktop ? (
+        <div className="game-review-body desktop">
+          {/* Same three-column arrangement the coaching session uses
+              (SessionPage.css's session-move-explorer-column/chat-pane) —
+              explorer + game report stay on the left where they normally
+              sit; the note card takes the right column a chat pane would
+              occupy in a coaching session, rather than displacing either. */}
+          <div className="game-review-explorer-column">
+            <MoveExplorer
+              tree={moveTree.tree}
+              currentNodeId={moveTree.currentId}
+              onSelect={selectNode}
+              qualities={allQualities}
+              showNotes={false}
+              onRemoveBranch={moveTree.remove}
+            />
+            {game.gameReport && <GameReportSummary report={game.gameReport} userColor={orientation} tacticBaseline={game.tacticBaseline} />}
+          </div>
+          {board}
+          <div className="game-review-notes-column">
+            {noteCard}
+            <BoardToolbar />
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className={game.gameReport ? 'game-review-body mobile has-report-sheet' : 'game-review-body mobile'}>
+            {noteCard}
+            {board}
+            <MoveNavStrip
+              sanMoves={strip.sanMoves}
+              classifiedMoves={classifiedMoves}
+              positions={strip.positions}
+              ply={strip.ply}
+              variationFromIndex={strip.variationFromIndex}
+              onSelect={(stripPly) => selectNode(strip.nodeIds[stripPly - 1] ?? null)}
+            />
+          </div>
+          {game.gameReport && (
+            <div className="board-bottom-bar board-bottom-bar--report">
+              <GameReportSummary report={game.gameReport} userColor={orientation} tacticBaseline={game.tacticBaseline} />
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}

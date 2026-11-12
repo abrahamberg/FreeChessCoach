@@ -1,4 +1,4 @@
-import { toCpWhite, winPctFor, type PlayerColor } from '@freechesscoach/chess-analysis';
+import { toCpWhite, winPctFor, type PlayerColor } from '../win-probability.js';
 import type { EngineEval, EngineLine } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { isBrilliantSound } from './brilliant-soundness.js';

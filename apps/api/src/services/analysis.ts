@@ -1,4 +1,4 @@
-import { parsePgn } from '@freechesscoach/chess-analysis';
+import { parsePgn, scanPasses } from '@freechesscoach/chess-analysis';
 import type { EngineMode } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
@@ -11,7 +11,6 @@ import { analyzeReviewEvals } from './analysis-chunks.js';
 import type { AnalysisJobDependencies } from './analysis-deps.js';
 import { runAnalysisSteps, type AnalysisStepsResult } from './analysis-steps.js';
 import { refutedComparisons } from './deep-comparison.js';
-import { scanPasses } from './pass-scans.js';
 import { createStepTimer, formatTimings, type StepTimer } from './step-timer.js';
 
 export { analyzeInChunks } from './analysis-chunks.js';

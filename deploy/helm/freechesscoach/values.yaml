@@ -422,6 +422,14 @@ oauth2-proxy:
     # The board sounds (apps/web/public/sounds/, CC0 recordings) the course
     # page and the demo play; static files, nothing per-user.
     - --skip-auth-route=^/sounds/
+    # The no-account game review (docs/marketing-demo.md): the SPA's /review
+    # page. Stockfish runs in the visitor's browser from /assets/ and the
+    # Chess.com/Lichess game lists are read from the browser too, so it makes
+    # no /api call; /api/* stays behind the proxy. /engine-sw.js is the static
+    # service worker that caches the engine binary, so a visitor downloads it
+    # once.
+    - --skip-auth-route=^/review$
+    - --skip-auth-route=^/engine-sw\.js$
   service:
     portNumber: 80
   # Our own templates/ingress.yaml owns the public route.

@@ -38,7 +38,8 @@ landing page, `apps/web/public/landing.html`), the marketing pages (`/tour`,
 `/guide`, `/keys`, `/openai-key`, their `site.css`, `shots/` and
 `sitemap.xml`; see `docs/marketing-demo.md`), the live demo (`/demo/*` and the
 SPA bundle in `/assets/`; the demo runs on recorded data and makes no `/api` call), the
-privacy/terms pages and
+no-account review (`/review` and `/engine-sw.js`; the engine runs in the browser and no
+`/api` call is made), the privacy/terms pages and
 `/robots.txt`, so logged-out visitors and search-engine crawlers can look
 around the site before signing in.
 
@@ -293,12 +294,12 @@ How many lines: every game position is searched with `REVIEW_MULTI_PV`
 only moves, credit verdicts, the opportunity witness), the move story names
 two alternatives, and nothing reads further except B7 of a Brilliant candidate, so those few positions (0-2 a game,
 `brilliantCandidatePositions`) are searched again with 5 lines and the extra
-lines appended to the stored eval (`analysis-widen.ts`). At depth 12 a
+lines appended to the stored eval (`chess-analysis/src/game-review/widen-brilliant-candidates.ts`). At depth 12 a
 five-line search costs about 2x a three-line one. The pass scans ask for one
 line. A game analysed before keeps its stored five-line evals; they are a
 superset and are reused as they are.
 
-Brilliant-move soundness (`services/brilliant-soundness.ts`) reads the
+Brilliant-move soundness (`chess-analysis/src/game-review/brilliant-soundness.ts`) reads the
 opponent's best reply straight out of the stored `evals[move.ply]` instead of
 making its own engine call — the same position, at the same depth, that the
 rest of the game already analysed.
@@ -347,7 +348,7 @@ Each move gets **at most one** tactical reason, decided by
    ceiling.
 4. The prevention PV scan (defused-threat candidates) and the materiality
    witness (missed/found-tactic candidates) are both lazy: a per-position
-   cache (`tactic-prevention.ts`'s `createPreventionScans`) computes a scan
+   cache (`game-review/prevention-scans.ts`'s `createPreventionScans`) computes a scan
    only the first time a verdict actually asks for it, not eagerly for every
    move.
 

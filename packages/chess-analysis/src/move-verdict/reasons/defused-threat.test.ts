@@ -64,7 +64,7 @@ const moves: ClassifiedMoveDto[] = positions.slice(1).map((position, index) => (
 
 /** The move at `ply` as the worker hands it to the verdict: its own evals,
  * and the opponent's threats before their previous move and after this one
- * (`apps/api/src/services/tactic-prevention.ts`). */
+ * (`game-review/prevention-scans.ts`). */
 function ownerSeedInput(ply: number, quality: MoveQuality): MoveVerdictInput {
   const move = { ...moves[ply - 1]!, quality };
   return {

@@ -1,7 +1,6 @@
-import { classifyTimeControl, type StatsEntry } from '@freechesscoach/chess-analysis';
+import { classifyTimeControl, type StatsEntry, resultForColour } from '@freechesscoach/chess-analysis';
 import { StoredGameReportSchema } from '@freechesscoach/shared';
 import type { StatsSourceRow } from '../db/repositories/analyses.js';
-import { resultForColour } from './build-game-report.js';
 
 /**
  * A stats-dashboard row as the pure aggregators' input, or null when the

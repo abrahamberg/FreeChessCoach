@@ -1,4 +1,4 @@
-import { buildAnnotatedPgn, parseAnnotatedPgn, toAnnotatedMoveData } from '@freechesscoach/chess-analysis';
+import { buildAnnotatedPgn, parseAnnotatedPgn, toAnnotatedMoveData } from '../annotated-pgn.js';
 import type { GameReport, PlayerColor, StoredGameReport } from '@freechesscoach/shared';
 
 /** The two fields `composeGameReport` actually needs — deliberately not

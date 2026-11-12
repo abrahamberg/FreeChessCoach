@@ -1,11 +1,9 @@
-import { parseCourseTree, parsePgn, renderCourseDossier, type CourseDossier, type CourseTree } from '@freechesscoach/chess-analysis';
+import { parseCourseTree, parsePgn, renderCourseDossier, type CourseDossier, type CourseTree, scanPasses, widenBrilliantCandidates } from '@freechesscoach/chess-analysis';
 import { ENGINE_MULTI_PV, REVIEW_MULTI_PV, type ClassifiedMoveDto, type EngineEval } from '@freechesscoach/shared';
 import { runAnalysisSteps } from '../../src/services/analysis-steps.js';
-import { widenBrilliantCandidates } from '../../src/services/analysis-widen.js';
 import { buildCourseDossierFromEngine } from '../../src/services/courses/dossier.js';
 import type { EngineBackend } from '../../src/services/engine/engine-backend.js';
 import { SearchMemoEngineBackend } from '../../src/services/engine/search-memo-engine-backend.js';
-import { scanPasses } from '../../src/services/pass-scans.js';
 import { createStepTimer } from '../../src/services/step-timer.js';
 import type { CorpusGame } from './corpus.js';
 

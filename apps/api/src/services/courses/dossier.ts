@@ -2,6 +2,7 @@ import {
   buildCourseDossier,
   courseLineGames,
   courseTreeFens,
+  scanPasses,
   temptingCandidates,
   withTempting,
   type CourseDossier,
@@ -13,7 +14,6 @@ import { runAnalysisSteps } from '../analysis-steps.js';
 import type { EngineBackend } from '../engine/engine-backend.js';
 import { resolveReviewEngineBackend, type ResolveEngineBackendOptions } from '../engine/resolve-engine-backend.js';
 import { SearchMemoEngineBackend } from '../engine/search-memo-engine-backend.js';
-import { scanPasses } from '../pass-scans.js';
 import { createStepTimer } from '../step-timer.js';
 
 /** docs/courses.md §5.4: three engine lines per position, so a quiz can

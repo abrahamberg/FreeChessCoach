@@ -1,10 +1,6 @@
-import {
-  inBookWalk,
-  OPENING_BOOK_SOURCE,
-  positionKey,
-  resolveOpening,
-  type ParsedPosition
-} from '@freechesscoach/chess-analysis';
+import { inBookWalk, OPENING_BOOK_SOURCE, resolveOpening } from '../opening-book.js';
+import { positionKey } from '../opening-book-key.js';
+import type { ParsedPosition } from '../pgn.js';
 import type { BookReport, PlayerBookReport } from '@freechesscoach/shared';
 
 /** The opening-book part of a game's analysis: which named opening it was

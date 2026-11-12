@@ -1,4 +1,5 @@
-import { scanRealisticThreats, type AvailableMotifScan } from '@freechesscoach/chess-analysis';
+import { scanRealisticThreats } from '../realistic-threats.js';
+import type { AvailableMotifScan } from '../available-motifs-scan.js';
 import type { EngineLine } from '@freechesscoach/shared';
 
 /** The realistic threat scan per eval index. */

@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
-import { parseAnnotatedPgn, parsePgn } from '@freechesscoach/chess-analysis';
+import { parseAnnotatedPgn, parsePgn, composeGameReport } from '@freechesscoach/chess-analysis';
 import {
   BookReportSchema,
   GameReportSchema,
@@ -15,7 +15,6 @@ import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import { EngineUnavailableError } from '../lib/errors.js';
-import { composeGameReport } from './game-report.js';
 import { analyzeInChunks, runAnalyzeGameJob, type AnalysisJobDependencies } from './analysis.js';
 
 const PGN = `[Event "Test"]

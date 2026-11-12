@@ -3,7 +3,7 @@ import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
-import type { LichessClient } from '../services/lichess.js';
+import type { LichessClient } from '@freechesscoach/game-sources';
 import * as userProfileService from '../services/user-profile.js';
 import { ROUTE_RATE_LIMITS, rateLimitConfig } from '../plugins/route-rate-limit.js';
 

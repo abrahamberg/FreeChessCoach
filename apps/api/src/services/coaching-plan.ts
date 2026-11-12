@@ -1,3 +1,4 @@
+import { composeGameReport } from '@freechesscoach/chess-analysis';
 import { CoachingPlanSchema, ratingForPromptScoping } from '@freechesscoach/shared';
 import type { CoachingPlan } from '@freechesscoach/shared';
 import { buildPlannerMessages, type PlannerPromptInput } from '@freechesscoach/prompts';
@@ -10,7 +11,6 @@ import type { Database } from '../db/schema.js';
 import { NotFoundError } from '../lib/errors.js';
 import { getModelForUser, type GatewayConfig } from '../llm/gateway.js';
 import { generateStructured } from '../llm/text.js';
-import { composeGameReport } from './game-report.js';
 import { buildLocalCoachingPlan } from './local-coaching-plan.js';
 import { keepStudentMoments, planCandidateMoments, studentPlies } from './plan-moments.js';
 import { getPlayerStatsText } from './coach-player-stats.js';

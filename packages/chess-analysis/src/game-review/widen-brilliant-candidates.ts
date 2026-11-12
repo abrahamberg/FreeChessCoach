@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
-import { brilliantCandidatePositions, type ParsedGame } from '@freechesscoach/chess-analysis';
+import { brilliantCandidatePositions } from '../brilliant-candidates.js';
+import type { ParsedGame } from '../pgn.js';
 import { ENGINE_MULTI_PV, type EngineEval } from '@freechesscoach/shared';
 
 /**

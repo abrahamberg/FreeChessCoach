@@ -1,11 +1,11 @@
 import { Chess } from 'chess.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { classifyLiveMove, cpToWords, mateToWords, toCpWhite, type EditableTree } from '@freechesscoach/chess-analysis';
-import { HintMovesResponseSchema, type ClassifiedMoveDto, type EngineEval, type EngineLine } from '@freechesscoach/shared';
-import { apiPost } from '../../api/client.js';
+import type { ClassifiedMoveDto, EngineEval, EngineLine } from '@freechesscoach/shared';
 import type { BoardArrow, BoardHighlight } from '../board/CoachBoard.js';
 import { candidateMoveHighlightFromColor } from '../board/candidateMoveColors.js';
 import { arrowsFromLines } from '../board/useExploreFeedback.js';
+import { useEngineLinesSource, type EngineLinesSource } from './engine-lines-source.js';
 import { reviewOrder } from './review-order.js';
 
 export interface LiveReview {
@@ -47,10 +47,9 @@ function isOver(fen: string): boolean {
   }
 }
 
-async function fetchLines(fen: string): Promise<EngineLine[]> {
+async function fetchLines(source: EngineLinesSource, fen: string): Promise<EngineLine[]> {
   if (isOver(fen)) return [];
-  const { lines } = await apiPost('/api/positions/hint-moves', { fen }, HintMovesResponseSchema);
-  return lines;
+  return source(fen);
 }
 
 /**
@@ -63,12 +62,15 @@ async function fetchLines(fen: string): Promise<EngineLine[]> {
  * long as the page lives, so moving back to a move costs nothing.
  */
 export function useLiveReview(tree: EditableTree, currentId: string | null, latestId: string | null, enabled: boolean, include?: (nodeId: string) => boolean): LiveReview {
+  const source = useEngineLinesSource();
   const lines = useRef(new Map<string, EngineLine[]>());
   const failedFens = useRef(new Set<string>());
   const rated = useRef(new Map<string, ClassifiedMoveDto | null>());
   const [version, setVersion] = useState(0);
   const want = useRef({ tree, currentId, latestId, enabled, include });
   want.current = { tree, currentId, latestId, enabled, include };
+  const sourceRef = useRef(source);
+  sourceRef.current = source;
   const running = useRef(false);
 
   const todo = (): string[] => {
@@ -85,7 +87,7 @@ export function useLiveReview(tree: EditableTree, currentId: string | null, late
           const next = todo()[0];
           if (next === undefined) return;
           try {
-            lines.current.set(next, await fetchLines(next));
+            lines.current.set(next, await fetchLines(sourceRef.current, next));
           } catch {
             failedFens.current.add(next);
           }
