@@ -28,29 +28,29 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^4.0.99",
-    "@ai-sdk/openai": "^4.0.111",
-    "@ai-sdk/provider": "^4.0.37",
+    "@ai-sdk/anthropic": "^4.0.107",
+    "@ai-sdk/openai": "^4.0.122",
+    "@ai-sdk/provider": "^4.0.39",
     "@fastify/websocket": "^11.3.7",
     "@freechesscoach/chess-analysis": "0.0.1",
     "@freechesscoach/game-sources": "0.0.1",
     "@freechesscoach/prompts": "0.0.1",
     "@freechesscoach/shared": "0.0.1",
-    "ai": "^7.0.166",
+    "ai": "^7.0.179",
     "fastify": "^5.12.8",
     "fastify-plugin": "^6.0.1",
     "graphile-worker": "^0.18.0",
-    "kysely": "^0.29.8",
+    "kysely": "^0.29.9",
     "pg": "^8.23.1",
     "redis": "^6.3.1",
-    "undici": "^8.12.4"
+    "undici": "^8.13.1"
   },
   "devDependencies": {
-    "@testcontainers/postgresql": "^12.2.1",
+    "@testcontainers/postgresql": "^12.2.2",
     "@types/node": "^24.19.2",
     "@types/pg": "^8.23.1",
     "@types/ws": "^8.18.2",
     "esbuild": "^0.28.2",
-    "ws": "^8.22.2"
+    "ws": "^8.23.0"
   }
 }
